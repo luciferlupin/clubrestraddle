@@ -320,15 +320,29 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
               </div>
             </div>
 
-            {/* Payment Method */}
+            {/* Payment Settlement Mode */}
             <div className="form-group">
-              <label className="form-label">Payment Method *</label>
+              <label className="form-label">Mark Payment Mode / Settlement Type *</label>
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.4)',
+                  border: '1px solid rgba(225, 29, 72, 0.25)',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  fontSize: '0.74rem',
+                  color: '#cbd5e1',
+                  marginBottom: '8px',
+                }}
+              >
+                ℹ️ <strong>Physical Settlement:</strong> No payment is charged inside this software. Please pay directly at the cashier desk or table (Cash / UPI / Card POS). This selection simply marks your payment type on the official receipt.
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
                 {[
-                  { mode: 'UPI/Digital' as PaymentMethod, label: 'UPI / QR Payment', icon: <Smartphone size={16} /> },
-                  { mode: 'Cash' as PaymentMethod, label: 'Cash at Table', icon: <Banknote size={16} /> },
-                  { mode: 'Bank Transfer' as PaymentMethod, label: 'Bank Transfer / IMPS', icon: <Building size={16} /> },
-                  { mode: 'Credit/Debit Card' as PaymentMethod, label: 'POS Card Machine', icon: <CreditCard size={16} /> },
+                  { mode: 'Cash' as PaymentMethod, label: 'Cash at Table / Desk', icon: <Banknote size={16} /> },
+                  { mode: 'UPI/Digital' as PaymentMethod, label: 'UPI / Club QR Scan', icon: <Smartphone size={16} /> },
+                  { mode: 'Bank Transfer' as PaymentMethod, label: 'Bank IMPS / NEFT', icon: <Building size={16} /> },
+                  { mode: 'Credit/Debit Card' as PaymentMethod, label: 'Club POS Card Machine', icon: <CreditCard size={16} /> },
                 ].map(item => (
                   <button
                     key={item.mode}
@@ -351,7 +365,7 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
               style={{ marginTop: '6px', justifyContent: 'center' }}
             >
               <Coins size={18} />
-              <span>{submitting ? 'Sending to Cashier...' : `Order ₹${formatINR(isCustom ? Number(customAmount) || 0 : selectedAmount)} in Chips`}</span>
+              <span>{submitting ? 'Sending to Cashier...' : `Submit Request: ₹${formatINR(isCustom ? Number(customAmount) || 0 : selectedAmount)} Chips (${paymentMethod})`}</span>
             </button>
           </form>
         )}

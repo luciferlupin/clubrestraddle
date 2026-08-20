@@ -167,26 +167,26 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
         {/* Payment & Seating Details */}
         <div className="form-grid-2">
           <div className="form-group">
-            <label className="form-label">Payment Method *</label>
+            <label className="form-label">Payment Mode Received *</label>
             <select
               className="form-select"
               value={paymentMethod}
               onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
             >
               <option value="Cash">Cash at Counter</option>
-              <option value="Bank Transfer">Bank Wire / Transfer</option>
+              <option value="UPI/Digital">UPI / Club QR Scan</option>
+              <option value="Bank Transfer">Bank Wire / IMPS</option>
               <option value="Credit/Debit Card">Credit / Debit Card POS</option>
-              <option value="Chips">Club Chip Transfer</option>
-              <option value="UPI/Digital">UPI / Digital Wallet</option>
+              <option value="Chips">Club Chips Handover</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Payment Reference / Txn ID</label>
+            <label className="form-label">Settlement Reference / Notes</label>
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. CSH-8821 or Bank Txn Ref"
+              placeholder="e.g. Cash Handover or UPI Ref #"
               value={paymentRef}
               onChange={e => setPaymentRef(e.target.value)}
             />
