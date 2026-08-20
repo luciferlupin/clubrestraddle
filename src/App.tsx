@@ -39,21 +39,36 @@ const MainApp: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Read URL query parameters on initial page load
+  // Read URL pathname and query parameters on initial page load
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const pathname = window.location.pathname.toLowerCase();
     const params = new URLSearchParams(window.location.search);
     const portalParam = params.get('portal');
     const actionParam = params.get('action');
     const scanParam = params.get('scan');
     const playerParam = params.get('player') || params.get('playerId');
 
-    if (portalParam === 'staff') {
-      setActiveRole('admin');
-    } else if (portalParam && ['player', 'cashier', 'security', 'admin'].includes(portalParam)) {
-      setActiveRole(portalParam as any);
-    } else if (scanParam || playerParam) {
-      setActiveRole('security');
+    // 1. Staff OS Direct Links: /staff, /admin, /cashier, /security or ?portal=staff/admin/cashier/security
+    if (
+      pathname.startsWith('/staff') ||
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/cashier') ||
+      pathname.startsWith('/security') ||
+      ['staff', 'cashier', 'security', 'admin'].includes(portalParam || '') ||
+      scanParam ||
+      playerParam
+    ) {
+      if (pathname.startsWith('/cashier') || portalParam === 'cashier') {
+        setActiveRole('cashier');
+      } else if (pathname.startsWith('/security') || portalParam === 'security' || scanParam || playerParam) {
+        setActiveRole('security');
+      } else {
+        setActiveRole('admin');
+      }
+    } else {
+      // 2. Player Portal Default Link: / or /player
+      setActiveRole('player');
     }
 
     if (actionParam === 'kyc' || actionParam === 'qr_scan' || actionParam === 'register') {
