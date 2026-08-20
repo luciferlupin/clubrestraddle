@@ -219,11 +219,11 @@ export const CashPortal: React.FC = () => {
         }
       />
 
-      <DesktopSectionNav
+      <DesktopSectionNav<CashPortalTab>
         ariaLabel="Cash Desk sections"
         activeId={activeTab}
         items={sections}
-        onChange={setActiveTab}
+        onChange={tab => setActiveTab(tab)}
       />
 
       {/* TAB 1: OVERVIEW & QUICK ACTIONS */}
