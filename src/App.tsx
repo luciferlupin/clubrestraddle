@@ -91,12 +91,13 @@ const MainApp: React.FC = () => {
 
   return (
     <div className={`app-container ${isMobile ? 'is-mobile-device' : 'is-desktop-device'}`}>
-      {/* ── Global floating 3D chips on the page background ─────────────
-           Fixed, z-index:1, pointer-events:none.
-           All page content (z-index:2+) sits above, cards block chips
-           with their opaque dark backgrounds. Only bare bg gaps show chips.
-           ──────────────────────────────────────────────────────────────── */}
-      <FloatingChipsBackground mode="fixed" opacity={0.13} chipCount={14} />
+      {/* ── Global floating 3D chips — page background decoration ───────────
+           position:absolute fills the full app-container (min-height:100dvh).
+           isolation:isolate on app-container + z-index:-1 on chip layer means
+           chips paint BELOW all normal-flow card content, above transparent bg.
+           pointer-events:none — zero interaction impact on anything.
+           ──────────────────────────────────────────────────────────────────── */}
+      <FloatingChipsBackground mode="absolute" opacity={0.13} chipCount={14} />
 
       {/* Header: Adaptive Mobile Header on Phones, Glass Header on Desktop */}
       {isMobile ? (
