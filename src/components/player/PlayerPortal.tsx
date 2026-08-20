@@ -30,10 +30,20 @@ interface PlayerPortalProps {
 }
 
 export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPlayerFormInitially = false }) => {
-  const { currentPlayer, setSelectedPlayerId, players, checkIns, tournaments, entries, hasPlayerCheckedInToday } = useClub();
+  const {
+    currentPlayer,
+    setSelectedPlayerId,
+    players,
+    checkIns,
+    tournaments,
+    entries,
+    hasPlayerCheckedInToday,
+    lookupMemberByPhone,
+  } = useClub();
   const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially);
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const [isLookingUp, setIsLookingUp] = useState(false);
   const [activeTab, setActiveTab] = useState<'pass' | 'tournaments' | 'billing' | 'profile' | 'history'>('pass');
 
   useEffect(() => {
@@ -52,23 +62,21 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
 
   const todayCheckIn = currentPlayer ? hasPlayerCheckedInToday(currentPlayer.id) : undefined;
 
-  const handleLookupMember = (e: React.FormEvent) => {
+  const handleLookupMember = async (e: React.FormEvent) => {
     e.preventDefault();
     setLookupError(null);
-    const cleanPhone = lookupPhone.trim().replace(/[\s\-\(\)]/g, '');
+    const cleanPhone = lookupPhone.trim();
     if (!cleanPhone) return;
 
-    const matched = players.find(p => {
-      const pPhone = p.phone.replace(/[\s\-\(\)]/g, '');
-      return pPhone.includes(cleanPhone) || p.id.toLowerCase() === cleanPhone.toLowerCase();
-    });
+    setIsLookingUp(true);
+    const matched = await lookupMemberByPhone(cleanPhone);
+    setIsLookingUp(false);
 
     if (matched) {
-      setSelectedPlayerId(matched.id);
       setShowKYCForm(false);
       setLookupPhone('');
     } else {
-      setLookupError('No registered member found with this mobile number or ID. Please complete KYC registration.');
+      setLookupError('No registered member found with this mobile number or ID. Please complete KYC registration below.');
     }
   };
 
@@ -178,8 +186,8 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
                 value={lookupPhone}
                 onChange={e => setLookupPhone(e.target.value)}
               />
-              <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '6px 14px' }}>
-                <UserCheck size={14} /> Find Pass
+              <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '6px 14px' }} disabled={isLookingUp}>
+                <UserCheck size={14} /> {isLookingUp ? 'Searching...' : 'Find Pass'}
               </button>
             </form>
           </div>

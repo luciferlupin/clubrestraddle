@@ -46,6 +46,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
     entries,
     hasPlayerCheckedInToday,
     performDailyCheckIn,
+    lookupMemberByPhone,
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<'home' | 'history' | 'profile' | 'new_kyc'>(
@@ -53,6 +54,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   );
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const [isLookingUp, setIsLookingUp] = useState(false);
   const [tablePref, setTablePref] = useState('NLH Cash Game (₹250/₹500)');
   const [checkingIn, setCheckingIn] = useState(false);
   const [registrationSuccessData, setRegistrationSuccessData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
@@ -71,19 +73,17 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
     ? checkIns.filter(c => c.playerId === currentPlayer.id)
     : [];
 
-  const handleLookupMember = (e: React.FormEvent) => {
+  const handleLookupMember = async (e: React.FormEvent) => {
     e.preventDefault();
     setLookupError(null);
-    const cleanPhone = lookupPhone.trim().replace(/[\s\-\(\)]/g, '');
+    const cleanPhone = lookupPhone.trim();
     if (!cleanPhone) return;
 
-    const matched = players.find(p => {
-      const pPhone = p.phone.replace(/[\s\-\(\)]/g, '');
-      return pPhone.includes(cleanPhone) || p.id.toLowerCase() === cleanPhone.toLowerCase();
-    });
+    setIsLookingUp(true);
+    const matched = await lookupMemberByPhone(cleanPhone);
+    setIsLookingUp(false);
 
     if (matched) {
-      setSelectedPlayerId(matched.id);
       setActiveTab('home');
       setLookupPhone('');
     } else {
@@ -146,8 +146,13 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                 value={lookupPhone}
                 onChange={e => setLookupPhone(e.target.value)}
               />
-              <button type="submit" className="m-btn m-btn-secondary m-btn-sm" style={{ width: 'auto' }}>
-                Load
+              <button
+                type="submit"
+                className="m-btn m-btn-secondary m-btn-sm"
+                style={{ width: 'auto' }}
+                disabled={isLookingUp}
+              >
+                {isLookingUp ? '...' : 'Load'}
               </button>
             </form>
             {lookupError && (

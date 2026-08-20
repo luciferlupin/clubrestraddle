@@ -73,6 +73,7 @@ interface ClubContextType {
   performDailyCheckIn: (playerId: string, tablePreference?: string) => DailyCheckIn;
   updatePlayerKYC: (playerId: string, updatedKYC: Partial<PlayerKYC>) => void;
   hasPlayerCheckedInToday: (playerId: string) => DailyCheckIn | undefined;
+  lookupMemberByPhone: (phoneOrId: string) => Promise<Player | null>;
 
   // Cashier Actions
   createTournament: (tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'createdBy'>) => Tournament;
@@ -265,9 +266,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             },
           }));
           setPlayers(mappedPlayers);
-          if (!selectedPlayerId && mappedPlayers.length > 0) {
-            setSelectedPlayerIdState(mappedPlayers[0].id);
-          }
         }
 
         const { data: checkInsData } = await client.from('daily_check_ins').select('*');
@@ -638,6 +636,76 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
 
     return { player: newPlayer, checkIn: newCheckIn };
+  };
+
+  const lookupMemberByPhone = async (phoneOrId: string): Promise<Player | null> => {
+    const cleanQuery = phoneOrId.trim().replace(/[\s\-\(\)]/g, '');
+    if (!cleanQuery) return null;
+
+    // 1. Check local in-memory players state
+    const localMatch = players.find(p => {
+      const pPhone = p.phone.replace(/[\s\-\(\)]/g, '');
+      return pPhone.includes(cleanQuery) || p.id.toLowerCase() === cleanQuery.toLowerCase();
+    });
+
+    if (localMatch) {
+      setSelectedPlayerId(localMatch.id);
+      return localMatch;
+    }
+
+    // 2. Query Supabase PostgreSQL live table if connected
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('players')
+          .select('*')
+          .or(`phone.ilike.%${cleanQuery}%,id.ilike.%${cleanQuery}%`)
+          .limit(1);
+
+        if (!error && data && data.length > 0) {
+          const p = data[0];
+          const mappedPlayer: Player = {
+            id: p.id,
+            fullName: p.full_name,
+            phone: p.phone,
+            email: p.email,
+            membershipTier: p.membership_tier,
+            kycStatus: p.kyc_status,
+            registeredAt: p.created_at,
+            totalVisits: p.total_visits || 1,
+            notes: p.notes,
+            kyc: {
+              fullName: p.full_name,
+              phone: p.phone,
+              email: p.email,
+              dateOfBirth: p.date_of_birth,
+              govtIdType: p.govt_id_type,
+              govtIdNumber: p.govt_id_number,
+              address: p.address,
+              emergencyContactName: p.emergency_contact_name,
+              emergencyContactPhone: p.emergency_contact_phone,
+              photoUrl: p.photo_url,
+              agreedToRules: p.agreed_to_rules,
+              submittedAt: p.created_at,
+              verifiedAt: p.verified_at,
+              verifiedBy: p.verified_by,
+              rejectionReason: p.rejection_reason,
+            },
+          };
+
+          setPlayers(prev => {
+            if (prev.some(existing => existing.id === mappedPlayer.id)) return prev;
+            return [mappedPlayer, ...prev];
+          });
+          setSelectedPlayerId(mappedPlayer.id);
+          return mappedPlayer;
+        }
+      } catch (err) {
+        console.error('Error fetching player by phone from Supabase:', err);
+      }
+    }
+
+    return null;
   };
 
   const performDailyCheckIn = (playerId: string, tablePreference?: string): DailyCheckIn => {
@@ -1184,6 +1252,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         performDailyCheckIn,
         updatePlayerKYC,
         hasPlayerCheckedInToday,
+        lookupMemberByPhone,
         createTournament,
         registerPlayerForTournament,
         addCashReceived,
