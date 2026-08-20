@@ -368,6 +368,19 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }));
           setExpenses(mappedExpenses);
         }
+
+        const { data: auditData } = await client.from('audit_logs').select('*').order('timestamp', { ascending: false });
+        if (auditData && auditData.length > 0) {
+          const mappedLogs: AuditLog[] = auditData.map((l: any) => ({
+            id: l.id,
+            portal: l.portal,
+            user: l.user_name,
+            action: l.action,
+            details: l.details,
+            timestamp: l.timestamp,
+          }));
+          setAuditLogs(mappedLogs);
+        }
       } catch (err) {
         console.warn('Supabase fetch error, fallback to local storage:', err);
       }
