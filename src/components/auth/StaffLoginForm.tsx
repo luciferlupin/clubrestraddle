@@ -47,6 +47,14 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Sync state whenever portalRole changes externally
+  React.useEffect(() => {
+    setSelectedDesk(portalRole);
+    setEmail(getDefaultEmail(portalRole));
+    setPassword('12345');
+    setErrorMessage(null);
+  }, [portalRole]);
+
   const handleDeskChange = (desk: 'admin' | 'cashier' | 'security') => {
     setSelectedDesk(desk);
     setActiveRole(desk);
@@ -119,6 +127,18 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
     setEmail(accEmail);
     setPassword(accPass);
     setErrorMessage(null);
+
+    // Auto-align desk to the account's primary role
+    if (accEmail.includes('cashier')) {
+      setSelectedDesk('cashier');
+      setActiveRole('cashier');
+    } else if (accEmail.includes('security')) {
+      setSelectedDesk('security');
+      setActiveRole('security');
+    } else {
+      setSelectedDesk('admin');
+      setActiveRole('admin');
+    }
   };
 
   return (
