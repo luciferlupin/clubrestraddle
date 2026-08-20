@@ -8,23 +8,106 @@ import {
   ShieldCheck,
   Check,
   Receipt,
+  Plus,
+  Edit3,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { ChipRequest } from '../../types';
+import { ChipRequest, PaymentMethod } from '../../types';
 import { formatINR, formatTimeOnly } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { Modal } from '../common/Modal';
 import confetti from 'canvas-confetti';
 
 export const ChipOrderManager: React.FC = () => {
-  const { chipRequests, fulfillChipRequest, cancelChipRequest, staffName, players } = useClub();
+  const { chipRequests, fulfillChipRequest, cancelChipRequest, updateChipRequest, deleteChipRequest, requestBuyChips, staffName, players } = useClub();
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<ChipRequest | null>(null);
+
+  const [createData, setCreateData] = useState({
+    playerId: players[0]?.id || '',
+    amount: 5000,
+    tableNumber: 'Table 1',
+    seatNumber: 'Seat 1',
+    paymentMethod: 'Cash' as PaymentMethod,
+    notes: '',
+  });
+
+  const [editData, setEditData] = useState({
+    amount: 5000,
+    tableNumber: 'Table 1',
+    seatNumber: 'Seat 1',
+    paymentMethod: 'Cash' as PaymentMethod,
+    status: 'pending' as ChipRequest['status'],
+    notes: '',
+  });
 
   const pendingRequests = chipRequests.filter(r => r.status === 'pending');
   const deliveredRequests = chipRequests.filter(r => r.status === 'delivered');
   const totalDeliveredAmount = deliveredRequests.reduce((sum, r) => sum + r.amount, 0);
+
+  const handleOpenEdit = (req: ChipRequest) => {
+    setSelectedOrder(req);
+    setEditData({
+      amount: req.amount,
+      tableNumber: req.tableNumber,
+      seatNumber: req.seatNumber,
+      paymentMethod: req.paymentMethod,
+      status: req.status,
+      notes: req.notes || '',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrder || editData.amount <= 0) return;
+
+    updateChipRequest(selectedOrder.id, {
+      amount: Number(editData.amount),
+      chipsQuantity: Number(editData.amount),
+      tableNumber: editData.tableNumber,
+      seatNumber: editData.seatNumber,
+      paymentMethod: editData.paymentMethod,
+      status: editData.status,
+      notes: editData.notes,
+    });
+
+    setIsEditModalOpen(false);
+    setSelectedOrder(null);
+  };
+
+  const handleDelete = () => {
+    if (!selectedOrder) return;
+    deleteChipRequest(selectedOrder.id);
+    setIsDeleteModalOpen(false);
+    setSelectedOrder(null);
+  };
+
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createData.playerId || createData.amount <= 0) return;
+
+    requestBuyChips({
+      playerId: createData.playerId,
+      amount: Number(createData.amount),
+      tableNumber: createData.tableNumber,
+      seatNumber: createData.seatNumber,
+      paymentMethod: createData.paymentMethod,
+      notes: createData.notes,
+    });
+
+    setIsCreateModalOpen(false);
+    setActionSuccessMessage(`Created new chip order for ${formatINR(createData.amount)}.`);
+    setTimeout(() => setActionSuccessMessage(null), 3500);
+  };
 
   const filteredRequests = chipRequests.filter(r => {
     const matchesStatus = filterStatus === 'all' || r.status === filterStatus;
@@ -228,52 +311,32 @@ export const ChipOrderManager: React.FC = () => {
 
       {/* Main Order Queue Table Card */}
       <div className="card">
-        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
           <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Coins size={20} color="#e11d48" /> Real-Time Table Chip Orders ({filteredRequests.length})
+            <h3 className="card-title">
+              <Coins size={18} color="#e11d48" />
+              Live Table Chip Orders ({chipRequests.length})
             </h3>
-            <p style={{ fontSize: '0.76rem', color: '#94a3b8', margin: '2px 0 0' }}>
-              Incoming chip purchase requests from active players seated at cash game & tournament tables.
+            <p className="card-subtitle">
+              Incoming chip requests from playing tables requiring delivery and collection.
             </p>
           </div>
 
-          {/* Search & Filter Buttons */}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary btn-sm" onClick={() => setIsCreateModalOpen(true)}>
+              <Plus size={14} /> New Chip Order
+            </button>
+
             <div style={{ position: 'relative' }}>
               <input
                 type="text"
+                placeholder="Search player, table, ID..."
                 className="form-input"
-                style={{ paddingLeft: '32px', fontSize: '0.82rem', padding: '6px 12px 6px 32px' }}
-                placeholder="Search player / table..."
+                style={{ paddingLeft: '32px', width: '210px', fontSize: '0.82rem' }}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
               <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-            </div>
-
-            <div className="btn-group" style={{ display: 'flex', background: 'rgba(0,0,0,0.4)', borderRadius: '8px', padding: '2px', border: '1px solid var(--border-subtle)' }}>
-              <button
-                className={`btn btn-sm ${filterStatus === 'all' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                onClick={() => setFilterStatus('all')}
-              >
-                All ({chipRequests.length})
-              </button>
-              <button
-                className={`btn btn-sm ${filterStatus === 'pending' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                onClick={() => setFilterStatus('pending')}
-              >
-                Pending ({pendingRequests.length})
-              </button>
-              <button
-                className={`btn btn-sm ${filterStatus === 'delivered' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                onClick={() => setFilterStatus('delivered')}
-              >
-                Delivered ({deliveredRequests.length})
-              </button>
             </div>
           </div>
         </div>
@@ -299,7 +362,7 @@ export const ChipOrderManager: React.FC = () => {
                   <th>Payment Method</th>
                   <th>Request Time</th>
                   <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Cashier Action</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -375,42 +438,55 @@ export const ChipOrderManager: React.FC = () => {
                       </td>
 
                       <td style={{ textAlign: 'right' }}>
-                        {isPending ? (
-                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                            <button
-                              className="btn btn-primary btn-sm"
-                              onClick={() => handleFulfill(req.id, req.playerName, req.amount)}
-                              style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-                            >
-                              <Check size={14} /> Fulfill & Dispatch
-                            </button>
+                        <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                          {isPending && (
+                            <>
+                              <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handleFulfill(req.id, req.playerName, req.amount)}
+                                style={{ padding: '5px 10px', fontSize: '0.75rem' }}
+                              >
+                                <Check size={13} /> Fulfill
+                              </button>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => handleCancel(req.id, req.playerName)}
+                                style={{ padding: '5px 7px', fontSize: '0.75rem', color: '#fca5a5' }}
+                                title="Cancel Request"
+                              >
+                                <XCircle size={13} />
+                              </button>
+                            </>
+                          )}
+                          {isDelivered && (
                             <button
                               className="btn btn-secondary btn-sm"
-                              onClick={() => handleCancel(req.id, req.playerName)}
-                              style={{ padding: '6px 8px', fontSize: '0.78rem', color: '#fca5a5' }}
-                              title="Cancel Request"
-                            >
-                              <XCircle size={14} />
-                            </button>
-                          </div>
-                        ) : isDelivered ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              style={{ padding: '4px 10px', fontSize: '0.74rem' }}
+                              style={{ padding: '4px 8px', fontSize: '0.74rem' }}
                               onClick={() => openInvoiceForChip(req)}
                             >
-                              <Receipt size={13} /> Official Invoice
+                              <Receipt size={12} />
                             </button>
-                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                              By {req.fulfilledBy || 'Cashier'}
-                            </span>
-                          </div>
-                        ) : (
-                          <div style={{ fontSize: '0.74rem', color: '#ef4444' }}>
-                            {req.notes || 'Cancelled'}
-                          </div>
-                        )}
+                          )}
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '4px 7px' }}
+                            onClick={() => handleOpenEdit(req)}
+                            title="Edit Order"
+                          >
+                            <Edit3 size={12} />
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            style={{ padding: '4px 7px' }}
+                            onClick={() => {
+                              setSelectedOrder(req);
+                              setIsDeleteModalOpen(true);
+                            }}
+                            title="Delete Order"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -420,6 +496,229 @@ export const ChipOrderManager: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Create Chip Order Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Create Table Chip Order"
+        subtitle="Issue high-grade playing chips for an active player"
+        size="md"
+      >
+        <form onSubmit={handleCreateSubmit}>
+          <div className="form-group">
+            <label className="form-label">Select Registered Player *</label>
+            <select
+              className="form-select"
+              value={createData.playerId}
+              onChange={e => setCreateData({ ...createData, playerId: e.target.value })}
+              required
+            >
+              {players.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.fullName} ({p.phone}) - {p.id}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-grid-2">
+            <div className="form-group">
+              <label className="form-label">Chip Amount (₹) *</label>
+              <input
+                type="number"
+                className="form-input"
+                value={createData.amount}
+                onChange={e => setCreateData({ ...createData, amount: Number(e.target.value) })}
+                required
+                min="100"
+                step="500"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Payment Method *</label>
+              <select
+                className="form-select"
+                value={createData.paymentMethod}
+                onChange={e => setCreateData({ ...createData, paymentMethod: e.target.value as PaymentMethod })}
+              >
+                <option value="Cash">Cash</option>
+                <option value="UPI/Digital">UPI / Digital</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Credit/Debit Card">Credit/Debit Card</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-grid-2">
+            <div className="form-group">
+              <label className="form-label">Table Number *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={createData.tableNumber}
+                onChange={e => setCreateData({ ...createData, tableNumber: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Seat Number *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={createData.seatNumber}
+                onChange={e => setCreateData({ ...createData, seatNumber: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="modal-footer" style={{ margin: '20px -24px -24px', padding: '16px 24px' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsCreateModalOpen(false)}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-primary">
+              <Plus size={16} /> Place Chip Order
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Chip Order Modal */}
+      {selectedOrder && (
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          title={`Edit Chip Order: ${selectedOrder.id}`}
+          subtitle={`Player: ${selectedOrder.playerName}`}
+          size="md"
+        >
+          <form onSubmit={handleEditSubmit}>
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Chip Amount (₹) *</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={editData.amount}
+                  onChange={e => setEditData({ ...editData, amount: Number(e.target.value) })}
+                  required
+                  min="100"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Payment Method *</label>
+                <select
+                  className="form-select"
+                  value={editData.paymentMethod}
+                  onChange={e => setEditData({ ...editData, paymentMethod: e.target.value as PaymentMethod })}
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="UPI/Digital">UPI / Digital</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Credit/Debit Card">Credit/Debit Card</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Table Number</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editData.tableNumber}
+                  onChange={e => setEditData({ ...editData, tableNumber: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Seat Number</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editData.seatNumber}
+                  onChange={e => setEditData({ ...editData, seatNumber: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select
+                className="form-select"
+                value={editData.status}
+                onChange={e => setEditData({ ...editData, status: e.target.value as any })}
+              >
+                <option value="pending">Pending Dispatch</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Notes</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editData.notes}
+                onChange={e => setEditData({ ...editData, notes: e.target.value })}
+              />
+            </div>
+
+            <div className="modal-footer" style={{ margin: '20px -24px -24px', padding: '16px 24px' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Save Order Changes
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Delete Chip Order Modal */}
+      {selectedOrder && (
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Delete Chip Order"
+          subtitle="Irreversible action"
+          size="sm"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
+            <div
+              style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1.5px solid #ef4444',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                color: '#ef4444',
+              }}
+            >
+              <AlertTriangle size={28} />
+            </div>
+
+            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>
+              Are you sure you want to delete chip order <strong>{selectedOrder.id}</strong> (₹{selectedOrder.amount.toLocaleString('en-IN')} for {selectedOrder.playerName})?
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setIsDeleteModalOpen(false)}>
+                Cancel
+              </button>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleDelete}>
+                Delete Order
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Official Tax / Billing Invoice Modal */}
       <ClubTaxInvoiceModal

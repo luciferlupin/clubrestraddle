@@ -94,8 +94,12 @@ interface ClubContextType {
     tableNumber?: string;
     seatNumber?: string;
   }) => TournamentEntry;
+  updateTournamentEntry: (entryId: string, updates: Partial<TournamentEntry>) => void;
+  deleteTournamentEntry: (entryId: string) => void;
   fulfillChipRequest: (requestId: string) => void;
   cancelChipRequest: (requestId: string, reason?: string) => void;
+  updateChipRequest: (requestId: string, updates: Partial<ChipRequest>) => void;
+  deleteChipRequest: (requestId: string) => void;
   addCashReceived: (params: {
     category: CashCategory;
     amount: number;
@@ -112,19 +116,24 @@ interface ClubContextType {
     playerName?: string;
     referenceId?: string;
   }) => CashTransaction;
+  updateCashTransaction: (transactionId: string, updates: Partial<CashTransaction>) => void;
   deleteCashTransaction: (transactionId: string) => void;
   updateTournamentStatus: (tournamentId: string, status: Tournament['status']) => void;
 
-  // Security Actions
+  // Security & Attendance CRUD Actions
   approvePlayerEntry: (checkInId: string) => void;
   rejectPlayerEntry: (checkInId: string, reason: string) => void;
+  updateCheckIn: (checkInId: string, updates: Partial<DailyCheckIn>) => void;
+  deleteCheckIn: (checkInId: string) => void;
   reviewKYC: (playerId: string, status: KYCStatus, reason?: string) => void;
 
-  // Admin & Expense CRUD Actions
+  // Admin, Expense & Audit CRUD Actions
   addExpense: (expenseData: Omit<Expense, 'id' | 'recordedBy'>) => Expense;
   updateExpense: (expenseId: string, updates: Partial<Expense>) => void;
   deleteExpense: (expenseId: string) => void;
   updateStaffUser: (staffId: string, updates: Partial<StaffUser>) => void;
+  deleteAuditLog: (logId: string) => void;
+  clearAuditLogs: () => void;
   resetToDemoData: () => void;
   addAuditLog: (portal: AuditLog['portal'], action: string, details: string) => void;
 }
@@ -1486,6 +1495,86 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addAuditLog('Admin', 'Cash Transaction Voided', `Voided/Deleted cash transaction: ${txn ? `₹${txn.amount} (${txn.category})` : transactionId}.`);
   };
 
+  const updateTournamentEntry = (entryId: string, updates: Partial<TournamentEntry>) => {
+    setEntries(prev =>
+      prev.map(e => (e.id === entryId ? { ...e, ...updates } : e))
+    );
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('tournament_entries').update(updates).eq('id', entryId);
+    }
+    addAuditLog('Cashier', 'Tournament Entry Updated', `Updated registration entry ${entryId}.`);
+  };
+
+  const deleteTournamentEntry = (entryId: string) => {
+    const entry = entries.find(e => e.id === entryId);
+    setEntries(prev => prev.filter(e => e.id !== entryId));
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('tournament_entries').delete().eq('id', entryId);
+    }
+    addAuditLog('Cashier', 'Tournament Entry Deleted/Refunded', `Removed/Unregistered player entry: ${entry ? `${entry.playerName} for ${entry.tournamentName}` : entryId}.`);
+  };
+
+  const updateChipRequest = (requestId: string, updates: Partial<ChipRequest>) => {
+    setChipRequests(prev =>
+      prev.map(r => (r.id === requestId ? { ...r, ...updates } : r))
+    );
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('chip_requests').update(updates).eq('id', requestId);
+    }
+    addAuditLog('Cashier', 'Chip Request Updated', `Updated chip order ${requestId}.`);
+  };
+
+  const deleteChipRequest = (requestId: string) => {
+    setChipRequests(prev => prev.filter(r => r.id !== requestId));
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('chip_requests').delete().eq('id', requestId);
+    }
+    addAuditLog('Cashier', 'Chip Request Deleted', `Deleted chip order ${requestId}.`);
+  };
+
+  const updateCashTransaction = (transactionId: string, updates: Partial<CashTransaction>) => {
+    setCashTransactions(prev =>
+      prev.map(t => (t.id === transactionId ? { ...t, ...updates } : t))
+    );
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('cash_transactions').update(updates).eq('id', transactionId);
+    }
+    addAuditLog('Admin', 'Cash Transaction Updated', `Updated cash ledger entry ${transactionId}.`);
+  };
+
+  const updateCheckIn = (checkInId: string, updates: Partial<DailyCheckIn>) => {
+    setCheckIns(prev =>
+      prev.map(c => (c.id === checkInId ? { ...c, ...updates } : c))
+    );
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('daily_check_ins').update(updates).eq('id', checkInId);
+    }
+    addAuditLog('Security', 'Check-In Record Updated', `Updated check-in ${checkInId}.`);
+  };
+
+  const deleteCheckIn = (checkInId: string) => {
+    const checkIn = checkIns.find(c => c.id === checkInId);
+    setCheckIns(prev => prev.filter(c => c.id !== checkInId));
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('daily_check_ins').delete().eq('id', checkInId);
+    }
+    addAuditLog('Security', 'Check-In Record Deleted', `Deleted check-in record: ${checkIn ? `${checkIn.playerName} (${checkIn.checkInDate})` : checkInId}.`);
+  };
+
+  const deleteAuditLog = (logId: string) => {
+    setAuditLogs(prev => prev.filter(l => l.id !== logId));
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('audit_logs').delete().eq('id', logId);
+    }
+  };
+
+  const clearAuditLogs = () => {
+    setAuditLogs([]);
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('audit_logs').delete().neq('id', '');
+    }
+  };
+
   const resetToDemoData = () => {
     setStaffUsers(initialStaffUsers);
     setCurrentStaffUser(initialStaffUsers[0]);
@@ -1557,18 +1646,27 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateTournament,
         deleteTournament,
         registerPlayerForTournament,
+        updateTournamentEntry,
+        deleteTournamentEntry,
         fulfillChipRequest,
         cancelChipRequest,
+        updateChipRequest,
+        deleteChipRequest,
         addCashReceived,
         addCashGiven,
+        updateCashTransaction,
         deleteCashTransaction,
         updateTournamentStatus,
         approvePlayerEntry,
         rejectPlayerEntry,
+        updateCheckIn,
+        deleteCheckIn,
         reviewKYC,
         addExpense,
         updateExpense,
         deleteExpense,
+        deleteAuditLog,
+        clearAuditLogs,
         resetToDemoData,
         addAuditLog,
       }}

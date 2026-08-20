@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { History, Search, ShieldCheck, DollarSign, User, LayoutDashboard, Filter } from 'lucide-react';
+import { History, Search, Trash2, AlertTriangle } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatDateTime } from '../../utils/formatters';
+import { Modal } from '../common/Modal';
 
 export const AdminAuditLogsView: React.FC = () => {
-  const { auditLogs } = useClub();
+  const { auditLogs, deleteAuditLog, clearAuditLogs } = useClub();
   const [search, setSearch] = useState('');
   const [portalFilter, setPortalFilter] = useState<string>('all');
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
 
   const filteredLogs = auditLogs.filter(log => {
     const matchesSearch =
@@ -35,13 +38,24 @@ export const AdminAuditLogsView: React.FC = () => {
     }
   };
 
+  const handleConfirmClear = () => {
+    clearAuditLogs();
+    setIsClearModalOpen(false);
+  };
+
+  const handleConfirmDeleteSingle = () => {
+    if (!selectedLogId) return;
+    deleteAuditLog(selectedLogId);
+    setSelectedLogId(null);
+  };
+
   return (
     <div className="card">
-      <div className="card-header">
+      <div className="card-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h3 className="card-title">
             <History size={18} color="#e11d48" />
-            Team Activity Audit Trail
+            Team Activity Audit Trail ({filteredLogs.length})
           </h3>
           <p className="card-subtitle">
             Chronological audit logs of all actions performed across all 4 portals.
@@ -49,6 +63,16 @@ export const AdminAuditLogsView: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {auditLogs.length > 0 && (
+            <button
+              className="btn btn-secondary btn-sm"
+              style={{ color: '#ef4444' }}
+              onClick={() => setIsClearModalOpen(true)}
+            >
+              <Trash2 size={13} /> Clear Logs
+            </button>
+          )}
+
           <select
             className="form-select"
             style={{ width: 'auto', fontSize: '0.82rem', fontWeight: 600, minHeight: '38px', padding: '8px 36px 8px 14px' }}
@@ -86,6 +110,7 @@ export const AdminAuditLogsView: React.FC = () => {
               <th>Action</th>
               <th>Audit Details</th>
               <th>Timestamp</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -101,17 +126,95 @@ export const AdminAuditLogsView: React.FC = () => {
                 </td>
                 <td style={{ fontWeight: 600 }}>{log.user}</td>
                 <td style={{ fontWeight: 700, color: 'var(--text-main)' }}>{log.action}</td>
-                <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '360px' }}>
+                <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '320px' }}>
                   {log.details}
                 </td>
-                <td style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
                   {formatDateTime(log.timestamp)}
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ color: '#ef4444', padding: '3px 6px' }}
+                    title="Delete Log"
+                    onClick={() => setSelectedLogId(log.id)}
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Clear All Logs Modal */}
+      <Modal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        title="Clear All Audit Logs"
+        subtitle="Irreversible action"
+        size="sm"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
+          <div
+            style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.2)',
+              border: '1.5px solid #ef4444',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto',
+              color: '#ef4444',
+            }}
+          >
+            <AlertTriangle size={28} />
+          </div>
+
+          <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>
+            Are you sure you want to clear all {auditLogs.length} audit logs?
+          </p>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setIsClearModalOpen(false)}>
+              Cancel
+            </button>
+            <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleConfirmClear}>
+              Clear All Logs
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Single Log Modal */}
+      {selectedLogId && (
+        <Modal
+          isOpen={!!selectedLogId}
+          onClose={() => setSelectedLogId(null)}
+          title="Delete Audit Log"
+          subtitle={`Log ID: ${selectedLogId}`}
+          size="sm"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
+            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>
+              Are you sure you want to delete log <strong>{selectedLogId}</strong>?
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setSelectedLogId(null)}>
+                Cancel
+              </button>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleConfirmDeleteSingle}>
+                Delete Log
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

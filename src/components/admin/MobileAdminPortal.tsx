@@ -12,6 +12,8 @@ import {
   XCircle,
   Plus,
   MoreHorizontal,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR } from '../../utils/formatters';
@@ -35,6 +37,8 @@ export const MobileAdminPortal: React.FC = () => {
     totalExpensesAmount,
     netTreasuryBalance,
     reviewKYC,
+    updatePlayer,
+    deletePlayer,
     addExpense,
     resetToDemoData,
   } = useClub();
@@ -387,10 +391,43 @@ export const MobileAdminPortal: React.FC = () => {
               <span>{formatDateOnly(selectedPlayer.kyc.dateOfBirth)}</span>
             </div>
 
-            <div style={{ marginTop: '8px' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Admin KYC Override:</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Admin Member Management:</span>
+              
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="m-btn m-btn-secondary m-btn-sm"
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    const newTier = window.prompt(`Update Tier for ${selectedPlayer.fullName} (Bronze, Silver, Gold, Diamond):`, selectedPlayer.membershipTier);
+                    if (newTier) {
+                      updatePlayer(selectedPlayer.id, { membershipTier: newTier as any });
+                      setSelectedPlayer({ ...selectedPlayer, membershipTier: newTier as any });
+                    }
+                  }}
+                >
+                  <Edit3 size={14} /> Edit Tier / Details
+                </button>
+
+                <button
+                  type="button"
+                  className="m-btn m-btn-danger m-btn-sm"
+                  style={{ width: 'auto' }}
+                  onClick={() => {
+                    if (window.confirm(`Are you sure you want to delete member ${selectedPlayer.fullName} (${selectedPlayer.id})?`)) {
+                      deletePlayer(selectedPlayer.id);
+                      setIsPlayerModalOpen(false);
+                      setSelectedPlayer(null);
+                    }
+                  }}
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </div>
+
               {kycAction ? (
-                <div className="staff-confirm-panel">
+                <div className="staff-confirm-panel" style={{ marginTop: '8px' }}>
                   <strong>{kycAction === 'verified' ? 'Verify this member?' : 'Reject this member’s KYC?'}</strong>
                   <p>This change is recorded in the audit log.</p>
                   <div>
@@ -410,10 +447,10 @@ export const MobileAdminPortal: React.FC = () => {
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                  <button type="button" className="m-btn m-btn-emerald m-btn-sm" onClick={() => setKycAction('verified')}>
+                  <button type="button" className="m-btn m-btn-emerald m-btn-sm" style={{ flex: 1 }} onClick={() => setKycAction('verified')}>
                     <Check size={14} /> Mark Verified
                   </button>
-                  <button type="button" className="m-btn m-btn-danger m-btn-sm" onClick={() => setKycAction('rejected')}>
+                  <button type="button" className="m-btn m-btn-danger m-btn-sm" style={{ flex: 1 }} onClick={() => setKycAction('rejected')}>
                     <XCircle size={14} /> Mark Rejected
                   </button>
                 </div>
