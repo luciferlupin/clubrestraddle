@@ -18,13 +18,15 @@ import {
 import { useClub } from '../../context/ClubContext';
 import { ChipRequest } from '../../types';
 import { formatINR, formatTimeOnly } from '../../utils/formatters';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import confetti from 'canvas-confetti';
 
 export const ChipOrderManager: React.FC = () => {
-  const { chipRequests, fulfillChipRequest, cancelChipRequest, staffName } = useClub();
+  const { chipRequests, fulfillChipRequest, cancelChipRequest, staffName, players } = useClub();
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
 
   const pendingRequests = chipRequests.filter(r => r.status === 'pending');
   const deliveredRequests = chipRequests.filter(r => r.status === 'delivered');
@@ -40,8 +42,43 @@ export const ChipOrderManager: React.FC = () => {
     return matchesStatus && matchesSearch;
   });
 
+  const openInvoiceForChip = (req: ChipRequest) => {
+    const playerObj = players.find(p => p.id === req.playerId);
+    const invoiceData: ClubInvoiceData = {
+      invoiceNumber: req.receiptNumber || `INV-${req.id}`,
+      invoiceDate: req.fulfilledAt || req.requestedAt,
+      category: 'Table Chip Purchase',
+      playerId: req.playerId,
+      playerName: req.playerName,
+      playerPhone: req.playerPhone || playerObj?.phone,
+      playerEmail: playerObj?.email,
+      govtIdType: playerObj?.kyc.govtIdType,
+      govtIdNumber: playerObj?.kyc.govtIdNumber,
+      membershipTier: playerObj?.membershipTier,
+      tableLocation: `${req.tableNumber} • ${req.seatNumber}`,
+      items: [
+        {
+          description: `Table Playing Chips Delivery (${req.tableNumber}, ${req.seatNumber})`,
+          details: `Direct table reload of ${formatINR(req.chipsQuantity)} high-grade casino playing chips`,
+          chips: req.chipsQuantity,
+          amount: req.amount,
+        },
+      ],
+      subtotal: req.amount,
+      totalAmount: req.amount,
+      paymentMethod: req.paymentMethod,
+      paymentReference: req.receiptNumber,
+      cashierName: req.fulfilledBy || staffName,
+    };
+    setSelectedInvoice(invoiceData);
+  };
+
   const handleFulfill = (requestId: string, playerName: string, amount: number) => {
     fulfillChipRequest(requestId);
+    const updated = chipRequests.find(r => r.id === requestId);
+    if (updated) {
+      openInvoiceForChip(updated);
+    }
     setActionSuccessMessage(`Successfully dispatched ₹${formatINR(amount)} chips to ${playerName}. Cash logged to vault.`);
     try {
       confetti({
@@ -363,9 +400,17 @@ export const ChipOrderManager: React.FC = () => {
                             </button>
                           </div>
                         ) : isDelivered ? (
-                          <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-                            <div>Fulfilled by: <strong>{req.fulfilledBy || 'Cashier'}</strong></div>
-                            <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--gold-light)' }}>{req.receiptNumber}</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: '4px 10px', fontSize: '0.74rem' }}
+                              onClick={() => openInvoiceForChip(req)}
+                            >
+                              <Receipt size={13} /> Official Invoice
+                            </button>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                              By {req.fulfilledBy || 'Cashier'}
+                            </span>
                           </div>
                         ) : (
                           <div style={{ fontSize: '0.74rem', color: '#ef4444' }}>
@@ -381,6 +426,13 @@ export const ChipOrderManager: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Official Tax / Billing Invoice Modal */}
+      <ClubTaxInvoiceModal
+        invoice={selectedInvoice}
+        isOpen={!!selectedInvoice}
+        onClose={() => setSelectedInvoice(null)}
+      />
     </div>
   );
 };

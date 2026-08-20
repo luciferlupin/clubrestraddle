@@ -3,7 +3,7 @@ import { UserCheck, DollarSign, Receipt, CreditCard, Sparkles, AlertCircle, Chec
 import { useClub } from '../../context/ClubContext';
 import { PaymentMethod, TournamentEntry } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
-import { ReceiptModal } from '../common/ReceiptModal';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import confetti from 'canvas-confetti';
 
 interface PlayerTournamentEntryProps {
@@ -20,6 +20,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
     players,
     registerPlayerForTournament,
     hasPlayerCheckedInToday,
+    staffName,
   } = useClub();
 
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>(
@@ -31,8 +32,8 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
   const [tableNum, setTableNum] = useState<string>('Table 1');
   const [seatNum, setSeatNum] = useState<string>('Seat 4');
 
-  const [generatedEntry, setGeneratedEntry] = useState<TournamentEntry | null>(null);
-  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [generatedInvoice, setGeneratedInvoice] = useState<ClubInvoiceData | null>(null);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState(false);
 
   const selectedTournament = tournaments.find(t => t.id === selectedTournamentId);
@@ -46,7 +47,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
     e.preventDefault();
     if (!selectedTournamentId || !selectedPlayerId) return;
 
-    const ref = paymentRef.trim() || `TXN-REF-${Math.floor(100000 + Math.random() * 900000)}`;
+    const ref = paymentRef.trim() || `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const entry = registerPlayerForTournament({
       tournamentId: selectedTournamentId,
@@ -57,8 +58,41 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       seatNumber: seatNum,
     });
 
-    setGeneratedEntry(entry);
-    setIsReceiptOpen(true);
+    const invoiceData: ClubInvoiceData = {
+      invoiceNumber: entry.receiptNumber,
+      invoiceDate: entry.registeredAt,
+      category: 'Tournament Entry & Rake',
+      playerId: selectedPlayer?.id,
+      playerName: entry.playerName,
+      playerPhone: selectedPlayer?.phone,
+      playerEmail: selectedPlayer?.email,
+      govtIdType: selectedPlayer?.kyc.govtIdType,
+      govtIdNumber: selectedPlayer?.kyc.govtIdNumber,
+      membershipTier: selectedPlayer?.membershipTier,
+      tableLocation: `${entry.tableNumber} • ${entry.seatNumber}`,
+      items: [
+        {
+          description: `${entry.tournamentName} - Tournament Buy-in Stack`,
+          details: `${selectedTournament?.startingChips?.toLocaleString()} Starting Chips`,
+          chips: selectedTournament?.startingChips,
+          amount: entry.buyInAmount,
+        },
+        {
+          description: 'House Operating Rake & Registration Fee',
+          details: 'Club tournament organization & dealer rake',
+          amount: entry.rakeAmount,
+        },
+      ],
+      subtotal: entry.buyInAmount,
+      rakeOrFee: entry.rakeAmount,
+      totalAmount: entry.buyInAmount + entry.rakeAmount,
+      paymentMethod: entry.paymentMethod,
+      paymentReference: entry.paymentReference,
+      cashierName: entry.cashierName || staffName,
+    };
+
+    setGeneratedInvoice(invoiceData);
+    setIsInvoiceOpen(true);
     setSuccessMsg(true);
     setPaymentRef('');
 
@@ -219,16 +253,16 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '12px' }}>
           <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-            <Receipt size={18} /> Confirm Payment & Generate Official Receipt Voucher
+            <Receipt size={18} /> Confirm Physical Settlement & Generate Official Tax Invoice
           </button>
         </div>
       </form>
 
-      {/* Generated Receipt Modal */}
-      <ReceiptModal
-        entry={generatedEntry}
-        isOpen={isReceiptOpen}
-        onClose={() => setIsReceiptOpen(false)}
+      {/* Official Tax & Billing Invoice Modal */}
+      <ClubTaxInvoiceModal
+        invoice={generatedInvoice}
+        isOpen={isInvoiceOpen}
+        onClose={() => setIsInvoiceOpen(false)}
       />
     </div>
   );

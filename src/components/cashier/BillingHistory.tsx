@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { Receipt, Printer, Search, Eye, Filter, User } from 'lucide-react';
+import { Receipt, Printer, Search, Eye, Filter, User, FileText } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentEntry } from '../../types';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
-import { ReceiptModal } from '../common/ReceiptModal';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 
 export const BillingHistory: React.FC = () => {
-  const { entries } = useClub();
+  const { entries, players, tournaments } = useClub();
   const [search, setSearch] = useState('');
-  const [selectedEntry, setSelectedEntry] = useState<TournamentEntry | null>(null);
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
 
   const filteredEntries = entries.filter(
     e =>
@@ -20,8 +19,43 @@ export const BillingHistory: React.FC = () => {
   );
 
   const handleViewReceipt = (entry: TournamentEntry) => {
-    setSelectedEntry(entry);
-    setIsReceiptModalOpen(true);
+    const playerObj = players.find(p => p.id === entry.playerId);
+    const tournamentObj = tournaments.find(t => t.name === entry.tournamentName);
+
+    const invoiceData: ClubInvoiceData = {
+      invoiceNumber: entry.receiptNumber,
+      invoiceDate: entry.registeredAt,
+      category: 'Tournament Entry & Rake',
+      playerId: entry.playerId,
+      playerName: entry.playerName,
+      playerPhone: entry.playerPhone || playerObj?.phone,
+      playerEmail: playerObj?.email,
+      govtIdType: playerObj?.kyc.govtIdType,
+      govtIdNumber: playerObj?.kyc.govtIdNumber,
+      membershipTier: playerObj?.membershipTier,
+      tableLocation: `${entry.tableNumber || 'Assigned'} • ${entry.seatNumber || 'Assigned'}`,
+      items: [
+        {
+          description: `${entry.tournamentName} - Player Buy-in Stack`,
+          details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Tournament Playing Chips`,
+          chips: tournamentObj?.startingChips || 50000,
+          amount: entry.buyInAmount,
+        },
+        {
+          description: 'House Operating Rake & Registration Fee',
+          details: 'Club tournament organization & dealer rake fee',
+          amount: entry.rakeAmount,
+        },
+      ],
+      subtotal: entry.buyInAmount,
+      rakeOrFee: entry.rakeAmount,
+      totalAmount: entry.buyInAmount + entry.rakeAmount,
+      paymentMethod: entry.paymentMethod,
+      paymentReference: entry.paymentReference,
+      cashierName: entry.cashierName,
+    };
+
+    setSelectedInvoice(invoiceData);
   };
 
   return (
@@ -113,9 +147,9 @@ export const BillingHistory: React.FC = () => {
                       <button
                         className="btn btn-secondary btn-sm"
                         onClick={() => handleViewReceipt(entry)}
-                        title="View and Print Payment Receipt"
+                        title="View Official Tax Invoice & Billing Voucher"
                       >
-                        <Eye size={13} /> View Voucher
+                        <FileText size={13} /> Official Invoice
                       </button>
                     </td>
                   </tr>
@@ -126,10 +160,11 @@ export const BillingHistory: React.FC = () => {
         </div>
       )}
 
-      <ReceiptModal
-        entry={selectedEntry}
-        isOpen={isReceiptModalOpen}
-        onClose={() => setIsReceiptModalOpen(false)}
+      {/* Official Tax / Billing Invoice Modal */}
+      <ClubTaxInvoiceModal
+        invoice={selectedInvoice}
+        isOpen={!!selectedInvoice}
+        onClose={() => setSelectedInvoice(null)}
       />
     </div>
   );

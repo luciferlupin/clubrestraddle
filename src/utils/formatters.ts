@@ -96,3 +96,43 @@ export const maskGovtId = (idNumber: string): string => {
   const masked = '•'.repeat(Math.min(clean.length - 4, 8));
   return `${masked}${visible}`;
 };
+
+export const numberToINRWords = (num: number): string => {
+  if (num === 0) return 'Zero Rupees Only';
+  const a = [
+    '', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ',
+    'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '
+  ];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  const inWords = (n: number): string => {
+    let str = '';
+    if (n > 99) {
+      str += a[Math.floor(n / 100)] + 'Hundred ';
+      n %= 100;
+    }
+    if (n > 19) {
+      str += b[Math.floor(n / 10)] + ' ' + a[n % 10];
+    } else {
+      str += a[n];
+    }
+    return str;
+  };
+
+  let n = Math.floor(num);
+  let words = '';
+
+  const crore = Math.floor(n / 10000000);
+  n %= 10000000;
+  const lakh = Math.floor(n / 100000);
+  n %= 100000;
+  const thousand = Math.floor(n / 1000);
+  n %= 1000;
+
+  if (crore > 0) words += inWords(crore) + 'Crore ';
+  if (lakh > 0) words += inWords(lakh) + 'Lakh ';
+  if (thousand > 0) words += inWords(thousand) + 'Thousand ';
+  if (n > 0) words += inWords(n);
+
+  return words.trim() + ' Rupees Only';
+};

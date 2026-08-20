@@ -23,7 +23,7 @@ import { TournamentStatus, PaymentMethod, CashCategory, TournamentEntry, Expense
 import { formatCurrency, formatDateTime, formatDateOnly, formatINR } from '../../utils/formatters';
 import { TournamentStatusBadge, CashFlowBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
-import { ReceiptModal } from '../common/ReceiptModal';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import confetti from 'canvas-confetti';
 
 export const MobileCashierPortal: React.FC = () => {
@@ -55,8 +55,7 @@ export const MobileCashierPortal: React.FC = () => {
   const [isCashOutOpen, setIsCashOutOpen] = useState(false);
   const [isCreateTrnOpen, setIsCreateTrnOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
-  const [selectedEntryForReceipt, setSelectedEntryForReceipt] = useState<TournamentEntry | null>(null);
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
 
   // Forms
   const [trnFormData, setTrnFormData] = useState({
@@ -152,8 +151,43 @@ export const MobileCashierPortal: React.FC = () => {
       seatNumber: entryFormData.seatNum,
     });
 
-    setSelectedEntryForReceipt(entry);
-    setIsReceiptModalOpen(true);
+    const playerObj = players.find(p => p.id === entryFormData.playerId);
+    const tournamentObj = tournaments.find(t => t.id === entryFormData.tournamentId);
+
+    const invoiceData: ClubInvoiceData = {
+      invoiceNumber: entry.receiptNumber,
+      invoiceDate: entry.registeredAt,
+      category: 'Tournament Entry & Rake',
+      playerId: playerObj?.id,
+      playerName: entry.playerName,
+      playerPhone: playerObj?.phone,
+      playerEmail: playerObj?.email,
+      govtIdType: playerObj?.kyc.govtIdType,
+      govtIdNumber: playerObj?.kyc.govtIdNumber,
+      membershipTier: playerObj?.membershipTier,
+      tableLocation: `${entry.tableNumber} • ${entry.seatNumber}`,
+      items: [
+        {
+          description: `${entry.tournamentName} - Tournament Buy-in Stack`,
+          details: `${tournamentObj?.startingChips?.toLocaleString()} Starting Playing Chips`,
+          chips: tournamentObj?.startingChips,
+          amount: entry.buyInAmount,
+        },
+        {
+          description: 'House Operating Rake & Registration Fee',
+          details: 'Club tournament organization & dealer rake',
+          amount: entry.rakeAmount,
+        },
+      ],
+      subtotal: entry.buyInAmount,
+      rakeOrFee: entry.rakeAmount,
+      totalAmount: entry.buyInAmount + entry.rakeAmount,
+      paymentMethod: entry.paymentMethod,
+      paymentReference: entry.paymentReference,
+      cashierName: entry.cashierName || staffName,
+    };
+
+    setSelectedInvoice(invoiceData);
     setEntryFormData(prev => ({ ...prev, paymentRef: '' }));
 
     try {
@@ -692,32 +726,67 @@ export const MobileCashierPortal: React.FC = () => {
             <p className="m-card-subtitle">Tap any voucher to preview or print</p>
           </div>
 
-          {entries.map(e => (
-            <div
-              key={e.id}
-              className="m-list-card"
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                setSelectedEntryForReceipt(e);
-                setIsReceiptModalOpen(true);
-              }}
-            >
-              <div className="m-list-row">
-                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--gold-light)', fontSize: '0.8rem' }}>
-                  {e.receiptNumber}
-                </span>
-                <span className="tabular-num" style={{ fontWeight: 800, color: '#ffffff' }}>
-                  {formatCurrency(e.buyInAmount + e.rakeAmount)}
-                </span>
+          {entries.map(e => {
+            const playerObj = players.find(p => p.id === e.playerId);
+            const tournamentObj = tournaments.find(t => t.name === e.tournamentName);
+
+            const invoiceData: ClubInvoiceData = {
+              invoiceNumber: e.receiptNumber,
+              invoiceDate: e.registeredAt,
+              category: 'Tournament Entry & Rake',
+              playerId: e.playerId,
+              playerName: e.playerName,
+              playerPhone: e.playerPhone || playerObj?.phone,
+              playerEmail: playerObj?.email,
+              govtIdType: playerObj?.kyc.govtIdType,
+              govtIdNumber: playerObj?.kyc.govtIdNumber,
+              membershipTier: playerObj?.membershipTier,
+              tableLocation: `${e.tableNumber} • ${e.seatNumber}`,
+              items: [
+                {
+                  description: `${e.tournamentName} - Tournament Buy-in Stack`,
+                  details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Playing Chips`,
+                  chips: tournamentObj?.startingChips || 50000,
+                  amount: e.buyInAmount,
+                },
+                {
+                  description: 'House Operating Rake & Registration Fee',
+                  details: 'Club tournament organization & dealer rake fee',
+                  amount: e.rakeAmount,
+                },
+              ],
+              subtotal: e.buyInAmount,
+              rakeOrFee: e.rakeAmount,
+              totalAmount: e.buyInAmount + e.rakeAmount,
+              paymentMethod: e.paymentMethod,
+              paymentReference: e.paymentReference,
+              cashierName: e.cashierName || staffName,
+            };
+
+            return (
+              <div
+                key={e.id}
+                className="m-list-card"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setSelectedInvoice(invoiceData)}
+              >
+                <div className="m-list-row">
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--gold-light)', fontSize: '0.8rem' }}>
+                    {e.receiptNumber}
+                  </span>
+                  <span className="tabular-num" style={{ fontWeight: 800, color: '#ffffff' }}>
+                    {formatCurrency(e.buyInAmount + e.rakeAmount)}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{e.playerName}</div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>{e.tournamentName}</div>
+                <div className="m-list-row" style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                  <span>{e.tableNumber} • {e.seatNumber}</span>
+                  <span style={{ color: 'var(--gold-light)' }}>Tap to View Official Invoice →</span>
+                </div>
               </div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{e.playerName}</div>
-              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>{e.tournamentName}</div>
-              <div className="m-list-row" style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
-                <span>{e.tableNumber} • {e.seatNumber}</span>
-                <span style={{ color: 'var(--gold-light)' }}>Tap to View Voucher →</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -960,11 +1029,11 @@ export const MobileCashierPortal: React.FC = () => {
         </form>
       </MobileBottomDrawer>
 
-      {/* Receipt Modal */}
-      <ReceiptModal
-        entry={selectedEntryForReceipt}
-        isOpen={isReceiptModalOpen}
-        onClose={() => setIsReceiptModalOpen(false)}
+      {/* Official Tax / Billing Invoice Modal */}
+      <ClubTaxInvoiceModal
+        invoice={selectedInvoice}
+        isOpen={!!selectedInvoice}
+        onClose={() => setSelectedInvoice(null)}
       />
 
       {/* Bottom Navigation Bar */}

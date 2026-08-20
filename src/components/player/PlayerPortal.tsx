@@ -23,6 +23,7 @@ import { PlayerPass } from './PlayerPass';
 import { CheckInHistory } from './CheckInHistory';
 import { PlayerProfile } from './PlayerProfile';
 import { TableChipRequestModal } from './TableChipRequestModal';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { TierBadge, KYCBadge, EntryBadge } from '../common/Badge';
 import { formatCurrency, formatDateTime, formatDateOnly, formatINR } from '../../utils/formatters';
 
@@ -45,6 +46,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
   } = useClub();
   const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially);
   const [isChipModalOpen, setIsChipModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
@@ -463,40 +465,87 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
                           <th>Seating</th>
                           <th>Payment Method</th>
                           <th>Date</th>
+                          <th style={{ textAlign: 'right' }}>Invoice</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {playerEntries.map(entry => (
-                          <tr key={entry.id}>
-                            <td className="tabular-num" style={{ color: '#ffffff', fontWeight: 700 }}>
-                              {entry.receiptNumber}
-                            </td>
-                            <td style={{ fontWeight: 600, color: '#ffffff' }}>
-                              {entry.tournamentName}
-                            </td>
-                            <td>
-                              <div style={{ fontWeight: 700, color: '#ffffff' }}>
-                                {formatCurrency(entry.buyInAmount + entry.rakeAmount)}
-                              </div>
-                              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                                ({formatCurrency(entry.buyInAmount)} + {formatCurrency(entry.rakeAmount)})
-                              </span>
-                            </td>
-                            <td>
-                              <span className="badge badge-default" style={{ fontSize: '0.74rem' }}>
-                                {entry.tableNumber || 'Table 1'} • {entry.seatNumber || 'Seat 1'}
-                              </span>
-                            </td>
-                            <td>
-                              <span style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
-                                {entry.paymentMethod} ({entry.paymentReference})
-                              </span>
-                            </td>
-                            <td style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                              {formatDateTime(entry.registeredAt)}
-                            </td>
-                          </tr>
-                        ))}
+                        {playerEntries.map(entry => {
+                          const tournamentObj = tournaments.find(t => t.name === entry.tournamentName);
+
+                          const invoiceData: ClubInvoiceData = {
+                            invoiceNumber: entry.receiptNumber,
+                            invoiceDate: entry.registeredAt,
+                            category: 'Tournament Entry & Rake',
+                            playerId: currentPlayer.id,
+                            playerName: currentPlayer.fullName,
+                            playerPhone: currentPlayer.phone,
+                            playerEmail: currentPlayer.email,
+                            govtIdType: currentPlayer.kyc.govtIdType,
+                            govtIdNumber: currentPlayer.kyc.govtIdNumber,
+                            membershipTier: currentPlayer.membershipTier,
+                            tableLocation: `${entry.tableNumber || 'Table 1'} • ${entry.seatNumber || 'Seat 1'}`,
+                            items: [
+                              {
+                                description: `${entry.tournamentName} - Tournament Buy-in Stack`,
+                                details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Tournament Chips`,
+                                chips: tournamentObj?.startingChips || 50000,
+                                amount: entry.buyInAmount,
+                              },
+                              {
+                                description: 'House Operating Rake & Registration Fee',
+                                details: 'Club tournament organization & dealer rake',
+                                amount: entry.rakeAmount,
+                              },
+                            ],
+                            subtotal: entry.buyInAmount,
+                            rakeOrFee: entry.rakeAmount,
+                            totalAmount: entry.buyInAmount + entry.rakeAmount,
+                            paymentMethod: entry.paymentMethod,
+                            paymentReference: entry.paymentReference,
+                            cashierName: entry.cashierName,
+                          };
+
+                          return (
+                            <tr key={entry.id}>
+                              <td className="tabular-num" style={{ color: '#ffffff', fontWeight: 700 }}>
+                                {entry.receiptNumber}
+                              </td>
+                              <td style={{ fontWeight: 600, color: '#ffffff' }}>
+                                {entry.tournamentName}
+                              </td>
+                              <td>
+                                <div style={{ fontWeight: 700, color: '#ffffff' }}>
+                                  {formatCurrency(entry.buyInAmount + entry.rakeAmount)}
+                                </div>
+                                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                                  ({formatCurrency(entry.buyInAmount)} + {formatCurrency(entry.rakeAmount)})
+                                </span>
+                              </td>
+                              <td>
+                                <span className="badge badge-default" style={{ fontSize: '0.74rem' }}>
+                                  {entry.tableNumber || 'Table 1'} • {entry.seatNumber || 'Seat 1'}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
+                                  {entry.paymentMethod} ({entry.paymentReference})
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                                {formatDateTime(entry.registeredAt)}
+                              </td>
+                              <td style={{ textAlign: 'right' }}>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  style={{ padding: '4px 8px', fontSize: '0.72rem' }}
+                                  onClick={() => setSelectedInvoice(invoiceData)}
+                                >
+                                  <Receipt size={12} /> Tax Invoice
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -524,6 +573,13 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
       <TableChipRequestModal
         isOpen={isChipModalOpen}
         onClose={() => setIsChipModalOpen(false)}
+      />
+
+      {/* Official Tax / Billing Invoice Modal */}
+      <ClubTaxInvoiceModal
+        invoice={selectedInvoice}
+        isOpen={!!selectedInvoice}
+        onClose={() => setSelectedInvoice(null)}
       />
     </div>
   );
