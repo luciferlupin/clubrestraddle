@@ -205,7 +205,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
               ariaLabel="Player portal sections"
               activeId={activeTab}
               items={playerSections}
-              onChange={setActiveTab}
+              onChange={(id) => setActiveTab(id as PlayerTab)}
               className="desktop-section-nav-player"
             />
 
