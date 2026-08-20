@@ -1,7 +1,7 @@
 -- ==============================================================================
 -- CLUB RE STRADDLE • POKER CLUB OPERATING SYSTEM DATABASE SCHEMA
 -- Target Database: Supabase / PostgreSQL 15+
--- Optimized for High-Speed Realtime Sync, Clean Audit Logging & Role Access
+-- Optimized for High-Speed Realtime Sync, Clean Audit Logging, Full CRUD & Role Access
 -- ==============================================================================
 
 -- 1. EXTENSIONS & INITIAL SETUP
@@ -11,6 +11,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 DROP VIEW IF EXISTS v_active_door_queue CASCADE;
 DROP VIEW IF EXISTS v_treasury_summary CASCADE;
 DROP VIEW IF EXISTS v_tournament_summary CASCADE;
+DROP TABLE IF EXISTS chip_requests CASCADE;
 DROP TABLE IF EXISTS audit_logs CASCADE;
 DROP TABLE IF EXISTS expenses CASCADE;
 DROP TABLE IF EXISTS cash_transactions CASCADE;
@@ -47,7 +48,7 @@ CREATE TABLE players (
     full_name VARCHAR(120) NOT NULL,
     phone VARCHAR(32) NOT NULL,
     email VARCHAR(120) NOT NULL,
-    membership_tier VARCHAR(24) DEFAULT 'Standard' CHECK (membership_tier IN ('Standard', 'Silver', 'Gold', 'VIP', 'High Roller')),
+    membership_tier VARCHAR(24) DEFAULT 'Standard' CHECK (membership_tier IN ('Standard', 'Silver', 'Gold', 'VIP', 'High Roller', 'Bronze', 'Diamond')),
     kyc_status VARCHAR(24) DEFAULT 'pending' CHECK (kyc_status IN ('pending', 'verified', 'rejected')),
     
     -- KYC Government Identity
@@ -137,7 +138,7 @@ CREATE TABLE tournament_entries (
     receipt_number VARCHAR(64) UNIQUE NOT NULL,
     seat_number VARCHAR(32),
     table_number VARCHAR(32),
-    entry_status VARCHAR(24) DEFAULT 'Registered' CHECK (entry_status IN ('Registered', 'Seated', 'Eliminated', 'Re-entry')),
+    entry_status VARCHAR(24) DEFAULT 'Registered' CHECK (entry_status IN ('Registered', 'Seated', 'Eliminated', 'Re-entry', 'Refunded')),
     cashier_name VARCHAR(120) NOT NULL,
     registered_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -225,7 +226,26 @@ CREATE INDEX idx_chip_requests_status ON chip_requests(status);
 CREATE INDEX idx_chip_requests_player ON chip_requests(player_id);
 
 -- ------------------------------------------------------------------------------
--- 11. REALTIME PUBLICATION ENABLEMENT (Supabase WebSockets)
+-- 11. AUTOMATIC UPDATED_AT TRIGGER FUNCTION
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER trg_update_players_updated_at
+BEFORE UPDATE ON players
+FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER trg_update_tournaments_updated_at
+BEFORE UPDATE ON tournaments
+FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+-- ------------------------------------------------------------------------------
+-- 12. REALTIME PUBLICATION ENABLEMENT (Supabase WebSockets)
 -- ------------------------------------------------------------------------------
 DO $$
 BEGIN
@@ -237,7 +257,7 @@ EXCEPTION
 END $$;
 
 -- ------------------------------------------------------------------------------
--- 12. ROW LEVEL SECURITY (RLS) POLICIES
+-- 13. ROW LEVEL SECURITY (RLS) POLICIES (Full CRUD for Application Tables)
 -- ------------------------------------------------------------------------------
 ALTER TABLE staff_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
@@ -260,7 +280,7 @@ CREATE POLICY "Public Read/Write Audit Logs" ON audit_logs FOR ALL USING (true) 
 CREATE POLICY "Public Read/Write Chip Requests" ON chip_requests FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------------------------
--- 12. HELPER REPORTING VIEWS
+-- 14. HELPER REPORTING VIEWS
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_active_door_queue AS
 SELECT 
@@ -304,7 +324,7 @@ SELECT
 FROM cash_transactions;
 
 -- ------------------------------------------------------------------------------
--- 13. SEED DEFAULT SUPER ADMIN & INITIAL OPERATIONAL DATA (CLUB RE STRADDLE)
+-- 15. SEED DEFAULT SUPER ADMIN & INITIAL OPERATIONAL DATA (CLUB RE STRADDLE)
 -- ------------------------------------------------------------------------------
 
 -- Staff Accounts (Club Owners, Admin, Cashier, Security)
