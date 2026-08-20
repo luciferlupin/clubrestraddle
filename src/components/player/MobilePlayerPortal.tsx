@@ -15,11 +15,13 @@ import {
   Phone,
   Mail,
   ChevronRight,
+  Trophy,
+  Receipt,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatTimeOnly, formatDateOnly, maskGovtId } from '../../utils/formatters';
+import { formatTimeOnly, formatDateOnly, maskGovtId, formatCurrency, formatDateTime } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileKYCForm } from './MobileKYCForm';
 import { MobileRegistrationSuccess } from './MobileRegistrationSuccess';
@@ -38,6 +40,8 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   const {
     currentPlayer,
     checkIns,
+    tournaments,
+    entries,
     hasPlayerCheckedInToday,
     performDailyCheckIn,
   } = useClub();
@@ -368,6 +372,86 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Today's Tournaments & Events */}
+              <div className="m-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Trophy size={18} color="#e11d48" />
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff' }}>Club Tournaments</span>
+                  </div>
+                  <span className="badge badge-default">{tournaments.length} Events</span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {tournaments.map(t => (
+                    <div
+                      key={t.id}
+                      style={{
+                        background: '#14060a',
+                        border: '1px solid rgba(225, 29, 72, 0.35)',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#ffffff' }}>{t.name}</span>
+                        <span className={`badge ${t.status === 'Running' ? 'badge-danger' : t.status === 'Registering' ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.65rem' }}>
+                          {t.status}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#cbd5e1' }}>
+                        <span>Buy-in: <strong style={{ color: '#ffffff' }}>{formatCurrency(t.buyInFee)} + {formatCurrency(t.clubRake)}</strong></span>
+                        <span style={{ color: '#fb7185', fontWeight: 700 }}>GTD: {formatCurrency(t.guaranteedPrizePool)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* My Tournament Entries & Billing */}
+              {entries.filter(e => e.playerId === currentPlayer.id).length > 0 && (
+                <div className="m-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Receipt size={18} color="#e11d48" />
+                      <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff' }}>My Official Receipts</span>
+                    </div>
+                    <span className="badge badge-default">
+                      {entries.filter(e => e.playerId === currentPlayer.id).length} Entries
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {entries.filter(e => e.playerId === currentPlayer.id).map(ent => (
+                      <div
+                        key={ent.id}
+                        style={{
+                          background: '#120508',
+                          border: '1px solid rgba(225, 29, 72, 0.3)',
+                          borderRadius: '12px',
+                          padding: '10px 12px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                          <span style={{ fontWeight: 700, color: '#ffffff' }}>{ent.tournamentName}</span>
+                          <span style={{ color: '#ffffff', fontWeight: 800 }}>{formatCurrency(ent.buyInAmount + ent.rakeAmount)}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#94a3b8' }}>
+                          <span>Receipt: {ent.receiptNumber}</span>
+                          <span>{ent.tableNumber} • {ent.seatNumber}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
 

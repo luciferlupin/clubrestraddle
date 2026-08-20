@@ -1,11 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, UserCheck, QrCode, Shield, CheckCircle, User, History } from 'lucide-react';
+import {
+  UserPlus,
+  UserCheck,
+  QrCode,
+  Shield,
+  CheckCircle,
+  User,
+  History,
+  Trophy,
+  Receipt,
+  Sparkles,
+  Calendar,
+  Clock,
+  MapPin,
+  Flame,
+} from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { KYCRegistrationForm } from './KYCRegistrationForm';
 import { DailyCheckInCard } from './DailyCheckInCard';
 import { PlayerPass } from './PlayerPass';
 import { CheckInHistory } from './CheckInHistory';
 import { PlayerProfile } from './PlayerProfile';
+import { TierBadge, KYCBadge, EntryBadge } from '../common/Badge';
+import { formatCurrency, formatDateTime, formatDateOnly } from '../../utils/formatters';
 
 interface PlayerPortalProps {
   onOpenQR: () => void;
@@ -13,9 +30,9 @@ interface PlayerPortalProps {
 }
 
 export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPlayerFormInitially = false }) => {
-  const { currentPlayer, checkIns, hasPlayerCheckedInToday } = useClub();
+  const { currentPlayer, checkIns, tournaments, entries, hasPlayerCheckedInToday } = useClub();
   const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially);
-  const [activeTab, setActiveTab] = useState<'pass' | 'history' | 'profile'>('pass');
+  const [activeTab, setActiveTab] = useState<'pass' | 'tournaments' | 'billing' | 'profile' | 'history'>('pass');
 
   useEffect(() => {
     if (showNewPlayerFormInitially) {
@@ -25,6 +42,10 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
 
   const playerCheckIns = currentPlayer
     ? checkIns.filter(c => c.playerId === currentPlayer.id)
+    : [];
+
+  const playerEntries = currentPlayer
+    ? entries.filter(e => e.playerId === currentPlayer.id)
     : [];
 
   const todayCheckIn = currentPlayer ? hasPlayerCheckedInToday(currentPlayer.id) : undefined;
@@ -49,9 +70,9 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
               background: 'rgba(225, 29, 72, 0.2)',
               border: '1px solid var(--border-red)',
               display: 'flex',
@@ -63,11 +84,15 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
             <QrCode size={22} />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff' }}>
-              Player Portal • Daily Club Entry Station
+            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#ffffff' }}>
+              {currentPlayer ? `${currentPlayer.fullName}'s Dashboard` : 'Player Portal • Daily Club Entry'}
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              <strong>Daily Rule:</strong> New player → Complete KYC + check-in. Existing player → Only daily check-in required.
+            <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+              {currentPlayer ? (
+                <>Member ID: <strong style={{ color: '#ffffff' }}>{currentPlayer.id}</strong> • Total Visits: <strong style={{ color: '#ffffff' }}>{currentPlayer.totalVisits}</strong></>
+              ) : (
+                <>New player → Complete KYC. Registered member → Daily door check-in.</>
+              )}
             </div>
           </div>
         </div>
@@ -79,11 +104,11 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
           >
             {showKYCForm ? (
               <>
-                <UserCheck size={16} /> View Current Player
+                <UserCheck size={16} /> View Member Dashboard
               </>
             ) : (
               <>
-                <UserPlus size={16} /> Register as New Player (KYC)
+                <UserPlus size={16} /> Register New Player (KYC)
               </>
             )}
           </button>
@@ -107,29 +132,42 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
             <DailyCheckInCard player={currentPlayer} />
           </div>
 
-          {/* Right Column: Tabbed View for History, KYC Profile */}
+          {/* Right Column: Tabbed View for Dashboard, Tournaments, Billing, Profile, History */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div className="sub-nav-tabs">
               <button
                 className={`sub-tab-btn ${activeTab === 'pass' ? 'active' : ''}`}
                 onClick={() => setActiveTab('pass')}
               >
-                <CheckCircle size={15} /> Check-In & Status
+                <CheckCircle size={15} /> Overview & Clearance
+              </button>
+              <button
+                className={`sub-tab-btn ${activeTab === 'tournaments' ? 'active' : ''}`}
+                onClick={() => setActiveTab('tournaments')}
+              >
+                <Trophy size={15} /> Tournaments ({tournaments.length})
+              </button>
+              <button
+                className={`sub-tab-btn ${activeTab === 'billing' ? 'active' : ''}`}
+                onClick={() => setActiveTab('billing')}
+              >
+                <Receipt size={15} /> Billing Receipts ({playerEntries.length})
               </button>
               <button
                 className={`sub-tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
                 onClick={() => setActiveTab('profile')}
               >
-                <User size={15} /> Profile & KYC Details
+                <User size={15} /> KYC Credentials
               </button>
               <button
                 className={`sub-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
                 onClick={() => setActiveTab('history')}
               >
-                <History size={15} /> Check-In History ({playerCheckIns.length})
+                <History size={15} /> Visits ({playerCheckIns.length})
               </button>
             </div>
 
+            {/* TAB 1: OVERVIEW & CLEARANCE */}
             {activeTab === 'pass' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <PlayerProfile player={currentPlayer} />
@@ -137,8 +175,153 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
               </div>
             )}
 
+            {/* TAB 2: TOURNAMENTS & EVENTS */}
+            {activeTab === 'tournaments' && (
+              <div className="card">
+                <div className="card-header">
+                  <div>
+                    <h3 className="card-title">
+                      <Trophy size={18} color="#e11d48" />
+                      Club Tournaments & Events Schedule
+                    </h3>
+                    <p className="card-subtitle">
+                      Live tournament fixtures, guaranteed prize pools, and entry details.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {tournaments.map(t => (
+                    <div
+                      key={t.id}
+                      style={{
+                        background: '#14060a',
+                        border: '1px solid rgba(225, 29, 72, 0.4)',
+                        borderRadius: '14px',
+                        padding: '16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#ffffff' }}>
+                            {t.name}
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                            Starts: {formatDateTime(t.startTime)} • Blinds: {t.blindLevelsMinutes} mins
+                          </div>
+                        </div>
+                        <span className={`badge ${t.status === 'Running' ? 'badge-danger' : t.status === 'Registering' ? 'badge-success' : 'badge-warning'}`}>
+                          <span className="badge-dot" /> {t.status}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', background: '#0e0407', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div>
+                          <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase' }}>Buy-In + Rake</span>
+                          <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>
+                            {formatCurrency(t.buyInFee)} + {formatCurrency(t.clubRake)}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase' }}>Guaranteed Prize</span>
+                          <div style={{ fontWeight: 800, color: '#fb7185', fontSize: '0.95rem' }}>
+                            {formatCurrency(t.guaranteedPrizePool)}
+                          </div>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase' }}>Starting Stack</span>
+                          <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>
+                            {t.startingChips.toLocaleString()} Chips
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: BILLING & TOURNAMENT RECEIPTS */}
+            {activeTab === 'billing' && (
+              <div className="card">
+                <div className="card-header">
+                  <div>
+                    <h3 className="card-title">
+                      <Receipt size={18} color="#e11d48" />
+                      My Tournament Entries & Official Receipts
+                    </h3>
+                    <p className="card-subtitle">
+                      Official digital receipts, table allocations, and seat assignments.
+                    </p>
+                  </div>
+                  <span className="badge badge-default">{playerEntries.length} Total Entries</span>
+                </div>
+
+                {playerEntries.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-dim)' }}>
+                    <Receipt size={36} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+                    <p style={{ fontSize: '0.9rem' }}>No tournament registrations recorded yet.</p>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '4px' }}>Visit the Cashier Station to register for upcoming tournaments or cash tables.</p>
+                  </div>
+                ) : (
+                  <div className="table-container">
+                    <table className="custom-table">
+                      <thead>
+                        <tr>
+                          <th>Receipt #</th>
+                          <th>Tournament</th>
+                          <th>Buy-In & Rake</th>
+                          <th>Seating</th>
+                          <th>Payment Method</th>
+                          <th>Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {playerEntries.map(entry => (
+                          <tr key={entry.id}>
+                            <td className="tabular-num" style={{ color: '#ffffff', fontWeight: 700 }}>
+                              {entry.receiptNumber}
+                            </td>
+                            <td style={{ fontWeight: 600, color: '#ffffff' }}>
+                              {entry.tournamentName}
+                            </td>
+                            <td>
+                              <div style={{ fontWeight: 700, color: '#ffffff' }}>
+                                {formatCurrency(entry.buyInAmount + entry.rakeAmount)}
+                              </div>
+                              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                                ({formatCurrency(entry.buyInAmount)} + {formatCurrency(entry.rakeAmount)})
+                              </span>
+                            </td>
+                            <td>
+                              <span className="badge badge-default" style={{ fontSize: '0.74rem' }}>
+                                {entry.tableNumber || 'Table 1'} • {entry.seatNumber || 'Seat 1'}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
+                                {entry.paymentMethod} ({entry.paymentReference})
+                              </span>
+                            </td>
+                            <td style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                              {formatDateTime(entry.registeredAt)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 4: PROFILE & KYC DETAILS */}
             {activeTab === 'profile' && <PlayerProfile player={currentPlayer} />}
 
+            {/* TAB 5: VISIT HISTORY */}
             {activeTab === 'history' && <CheckInHistory checkIns={playerCheckIns} />}
           </div>
         </div>
