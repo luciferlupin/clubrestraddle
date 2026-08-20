@@ -20,6 +20,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
         return { name: 'Member', color: '#ffffff' };
       case 'cashier':
         return { name: 'Cashier', color: '#ffffff' };
+      case 'cash':
+        return { name: 'Cash Desk', color: '#fbbf24' };
       case 'security':
         return { name: 'Security', color: '#ffffff' };
       case 'admin':
@@ -43,7 +45,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
         <div className="mobile-logo-text">
           <span className="mobile-logo-title">CLUB RE STRADDLE</span>
           <span className="mobile-portal-pill" style={{ color: portalInfo.color, display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <CardSuit suit={activeRole === 'player' ? 'spade' : activeRole === 'cashier' ? 'diamond' : activeRole === 'security' ? 'club' : 'heart'} size={9} />
+            <CardSuit suit={activeRole === 'player' ? 'spade' : activeRole === 'cashier' ? 'diamond' : activeRole === 'cash' ? 'diamond' : activeRole === 'security' ? 'club' : 'heart'} size={9} />
             {portalInfo.name}
           </span>
         </div>

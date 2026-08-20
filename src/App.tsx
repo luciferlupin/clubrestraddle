@@ -9,12 +9,14 @@ import { PlayerPortal } from './components/player/PlayerPortal';
 import { CashierPortal } from './components/cashier/CashierPortal';
 import { SecurityPortal } from './components/security/SecurityPortal';
 import { AdminPortal } from './components/admin/AdminPortal';
+import { CashPortal } from './components/cash/CashPortal';
 
 // Portals (Dedicated Mobile Viewport)
 import { MobilePlayerPortal } from './components/player/MobilePlayerPortal';
 import { MobileCashierPortal } from './components/cashier/MobileCashierPortal';
 import { MobileSecurityPortal } from './components/security/MobileSecurityPortal';
 import { MobileAdminPortal } from './components/admin/MobileAdminPortal';
+import { MobileCashPortal } from './components/cash/MobileCashPortal';
 import { MobileHeader } from './components/common/MobileHeader';
 import { RoleSwitcherDrawer } from './components/common/RoleSwitcherDrawer';
 import { LogOut } from 'lucide-react';
@@ -55,8 +57,15 @@ const MainApp: React.FC = () => {
     const scanParam = params.get('scan');
     const playerParam = params.get('player') || params.get('playerId');
 
-    // 1. Staff OS Direct Links: /staff, /admin, /cashier, /security or ?portal=staff/admin/cashier/security
+    // 1. Dedicated Cash Desk Direct Link: /cash, /treasury or ?portal=cash/treasury
     if (
+      pathname.startsWith('/cash') ||
+      pathname.startsWith('/treasury') ||
+      portalParam === 'cash' ||
+      portalParam === 'treasury'
+    ) {
+      setActiveRole('cash');
+    } else if (
       pathname.startsWith('/staff') ||
       pathname.startsWith('/admin') ||
       pathname.startsWith('/cashier') ||
@@ -128,6 +137,12 @@ const MainApp: React.FC = () => {
               </PortalGuard>
             )}
 
+            {activeRole === 'cash' && (
+              <PortalGuard requiredRole="cash">
+                <MobileCashPortal />
+              </PortalGuard>
+            )}
+
             {activeRole === 'security' && (
               <PortalGuard requiredRole="security">
                 <MobileSecurityPortal />
@@ -155,6 +170,12 @@ const MainApp: React.FC = () => {
             {activeRole === 'cashier' && (
               <PortalGuard requiredRole="cashier">
                 <CashierPortal />
+              </PortalGuard>
+            )}
+
+            {activeRole === 'cash' && (
+              <PortalGuard requiredRole="cash">
+                <CashPortal />
               </PortalGuard>
             )}
 

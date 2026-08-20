@@ -24,9 +24,9 @@ export const MobileAdminPortal: React.FC = () => {
   const {
     staffName,
     players,
+    tournaments,
     todayCheckIns,
     checkIns,
-    tournaments,
     chipRequests,
     pendingChipOrdersCount,
     expenses,
@@ -39,37 +39,7 @@ export const MobileAdminPortal: React.FC = () => {
     resetToDemoData,
   } = useClub();
 
-  // Read initial tab from URL query params or path (e.g. ?tab=finance or ?portal=admin&tab=finance)
-  const [activeTab, setActiveTabState] = useState<'dashboard' | 'staff' | 'players' | 'attendance' | 'finance' | 'audit'>(() => {
-    if (typeof window === 'undefined') return 'dashboard';
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = (params.get('tab') || params.get('view') || '').toLowerCase();
-    
-    if (tabParam === 'finance' || tabParam === 'cash' || tabParam === 'treasury' || tabParam === 'expenses') {
-      return 'finance';
-    }
-    if (tabParam === 'staff') return 'staff';
-    if (tabParam === 'players' || tabParam === 'kyc') return 'players';
-    if (tabParam === 'attendance') return 'attendance';
-    if (tabParam === 'audit') return 'audit';
-    
-    return 'dashboard';
-  });
-
-  const setActiveTab = (tab: 'dashboard' | 'staff' | 'players' | 'attendance' | 'finance' | 'audit') => {
-    setActiveTabState(tab);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('portal', 'admin');
-      if (tab === 'dashboard') {
-        url.searchParams.delete('tab');
-      } else {
-        url.searchParams.set('tab', tab);
-      }
-      window.history.replaceState({}, '', url.toString());
-    }
-  };
-
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'staff' | 'players' | 'attendance' | 'finance' | 'audit'>('dashboard');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
@@ -88,8 +58,6 @@ export const MobileAdminPortal: React.FC = () => {
   const approvedTodayCount = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
   const deliveredChipOrders = chipRequests.filter(r => r.status === 'delivered');
   const totalChipVolume = deliveredChipOrders.reduce((sum, r) => sum + r.amount, 0);
-  const activeTournamentsCount = (tournaments || []).filter(t => t.status === 'Registering' || t.status === 'Running').length;
-  const verifiedCount = players.filter(p => p.kycStatus === 'verified').length;
 
   const handleExpenseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,14 +108,14 @@ export const MobileAdminPortal: React.FC = () => {
       {/* TAB 1: EXECUTIVE DASHBOARD & TIMELINE */}
       {activeTab === 'dashboard' && (
         <>
-          {/* Top KPI Cards (Zero Cash on Main Dashboard) */}
+          {/* Top KPI Cards */}
           <div className="m-stats-grid">
             <div className="m-stat-card" style={{ borderColor: 'rgba(255, 255, 255, 0.25)' }}>
               <span className="m-stat-label">Total Players</span>
               <span className="m-stat-val" style={{ color: '#ffffff' }}>
                 {players.length}
               </span>
-              <span className="m-stat-sub">{verifiedCount} KYC Verified</span>
+              <span className="m-stat-sub">{players.filter(p => p.kycStatus === 'verified').length} KYC Verified</span>
             </div>
 
             <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.4)' }}>
@@ -168,12 +136,12 @@ export const MobileAdminPortal: React.FC = () => {
               <span className="m-stat-sub">{pendingChipOrdersCount} Pending · ₹{formatINR(totalChipVolume)}</span>
             </div>
 
-            <div className="m-stat-card" style={{ borderColor: 'var(--border-subtle)' }}>
+            <div className="m-stat-card" style={{ borderColor: 'rgba(245, 158, 11, 0.4)' }}>
               <span className="m-stat-label">Active Events</span>
               <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {activeTournamentsCount}
+                {tournaments.length}
               </span>
-              <span className="m-stat-sub">Live & Registering</span>
+              <span className="m-stat-sub">Tournaments & Games</span>
             </div>
           </div>
 
@@ -181,6 +149,10 @@ export const MobileAdminPortal: React.FC = () => {
           <div>
             <p className="staff-section-title">Quick Actions</p>
             <div className="staff-quick-actions" style={{ marginTop: '8px' }}>
+              <button type="button" className="staff-quick-btn expense" onClick={() => setIsAddExpenseOpen(true)}>
+                <div className="staff-quick-icon"><Plus size={20} /></div>
+                Add Expense
+              </button>
               <button type="button" className="staff-quick-btn kyc" onClick={() => setActiveTab('players')}>
                 <div className="staff-quick-icon"><ShieldCheck size={20} /></div>
                 Verify KYC
@@ -193,13 +165,8 @@ export const MobileAdminPortal: React.FC = () => {
                 <div className="staff-quick-icon"><CheckCircle2 size={20} /></div>
                 Attendance
               </button>
-              <button type="button" className="staff-quick-btn tourney" onClick={() => setIsMoreOpen(true)}>
-                <div className="staff-quick-icon"><MoreHorizontal size={20} /></div>
-                Staff Tools
-              </button>
             </div>
           </div>
-
 
           {/* Activity Monitoring: Live Timeline */}
           <div className="m-card">
@@ -320,15 +287,15 @@ export const MobileAdminPortal: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 4: FINANCE & EXPENSES */}
+      {/* TAB 4: OPERATING EXPENSES */}
       {activeTab === 'finance' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="m-card" style={{ border: '1.5px solid var(--border-gold)' }}>
+          <div className="m-card" style={{ border: '1.5px solid rgba(225, 29, 72, 0.4)' }}>
             <div className="m-card-header">
               <div>
-                <span className="m-stat-label">Vault Float Balance</span>
-                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--gold-light)', fontFamily: 'var(--font-mono)' }}>
-                  {formatCurrency(currentCashBalance)}
+                <span className="m-stat-label">Total Recorded Expenses</span>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fca5a5', fontFamily: 'var(--font-mono)' }}>
+                  {formatCurrency(totalExpensesAmount)}
                 </div>
               </div>
               <button
@@ -599,8 +566,8 @@ export const MobileAdminPortal: React.FC = () => {
           className={`nav-tab-item admin-color ${activeTab === 'finance' ? 'active' : ''}`}
           onClick={() => setActiveTab('finance')}
         >
-          <DollarSign size={20} />
-          <span className="nav-tab-label">Finance</span>
+          <Receipt size={20} />
+          <span className="nav-tab-label">Expenses</span>
         </button>
 
         <button

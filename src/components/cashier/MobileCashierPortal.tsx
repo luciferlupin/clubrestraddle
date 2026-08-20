@@ -44,38 +44,9 @@ export const MobileCashierPortal: React.FC = () => {
     addCashGiven,
     addExpense,
     hasPlayerCheckedInToday,
-    todayCheckIns,
   } = useClub();
 
-  const [activeTab, setActiveTabState] = useState<'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash' | 'records'>(() => {
-    if (typeof window === 'undefined') return 'dashboard';
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = (params.get('tab') || params.get('view') || '').toLowerCase();
-    
-    if (tabParam === 'cash' || tabParam === 'drawer' || tabParam === 'treasury') {
-      return 'cash';
-    }
-    if (tabParam === 'chips' || tabParam === 'chip-orders') return 'chips';
-    if (tabParam === 'players' || tabParam === 'entries' || tabParam === 'entry') return 'players';
-    if (tabParam === 'tournaments' || tabParam === 'events') return 'tournaments';
-    if (tabParam === 'records' || tabParam === 'vouchers' || tabParam === 'billing') return 'records';
-    
-    return 'dashboard';
-  });
-
-  const setActiveTab = (tab: 'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash' | 'records') => {
-    setActiveTabState(tab);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('portal', 'cashier');
-      if (tab === 'dashboard') {
-        url.searchParams.delete('tab');
-      } else {
-        url.searchParams.set('tab', tab);
-      }
-      window.history.replaceState({}, '', url.toString());
-    }
-  };
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash' | 'records'>('dashboard');
 
   // Modals / Drawers State
   const [isCashInOpen, setIsCashInOpen] = useState(false);
@@ -131,7 +102,6 @@ export const MobileCashierPortal: React.FC = () => {
   });
 
   const activeTournaments = tournaments.filter(t => t.status === 'Registering' || t.status === 'Running');
-  const approvedTodayCount = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
 
   // Submit Handlers
   const handleCreateTournament = (e: React.FormEvent) => {
@@ -168,11 +138,13 @@ export const MobileCashierPortal: React.FC = () => {
     e.preventDefault();
     if (!entryFormData.tournamentId || !entryFormData.playerId) return;
 
+    const ref = entryFormData.paymentRef.trim() || `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
+
     const entry = registerPlayerForTournament({
       tournamentId: entryFormData.tournamentId,
       playerId: entryFormData.playerId,
       paymentMethod: entryFormData.paymentMethod,
-      paymentReference: entryFormData.paymentRef.trim() || `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
+      paymentReference: ref,
       tableNumber: entryFormData.tableNum,
       seatNumber: entryFormData.seatNum,
     });
@@ -215,12 +187,13 @@ export const MobileCashierPortal: React.FC = () => {
 
     setSelectedInvoice(invoiceData);
     setEntryFormData(prev => ({ ...prev, paymentRef: '' }));
+
     try {
       confetti({
-        particleCount: 70,
-        spread: 70,
+        particleCount: 50,
+        spread: 60,
         origin: { y: 0.6 },
-        colors: ['#e11d48', '#fbbf24', '#ffffff'],
+        colors: ['#e11d48', '#ffffff', '#f43f5e', '#be123c'],
       });
     } catch {
       // Fallback
@@ -326,43 +299,43 @@ export const MobileCashierPortal: React.FC = () => {
       {/* ── Scrollable content ─────────────────────────────── */}
       <div className="staff-scroll-area">
 
-      {/* TAB 1: MAIN CASHIER DASHBOARD (Zero Cash on Main Dashboard) */}
+      {/* TAB 1: MAIN CASHIER DASHBOARD */}
       {activeTab === 'dashboard' && (
         <>
-          {/* Top Operational KPI Cards */}
+          {/* Top KPI Cards */}
           <div className="m-stats-grid">
-            <div className="m-stat-card" style={{ borderColor: 'var(--border-red)' }}>
+            <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.4)' }}>
+              <span className="m-stat-label">Active Tournaments</span>
+              <span className="m-stat-val" style={{ color: '#ffffff' }}>
+                {activeTournaments.length}
+              </span>
+              <span className="m-stat-sub">Live & Registering</span>
+            </div>
+
+            <div className="m-stat-card" style={{ borderColor: pendingChipOrdersCount > 0 ? 'var(--border-red)' : 'rgba(255, 255, 255, 0.2)' }}>
               <span className="m-stat-label">Table Chip Orders</span>
               <span className="m-stat-val" style={{ color: '#ffffff' }}>
                 {chipRequests.length}
               </span>
               <span className="m-stat-sub">{pendingChipOrdersCount} Pending Dispatch</span>
             </div>
-
-            <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.35)' }}>
-              <span className="m-stat-label">Active Events</span>
-              <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {activeTournaments.length}
-              </span>
-              <span className="m-stat-sub">Live & Registering</span>
-            </div>
           </div>
 
           <div className="m-stats-grid">
-            <div className="m-stat-card">
-              <span className="m-stat-label">Today's Check-ins</span>
-              <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {todayCheckIns.length}
-              </span>
-              <span className="m-stat-sub">{approvedTodayCount} Inside Club</span>
-            </div>
-
-            <div className="m-stat-card">
-              <span className="m-stat-label">Club Members</span>
+            <div className="m-stat-card" style={{ borderColor: 'rgba(245, 158, 11, 0.4)' }}>
+              <span className="m-stat-label">Registered Members</span>
               <span className="m-stat-val" style={{ color: '#ffffff' }}>
                 {players.length}
               </span>
               <span className="m-stat-sub">{players.filter(p => p.kycStatus === 'verified').length} KYC Verified</span>
+            </div>
+
+            <div className="m-stat-card" style={{ borderColor: 'rgba(16, 185, 129, 0.4)' }}>
+              <span className="m-stat-label">Today's Check-ins</span>
+              <span className="m-stat-val" style={{ color: '#34d399' }}>
+                {players.filter(p => hasPlayerCheckedInToday(p.id)).length}
+              </span>
+              <span className="m-stat-sub">Active in Club</span>
             </div>
           </div>
 
@@ -455,7 +428,7 @@ export const MobileCashierPortal: React.FC = () => {
 
           {/* Quick Action Strip */}
           <div>
-            <p className="staff-section-title">Quick Actions</p>
+            <p className="staff-section-title">Cashier Operations</p>
             <div className="staff-quick-actions" style={{ marginTop: '8px' }}>
               <button type="button" className="staff-quick-btn entry" onClick={() => setActiveTab('players')}>
                 <div className="staff-quick-icon"><Users size={20} /></div>
@@ -467,7 +440,7 @@ export const MobileCashierPortal: React.FC = () => {
               </button>
               <button type="button" className="staff-quick-btn chips" onClick={() => setActiveTab('chips')}>
                 <div className="staff-quick-icon"><Coins size={20} /></div>
-                Table Chips
+                Chip Orders
               </button>
               <button type="button" className="staff-quick-btn records" onClick={() => setActiveTab('records')}>
                 <div className="staff-quick-icon"><Receipt size={20} /></div>
@@ -672,56 +645,88 @@ export const MobileCashierPortal: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 4: CASH MANAGEMENT */}
-      {activeTab === 'cash' && (
+      {/* TAB 4: CHIP ORDERS & DISPATCH */}
+      {activeTab === 'chips' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="m-card" style={{ border: '1px solid var(--border-gold)' }}>
-            <span className="m-stat-label">Daily Cash Balance</span>
-            <div style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--gold-light)', fontFamily: 'var(--font-mono)' }}>
-              {formatCurrency(currentCashBalance)}
-            </div>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Drawer Float</span>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginTop: '10px' }}>
-              <button className="m-btn m-btn-emerald m-btn-sm" onClick={() => setIsCashInOpen(true)}>
-                <ArrowDownLeft size={14} /> Cash In
-              </button>
-              <button className="m-btn m-btn-danger m-btn-sm" onClick={() => setIsCashOutOpen(true)}>
-                <ArrowUpRight size={14} /> Cash Out
-              </button>
-              <button className="m-btn m-btn-secondary m-btn-sm" onClick={() => setIsExpenseOpen(true)}>
-                <Receipt size={14} /> Expense
-              </button>
-            </div>
-          </div>
-
           <div className="m-card">
-            <h4 className="m-card-title">
-              <Wallet size={16} color="#ffffff" />
-              Cash Ledger Cards ({cashTransactions.length})
-            </h4>
+            <div className="m-card-header">
+              <div>
+                <h3 className="m-card-title">
+                  <Coins size={18} color="#e11d48" />
+                  Table Chip Requests ({chipRequests.length})
+                </h3>
+                <p className="m-card-subtitle">Real-time table chip orders dispatched to seated players</p>
+              </div>
+              {pendingChipOrdersCount > 0 ? (
+                <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>
+                  <span className="badge-dot" /> {pendingChipOrdersCount} Pending
+                </span>
+              ) : (
+                <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
+                  <CheckCircle2 size={12} /> All Clear
+                </span>
+              )}
+            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {cashTransactions.map(txn => (
-                <div key={txn.id} className="m-list-card">
-                  <div className="m-list-row">
-                    <span style={{ fontWeight: 700 }}>{txn.category}</span>
-                    <span
-                      className="tabular-num"
-                      style={{ fontWeight: 800, color: txn.type === 'in' ? '#ffffff' : '#fca5a5' }}
-                    >
-                      {txn.type === 'in' ? '+' : '-'}{formatCurrency(txn.amount)}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {txn.description}
-                  </div>
-                  <div className="m-list-row" style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
-                    <span>Balance: {formatCurrency(txn.balanceAfter)}</span>
-                    <span>{formatShortDateTime(txn.timestamp)}</span>
-                  </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {chipRequests.length === 0 ? (
+                <div style={{ fontSize: '0.82rem', color: '#94a3b8', padding: '12px 0', textAlign: 'center' }}>
+                  No table chip requests yet.
                 </div>
-              ))}
+              ) : (
+                chipRequests.map(req => (
+                  <div
+                    key={req.id}
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.4)',
+                      border: req.status === 'pending' ? '1.5px solid rgba(225, 29, 72, 0.6)' : '1px solid var(--border-subtle)',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff' }}>
+                          {req.playerName}
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--gold-light)' }}>
+                          {req.tableNumber} • {req.seatNumber}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: 900, fontSize: '1.1rem', color: '#ffffff' }}>
+                          ₹{formatINR(req.amount)}
+                        </div>
+                        <span className={`badge ${req.status === 'pending' ? 'badge-warning' : req.status === 'delivered' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.66rem' }}>
+                          {req.status === 'pending' ? 'Pending' : req.status === 'delivered' ? 'Delivered' : 'Cancelled'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {req.status === 'pending' && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <button
+                          className="m-btn m-btn-primary m-btn-sm"
+                          style={{ flex: 1, padding: '8px' }}
+                          onClick={() => fulfillChipRequest(req.id)}
+                        >
+                          <Check size={14} /> Fulfill & Dispatch
+                        </button>
+                        <button
+                          className="m-btn m-btn-secondary m-btn-sm"
+                          style={{ width: 'auto', padding: '8px 12px', color: '#fca5a5' }}
+                          onClick={() => cancelChipRequest(req.id, 'Cancelled on mobile')}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -1161,11 +1166,12 @@ export const MobileCashierPortal: React.FC = () => {
         </button>
 
         <button
-          className={`nav-tab-item cashier-color ${activeTab === 'cash' ? 'active' : ''}`}
-          onClick={() => setActiveTab('cash')}
+          className={`nav-tab-item cashier-color ${activeTab === 'chips' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chips')}
         >
-          <Wallet size={20} />
-          <span className="nav-tab-label">Cash</span>
+          <Coins size={20} />
+          {pendingChipOrdersCount > 0 && <span className="nav-badge">{pendingChipOrdersCount}</span>}
+          <span className="nav-tab-label">Chips</span>
         </button>
 
         <button

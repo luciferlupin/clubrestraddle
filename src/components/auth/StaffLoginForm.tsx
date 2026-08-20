@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 
-type StaffDesk = 'admin' | 'cashier' | 'security';
+type StaffDesk = 'admin' | 'cashier' | 'security' | 'cash';
 
 interface StaffLoginFormProps {
   portalRole: StaffDesk;
@@ -36,12 +36,17 @@ const deskAccounts: Record<StaffDesk, Array<{ email: string; label: string; pers
     { email: 'security@club-restraddle.com', label: 'Security', person: 'Marcus Vance' },
     { email: 'jaigoel2206@gmail.com', label: 'Admin access', person: 'Jai Goel' },
   ],
+  cash: [
+    { email: 'cashier@club-restraddle.com', label: 'Cashier desk', person: 'Elena Rostova' },
+    { email: 'jaigoel2206@gmail.com', label: 'Super admin', person: 'Jai Goel' },
+  ],
 };
 
 const defaultEmails: Record<StaffDesk, string> = {
   admin: 'jaigoel2206@gmail.com',
   cashier: 'cashier@club-restraddle.com',
   security: 'security@club-restraddle.com',
+  cash: 'cashier@club-restraddle.com',
 };
 
 export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
@@ -58,10 +63,18 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
   const [submitting, setSubmitting] = useState(false);
 
   const portal = useMemo(() => {
+    if (selectedDesk === 'cash') {
+      return {
+        title: 'Cash & Treasury Vault',
+        subtitle: 'Payments, float balance, cash in / out & records',
+        icon: DollarSign,
+        allowedRoles: ['cashier', 'admin'],
+      };
+    }
     if (selectedDesk === 'cashier') {
       return {
         title: 'Cashier desk',
-        subtitle: 'Entries, chip requests, cash and vouchers',
+        subtitle: 'Entries, chip requests, events and vouchers',
         icon: DollarSign,
         allowedRoles: ['cashier', 'admin'],
       };
@@ -76,7 +89,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
     }
     return {
       title: 'Admin portal',
-      subtitle: 'Players, staff, attendance, finance and audit',
+      subtitle: 'Players, staff, attendance and audit',
       icon: LayoutDashboard,
       allowedRoles: ['admin'],
     };

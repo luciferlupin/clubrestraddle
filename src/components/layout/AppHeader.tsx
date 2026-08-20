@@ -83,6 +83,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
               {!currentStaffUser && <Lock size={11} style={{ opacity: 0.6 }} />}
             </button>
 
+            {activeRole === 'cash' && (
+              <button
+                className="role-nav-tab cashier-tab active"
+                style={{ borderColor: 'rgba(245, 158, 11, 0.6)', background: 'rgba(245, 158, 11, 0.15)' }}
+                onClick={() => setActiveRole('cash')}
+              >
+                <DollarSign size={15} color="#fbbf24" />
+                <span style={{ color: '#fbbf24', fontWeight: 800 }}>Cash Vault</span>
+              </button>
+            )}
+
             <button
               className={`role-nav-tab security-tab ${activeRole === 'security' ? 'active' : ''}`}
               onClick={() => setActiveRole('security')}

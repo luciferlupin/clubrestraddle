@@ -4,7 +4,7 @@ import { StaffLoginForm } from './StaffLoginForm';
 import { LogOut, UserRoundCheck } from 'lucide-react';
 
 interface PortalGuardProps {
-  requiredRole: 'cashier' | 'security' | 'admin';
+  requiredRole: 'cashier' | 'security' | 'admin' | 'cash';
   children: React.ReactNode;
 }
 
@@ -16,7 +16,8 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
     if (!currentStaffUser) return false;
     if (currentStaffUser.status === 'suspended') return false;
     if (currentStaffUser.role === 'admin') return true; // Admin can access everything
-    return currentStaffUser.role === requiredRole;
+    if (requiredRole === 'cash') return currentStaffUser.role === 'cashier';
+    return (currentStaffUser.role as string) === requiredRole;
   })();
 
   if (!isAuthorized) {

@@ -1,6 +1,6 @@
 // Data Types for Poker Club Management System
 
-export type UserRole = 'player' | 'cashier' | 'security' | 'admin';
+export type UserRole = 'player' | 'cashier' | 'security' | 'admin' | 'cash';
 
 export type StaffRole = 'admin' | 'cashier' | 'security';
 

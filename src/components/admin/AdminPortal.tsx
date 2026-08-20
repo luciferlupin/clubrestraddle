@@ -25,50 +25,11 @@ import { ChipOrderManager } from '../cashier/ChipOrderManager';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
 
-type AdminTab = 'dashboard' | 'chip-orders' | 'staff' | 'players' | 'attendance' | 'tournaments' | 'cash' | 'expenses' | 'audit';
+type AdminTab = 'dashboard' | 'chip-orders' | 'staff' | 'players' | 'attendance' | 'tournaments' | 'expenses' | 'audit';
 
 export const AdminPortal: React.FC = () => {
   const { currentStaffUser, resetToDemoData, pendingChipOrdersCount } = useClub();
-  
-  // Read initial tab from URL query params or path (e.g. ?tab=cash or ?portal=admin&tab=cash)
-  const [activeTab, setActiveTabState] = useState<AdminTab>(() => {
-    if (typeof window === 'undefined') return 'dashboard';
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = (params.get('tab') || params.get('view') || '').toLowerCase();
-    const pathname = window.location.pathname.toLowerCase();
-    
-    if (tabParam === 'cash' || tabParam === 'treasury' || pathname.includes('/cash') || pathname.includes('/treasury')) {
-      return 'cash';
-    }
-    if (tabParam === 'expenses' || pathname.includes('/expenses')) {
-      return 'expenses';
-    }
-    if (tabParam === 'chip-orders' || tabParam === 'chips') {
-      return 'chip-orders';
-    }
-    if (tabParam === 'staff') return 'staff';
-    if (tabParam === 'players' || tabParam === 'kyc') return 'players';
-    if (tabParam === 'attendance') return 'attendance';
-    if (tabParam === 'tournaments' || tabParam === 'events') return 'tournaments';
-    if (tabParam === 'audit') return 'audit';
-    
-    return 'dashboard';
-  });
-
-  const setActiveTab = (tab: AdminTab) => {
-    setActiveTabState(tab);
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('portal', 'admin');
-      if (tab === 'dashboard') {
-        url.searchParams.delete('tab');
-      } else {
-        url.searchParams.set('tab', tab);
-      }
-      window.history.replaceState({}, '', url.toString());
-    }
-  };
-
+  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [resetConfirm, setResetConfirm] = useState(false);
 
   const handleReset = () => {
@@ -83,7 +44,6 @@ export const AdminPortal: React.FC = () => {
     { id: 'players', label: 'Players & KYC', icon: <Users size={16} /> },
     { id: 'attendance', label: 'Attendance', icon: <CheckCircle2 size={16} /> },
     { id: 'tournaments', label: 'Events', icon: <Trophy size={16} /> },
-    { id: 'cash', label: 'Treasury', icon: <DollarSign size={16} /> },
     { id: 'expenses', label: 'Expenses', icon: <Receipt size={16} /> },
     { id: 'audit', label: 'Audit log', icon: <History size={16} /> },
   ];
@@ -143,8 +103,6 @@ export const AdminPortal: React.FC = () => {
       {activeTab === 'attendance' && <AdminAttendanceView />}
 
       {activeTab === 'tournaments' && <AdminTournamentsView />}
-
-      {activeTab === 'cash' && <AdminCashView />}
 
       {activeTab === 'expenses' && <AdminExpensesView />}
 
