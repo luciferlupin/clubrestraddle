@@ -4561,3 +4561,107 @@ input[type="radio"] {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =============================================================
+   FLOATING 3D CHIPS — BACKGROUND DECORATION
+   12 unique keyframes, each chip follows its own lazy orbit.
+   pointer-events:none enforced both in JS and here.
+   ============================================================= */
+
+.floating-chip {
+  pointer-events: none !important;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+  transform-origin: center center;
+}
+
+/* Each keyframe gives a genuinely different floating path */
+@keyframes fchip-a {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(-8deg);  }
+  30%  { transform: translateY(-18px) translateX(8px)   rotate(4deg);   }
+  60%  { transform: translateY(-8px)  translateX(-12px) rotate(-3deg);  }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(-8deg);  }
+}
+@keyframes fchip-b {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(12deg);  }
+  40%  { transform: translateY(-22px) translateX(-6px)  rotate(-5deg);  }
+  70%  { transform: translateY(-10px) translateX(10px)  rotate(8deg);   }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(12deg);  }
+}
+@keyframes fchip-c {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(0deg);   }
+  25%  { transform: translateY(-14px) translateX(14px)  rotate(10deg);  }
+  50%  { transform: translateY(-24px) translateX(4px)   rotate(-6deg);  }
+  75%  { transform: translateY(-12px) translateX(-8px)  rotate(4deg);   }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(0deg);   }
+}
+@keyframes fchip-d {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(-15deg); }
+  35%  { transform: translateY(-16px) translateX(-10px) rotate(-4deg);  }
+  65%  { transform: translateY(-6px)  translateX(12px)  rotate(-12deg); }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(-15deg); }
+}
+@keyframes fchip-e {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(6deg);   }
+  45%  { transform: translateY(-20px) translateX(-4px)  rotate(-8deg);  }
+  80%  { transform: translateY(-10px) translateX(6px)   rotate(3deg);   }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(6deg);   }
+}
+@keyframes fchip-f {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(20deg);  }
+  30%  { transform: translateY(-12px) translateX(16px)  rotate(8deg);   }
+  60%  { transform: translateY(-20px) translateX(-6px)  rotate(15deg);  }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(20deg);  }
+}
+@keyframes fchip-g {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(-5deg);  }
+  20%  { transform: translateY(-10px) translateX(-14px) rotate(6deg);   }
+  50%  { transform: translateY(-18px) translateX(8px)   rotate(-10deg); }
+  80%  { transform: translateY(-6px)  translateX(4px)   rotate(0deg);   }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(-5deg);  }
+}
+@keyframes fchip-h {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(10deg);  }
+  50%  { transform: translateY(-26px) translateX(-8px)  rotate(-4deg);  }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(10deg);  }
+}
+@keyframes fchip-i {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(-12deg); }
+  33%  { transform: translateY(-14px) translateX(10px)  rotate(5deg);   }
+  66%  { transform: translateY(-20px) translateX(-4px)  rotate(-8deg);  }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(-12deg); }
+}
+@keyframes fchip-j {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(3deg);   }
+  40%  { transform: translateY(-18px) translateX(-12px) rotate(-6deg);  }
+  75%  { transform: translateY(-8px)  translateX(8px)   rotate(8deg);   }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(3deg);   }
+}
+@keyframes fchip-k {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(-18deg); }
+  28%  { transform: translateY(-22px) translateX(6px)   rotate(-6deg);  }
+  56%  { transform: translateY(-12px) translateX(-10px) rotate(-14deg); }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(-18deg); }
+}
+@keyframes fchip-l {
+  0%   { transform: translateY(0px)   translateX(0px)   rotate(8deg);   }
+  35%  { transform: translateY(-16px) translateX(12px)  rotate(18deg);  }
+  70%  { transform: translateY(-24px) translateX(-6px)  rotate(4deg);   }
+  100% { transform: translateY(0px)   translateX(0px)   rotate(8deg);   }
+}
+
+/* Bind animation-name per class (duration/delay set inline from JS) */
+.fchip-a { animation-name: fchip-a; }
+.fchip-b { animation-name: fchip-b; }
+.fchip-c { animation-name: fchip-c; }
+.fchip-d { animation-name: fchip-d; }
+.fchip-e { animation-name: fchip-e; }
+.fchip-f { animation-name: fchip-f; }
+.fchip-g { animation-name: fchip-g; }
+.fchip-h { animation-name: fchip-h; }
+.fchip-i { animation-name: fchip-i; }
+.fchip-j { animation-name: fchip-j; }
+.fchip-k { animation-name: fchip-k; }
+.fchip-l { animation-name: fchip-l; }
+

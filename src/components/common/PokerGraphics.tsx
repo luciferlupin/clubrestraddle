@@ -467,3 +467,182 @@ export const AnimatedSuitsRow: React.FC<AnimatedSuitsRowProps> = ({
     <CardSuit suit="club" size={size} color="#ffffff" className="suit-hover-anim suit-delay-3" />
   </span>
 );
+
+// ─── 12. SINGLE 3D POKER CHIP (inline SVG) ───────────────────────────────────
+// Fully self-contained — no external assets. Uses SVG gradients for 3D look.
+interface Chip3DProps {
+  size?: number;
+  color?: string; // primary colour string used for gradient stop IDs must be unique
+  uid: string;    // unique ID for gradient defs (avoids SVG ID collisions)
+}
+
+const Chip3D: React.FC<Chip3DProps> = ({ size = 48, color = '#e11d48', uid }) => {
+  const r = size / 2;
+  const innerR = r * 0.78;
+  const edgeR = r * 0.90;
+
+  // Pre-derive lighter/darker stops inline
+  const isRed = color === '#e11d48' || color === '#c41030';
+  const isWhite = color === '#ffffff' || color === '#f8fafc';
+
+  const topStop   = isWhite ? '#ffffff' : isRed ? '#f97395' : '#a78bfa';
+  const midStop   = color;
+  const botStop   = isWhite ? '#cbd5e1' : isRed ? '#9f1239' : '#6d28d9';
+  const shineStop = 'rgba(255,255,255,0.55)';
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      aria-hidden="true"
+      style={{ display: 'block', overflow: 'visible' }}
+    >
+      <defs>
+        <radialGradient id={`chip-face-${uid}`} cx="40%" cy="35%" r="65%">
+          <stop offset="0%"   stopColor={topStop} />
+          <stop offset="45%"  stopColor={midStop} />
+          <stop offset="100%" stopColor={botStop} />
+        </radialGradient>
+        <radialGradient id={`chip-shine-${uid}`} cx="38%" cy="28%" r="50%">
+          <stop offset="0%"   stopColor={shineStop} />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </radialGradient>
+        <filter id={`chip-shadow-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy={size * 0.07} stdDeviation={size * 0.08}
+            floodColor={botStop} floodOpacity="0.55" />
+        </filter>
+      </defs>
+
+      {/* ── Drop shadow layer */}
+      <ellipse
+        cx={r} cy={r + size * 0.06}
+        rx={r * 0.88} ry={r * 0.20}
+        fill="rgba(0,0,0,0.35)"
+      />
+
+      {/* ── Chip body */}
+      <circle
+        cx={r} cy={r}
+        r={r * 0.92}
+        fill={`url(#chip-face-${uid})`}
+        filter={`url(#chip-shadow-${uid})`}
+      />
+
+      {/* ── Edge notch segments (8 segments, alternating lighter/darker) */}
+      {Array.from({ length: 8 }, (_, i) => {
+        const angle = (i * 45 - 90) * (Math.PI / 180);
+        const x = r + edgeR * Math.cos(angle);
+        const y = r + edgeR * Math.sin(angle);
+        const isEven = i % 2 === 0;
+        return (
+          <circle
+            key={i}
+            cx={x} cy={y}
+            r={r * 0.085}
+            fill={isEven ? (isWhite ? '#e2e8f0' : '#ffffff') : (isWhite ? '#94a3b8' : botStop)}
+            opacity={isEven ? 0.9 : 0.7}
+          />
+        );
+      })}
+
+      {/* ── Inner ring */}
+      <circle
+        cx={r} cy={r}
+        r={innerR}
+        fill="none"
+        stroke={isWhite ? 'rgba(100,116,139,0.4)' : 'rgba(255,255,255,0.18)'}
+        strokeWidth={r * 0.045}
+      />
+
+      {/* ── Centre suit symbol */}
+      <text
+        x={r} y={r + r * 0.32}
+        textAnchor="middle"
+        fontSize={r * 0.62}
+        fill={isWhite ? botStop : 'rgba(255,255,255,0.85)'}
+        fontFamily="Georgia, serif"
+        style={{ userSelect: 'none' }}
+      >
+        {isRed ? '♥' : isWhite ? '♠' : '♦'}
+      </text>
+
+      {/* ── Specular shine */}
+      <circle
+        cx={r} cy={r}
+        r={r * 0.92}
+        fill={`url(#chip-shine-${uid})`}
+      />
+    </svg>
+  );
+};
+
+// ─── 13. FLOATING CHIPS BACKGROUND ───────────────────────────────────────────
+// Fixed-position, pointer-events:none — safe to drop into any page.
+// Each chip gets a unique CSS animation class for its own random float path.
+
+interface FloatingChipsBackgroundProps {
+  /** 'fixed' keeps chips behind whole viewport; 'absolute' constrains to parent */
+  mode?: 'fixed' | 'absolute';
+  opacity?: number;
+  chipCount?: number;
+}
+
+// Pre-seeded chip configuration — deterministic so no layout thrash on re-render.
+const CHIP_CONFIGS = [
+  { left: '5%',  top: '12%', size: 52, color: '#e11d48', animClass: 'fchip-a', delay: '0s',    dur: '9s'  },
+  { left: '88%', top: '8%',  size: 38, color: '#ffffff', animClass: 'fchip-b', delay: '1.3s',  dur: '11s' },
+  { left: '72%', top: '55%', size: 60, color: '#e11d48', animClass: 'fchip-c', delay: '0.6s',  dur: '13s' },
+  { left: '18%', top: '68%', size: 44, color: '#ffffff', animClass: 'fchip-d', delay: '2.1s',  dur: '10s' },
+  { left: '48%', top: '5%',  size: 36, color: '#e11d48', animClass: 'fchip-e', delay: '0.4s',  dur: '12s' },
+  { left: '92%', top: '75%', size: 50, color: '#ffffff', animClass: 'fchip-f', delay: '1.8s',  dur: '8s'  },
+  { left: '32%', top: '35%', size: 42, color: '#e11d48', animClass: 'fchip-g', delay: '3.0s',  dur: '14s' },
+  { left: '60%', top: '80%', size: 34, color: '#ffffff', animClass: 'fchip-h', delay: '0.9s',  dur: '10s' },
+  { left: '10%', top: '45%', size: 56, color: '#e11d48', animClass: 'fchip-i', delay: '2.5s',  dur: '11s' },
+  { left: '78%', top: '28%', size: 40, color: '#ffffff', animClass: 'fchip-j', delay: '1.1s',  dur: '9s'  },
+  { left: '40%', top: '62%', size: 48, color: '#e11d48', animClass: 'fchip-k', delay: '0.2s',  dur: '13s' },
+  { left: '55%', top: '22%', size: 32, color: '#ffffff', animClass: 'fchip-l', delay: '3.4s',  dur: '10s' },
+] as const;
+
+export const FloatingChipsBackground: React.FC<FloatingChipsBackgroundProps> = ({
+  mode = 'fixed',
+  opacity = 0.13,
+  chipCount = 12,
+}) => {
+  const chips = CHIP_CONFIGS.slice(0, chipCount);
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: mode,
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        overflow: 'hidden',
+        userSelect: 'none',
+      }}
+    >
+      {chips.map((cfg, i) => (
+        <div
+          key={i}
+          className={`floating-chip ${cfg.animClass}`}
+          style={{
+            position: 'absolute',
+            left: cfg.left,
+            top: cfg.top,
+            width: cfg.size,
+            height: cfg.size,
+            opacity,
+            animationDelay: cfg.delay,
+            animationDuration: cfg.dur,
+            willChange: 'transform',
+          }}
+        >
+          <Chip3D size={cfg.size} color={cfg.color} uid={`${i}-${cfg.animClass}`} />
+        </div>
+      ))}
+    </div>
+  );
+};
+
