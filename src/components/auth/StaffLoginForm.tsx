@@ -27,7 +27,20 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
   onBackToPlayer,
 }) => {
   const { loginStaff, setActiveRole } = useClub();
-  const [email, setEmail] = useState('jaigoel2206@gmail.com');
+
+  const getDefaultEmail = () => {
+    switch (portalRole) {
+      case 'cashier':
+        return 'cashier@club-restraddle.com';
+      case 'security':
+        return 'security@club-restraddle.com';
+      case 'admin':
+      default:
+        return 'jaigoel2206@gmail.com';
+    }
+  };
+
+  const [email, setEmail] = useState(getDefaultEmail());
   const [password, setPassword] = useState('12345');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -37,26 +50,26 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
     switch (portalRole) {
       case 'cashier':
         return {
-          title: 'Cashier Terminal Access',
-          subtitle: 'Enter cashier or admin credentials to manage tournaments, billing and cash ledger',
-          color: '#8B0000',
+          title: 'Cashier Desk Terminal',
+          subtitle: 'Enter cashier or admin credentials to manage tournaments, billing, and vault ledger',
+          color: '#e11d48',
           icon: <DollarSign size={28} color="#ffffff" />,
           allowedRoles: ['cashier', 'admin'],
         };
       case 'security':
         return {
-          title: 'Security Door Control',
-          subtitle: 'Enter security officer or admin credentials to verify members & door clearance',
-          color: '#8B0000',
+          title: 'Security Door Control Station',
+          subtitle: 'Enter security officer or admin credentials to verify members & issue door clearance',
+          color: '#e11d48',
           icon: <ShieldCheck size={28} color="#ffffff" />,
           allowedRoles: ['security', 'admin'],
         };
       case 'admin':
       default:
         return {
-          title: 'Executive Admin Portal',
-          subtitle: 'Super Admin login for financial oversight, audit trail & staff account creation',
-          color: '#8B0000',
+          title: 'Executive Admin Center',
+          subtitle: 'Super Admin credentials required for financial oversight, staff provisioning, and audit logs',
+          color: '#e11d48',
           icon: <LayoutDashboard size={28} color="#ffffff" />,
           allowedRoles: ['admin'],
         };
@@ -74,7 +87,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
       const result = loginStaff(email, password);
 
       if (!result.success || !result.user) {
-        setErrorMessage(result.message || 'Authentication failed.');
+        setErrorMessage(result.message || 'Invalid email or password.');
         setSubmitting(false);
         return;
       }
@@ -82,7 +95,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
       // Check role authorization
       if (!portal.allowedRoles.includes(result.user.role)) {
         setErrorMessage(
-          `Unauthorized: Your account role is "${result.user.role.toUpperCase()}". Only ${portal.allowedRoles.map(r => r.toUpperCase()).join(' or ')} accounts can access this portal.`
+          `Access Denied: Your account role is "${result.user.role.toUpperCase()}". Only ${portal.allowedRoles.map(r => r.toUpperCase()).join(' or ')} accounts can access this portal.`
         );
         setSubmitting(false);
         return;
@@ -93,9 +106,9 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
     }, 300);
   };
 
-  const handleFillAdmin = () => {
-    setEmail('jaigoel2206@gmail.com');
-    setPassword('12345');
+  const handleSelectAccount = (accEmail: string, accPass: string = '12345') => {
+    setEmail(accEmail);
+    setPassword(accPass);
     setErrorMessage(null);
   };
 
@@ -165,23 +178,6 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">
               <span>Staff Email Address</span>
-              <button
-                type="button"
-                onClick={handleFillAdmin}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--gold-light)',
-                  fontSize: '0.72rem',
-                  cursor: 'pointer',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '3px',
-                }}
-              >
-                <Sparkles size={12} /> Auto-fill Admin
-              </button>
             </label>
             <div style={{ position: 'relative' }}>
               <Mail size={16} style={{ position: 'absolute', left: '12px', top: '15px', color: '#94a3b8' }} />
@@ -228,19 +224,57 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
             </div>
           </div>
 
-          {/* Quick Default Credentials Callout */}
-          <div
-            style={{
-              background: 'rgba(0, 0, 0, 0.3)',
-              padding: '10px 12px',
-              borderRadius: '8px',
-              fontSize: '0.74rem',
-              color: 'var(--text-muted)',
-              border: '1px solid var(--border-subtle)',
-            }}
-          >
-            <strong>Default Super Admin:</strong> <br />
-            Email: <code style={{ color: 'var(--gold-light)' }}>jaigoel2206@gmail.com</code> | Pass: <code style={{ color: 'var(--gold-light)' }}>12345</code>
+          {/* 1-Tap Quick Account Selector */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
+              Quick Fill Staff Account:
+            </span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => handleSelectAccount('jaigoel2206@gmail.com', '12345')}
+                style={{
+                  justifyContent: 'flex-start',
+                  fontSize: '0.74rem',
+                  padding: '6px 10px',
+                  background: email === 'jaigoel2206@gmail.com' ? 'rgba(225, 29, 72, 0.25)' : undefined,
+                  border: email === 'jaigoel2206@gmail.com' ? '1px solid #e11d48' : undefined,
+                }}
+              >
+                👑 <strong>Super Admin</strong> (Jai Goel)
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => handleSelectAccount('cashier@club-restraddle.com', '12345')}
+                style={{
+                  justifyContent: 'flex-start',
+                  fontSize: '0.74rem',
+                  padding: '6px 10px',
+                  background: email === 'cashier@club-restraddle.com' ? 'rgba(225, 29, 72, 0.25)' : undefined,
+                  border: email === 'cashier@club-restraddle.com' ? '1px solid #e11d48' : undefined,
+                }}
+              >
+                💵 <strong>Cashier Desk</strong> (Elena Rostova)
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => handleSelectAccount('security@club-restraddle.com', '12345')}
+                style={{
+                  justifyContent: 'flex-start',
+                  fontSize: '0.74rem',
+                  padding: '6px 10px',
+                  background: email === 'security@club-restraddle.com' ? 'rgba(225, 29, 72, 0.25)' : undefined,
+                  border: email === 'security@club-restraddle.com' ? '1px solid #e11d48' : undefined,
+                }}
+              >
+                🛡️ <strong>Security Officer</strong> (Marcus Vance)
+              </button>
+            </div>
           </div>
 
           <button
@@ -250,7 +284,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
             disabled={submitting}
           >
             <Lock size={16} />
-            {submitting ? 'Verifying Credentials...' : 'Secure Staff Login'}
+            {submitting ? 'Verifying Credentials...' : `Log In to ${portal.title}`}
           </button>
         </form>
 

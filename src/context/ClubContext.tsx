@@ -156,18 +156,13 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     loadFromStorage(STORAGE_KEYS.STAFF_USERS, initialStaffUsers)
   );
 
-  const [currentStaffUser, setCurrentStaffUser] = useState<StaffUser | null>(() =>
-    loadFromStorage(STORAGE_KEYS.CURRENT_STAFF, null)
-  );
+  const [currentStaffUser, setCurrentStaffUser] = useState<StaffUser | null>(null);
 
   const [selectedPlayerId, setSelectedPlayerIdState] = useState<string>(() =>
     loadFromStorage(STORAGE_KEYS.SELECTED_PLAYER, '')
   );
 
-  const [staffName, setStaffName] = useState<string>(() => {
-    const savedStaff = loadFromStorage<StaffUser | null>(STORAGE_KEYS.CURRENT_STAFF, null);
-    return savedStaff ? `${savedStaff.fullName} (${savedStaff.role.toUpperCase()})` : 'Staff Officer';
-  });
+  const [staffName, setStaffName] = useState<string>('Staff Officer');
 
   const [players, setPlayers] = useState<Player[]>(() =>
     loadFromStorage(STORAGE_KEYS.PLAYERS, initialPlayers)
