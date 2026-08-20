@@ -2,14 +2,9 @@ import React, { useState } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
-  User,
-  CreditCard,
-  Calendar,
-  Phone,
   Clock,
   CheckCircle,
   XCircle,
-  AlertTriangle,
   Lock,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
@@ -19,26 +14,27 @@ import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import confetti from 'canvas-confetti';
 
+const SESSION_TODAY = new Date();
+
 interface SecurityVerificationCardProps {
   player: Player;
   checkIn?: DailyCheckIn;
-  onClearSelection?: () => void;
 }
 
 export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> = ({
   player,
   checkIn,
-  onClearSelection,
 }) => {
-  const { approvePlayerEntry, rejectPlayerEntry, reviewKYC, staffName } = useClub();
+  const { approvePlayerEntry, rejectPlayerEntry, reviewKYC } = useClub();
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
 
   // Calculate age from DOB
   const calculateAge = (dobString: string): number => {
     if (!dobString) return 0;
     const dob = new Date(dobString);
-    const diff = Date.now() - dob.getTime();
+    const diff = SESSION_TODAY.getTime() - dob.getTime();
     const ageDate = new Date(diff);
     return Math.abs(ageDate.getUTCFullYear() - 1970);
   };
@@ -52,6 +48,8 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
     } else if (player.kycStatus === 'pending') {
       reviewKYC(player.id, 'verified');
     }
+
+    setIsApproveModalOpen(false);
 
     try {
       confetti({
@@ -280,7 +278,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
 
           <button
             className="btn btn-emerald btn-lg"
-            onClick={handleApprove}
+            onClick={() => setIsApproveModalOpen(true)}
             disabled={checkIn?.verificationStatus === 'approved' || !isOfLegalAge}
           >
             <CheckCircle size={18} />
@@ -288,6 +286,31 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
           </button>
         </div>
       </div>
+
+      <Modal
+        isOpen={isApproveModalOpen}
+        onClose={() => setIsApproveModalOpen(false)}
+        title="Approve player entry?"
+        subtitle={`Confirm identity and 21+ clearance for ${player.fullName}`}
+        size="sm"
+        footer={
+          <>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsApproveModalOpen(false)}>
+              Review again
+            </button>
+            <button type="button" className="btn btn-emerald" onClick={handleApprove}>
+              <CheckCircle size={16} /> Confirm entry
+            </button>
+          </>
+        }
+      >
+        <div className="security-confirm-summary">
+          <div><span>Member</span><strong>{player.fullName}</strong></div>
+          <div><span>Member ID</span><strong>{player.id}</strong></div>
+          <div><span>Age check</span><strong>{age} years · 21+ cleared</strong></div>
+          <div><span>KYC status</span><strong>{player.kycStatus}</strong></div>
+        </div>
+      </Modal>
 
       {/* Reject Modal */}
       <Modal
@@ -299,8 +322,9 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
       >
         <form onSubmit={handleRejectConfirm}>
           <div className="form-group">
-            <label className="form-label">Predefined Reason</label>
+            <label className="form-label" htmlFor="security-reject-reason">Predefined Reason</label>
             <select
+              id="security-reject-reason"
               className="form-select"
               onChange={e => setRejectReason(e.target.value)}
               value={rejectReason}
@@ -324,8 +348,9 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
           </div>
 
           <div className="form-group">
-            <label className="form-label">Custom Reason / Notes *</label>
+            <label className="form-label" htmlFor="security-reject-notes">Custom Reason / Notes *</label>
             <textarea
+              id="security-reject-notes"
               className="form-textarea"
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, ShieldCheck, MapPin, AlertCircle, ShieldAlert, Sparkles, QrCode } from 'lucide-react';
+import { CheckCircle2, Clock, ShieldCheck, MapPin, ShieldAlert } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
 import { Player } from '../../types';
-import { formatDateOnly, formatTimeOnly } from '../../utils/formatters';
+import { formatTimeOnly } from '../../utils/formatters';
 import { EntryBadge } from '../common/Badge';
 import confetti from 'canvas-confetti';
 
@@ -164,8 +164,9 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
           </p>
 
           <div className="form-group" style={{ marginBottom: '4px' }}>
-            <label className="form-label">Select Preferred Game / Table Today:</label>
+            <label className="form-label" htmlFor="daily-table-preference">Select Preferred Game / Table Today:</label>
             <select
+              id="daily-table-preference"
               className="form-select"
               value={tablePref}
               onChange={e => setTablePref(e.target.value)}
@@ -174,8 +175,8 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
               <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500 Cash)</option>
               <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
               <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (PLO ₹250/₹500)</option>
-              <option value="♠ Re Straddle High Roller Championship">♠ Re Straddle High Roller Championship</option>
-              <option value="♦ Midnight Bounty Knockout Series">♦ Midnight Bounty Knockout Series</option>
+              <option value="Re Straddle High Roller Championship">Re Straddle High Roller Championship</option>
+              <option value="Midnight Bounty Knockout Series">Midnight Bounty Knockout Series</option>
             </select>
           </div>
 

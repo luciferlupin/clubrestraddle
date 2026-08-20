@@ -8,6 +8,9 @@ import {
   CircleDot,
   LogOut,
   Lock,
+  Spade,
+  UserRound,
+  UsersRound,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 
@@ -20,8 +23,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
     activeRole,
     setActiveRole,
     currentPlayer,
-    players,
-    selectedPlayerId,
     setSelectedPlayerId,
     currentStaffUser,
     logoutStaff,
@@ -53,16 +54,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
   return (
     <header className="app-header">
       <div className="app-header-inner">
-        {/* Brand */}
-        <div className="brand-wrap" onClick={() => setActiveRole('player')}>
-          <div className="brand-icon">♠</div>
+        <button
+          type="button"
+          className="brand-wrap"
+          onClick={() => setActiveRole('player')}
+          aria-label="Open the player portal"
+        >
+          <span className="brand-icon" aria-hidden="true"><Spade size={21} fill="currentColor" /></span>
           <div>
             <div className="brand-title">CLUB RE STRADDLE</div>
             <div className="brand-sub">
               {isPlayerMode ? 'Member Lounge & Passes' : 'Staff Operations OS'}
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Staff Only Role Navigation Tabs (Hidden for Players) */}
         {!isPlayerMode ? (
@@ -72,7 +77,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
               onClick={() => setActiveRole('cashier')}
             >
               <DollarSign size={15} />
-              <span>Cashier Desk</span>
+              <span>Cashier</span>
               {!currentStaffUser && <Lock size={11} style={{ opacity: 0.6 }} />}
             </button>
 
@@ -81,7 +86,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
               onClick={() => setActiveRole('security')}
             >
               <ShieldCheck size={15} />
-              <span>Security Desk</span>
+              <span>Security</span>
               {!currentStaffUser && <Lock size={11} style={{ opacity: 0.6 }} />}
               {pendingSecurityCount > 0 && (
                 <span
@@ -105,35 +110,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
               onClick={() => setActiveRole('admin')}
             >
               <LayoutDashboard size={15} />
-              <span>Admin Center</span>
+              <span>Admin</span>
               {!currentStaffUser && <Lock size={11} style={{ opacity: 0.6 }} />}
             </button>
           </nav>
         ) : (
           /* Player Live Clock & Club Status */
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: '#13060a',
-                padding: '6px 14px',
-                borderRadius: '999px',
-                border: '1px solid rgba(225, 29, 72, 0.35)',
-                fontSize: '0.78rem',
-                color: '#ffffff',
-              }}
-            >
-              <span
-                style={{
-                  width: '7px',
-                  height: '7px',
-                  borderRadius: '50%',
-                  background: '#e11d48',
-                  boxShadow: '0 0 8px #e11d48',
-                }}
-              />
+          <div className="player-club-status" aria-label={`Club open, current time ${currentTime}`}>
+            <div className="player-club-status-pill">
+              <span className="player-club-status-dot" aria-hidden="true" />
               <span style={{ color: '#fda4af', fontWeight: 700 }}>Club Open</span>
               <span style={{ opacity: 0.5 }}>•</span>
               <span style={{ fontFamily: 'var(--font-mono)' }}>{currentTime}</span>
@@ -142,78 +127,42 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
         )}
 
         {/* Header Right Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="app-header-actions">
           {isPlayerMode ? (
             /* Active Member Profile Badge (Only when registered / loaded) */
             currentPlayer ? (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: '#16080d',
-                  padding: '5px 12px',
-                  borderRadius: '10px',
-                  border: '1.5px solid rgba(225, 29, 72, 0.4)',
-                }}
-              >
-                <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.82rem' }}>
-                  👤 {currentPlayer.fullName}
+              <div className="header-member-chip">
+                <span className="header-member-name">
+                  <UserRound size={14} aria-hidden="true" /> {currentPlayer.fullName}
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#fda4af', background: 'rgba(225,29,72,0.25)', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                <span className="header-member-tier">
                   {currentPlayer.membershipTier}
                 </span>
                 <button
+                  type="button"
                   onClick={() => setSelectedPlayerId('')}
-                  title="Switch to another player or register new"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    fontSize: '0.72rem',
-                    textDecoration: 'underline',
-                    padding: '0 2px',
-                  }}
+                  className="header-switch-member"
+                  aria-label="Switch to another member"
                 >
-                  Change
+                  <UsersRound size={13} aria-hidden="true" /> <span>Switch</span>
                 </button>
               </div>
             ) : null
           ) : currentStaffUser ? (
             /* Staff Session Info */
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '0.76rem',
-                background: '#16090d',
-                padding: '5px 12px',
-                borderRadius: 'var(--radius-full)',
-                border: '1px solid rgba(225, 29, 72, 0.4)',
-              }}
-            >
+            <div className="header-staff-chip">
               <CircleDot size={9} color="#e11d48" />
-              <span style={{ fontWeight: 700, color: '#ffffff' }}>{currentStaffUser.fullName}</span>
-              <span style={{ fontSize: '0.65rem', color: '#fda4af', textTransform: 'uppercase', background: 'rgba(225,29,72,0.2)', padding: '1px 6px', borderRadius: '4px' }}>
+              <span className="header-staff-name">{currentStaffUser.fullName}</span>
+              <span className="header-staff-role">
                 {currentStaffUser.role}
               </span>
               <button
+                type="button"
                 onClick={logoutStaff}
-                title="Sign out and return to player app"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#f87171',
-                  cursor: 'pointer',
-                  padding: '2px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginLeft: '4px',
-                }}
+                className="header-signout-button"
+                aria-label="Sign out of the staff portal"
               >
-                <LogOut size={12} />
+                <LogOut size={13} aria-hidden="true" />
               </button>
             </div>
           ) : null}
@@ -223,16 +172,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => setActiveRole('player')}
-              style={{ fontSize: '0.74rem', padding: '6px 12px' }}
+              aria-label="Exit staff tools and open the player portal"
             >
-              <User size={13} /> Exit to Player App
+              <User size={13} /> <span className="header-action-label">Player portal</span>
             </button>
           )}
 
           {/* Entrance QR Standee button */}
-          <button className="btn btn-secondary btn-sm" onClick={onOpenQR} title="Club Registration QR Standee">
+          <button className="btn btn-secondary btn-sm" onClick={onOpenQR} aria-label="Open club registration standee QR">
             <QrCode size={13} color="#ffffff" />
-            <span style={{ display: 'inline' }}>Standee QR</span>
+            <span className="header-action-label">Standee QR</span>
           </button>
         </div>
       </div>

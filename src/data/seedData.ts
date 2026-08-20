@@ -169,7 +169,7 @@ export const initialCheckIns: DailyCheckIn[] = [
     checkInDate: new Date().toISOString().slice(0, 10),
     checkInTime: new Date(Date.now() - 3600000).toISOString(),
     verificationStatus: 'approved',
-    tablePreference: '♠ Re Straddle High Roller Championship',
+    tablePreference: 'Re Straddle High Roller Championship',
     verifiedAt: new Date(Date.now() - 3600000 + 90000).toISOString(),
     verifiedBy: 'Marcus Vance',
   },
@@ -189,7 +189,7 @@ export const initialCheckIns: DailyCheckIn[] = [
 export const initialTournaments: Tournament[] = [
   {
     id: 'TRN-2026-01',
-    name: '♠ Re Straddle High Roller Championship',
+    name: 'Re Straddle High Roller Championship',
     buyInFee: 25000,
     clubRake: 2500,
     startingChips: 50000,
@@ -203,7 +203,7 @@ export const initialTournaments: Tournament[] = [
   },
   {
     id: 'TRN-2026-02',
-    name: '♦ Midnight Bounty Knockout Series',
+    name: 'Midnight Bounty Knockout Series',
     buyInFee: 10000,
     clubRake: 1000,
     startingChips: 25000,
@@ -221,7 +221,7 @@ export const initialEntries: TournamentEntry[] = [
   {
     id: 'ENT-2026-101',
     tournamentId: 'TRN-2026-01',
-    tournamentName: '♠ Re Straddle High Roller Championship',
+    tournamentName: 'Re Straddle High Roller Championship',
     playerId: 'MEM-2026-882',
     playerName: 'Sofia Valenti',
     playerPhone: '+91 98204 77192',

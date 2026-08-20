@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
-import { Trophy, DollarSign, Users, Calendar, Award } from 'lucide-react';
+import React from 'react';
+import { Trophy, DollarSign, Award } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatDateTime } from '../../utils/formatters';
 import { TournamentStatusBadge } from '../common/Badge';
 
 export const AdminTournamentsView: React.FC = () => {
   const { tournaments, entries } = useClub();
-  const [selectedTournamentId, setSelectedTournamentId] = useState<string | null>(null);
-
   const totalRakeEarned = entries.reduce((sum, e) => sum + e.rakeAmount, 0);
   const totalBuyInsCollected = entries.reduce((sum, e) => sum + e.buyInAmount, 0);
 
@@ -90,7 +88,7 @@ export const AdminTournamentsView: React.FC = () => {
                     <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
                       {trn.id}
                     </td>
-                    <td style={{ fontWeight: 700 }}>{trn.name}</td>
+                    <td style={{ fontWeight: 700 }}>{formatClubLabel(trn.name)}</td>
                     <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
                       {formatCurrency(trn.buyInFee)} + {formatCurrency(trn.clubRake)}
                     </td>

@@ -18,30 +18,30 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
   const roles: { role: UserRole; title: string; desc: string; icon: React.ReactNode; color: string; badge?: number }[] = [
     {
       role: 'player',
-      title: '1. Player Portal',
-      desc: 'Mobile Check-in & KYC Registration Pass',
+      title: 'Player portal',
+      desc: 'Member check-in, profile and digital pass',
       icon: <User size={20} color="#ffffff" />,
       color: '#e11d48',
     },
     {
       role: 'cashier',
-      title: '2. Cashier Portal',
-      desc: 'Tournaments, Entries, Billing & Cash Float',
+      title: 'Cashier desk',
+      desc: 'Entries, billing, vouchers and cash',
       icon: <DollarSign size={20} color="#ffffff" />,
       color: '#e11d48',
     },
     {
       role: 'security',
-      title: '3. Security Portal',
-      desc: 'Door Entrance Scanner & KYC Verification',
+      title: 'Security desk',
+      desc: 'Door queue, scanner and player clearance',
       icon: <ShieldCheck size={20} color="#ffffff" />,
       color: '#e11d48',
       badge: pendingCount > 0 ? pendingCount : undefined,
     },
     {
       role: 'admin',
-      title: '4. Admin Portal',
-      desc: 'Operations Dashboard, Treasury & Audit Logs',
+      title: 'Admin portal',
+      desc: 'Players, staff, finance and audit',
       icon: <LayoutDashboard size={20} color="#ffffff" />,
       color: '#e11d48',
     },
@@ -56,16 +56,18 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
     <MobileBottomDrawer
       isOpen={isOpen}
       onClose={onClose}
-      title="Switch Portal Station"
-      subtitle="Select which mobile role/portal to operate"
+      title="Switch portal"
+      subtitle="Choose the desk you want to operate"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {roles.map(item => {
           const isCurrent = activeRole === item.role;
           return (
-            <div
+            <button
               key={item.role}
+              type="button"
               onClick={() => handleSelectRole(item.role)}
+              aria-current={isCurrent ? 'page' : undefined}
               style={{
                 background: isCurrent ? 'var(--bg-card-elevated)' : 'var(--bg-card-subtle)',
                 border: `1.5px solid ${isCurrent ? item.color : 'var(--border-subtle)'}`,
@@ -76,6 +78,9 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
                 justifyContent: 'space-between',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
+                width: '100%',
+                color: 'inherit',
+                textAlign: 'left',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -114,7 +119,7 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
               </div>
 
               {isCurrent && <Check size={18} color={item.color} />}
-            </div>
+            </button>
           );
         })}
 
@@ -128,6 +133,7 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
               {players.map(p => (
                 <button
                   key={p.id}
+                  type="button"
                   className={`m-btn m-btn-sm ${selectedPlayerId === p.id ? 'm-btn-primary' : 'm-btn-secondary'}`}
                   style={{ justifyContent: 'space-between' }}
                   onClick={() => {
@@ -135,7 +141,7 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
                     onClose();
                   }}
                 >
-                  <span>👤 {p.fullName} ({p.membershipTier})</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}><User size={15} /> {p.fullName} ({p.membershipTier})</span>
                   <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>{p.id}</span>
                 </button>
               ))}
@@ -145,6 +151,7 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
 
         {/* Entrance QR Standee Quick Action */}
         <button
+          type="button"
           className="m-btn m-btn-secondary"
           style={{ marginTop: '8px' }}
           onClick={() => {

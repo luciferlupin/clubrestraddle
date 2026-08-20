@@ -12,6 +12,10 @@ export const formatINR = (amount: number): string => {
   return (amount || 0).toLocaleString('en-IN');
 };
 
+export const formatClubLabel = (label?: string): string => {
+  return (label || '').replace(/^[♠♦♣♥]\s*/, '');
+};
+
 export const formatDateTime = (isoString?: string): string => {
   if (!isoString) return '—';
   try {
@@ -23,6 +27,22 @@ export const formatDateTime = (isoString?: string): string => {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return isoString;
+  }
+};
+
+export const formatShortDateTime = (isoString?: string): string => {
+  if (!isoString) return '—';
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
       hour12: true,
     });
   } catch {

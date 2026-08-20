@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Trophy, Plus, Users, DollarSign, Clock, Calendar, CheckCircle2 } from 'lucide-react';
+import { Trophy, Plus, Users, Calendar } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { Tournament, TournamentStatus } from '../../types';
-import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { TournamentStatus } from '../../types';
+import { formatClubLabel, formatCurrency, formatDateTime } from '../../utils/formatters';
 import { TournamentStatusBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 
@@ -14,7 +14,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
   const { tournaments, entries, createTournament, updateTournamentStatus } = useClub();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     name: '',
     buyInFee: 500,
     clubRake: 50,
@@ -24,7 +24,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
     blindLevelsMinutes: 20,
     startTime: new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 16),
     status: 'Registering' as TournamentStatus,
-  });
+  }));
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +92,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
                       {trn.id}
                     </span>
                     <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '2px' }}>
-                      {trn.name}
+                      {formatClubLabel(trn.name)}
                     </h4>
                   </div>
                   <TournamentStatusBadge status={trn.status} />
@@ -141,6 +141,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
                 </button>
 
                 <select
+                  aria-label={`Update status for ${formatClubLabel(trn.name)}`}
                   className="form-select"
                   style={{ width: 'auto', padding: '4px 8px', fontSize: '0.75rem' }}
                   value={trn.status}
@@ -168,8 +169,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
       >
         <form onSubmit={handleCreateSubmit}>
           <div className="form-group">
-            <label className="form-label">Tournament Name *</label>
+            <label className="form-label" htmlFor="new-tournament-name">Tournament Name *</label>
             <input
+              id="new-tournament-name"
               type="text"
               className="form-input"
               placeholder="e.g. Saturday Night Deepstack Knockout"
@@ -181,8 +183,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Buy-in Fee ($) *</label>
+              <label className="form-label" htmlFor="new-tournament-buyin">Buy-in Fee (₹) *</label>
               <input
+                id="new-tournament-buyin"
                 type="number"
                 className="form-input"
                 value={formData.buyInFee}
@@ -192,8 +195,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Club Entry Rake ($) *</label>
+              <label className="form-label" htmlFor="new-tournament-rake">Club Entry Rake (₹) *</label>
               <input
+                id="new-tournament-rake"
                 type="number"
                 className="form-input"
                 value={formData.clubRake}
@@ -206,8 +210,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Starting Stack (Chips) *</label>
+              <label className="form-label" htmlFor="new-tournament-stack">Starting Stack (Chips) *</label>
               <input
+                id="new-tournament-stack"
                 type="number"
                 className="form-input"
                 value={formData.startingChips}
@@ -217,8 +222,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Guaranteed Prize Pool ($) *</label>
+              <label className="form-label" htmlFor="new-tournament-pool">Guaranteed Prize Pool (₹) *</label>
               <input
+                id="new-tournament-pool"
                 type="number"
                 className="form-input"
                 value={formData.guaranteedPrizePool}
@@ -230,8 +236,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
 
           <div className="form-grid-3">
             <div className="form-group">
-              <label className="form-label">Max Seats</label>
+              <label className="form-label" htmlFor="new-tournament-seats">Max Seats</label>
               <input
+                id="new-tournament-seats"
                 type="number"
                 className="form-input"
                 value={formData.maxSeats}
@@ -239,8 +246,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Blind Levels (Mins)</label>
+              <label className="form-label" htmlFor="new-tournament-blinds">Blind Levels (Mins)</label>
               <input
+                id="new-tournament-blinds"
                 type="number"
                 className="form-input"
                 value={formData.blindLevelsMinutes}
@@ -248,8 +256,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Initial Status</label>
+              <label className="form-label" htmlFor="new-tournament-status">Initial Status</label>
               <select
+                id="new-tournament-status"
                 className="form-select"
                 value={formData.status}
                 onChange={e => setFormData({ ...formData, status: e.target.value as TournamentStatus })}
@@ -261,8 +270,9 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
           </div>
 
           <div className="form-group">
-            <label className="form-label">Tournament Start Date & Time</label>
+            <label className="form-label" htmlFor="new-tournament-start">Tournament Start Date & Time</label>
             <input
+              id="new-tournament-start"
               type="datetime-local"
               className="form-input"
               value={formData.startTime}

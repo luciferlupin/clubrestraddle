@@ -1,5 +1,5 @@
 import React from 'react';
-import { Printer, CheckCircle, ShieldCheck, Download } from 'lucide-react';
+import { Printer, CheckCircle, Spade } from 'lucide-react';
 import { Modal } from './Modal';
 import { TournamentEntry } from '../../types';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
@@ -39,8 +39,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
     >
       <div className="receipt-paper" id="printable-receipt">
         <div className="receipt-header">
-          <div style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.04em', color: '#0f172a' }}>
-            ♠ CLUB RE STRADDLE POKER LOUNGE ♠
+          <div style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.04em', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            <Spade size={18} fill="currentColor" aria-hidden="true" /> CLUB RE STRADDLE POKER LOUNGE
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
             OFFICIAL TOURNAMENT ENTRY & PAYMENT VOUCHER

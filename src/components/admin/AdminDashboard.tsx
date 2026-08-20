@@ -6,11 +6,7 @@ import {
   DollarSign,
   Receipt,
   Wallet,
-  ArrowUpRight,
-  ArrowDownLeft,
   ShieldCheck,
-  Activity,
-  Award,
   Coins,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
@@ -48,18 +44,13 @@ const StatCard: React.FC<StatCardProps> = ({
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab }) => {
   const {
     players,
-    checkIns,
     todayCheckIns,
     tournaments,
-    entries,
-    cashTransactions,
     chipRequests,
     pendingChipOrdersCount,
-    expenses,
     auditLogs,
     currentCashBalance,
     totalExpensesAmount,
-    totalCashInAmount,
   } = useClub();
 
   const activeTournaments = tournaments.filter(t => t.status === 'Registering' || t.status === 'Running');
@@ -79,9 +70,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
     .slice(0, 5);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="admin-dashboard">
       {/* Top Required Admin Dashboard Metrics */}
-      <div className="stats-grid">
+      <div className="stats-grid admin-kpi-grid">
         <StatCard
           label="Total Registered Players"
           value={players.length}

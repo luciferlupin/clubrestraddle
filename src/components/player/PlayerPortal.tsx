@@ -1,19 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   UserPlus,
   UserCheck,
   QrCode,
-  Shield,
   CheckCircle,
   User,
   History,
   Trophy,
   Receipt,
-  Sparkles,
-  Calendar,
-  Clock,
-  MapPin,
-  Flame,
   Coins,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
@@ -24,19 +18,25 @@ import { CheckInHistory } from './CheckInHistory';
 import { PlayerProfile } from './PlayerProfile';
 import { TableChipRequestModal } from './TableChipRequestModal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
-import { TierBadge, KYCBadge, EntryBadge } from '../common/Badge';
-import { formatCurrency, formatDateTime, formatDateOnly, formatINR } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
+import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
+import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
+
+type PlayerTab = 'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history';
 
 interface PlayerPortalProps {
   onOpenQR: () => void;
   showNewPlayerFormInitially?: boolean;
+  onRegistrationFlowComplete?: () => void;
 }
 
-export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPlayerFormInitially = false }) => {
+export const PlayerPortal: React.FC<PlayerPortalProps> = ({
+  onOpenQR,
+  showNewPlayerFormInitially = false,
+  onRegistrationFlowComplete,
+}) => {
   const {
     currentPlayer,
-    setSelectedPlayerId,
-    players,
     checkIns,
     tournaments,
     entries,
@@ -44,19 +44,13 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
     hasPlayerCheckedInToday,
     lookupMemberByPhone,
   } = useClub();
-  const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially);
+  const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially || !currentPlayer);
   const [isChipModalOpen, setIsChipModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history'>('pass');
-
-  useEffect(() => {
-    if (showNewPlayerFormInitially || !currentPlayer) {
-      setShowKYCForm(true);
-    }
-  }, [showNewPlayerFormInitially, currentPlayer]);
+  const [activeTab, setActiveTab] = useState<PlayerTab>('pass');
 
   const playerCheckIns = currentPlayer
     ? checkIns.filter(c => c.playerId === currentPlayer.id)
@@ -86,67 +80,40 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
     }
   };
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Banner with Quick Actions */}
-      <div
-        style={{
-          background: 'linear-gradient(155deg, #130a0e 0%, #090608 100%)',
-          border: '1px solid rgba(225, 29, 72, 0.35)',
-          borderRadius: '16px',
-          padding: '16px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              background: 'rgba(225, 29, 72, 0.2)',
-              border: '1px solid var(--border-red)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-            }}
-          >
-            <QrCode size={22} />
-          </div>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#ffffff' }}>
-              {currentPlayer ? `${currentPlayer.fullName}'s Member Portal` : 'Club Re Straddle • Member Registration'}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
-              {currentPlayer ? (
-                <>Member ID: <strong style={{ color: '#ffffff' }}>{currentPlayer.id}</strong> • Total Visits: <strong style={{ color: '#ffffff' }}>{currentPlayer.totalVisits}</strong></>
-              ) : (
-                <>First-time guest? Complete KYC below to generate your Digital Pass.</>
-              )}
-            </div>
-          </div>
-        </div>
+  const playerSections: DesktopSectionNavItem<PlayerTab>[] = [
+    { id: 'pass', label: 'Overview', icon: <CheckCircle size={16} /> },
+    { id: 'chips', label: 'Buy chips', icon: <Coins size={16} /> },
+    { id: 'tournaments', label: `Events (${tournaments.length})`, icon: <Trophy size={16} /> },
+    { id: 'billing', label: `Receipts (${playerEntries.length})`, icon: <Receipt size={16} /> },
+    { id: 'profile', label: 'My profile', icon: <User size={16} /> },
+    { id: 'history', label: `Visits (${playerCheckIns.length})`, icon: <History size={16} /> },
+  ];
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+  return (
+    <div className="desktop-portal desktop-player-portal">
+      <DesktopPortalHeader
+        icon={<QrCode size={23} />}
+        eyebrow={currentPlayer ? 'Player portal' : 'Member registration'}
+        title={currentPlayer ? `${currentPlayer.fullName}'s member portal` : 'Create your Club Re Straddle profile'}
+        subtitle={currentPlayer ? (
+          <>Member <strong>{currentPlayer.id}</strong> · {currentPlayer.totalVisits} club visits</>
+        ) : (
+          <>Complete KYC once to receive your digital pass and use club services.</>
+        )}
+        actions={
+          <>
           {currentPlayer && (
             <button
               className="btn btn-primary"
               onClick={() => setIsChipModalOpen(true)}
-              style={{ background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', boxShadow: '0 0 15px rgba(225, 29, 72, 0.4)' }}
             >
-              <Coins size={16} /> Buy Chips (Table Reload)
+              <Coins size={16} /> Buy chips
             </button>
           )}
 
           {currentPlayer && (
             <button
-              className={`btn ${showKYCForm ? 'btn-secondary' : 'btn-secondary'}`}
+              className="btn btn-secondary"
               onClick={() => setShowKYCForm(!showKYCForm)}
             >
               {showKYCForm ? (
@@ -155,17 +122,18 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
                 </>
               ) : (
                 <>
-                  <UserPlus size={16} /> Register Another Member (KYC)
+                  <UserPlus size={16} /> Register member
                 </>
               )}
             </button>
           )}
 
           <button className="btn btn-secondary btn-sm" onClick={onOpenQR} title="Entrance QR Standee">
-            <QrCode size={16} color="#ffffff" /> Entrance Standee QR
+            <QrCode size={16} color="#ffffff" /> Standee QR
           </button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* If New Player or showKYCForm is active */}
       {(!currentPlayer || showKYCForm) ? (
@@ -215,12 +183,15 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
           )}
 
           <KYCRegistrationForm
-            onSuccess={() => setShowKYCForm(false)}
+            onSuccess={() => {
+              setShowKYCForm(false);
+              onRegistrationFlowComplete?.();
+            }}
             onCancel={currentPlayer ? () => setShowKYCForm(false) : undefined}
           />
         </div>
       ) : currentPlayer ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 380px) 1fr', gap: '20px' }}>
+        <div className="desktop-player-layout">
           {/* Left Column: Digital Pass & Daily Check-in */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <PlayerPass player={currentPlayer} todayCheckIn={todayCheckIn} />
@@ -229,44 +200,13 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
 
           {/* Right Column: Tabbed View for Dashboard, Tournaments, Billing, Profile, History */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="sub-nav-tabs">
-              <button
-                className={`sub-tab-btn ${activeTab === 'pass' ? 'active' : ''}`}
-                onClick={() => setActiveTab('pass')}
-              >
-                <CheckCircle size={15} /> Overview & Clearance
-              </button>
-              <button
-                className={`sub-tab-btn ${activeTab === 'chips' ? 'active' : ''}`}
-                onClick={() => setActiveTab('chips')}
-              >
-                <Coins size={15} /> Buy Chips at Table
-              </button>
-              <button
-                className={`sub-tab-btn ${activeTab === 'tournaments' ? 'active' : ''}`}
-                onClick={() => setActiveTab('tournaments')}
-              >
-                <Trophy size={15} /> Tournaments ({tournaments.length})
-              </button>
-              <button
-                className={`sub-tab-btn ${activeTab === 'billing' ? 'active' : ''}`}
-                onClick={() => setActiveTab('billing')}
-              >
-                <Receipt size={15} /> Billing Receipts ({playerEntries.length})
-              </button>
-              <button
-                className={`sub-tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
-                onClick={() => setActiveTab('profile')}
-              >
-                <User size={15} /> KYC Credentials
-              </button>
-              <button
-                className={`sub-tab-btn ${activeTab === 'history' ? 'active' : ''}`}
-                onClick={() => setActiveTab('history')}
-              >
-                <History size={15} /> Visits ({playerCheckIns.length})
-              </button>
-            </div>
+            <DesktopSectionNav
+              ariaLabel="Player portal sections"
+              activeId={activeTab}
+              items={playerSections}
+              onChange={setActiveTab}
+              className="desktop-section-nav-player"
+            />
 
             {/* TAB 1: OVERVIEW & CLEARANCE */}
             {activeTab === 'pass' && (
@@ -304,7 +244,8 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
                       </p>
                     </div>
                   ) : (
-                    <table className="data-table">
+                    <div className="table-container">
+                    <table className="custom-table">
                       <thead>
                         <tr>
                           <th>Order ID</th>
@@ -358,6 +299,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
                           ))}
                       </tbody>
                     </table>
+                    </div>
                   )}
                 </div>
               </div>
@@ -395,7 +337,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                         <div>
                           <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#ffffff' }}>
-                            {t.name}
+                            {formatClubLabel(t.name)}
                           </div>
                           <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
                             Starts: {formatDateTime(t.startTime)} • Blinds: {t.blindLevelsMinutes} mins
@@ -486,7 +428,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
                             tableLocation: `${entry.tableNumber || 'Table 1'} • ${entry.seatNumber || 'Seat 1'}`,
                             items: [
                               {
-                                description: `${entry.tournamentName} - Tournament Buy-in Stack`,
+                                description: `${formatClubLabel(entry.tournamentName)} - Tournament Buy-in Stack`,
                                 details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Tournament Chips`,
                                 chips: tournamentObj?.startingChips || 50000,
                                 amount: entry.buyInAmount,
@@ -511,7 +453,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
                                 {entry.receiptNumber}
                               </td>
                               <td style={{ fontWeight: 600, color: '#ffffff' }}>
-                                {entry.tournamentName}
+                                {formatClubLabel(entry.tournamentName)}
                               </td>
                               <td>
                                 <div style={{ fontWeight: 700, color: '#ffffff' }}>

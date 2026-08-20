@@ -1,25 +1,21 @@
 import React, { useState } from 'react';
 import {
-  Users,
   UserPlus,
   Shield,
-  DollarSign,
-  ShieldCheck,
   Trash2,
-  Lock,
   Mail,
   CheckCircle2,
   Ban,
-  RotateCcw,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { StaffUser, StaffRole } from '../../types';
+import { StaffRole } from '../../types';
 import { formatDateOnly } from '../../utils/formatters';
 import { Modal } from '../common/Modal';
 
 export const StaffManager: React.FC = () => {
-  const { staffUsers, createStaffUser, deleteStaffUser, toggleStaffStatus, currentStaffUser } = useClub();
+  const { staffUsers, createStaffUser, deleteStaffUser, toggleStaffStatus } = useClub();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -30,6 +26,13 @@ export const StaffManager: React.FC = () => {
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const pendingDeleteUser = staffUsers.find(user => user.id === pendingDeleteId);
+
+  const confirmDelete = () => {
+    if (!pendingDeleteId) return;
+    deleteStaffUser(pendingDeleteId);
+    setPendingDeleteId(null);
+  };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,13 +90,15 @@ export const StaffManager: React.FC = () => {
             Create and manage authorized login accounts for Cashier terminals and Security door staff.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+        <button type="button" className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
           <UserPlus size={16} /> Create Staff Account
         </button>
       </div>
 
       {success && (
         <div
+          role="status"
+          aria-live="polite"
           style={{
             background: 'rgba(139, 0, 0, 0.25)',
             border: '1px solid rgba(139, 0, 0, 0.6)',
@@ -113,7 +118,7 @@ export const StaffManager: React.FC = () => {
       )}
 
       {/* Staff Accounts Table */}
-      <div className="table-container">
+      <div className="table-container staff-desktop-table">
         <table className="custom-table">
           <thead>
             <tr>
@@ -173,6 +178,7 @@ export const StaffManager: React.FC = () => {
                     {!isSuperAdmin && (
                       <div style={{ display: 'inline-flex', gap: '6px' }}>
                         <button
+                          type="button"
                           className={`btn btn-sm ${user.status === 'active' ? 'btn-secondary' : 'btn-emerald'}`}
                           onClick={() => toggleStaffStatus(user.id)}
                           title={user.status === 'active' ? 'Suspend staff account' : 'Reactivate account'}
@@ -182,13 +188,11 @@ export const StaffManager: React.FC = () => {
                         </button>
 
                         <button
+                          type="button"
                           className="btn btn-danger btn-sm"
-                          onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete ${user.fullName}'s account?`)) {
-                              deleteStaffUser(user.id);
-                            }
-                          }}
+                          onClick={() => setPendingDeleteId(user.id)}
                           title="Delete staff account"
+                          aria-label={`Delete ${user.fullName}`}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -207,6 +211,52 @@ export const StaffManager: React.FC = () => {
         </table>
       </div>
 
+      <div className="staff-mobile-list" aria-label="Staff accounts">
+        {staffUsers.map(user => {
+          const isSuperAdmin = user.role === 'admin';
+          return (
+            <article key={user.id} className="staff-account-card">
+              <div className="staff-account-topline">
+                <span className="staff-account-avatar" aria-hidden="true">{user.fullName.charAt(0)}</span>
+                <span className="staff-account-name">
+                  <strong>{user.fullName}</strong>
+                  <small>{user.id} · {formatDateOnly(user.createdAt)}</small>
+                </span>
+                {getRoleBadge(user.role)}
+              </div>
+              <div className="staff-account-email"><Mail size={14} /> <span>{user.email}</span></div>
+              <div className="staff-account-actions">
+                <span className={`badge ${user.status === 'active' ? 'badge-success' : 'badge-danger'}`}>
+                  <span className="badge-dot" /> {user.status}
+                </span>
+                {isSuperAdmin ? (
+                  <span className="staff-master-label">Master admin</span>
+                ) : (
+                  <div>
+                    <button
+                      type="button"
+                      className={`btn btn-sm ${user.status === 'active' ? 'btn-secondary' : 'btn-emerald'}`}
+                      onClick={() => toggleStaffStatus(user.id)}
+                    >
+                      {user.status === 'active' ? <Ban size={13} /> : <CheckCircle2 size={13} />}
+                      {user.status === 'active' ? 'Suspend' : 'Activate'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm btn-icon"
+                      aria-label={`Delete ${user.fullName}`}
+                      onClick={() => setPendingDeleteId(user.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
       {/* Create Staff Account Modal */}
       <Modal
         isOpen={isCreateModalOpen}
@@ -216,15 +266,16 @@ export const StaffManager: React.FC = () => {
         size="md"
       >
         {error && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', borderRadius: '8px', padding: '10px', color: '#f87171', fontSize: '0.8rem', marginBottom: '14px' }}>
+          <div role="alert" style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', borderRadius: '8px', padding: '10px', color: '#f87171', fontSize: '0.8rem', marginBottom: '14px' }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleCreateSubmit}>
           <div className="form-group">
-            <label className="form-label">Full Name *</label>
+            <label className="form-label" htmlFor="new-staff-name">Full Name *</label>
             <input
+              id="new-staff-name"
               type="text"
               className="form-input"
               placeholder="e.g. Alice Walker or Officer Sterling"
@@ -235,8 +286,9 @@ export const StaffManager: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Login Email Address *</label>
+            <label className="form-label" htmlFor="new-staff-email">Login Email Address *</label>
             <input
+              id="new-staff-email"
               type="email"
               className="form-input"
               placeholder="e.g. cashier1@clubrestraddle.com"
@@ -247,8 +299,9 @@ export const StaffManager: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Password *</label>
+            <label className="form-label" htmlFor="new-staff-password">Password *</label>
             <input
+              id="new-staff-password"
               type="password"
               className="form-input"
               placeholder="Create strong password"
@@ -259,14 +312,15 @@ export const StaffManager: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Assigned Role & Portal Access *</label>
+            <label className="form-label" htmlFor="new-staff-role">Assigned Role & Portal Access *</label>
             <select
+              id="new-staff-role"
               className="form-select"
               value={formData.role}
               onChange={e => setFormData({ ...formData, role: e.target.value as 'cashier' | 'security' })}
             >
-              <option value="cashier">💵 Cashier Portal (Tournaments, Entries & Cash Drawer)</option>
-              <option value="security">🛡️ Security Portal (Entrance Verification, Age Check & Door Clearance)</option>
+              <option value="cashier">Cashier portal — tournaments, entries and cash</option>
+              <option value="security">Security portal — verification and door clearance</option>
             </select>
           </div>
 
@@ -279,6 +333,28 @@ export const StaffManager: React.FC = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={!!pendingDeleteUser}
+        onClose={() => setPendingDeleteId(null)}
+        title="Delete staff account?"
+        subtitle={pendingDeleteUser ? `This removes login access for ${pendingDeleteUser.fullName}.` : undefined}
+        size="sm"
+        footer={
+          <>
+            <button type="button" className="btn btn-secondary" onClick={() => setPendingDeleteId(null)}>
+              Keep account
+            </button>
+            <button type="button" className="btn btn-danger" onClick={confirmDelete}>
+              <Trash2 size={16} /> Delete account
+            </button>
+          </>
+        }
+      >
+        <p style={{ color: '#cbd5e1', fontSize: '0.86rem', lineHeight: 1.6 }}>
+          This action cannot be undone. Attendance and audit records remain available.
+        </p>
       </Modal>
     </div>
   );

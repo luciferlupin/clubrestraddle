@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
-import { UserPlus, Sparkles, ShieldCheck, ArrowLeft, FileText, Lock } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BadgeCheck,
+  Check,
+  FileText,
+  Lock,
+  ShieldCheck,
+  UserRound,
+} from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { GovtIdType, Player, DailyCheckIn } from '../../types';
 import confetti from 'canvas-confetti';
@@ -9,9 +18,18 @@ interface MobileKYCFormProps {
   onCancel?: () => void;
 }
 
+type RegistrationStep = 1 | 2 | 3;
+
+const stepDetails = [
+  { number: 1, label: 'About you', icon: UserRound },
+  { number: 2, label: 'Verify ID', icon: BadgeCheck },
+  { number: 3, label: 'Ready to play', icon: Check },
+] as const;
+
 export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCancel }) => {
   const { registerNewPlayer } = useClub();
-
+  const formTopRef = useRef<HTMLDivElement>(null);
+  const [step, setStep] = useState<RegistrationStep>(1);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -26,7 +44,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     agreedToRules: false,
     tablePreference: 'NLH Cash Game (₹250/₹500)',
   });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -37,66 +54,81 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
   ];
 
-  const handleAutofill = () => {
-    const randomId = Math.floor(1000 + Math.random() * 9000);
-    setFormData({
-      fullName: 'Aditya Singhal',
-      phone: `+91 98${Math.floor(10 + Math.random() * 89)} ${Math.floor(1000 + Math.random() * 9000)}`,
-      email: `aditya.singhal.${randomId}@gmail.com`,
-      dateOfBirth: '1993-06-18',
-      govtIdType: 'Aadhaar Card',
-      govtIdNumber: `5432 8765 ${randomId}`,
-      address: 'DLF Cyber City, Phase 2, Gurugram, Haryana - 122002',
-      emergencyContactName: 'Pooja Singhal',
-      emergencyContactPhone: '+91 98112 34567',
-      photoUrl: sampleAvatars[0],
-      agreedToRules: true,
-      tablePreference: '♠ Re Straddle High Roller Championship',
-    });
-    setErrors({});
-  };
+  const maxBirthDate = new Date();
+  maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 21);
+  const maxBirthDateString = maxBirthDate.toISOString().split('T')[0];
 
   const getIdPlaceholder = () => {
     switch (formData.govtIdType) {
       case 'Aadhaar Card':
-        return 'e.g. 5432 8765 4321 (12 digits)';
+        return '12-digit Aadhaar number';
       case 'PAN Card':
-        return 'e.g. ABCDE1234F (10 characters)';
+        return 'ABCDE1234F';
       case 'Passport':
-        return 'e.g. A1234567';
+        return 'A1234567';
       case 'Driving License':
-        return 'e.g. DL-1420110012345';
+        return 'DL-1420110012345';
       case 'Voter ID':
-        return 'e.g. EPIC-9923841';
+        return 'Enter Voter ID number';
       default:
-        return 'Enter Government ID Number';
+        return 'Enter ID number';
     }
   };
 
-  const validate = () => {
-    const errs: Record<string, string> = {};
-    if (!formData.fullName.trim()) errs.fullName = 'Full Name is required';
-    if (!formData.phone.trim()) errs.phone = 'Phone number is required';
-    if (!formData.email.trim() || !formData.email.includes('@')) errs.email = 'Valid email required';
-    if (!formData.dateOfBirth) {
-      errs.dateOfBirth = 'Date of birth required';
-    } else {
-      const dob = new Date(formData.dateOfBirth);
-      const diff = Date.now() - dob.getTime();
-      const age = Math.abs(new Date(diff).getUTCFullYear() - 1970);
-      if (isNaN(age) || age < 21) {
-        errs.dateOfBirth = `Must be 21+ years old (Age: ${age || 0})`;
+  const getValidationErrors = (targetStep?: RegistrationStep) => {
+    const nextErrors: Record<string, string> = {};
+
+    if (!targetStep || targetStep === 1) {
+      if (!formData.fullName.trim()) nextErrors.fullName = 'Enter your name as it appears on your ID.';
+      if (!formData.phone.trim()) nextErrors.phone = 'Enter your mobile number.';
+      if (!formData.email.trim() || !formData.email.includes('@')) nextErrors.email = 'Enter a valid email address.';
+
+      if (!formData.dateOfBirth) {
+        nextErrors.dateOfBirth = 'Select your date of birth.';
+      } else if (formData.dateOfBirth > maxBirthDateString) {
+        nextErrors.dateOfBirth = 'Club entry is available to players aged 21 and above.';
       }
     }
-    if (!formData.govtIdNumber.trim()) errs.govtIdNumber = 'Govt ID # required';
-    if (!formData.agreedToRules) errs.agreedToRules = 'Must agree to poker rules & declaration';
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
+
+    if (!targetStep || targetStep === 2) {
+      if (!formData.govtIdNumber.trim()) nextErrors.govtIdNumber = 'Enter your government ID number.';
+    }
+
+    if (!targetStep || targetStep === 3) {
+      if (!formData.agreedToRules) nextErrors.agreedToRules = 'Please confirm the age and house-rules declaration.';
+    }
+
+    return nextErrors;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const goToStep = (nextStep: RegistrationStep) => {
+    setStep(nextStep);
+    setErrors({});
+    window.requestAnimationFrame(() => {
+      formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  const handleNext = () => {
+    const stepErrors = getValidationErrors(step);
+    setErrors(stepErrors);
+    if (Object.keys(stepErrors).length > 0) return;
+    goToStep((step + 1) as RegistrationStep);
+  };
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const validationErrors = getValidationErrors();
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      if (validationErrors.fullName || validationErrors.phone || validationErrors.email || validationErrors.dateOfBirth) {
+        setStep(1);
+      } else if (validationErrors.govtIdNumber) {
+        setStep(2);
+      }
+      return;
+    }
 
     setSubmitting(true);
     setTimeout(() => {
@@ -114,7 +146,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
           photoUrl: formData.photoUrl,
           agreedToRules: formData.agreedToRules,
         },
-        formData.tablePreference
+        formData.tablePreference,
       );
 
       try {
@@ -125,7 +157,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
           colors: ['#e11d48', '#ffffff', '#f43f5e', '#be123c'],
         });
       } catch {
-        // Fallback
+        // Registration still succeeds when the celebration effect is unavailable.
       }
 
       setSubmitting(false);
@@ -134,205 +166,236 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      {/* Top Header Card */}
-      <div className="m-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h2 className="m-card-title">
-              <UserPlus size={20} color="#ffffff" />
-              Member KYC Registration
-            </h2>
-            <p className="m-card-subtitle">Required for first-time poker club entry (21+)</p>
-          </div>
-          <button
-            type="button"
-            className="m-btn m-btn-secondary m-btn-sm"
-            onClick={handleAutofill}
-            style={{ width: 'auto' }}
-          >
-            <Sparkles size={14} color="#ffffff" /> Auto-fill
-          </button>
+    <section className="mobile-kyc-flow" ref={formTopRef} aria-labelledby="mobile-kyc-title">
+      <div className="mobile-flow-heading">
+        <button type="button" className="mobile-icon-button" onClick={onCancel} aria-label="Back to player options">
+          <ArrowLeft size={21} />
+        </button>
+        <div>
+          <span className="mobile-flow-eyebrow">New member check-in</span>
+          <h1 id="mobile-kyc-title">Create your player pass</h1>
+          <p>Three quick steps. Usually takes under two minutes.</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {/* Section: Personal Info */}
-        <div className="m-card">
-          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            1. Personal Information
-          </span>
+      <ol className="mobile-stepper" aria-label={`Registration progress: step ${step} of 3`}>
+        {stepDetails.map(({ number, label, icon: StepIcon }) => (
+          <li key={number} className={number === step ? 'active' : number < step ? 'complete' : ''}>
+            <span className="mobile-step-dot" aria-hidden="true">
+              {number < step ? <Check size={14} /> : <StepIcon size={14} />}
+            </span>
+            <span>{label}</span>
+          </li>
+        ))}
+      </ol>
 
-          <div className="m-form-group">
-            <label className="m-form-label">Full Legal Name (as per Govt ID) *</label>
-            <input
-              type="text"
-              className="m-input"
-              placeholder="e.g. Aditya Singhal"
-              value={formData.fullName}
-              onChange={e => setFormData({ ...formData, fullName: e.target.value })}
-            />
-            {errors.fullName && <span style={{ color: '#ef4444', fontSize: '0.72rem' }}>{errors.fullName}</span>}
-          </div>
+      <form className="mobile-kyc-form" onSubmit={handleSubmit} noValidate>
+        {step === 1 && (
+          <div className="m-card mobile-form-card" role="group" aria-labelledby="mobile-step-one-title">
+            <h2 id="mobile-step-one-title">Tell us about yourself</h2>
+            <p className="mobile-form-intro">Use the same details shown on your government ID.</p>
 
-          <div className="m-form-group">
-            <label className="m-form-label">Primary Mobile Number *</label>
-            <input
-              type="tel"
-              className="m-input"
-              placeholder="+91 98765 43210"
-              value={formData.phone}
-              onChange={e => setFormData({ ...formData, phone: e.target.value })}
-            />
-            {errors.phone && <span style={{ color: '#ef4444', fontSize: '0.72rem' }}>{errors.phone}</span>}
-          </div>
-
-          <div className="m-form-group">
-            <label className="m-form-label">Email Address *</label>
-            <input
-              type="email"
-              className="m-input"
-              placeholder="name@domain.com"
-              value={formData.email}
-              onChange={e => setFormData({ ...formData, email: e.target.value })}
-            />
-            {errors.email && <span style={{ color: '#ef4444', fontSize: '0.72rem' }}>{errors.email}</span>}
-          </div>
-
-          <div className="m-form-group">
-            <label className="m-form-label">Date of Birth (21+ required) *</label>
-            <input
-              type="date"
-              className="m-input"
-              value={formData.dateOfBirth}
-              onChange={e => setFormData({ ...formData, dateOfBirth: e.target.value })}
-            />
-            {errors.dateOfBirth && <span style={{ color: '#ef4444', fontSize: '0.72rem' }}>{errors.dateOfBirth}</span>}
-          </div>
-        </div>
-
-        {/* Section: Government ID */}
-        <div className="m-card">
-          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            2. Government ID (Aadhaar / PAN)
-          </span>
-
-          <div className="m-form-group">
-            <label className="m-form-label">ID Document Type *</label>
-            <select
-              className="m-select"
-              value={formData.govtIdType}
-              onChange={e => setFormData({ ...formData, govtIdType: e.target.value as GovtIdType })}
-            >
-              <option value="Aadhaar Card">Aadhaar Card (12-Digit UIDAI)</option>
-              <option value="PAN Card">PAN Card (10-Digit Alphanumeric)</option>
-              <option value="Passport">Passport</option>
-              <option value="Driving License">Driving License</option>
-              <option value="Voter ID">Voter ID</option>
-            </select>
-          </div>
-
-          <div className="m-form-group">
-            <label className="m-form-label">Govt ID Number *</label>
-            <input
-              type="text"
-              className="m-input"
-              placeholder={getIdPlaceholder()}
-              value={formData.govtIdNumber}
-              onChange={e => setFormData({ ...formData, govtIdNumber: e.target.value })}
-            />
-            {errors.govtIdNumber && <span style={{ color: '#ef4444', fontSize: '0.72rem' }}>{errors.govtIdNumber}</span>}
-          </div>
-
-          {/* Avatar selector */}
-          <div className="m-form-group">
-            <label className="m-form-label">Profile Avatar</label>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <img
-                src={formData.photoUrl}
-                alt=""
-                style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid var(--gold-light)', objectFit: 'cover' }}
+            <div className="m-form-group">
+              <label className="m-form-label" htmlFor="mobile-full-name">Full legal name</label>
+              <input
+                id="mobile-full-name"
+                type="text"
+                className="m-input"
+                placeholder="Your full name"
+                autoComplete="name"
+                value={formData.fullName}
+                aria-invalid={Boolean(errors.fullName)}
+                aria-describedby={errors.fullName ? 'mobile-full-name-error' : undefined}
+                onChange={(event) => setFormData({ ...formData, fullName: event.target.value })}
               />
-              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', flex: 1 }}>
-                {sampleAvatars.map((url, idx) => (
-                  <img
-                    key={idx}
-                    src={url}
-                    alt=""
-                    onClick={() => setFormData({ ...formData, photoUrl: url })}
-                    style={{
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '50%',
-                      cursor: 'pointer',
-                      border: formData.photoUrl === url ? '2px solid #e11d48' : '1px solid var(--border-subtle)',
-                      opacity: formData.photoUrl === url ? 1 : 0.6,
-                    }}
-                  />
-                ))}
-              </div>
+              {errors.fullName && <span id="mobile-full-name-error" className="m-field-error" role="alert">{errors.fullName}</span>}
+            </div>
+
+            <div className="m-form-group">
+              <label className="m-form-label" htmlFor="mobile-phone">Mobile number</label>
+              <input
+                id="mobile-phone"
+                type="tel"
+                inputMode="tel"
+                className="m-input"
+                placeholder="98765 43210"
+                autoComplete="tel"
+                value={formData.phone}
+                aria-invalid={Boolean(errors.phone)}
+                aria-describedby={errors.phone ? 'mobile-phone-error' : undefined}
+                onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+              />
+              {errors.phone && <span id="mobile-phone-error" className="m-field-error" role="alert">{errors.phone}</span>}
+            </div>
+
+            <div className="m-form-group">
+              <label className="m-form-label" htmlFor="mobile-email">Email address</label>
+              <input
+                id="mobile-email"
+                type="email"
+                inputMode="email"
+                className="m-input"
+                placeholder="you@example.com"
+                autoComplete="email"
+                value={formData.email}
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? 'mobile-email-error' : undefined}
+                onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+              />
+              {errors.email && <span id="mobile-email-error" className="m-field-error" role="alert">{errors.email}</span>}
+            </div>
+
+            <div className="m-form-group">
+              <label className="m-form-label" htmlFor="mobile-dob">Date of birth</label>
+              <input
+                id="mobile-dob"
+                type="date"
+                className="m-input"
+                max={maxBirthDateString}
+                autoComplete="bday"
+                value={formData.dateOfBirth}
+                aria-invalid={Boolean(errors.dateOfBirth)}
+                aria-describedby="mobile-dob-help"
+                onChange={(event) => setFormData({ ...formData, dateOfBirth: event.target.value })}
+              />
+              <span id="mobile-dob-help" className={errors.dateOfBirth ? 'm-field-error' : 'm-field-help'} role={errors.dateOfBirth ? 'alert' : undefined}>
+                {errors.dateOfBirth || 'Players must be 21 or older.'}
+              </span>
             </div>
           </div>
-        </div>
-
-        {/* Section: Game Preference & Rules */}
-        <div className="m-card">
-          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            3. Game Preference & Declaration
-          </span>
-
-          <div className="m-form-group">
-            <label className="m-form-label">Preferred Table Today</label>
-            <select
-              className="m-select"
-              value={formData.tablePreference}
-              onChange={e => setFormData({ ...formData, tablePreference: e.target.value })}
-            >
-              <option value="NLH Cash Game (₹100/₹200)">No-Limit Holdem (₹100/₹200 Cash)</option>
-              <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500 Cash)</option>
-              <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
-              <option value="♠ Re Straddle High Roller Championship">♠ Re Straddle High Roller Championship</option>
-              <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (PLO ₹250/₹500)</option>
-            </select>
-          </div>
-
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '10px',
-              padding: '10px',
-              background: 'rgba(0,0,0,0.25)',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              marginTop: '4px',
-            }}
-          >
-            <input
-              type="checkbox"
-              style={{ marginTop: '2px', accentColor: '#e11d48', width: '18px', height: '18px' }}
-              checked={formData.agreedToRules}
-              onChange={e => setFormData({ ...formData, agreedToRules: e.target.checked })}
-            />
-            <span style={{ fontSize: '0.76rem', color: 'var(--text-main)', lineHeight: 1.35 }}>
-              I certify I am 21+ years old, provided accurate government ID, and agree to Club Re Straddle house poker rules.
-            </span>
-          </label>
-          {errors.agreedToRules && <span style={{ color: '#ef4444', fontSize: '0.72rem' }}>{errors.agreedToRules}</span>}
-        </div>
-
-        {/* Submit Touch Button */}
-        <button type="submit" className="m-btn m-btn-primary" disabled={submitting}>
-          <ShieldCheck size={18} />
-          {submitting ? 'Submitting KYC...' : 'Submit KYC & Complete Check-In'}
-        </button>
-
-        {onCancel && (
-          <button type="button" className="m-btn m-btn-ghost" onClick={onCancel}>
-            Cancel
-          </button>
         )}
+
+        {step === 2 && (
+          <div className="m-card mobile-form-card" role="group" aria-labelledby="mobile-step-two-title">
+            <h2 id="mobile-step-two-title">Verify your identity</h2>
+            <p className="mobile-form-intro">Your ID is used only for age and membership verification.</p>
+
+            <div className="m-form-group">
+              <label className="m-form-label" htmlFor="mobile-id-type">Government ID type</label>
+              <select
+                id="mobile-id-type"
+                className="m-select"
+                value={formData.govtIdType}
+                onChange={(event) => setFormData({ ...formData, govtIdType: event.target.value as GovtIdType, govtIdNumber: '' })}
+              >
+                <option value="Aadhaar Card">Aadhaar Card</option>
+                <option value="PAN Card">PAN Card</option>
+                <option value="Passport">Passport</option>
+                <option value="Driving License">Driving License</option>
+                <option value="Voter ID">Voter ID</option>
+              </select>
+            </div>
+
+            <div className="m-form-group">
+              <label className="m-form-label" htmlFor="mobile-id-number">ID number</label>
+              <input
+                id="mobile-id-number"
+                type="text"
+                className="m-input"
+                placeholder={getIdPlaceholder()}
+                autoCapitalize="characters"
+                value={formData.govtIdNumber}
+                aria-invalid={Boolean(errors.govtIdNumber)}
+                aria-describedby={errors.govtIdNumber ? 'mobile-id-number-error' : 'mobile-id-number-help'}
+                onChange={(event) => setFormData({ ...formData, govtIdNumber: event.target.value })}
+              />
+              {errors.govtIdNumber ? (
+                <span id="mobile-id-number-error" className="m-field-error" role="alert">{errors.govtIdNumber}</span>
+              ) : (
+                <span id="mobile-id-number-help" className="m-field-help">Double-check the number before continuing.</span>
+              )}
+            </div>
+
+            <div className="m-form-group">
+              <span className="m-form-label">Choose an optional profile photo</span>
+              <div className="mobile-avatar-options" role="group" aria-label="Profile photo options">
+                {sampleAvatars.map((url, index) => {
+                  const selected = formData.photoUrl === url;
+                  return (
+                    <button
+                      key={url}
+                      type="button"
+                      className={selected ? 'selected' : ''}
+                      aria-label={`Profile photo ${index + 1}${selected ? ', selected' : ''}`}
+                      aria-pressed={selected}
+                      onClick={() => setFormData({ ...formData, photoUrl: url })}
+                    >
+                      <img src={url} alt="" />
+                      {selected && <span aria-hidden="true"><Check size={12} /></span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mobile-privacy-note">
+              <Lock size={17} />
+              <span><strong>Your details stay private.</strong> Only authorised club staff can review KYC information.</span>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="m-card mobile-form-card" role="group" aria-labelledby="mobile-step-three-title">
+            <h2 id="mobile-step-three-title">Choose today&apos;s game</h2>
+            <p className="mobile-form-intro">You can change this with the floor team after check-in.</p>
+
+            <div className="m-form-group">
+              <label className="m-form-label" htmlFor="mobile-table-preference">Preferred table</label>
+              <select
+                id="mobile-table-preference"
+                className="m-select"
+                value={formData.tablePreference}
+                onChange={(event) => setFormData({ ...formData, tablePreference: event.target.value })}
+              >
+                <option value="NLH Cash Game (₹100/₹200)">No-Limit Holdem (₹100/₹200)</option>
+                <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500)</option>
+                <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
+                <option value="Re Straddle High Roller Championship">Re Straddle High Roller Championship</option>
+                <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (₹250/₹500)</option>
+              </select>
+            </div>
+
+            <label className={`mobile-consent-card ${errors.agreedToRules ? 'has-error' : ''}`}>
+              <input
+                type="checkbox"
+                checked={formData.agreedToRules}
+                aria-describedby={errors.agreedToRules ? 'mobile-rules-error' : undefined}
+                onChange={(event) => setFormData({ ...formData, agreedToRules: event.target.checked })}
+              />
+              <span>
+                <strong>I confirm I am 21 or older.</strong>
+                The information I provided is accurate, and I agree to the club&apos;s house rules and responsible-gaming policy.
+              </span>
+            </label>
+            {errors.agreedToRules && <span id="mobile-rules-error" className="m-field-error" role="alert">{errors.agreedToRules}</span>}
+
+            <div className="mobile-privacy-note">
+              <FileText size={17} />
+              <span>Submitting creates your digital pass and checks you in for today.</span>
+            </div>
+          </div>
+        )}
+
+        <div className="mobile-form-actions">
+          {step > 1 && (
+            <button type="button" className="m-btn m-btn-secondary" onClick={() => goToStep((step - 1) as RegistrationStep)}>
+              <ArrowLeft size={18} /> Back
+            </button>
+          )}
+
+          {step < 3 ? (
+            <button type="button" className="m-btn m-btn-primary" onClick={handleNext}>
+              Continue <ArrowRight size={18} />
+            </button>
+          ) : (
+            <button type="submit" className="m-btn m-btn-primary" disabled={submitting}>
+              <ShieldCheck size={18} />
+              {submitting ? 'Creating your pass…' : 'Create pass & check in'}
+            </button>
+          )}
+        </div>
       </form>
-    </div>
+    </section>
   );
 };

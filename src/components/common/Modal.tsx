@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId } from 'react';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -8,7 +8,7 @@ interface ModalProps {
   subtitle?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  size?: 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -20,6 +20,7 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   size = 'md',
 }) => {
+  const titleId = useId();
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -39,15 +40,18 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className={`modal-content ${size === 'lg' ? 'modal-lg' : ''}`}
+        className={`modal-content ${size === 'lg' ? 'modal-lg' : size === 'sm' ? 'modal-sm' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         onClick={e => e.stopPropagation()}
       >
         <div className="modal-header">
           <div>
-            <h3 className="card-title">{title}</h3>
+            <h3 id={titleId} className="card-title">{title}</h3>
             {subtitle && <p className="card-subtitle">{subtitle}</p>}
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={onClose} aria-label="Close modal">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onClose} aria-label="Close modal">
             <X size={18} />
           </button>
         </div>

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId } from 'react';
 import { X } from 'lucide-react';
 
 interface MobileBottomDrawerProps {
@@ -18,6 +18,8 @@ export const MobileBottomDrawer: React.FC<MobileBottomDrawerProps> = ({
   children,
   footer,
 }) => {
+  const titleId = useId();
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -36,15 +38,17 @@ export const MobileBottomDrawer: React.FC<MobileBottomDrawerProps> = ({
 
   return (
     <div className="m-drawer-overlay" onClick={onClose}>
-      <div className="m-drawer-content" onClick={e => e.stopPropagation()}>
-        <div className="m-drawer-handle" />
+      <div className="m-drawer-content" role="dialog" aria-modal="true" aria-labelledby={titleId} onClick={e => e.stopPropagation()}>
+        <div className="m-drawer-handle" aria-hidden="true" />
         <div className="m-drawer-header">
           <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff' }}>{title}</h3>
+            <h3 id={titleId} style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff' }}>{title}</h3>
             {subtitle && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{subtitle}</p>}
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label={`Close ${title}`}
             style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px' }}
           >
             <X size={20} />

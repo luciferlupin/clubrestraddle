@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, UserPlus, CheckCircle2, Sparkles, AlertCircle, FileText, Lock, ArrowRight, QrCode } from 'lucide-react';
+import { ShieldCheck, UserPlus, CheckCircle2, Sparkles, FileText, Lock, ArrowRight } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
 import { GovtIdType, Player, DailyCheckIn } from '../../types';
@@ -54,7 +54,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
       emergencyContactPhone: '+91 98112 34567',
       photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
       agreedToRules: true,
-      tablePreference: '♠ Re Straddle High Roller Championship',
+      tablePreference: 'Re Straddle High Roller Championship',
     });
     setErrors({});
   };
@@ -309,8 +309,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Full Legal Name (as per Govt ID) *</label>
+              <label className="form-label" htmlFor="kyc-full-name">Full Legal Name (as per Govt ID) *</label>
               <input
+                id="kyc-full-name"
                 type="text"
                 className="form-input"
                 placeholder="e.g. Aditya Singhal"
@@ -321,8 +322,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             </div>
 
             <div className="form-group">
-              <label className="form-label">Primary Mobile Number *</label>
+              <label className="form-label" htmlFor="kyc-phone">Primary Mobile Number *</label>
               <input
+                id="kyc-phone"
                 type="tel"
                 className="form-input"
                 placeholder="+91 98765 43210"
@@ -335,8 +337,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Email Address *</label>
+              <label className="form-label" htmlFor="kyc-email">Email Address *</label>
               <input
+                id="kyc-email"
                 type="email"
                 className="form-input"
                 placeholder="name@domain.com"
@@ -347,8 +350,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             </div>
 
             <div className="form-group">
-              <label className="form-label">Date of Birth (Must be 21+) *</label>
+              <label className="form-label" htmlFor="kyc-date-of-birth">Date of Birth (Must be 21+) *</label>
               <input
+                id="kyc-date-of-birth"
                 type="date"
                 className="form-input"
                 value={formData.dateOfBirth}
@@ -359,8 +363,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           </div>
 
           <div className="form-group">
-            <label className="form-label">Residential Address *</label>
+            <label className="form-label" htmlFor="kyc-address">Residential Address *</label>
             <input
+              id="kyc-address"
               type="text"
               className="form-input"
               placeholder="Street address, City, State, PIN Code"
@@ -379,8 +384,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Government ID Type *</label>
+              <label className="form-label" htmlFor="kyc-id-type">Government ID Type *</label>
               <select
+                id="kyc-id-type"
                 className="form-select"
                 value={formData.govtIdType}
                 onChange={e => setFormData({ ...formData, govtIdType: e.target.value as GovtIdType })}
@@ -394,8 +400,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             </div>
 
             <div className="form-group">
-              <label className="form-label">Govt ID Number *</label>
+              <label className="form-label" htmlFor="kyc-id-number">Govt ID Number *</label>
               <input
+                id="kyc-id-number"
                 type="text"
                 className="form-input"
                 placeholder={getIdPlaceholder()}
@@ -408,14 +415,14 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
           {/* Avatar / Selfie Photo Selector */}
           <div className="form-group">
-            <label className="form-label">Member Photo / Profile Avatar</label>
+            <div className="form-label" id="kyc-avatar-label">Member Photo / Profile Avatar</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <img
                 src={formData.photoUrl}
                 alt="Selected Avatar"
                 style={{ width: '54px', height: '54px', borderRadius: '50%', border: '2px solid #ffffff', objectFit: 'cover' }}
               />
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div role="group" aria-labelledby="kyc-avatar-label" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {samplePhotos.map((p, idx) => (
                   <button
                     key={idx}
@@ -439,8 +446,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Emergency Contact Name</label>
+              <label className="form-label" htmlFor="kyc-emergency-name">Emergency Contact Name</label>
               <input
+                id="kyc-emergency-name"
                 type="text"
                 className="form-input"
                 placeholder="e.g. Jane Doe (Spouse/Family)"
@@ -450,8 +458,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             </div>
 
             <div className="form-group">
-              <label className="form-label">Emergency Contact Phone</label>
+              <label className="form-label" htmlFor="kyc-emergency-phone">Emergency Contact Phone</label>
               <input
+                id="kyc-emergency-phone"
                 type="text"
                 className="form-input"
                 placeholder="e.g. +1 (555) 111-2222"
@@ -462,8 +471,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           </div>
 
           <div className="form-group">
-            <label className="form-label">Today's Game / Table Preference</label>
+            <label className="form-label" htmlFor="kyc-table-preference">Today's Game / Table Preference</label>
             <select
+              id="kyc-table-preference"
               className="form-select"
               value={formData.tablePreference}
               onChange={e => setFormData({ ...formData, tablePreference: e.target.value })}
@@ -472,7 +482,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
               <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500)</option>
               <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
               <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (PLO ₹250/₹500)</option>
-              <option value="♠ Re Straddle High Roller Championship">♠ Re Straddle High Roller Championship</option>
+              <option value="Re Straddle High Roller Championship">Re Straddle High Roller Championship</option>
               <option value="VIP Private Lounge">VIP Private Lounge</option>
             </select>
           </div>

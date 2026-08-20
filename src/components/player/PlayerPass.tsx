@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Award, Calendar, QrCode, Sparkles, Maximize2, CheckCircle2, Clock } from 'lucide-react';
+import { Spade } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Player, DailyCheckIn } from '../../types';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
@@ -23,7 +23,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
       <div className="club-pass">
         <div className="pass-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.4rem', color: '#ffffff' }}>♠</span>
+            <Spade size={22} color="#ffffff" fill="currentColor" aria-hidden="true" />
             <div>
               <div style={{ fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.08em', color: '#ffffff' }}>
                 CLUB RE STRADDLE
@@ -63,7 +63,9 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
         </div>
 
         {/* Mini QR and Scan Details */}
-        <div
+        <button
+          type="button"
+          className="pass-qr-trigger"
           onClick={() => setIsQRModalOpen(true)}
           style={{
             background: 'rgba(0, 0, 0, 0.65)',
@@ -116,7 +118,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
               level="M"
             />
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Expanded QR Modal for Security Door Check */}

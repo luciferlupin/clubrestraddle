@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import {
   UserRole,
   Player,
@@ -416,9 +416,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchSupabaseData();
   }, []);
 
-  const setActiveRole = (role: UserRole) => {
+  const setActiveRole = useCallback((role: UserRole) => {
     setActiveRoleState(role);
-  };
+  }, []);
 
   const setSelectedPlayerId = (id: string) => {
     setSelectedPlayerIdState(id);

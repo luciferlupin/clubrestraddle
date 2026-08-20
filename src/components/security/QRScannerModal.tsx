@@ -1,23 +1,29 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Camera,
-  ShieldCheck,
   Search,
   CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  QrCode,
-  User,
-  Clock,
-  Sparkles,
-  RefreshCw,
+  ChevronRight,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatTimeOnly, formatDateOnly, maskGovtId } from '../../utils/formatters';
-import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
+import { formatTimeOnly, maskGovtId } from '../../utils/formatters';
+import { KYCBadge, TierBadge } from '../common/Badge';
 import confetti from 'canvas-confetti';
+
+const SCANNER_AGE_REFERENCE = new Date();
+
+const calculateAge = (dobString: string): number => {
+  if (!dobString) return 0;
+  const dob = new Date(dobString);
+  let age = SCANNER_AGE_REFERENCE.getFullYear() - dob.getFullYear();
+  const birthdayPending =
+    SCANNER_AGE_REFERENCE.getMonth() < dob.getMonth() ||
+    (SCANNER_AGE_REFERENCE.getMonth() === dob.getMonth() && SCANNER_AGE_REFERENCE.getDate() < dob.getDate());
+  if (birthdayPending) age -= 1;
+  return Math.max(0, age);
+};
 
 interface QRScannerModalProps {
   isOpen: boolean;
@@ -30,10 +36,11 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   onClose,
   onSelectPlayer,
 }) => {
-  const { players, todayCheckIns, approvePlayerEntry, rejectPlayerEntry } = useClub();
+  const { players, todayCheckIns, approvePlayerEntry } = useClub();
   const [manualCode, setManualCode] = useState('');
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [scannedResult, setScannedResult] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -42,49 +49,55 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
   const pendingCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'pending');
 
-  // Start / Stop Camera when modal opens or toggles
+  // Start / stop the camera only while the scanner is visible.
   useEffect(() => {
-    if (isOpen && cameraActive) {
-      startCamera();
-    } else {
-      stopCamera();
-    }
-    return () => {
-      stopCamera();
+    const stopCurrentStream = () => {
+      streamRef.current?.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     };
-  }, [isOpen, cameraActive]);
 
-  const startCamera = async () => {
-    setCameraError(null);
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    if (!isOpen || !cameraActive) {
+      stopCurrentStream();
+      return stopCurrentStream;
+    }
+
+    let cancelled = false;
+    const startCamera = async () => {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setCameraError('Camera access is not supported on this browser.');
+          return;
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
         });
+        if (cancelled) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play();
+          await videoRef.current.play();
         }
-      } else {
-        setCameraError('Camera access not supported on this browser.');
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Camera permission was denied or no camera was found.';
+        setCameraError(message);
+        setCameraActive(false);
       }
-    } catch (err: any) {
-      setCameraError(err.message || 'Camera permission denied or camera not found.');
-      setCameraActive(false);
-    }
-  };
+    };
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-  };
+    void startCamera();
+    return () => {
+      cancelled = true;
+      stopCurrentStream();
+    };
+  }, [isOpen, cameraActive]);
 
   const processScanCode = (code: string) => {
     const trimmed = code.trim();
     if (!trimmed) return;
+    setScanError(null);
 
     // Check if code contains player ID or check-in ID or URL
     let foundPlayer: Player | undefined;
@@ -115,7 +128,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       setScannedResult({ player: foundPlayer, checkIn: foundCheckIn });
       setManualCode('');
     } else {
-      alert(`No player found matching code: "${trimmed}". Please try selecting from the active queue.`);
+      setScanError(`No player matched “${trimmed}”. Check the code or select someone from the active queue.`);
     }
   };
 
@@ -150,19 +163,15 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     }, 400);
   };
 
-  const calculateAge = (dobString: string): number => {
-    if (!dobString) return 0;
-    const dob = new Date(dobString);
-    const diff = Date.now() - dob.getTime();
-    const ageDate = new Date(diff);
-    return Math.abs(ageDate.getUTCFullYear() - 1970);
-  };
-
   return (
     <Modal
       isOpen={isOpen}
       onClose={() => {
         setScannedResult(null);
+        setScanError(null);
+        setCameraError(null);
+        setCameraActive(false);
+        setManualCode('');
         onClose();
       }}
       title="Door Scanner & QR Verification"
@@ -186,7 +195,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                ✓ QR Match Identified
+                <CheckCircle2 size={13} /> QR match identified
               </span>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <TierBadge tier={scannedResult.player.membershipTier} />
@@ -306,12 +315,15 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               )}
 
               {cameraError && (
-                <span style={{ fontSize: '0.75rem', color: '#fb7185' }}>{cameraError}</span>
+                <span role="alert" style={{ fontSize: '0.75rem', color: '#fb7185' }}>{cameraError}</span>
               )}
 
               <button
                 className={`btn ${cameraActive ? 'btn-secondary' : 'btn-primary'}`}
-                onClick={() => setCameraActive(!cameraActive)}
+                onClick={() => {
+                  setCameraError(null);
+                  setCameraActive(current => !current);
+                }}
                 style={{ width: '100%' }}
               >
                 <Camera size={16} />
@@ -322,6 +334,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             {/* Quick Scanner Barcode / ID Input */}
             <form onSubmit={handleManualSubmit} style={{ display: 'flex', gap: '8px' }}>
               <input
+                aria-label="Player QR code, ID or phone"
                 type="text"
                 className="form-input"
                 placeholder="Paste scanned QR payload, Player ID, or Phone..."
@@ -335,6 +348,8 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               </button>
             </form>
 
+            {scanError && <div className="staff-inline-error" role="alert">{scanError}</div>}
+
             {/* Quick 1-Tap Queue Selector */}
             {pendingCheckIns.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -347,8 +362,9 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                     const p = players.find(x => x.id === c.playerId);
                     if (!p) return null;
                     return (
-                      <div
+                      <button
                         key={c.id}
+                        type="button"
                         onClick={() => setScannedResult({ player: p, checkIn: c })}
                         style={{
                           background: '#16080d',
@@ -360,6 +376,9 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                           justifyContent: 'space-between',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
+                          width: '100%',
+                          color: 'inherit',
+                          textAlign: 'left',
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -376,10 +395,10 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                           </div>
                         </div>
 
-                        <span style={{ fontSize: '0.74rem', color: '#fb7185', fontWeight: 700 }}>
-                          Scan Pass →
+                        <span className="staff-inline-link">
+                          Inspect <ChevronRight size={14} />
                         </span>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

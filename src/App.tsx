@@ -17,11 +17,16 @@ import { MobileSecurityPortal } from './components/security/MobileSecurityPortal
 import { MobileAdminPortal } from './components/admin/MobileAdminPortal';
 import { MobileHeader } from './components/common/MobileHeader';
 import { RoleSwitcherDrawer } from './components/common/RoleSwitcherDrawer';
+import { LogOut, Spade } from 'lucide-react';
 
 const MainApp: React.FC = () => {
   const { activeRole, setActiveRole } = useClub();
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
-  const [showNewPlayerForm, setShowNewPlayerForm] = useState(false);
+  const [showNewPlayerForm, setShowNewPlayerForm] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const action = new URLSearchParams(window.location.search).get('action');
+    return action === 'kyc' || action === 'qr_scan' || action === 'register';
+  });
   const [isRoleSwitcherOpen, setIsRoleSwitcherOpen] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -73,7 +78,6 @@ const MainApp: React.FC = () => {
 
     if (actionParam === 'kyc' || actionParam === 'qr_scan' || actionParam === 'register') {
       setActiveRole('player');
-      setShowNewPlayerForm(true);
     }
   }, [setActiveRole]);
 
@@ -103,6 +107,7 @@ const MainApp: React.FC = () => {
           <>
             {activeRole === 'player' && (
               <MobilePlayerPortal
+                key={showNewPlayerForm ? 'player-register' : 'player-standard'}
                 onOpenQR={() => setIsQRModalOpen(true)}
                 showNewPlayerFormInitially={showNewPlayerForm}
               />
@@ -131,8 +136,10 @@ const MainApp: React.FC = () => {
           <>
             {activeRole === 'player' && (
               <PlayerPortal
+                key={showNewPlayerForm ? 'desktop-player-register' : 'desktop-player-standard'}
                 onOpenQR={() => setIsQRModalOpen(true)}
                 showNewPlayerFormInitially={showNewPlayerForm}
+                onRegistrationFlowComplete={() => setShowNewPlayerForm(false)}
               />
             )}
 
@@ -166,7 +173,8 @@ const MainApp: React.FC = () => {
         />
       )}
 
-      {/* Footer */}
+      {/* Desktop footer; mobile player journeys keep the primary action in reach. */}
+      {!isMobile && (
       <footer
         style={{
           borderTop: '1px solid rgba(225, 29, 72, 0.35)',
@@ -187,7 +195,7 @@ const MainApp: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ color: '#ffffff' }}>♠</span>
+          <Spade size={14} color="#ffffff" fill="currentColor" aria-hidden="true" />
           <span style={{ fontWeight: 700, color: '#ffffff' }}>
             {isPlayerMode ? 'CLUB RE STRADDLE • Luxury Poker Lounge & Member Club' : 'CLUB RE STRADDLE • Staff Operations OS'}
           </span>
@@ -201,22 +209,16 @@ const MainApp: React.FC = () => {
             </>
           ) : (
             <button
+              type="button"
               onClick={() => setActiveRole('player')}
-              style={{
-                background: 'rgba(225, 29, 72, 0.2)',
-                border: '1px solid rgba(225, 29, 72, 0.4)',
-                color: '#ffffff',
-                cursor: 'pointer',
-                fontSize: '0.72rem',
-                padding: '4px 10px',
-                borderRadius: '6px',
-              }}
+              className="desktop-footer-exit"
             >
-              👤 Exit Staff Station
+              <LogOut size={13} aria-hidden="true" /> Exit staff station
             </button>
           )}
         </div>
       </footer>
+      )}
 
       {/* Global Entrance Registration QR Modal */}
       <ClubQRModal

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Receipt, Plus, DollarSign, Calendar, Tag, CreditCard, CheckCircle } from 'lucide-react';
+import { Receipt, Plus } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { Expense, ExpenseCategory, PaymentMethod } from '../../types';
+import { ExpenseCategory, PaymentMethod } from '../../types';
 import { formatCurrency, formatDateOnly, getTodayDateString } from '../../utils/formatters';
 import { Modal } from '../common/Modal';
 
@@ -140,8 +140,9 @@ export const AdminExpensesView: React.FC = () => {
       >
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Expense Category *</label>
+            <label className="form-label" htmlFor="expense-category">Expense Category *</label>
             <select
+              id="expense-category"
               className="form-select"
               value={formData.category}
               onChange={e => setFormData({ ...formData, category: e.target.value as ExpenseCategory })}
@@ -159,8 +160,9 @@ export const AdminExpensesView: React.FC = () => {
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Amount ($) *</label>
+              <label className="form-label" htmlFor="expense-amount">Amount (₹) *</label>
               <input
+                id="expense-amount"
                 type="number"
                 className="form-input"
                 value={formData.amount}
@@ -171,8 +173,9 @@ export const AdminExpensesView: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Paid To / Vendor *</label>
+              <label className="form-label" htmlFor="expense-vendor">Paid To / Vendor *</label>
               <input
+                id="expense-vendor"
                 type="text"
                 className="form-input"
                 placeholder="e.g. Floor Dealer Crew"
@@ -185,8 +188,9 @@ export const AdminExpensesView: React.FC = () => {
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Payment Method *</label>
+              <label className="form-label" htmlFor="expense-method">Payment Method *</label>
               <select
+                id="expense-method"
                 className="form-select"
                 value={formData.paymentMethod}
                 onChange={e => setFormData({ ...formData, paymentMethod: e.target.value as PaymentMethod })}
@@ -199,8 +203,9 @@ export const AdminExpensesView: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Receipt / Invoice Ref</label>
+              <label className="form-label" htmlFor="expense-reference">Receipt / Invoice Ref</label>
               <input
+                id="expense-reference"
                 type="text"
                 className="form-input"
                 placeholder="e.g. INV-8812"
@@ -211,8 +216,9 @@ export const AdminExpensesView: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Description / Notes *</label>
+            <label className="form-label" htmlFor="expense-description">Description / Notes *</label>
             <textarea
+              id="expense-description"
               className="form-textarea"
               placeholder="Provide context for this operating cost..."
               value={formData.description}

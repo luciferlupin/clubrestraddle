@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Receipt, Printer, Search, Eye, Filter, User, FileText } from 'lucide-react';
+import { Receipt, Search, FileText } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentEntry } from '../../types';
-import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatDateTime } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 
 export const BillingHistory: React.FC = () => {
@@ -36,7 +36,7 @@ export const BillingHistory: React.FC = () => {
       tableLocation: `${entry.tableNumber || 'Assigned'} • ${entry.seatNumber || 'Assigned'}`,
       items: [
         {
-          description: `${entry.tournamentName} - Player Buy-in Stack`,
+          description: `${formatClubLabel(entry.tournamentName)} - Player Buy-in Stack`,
           details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Tournament Playing Chips`,
           chips: tournamentObj?.startingChips || 50000,
           amount: entry.buyInAmount,
@@ -121,7 +121,7 @@ export const BillingHistory: React.FC = () => {
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{entry.playerId}</div>
                     </td>
                     <td style={{ maxWidth: '180px', fontSize: '0.82rem' }}>
-                      {entry.tournamentName}
+                      {formatClubLabel(entry.tournamentName)}
                     </td>
                     <td className="tabular-num" style={{ fontWeight: 800, color: '#ffffff' }}>
                       {formatCurrency(totalPaid)}

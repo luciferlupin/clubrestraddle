@@ -2,18 +2,14 @@ import React, { useState } from 'react';
 import {
   ShieldCheck,
   Search,
-  CheckCircle,
-  XCircle,
   Clock,
-  User,
   CheckCircle2,
   ShieldAlert,
-  Calendar,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import { formatTimeOnly, formatDateOnly, maskGovtId } from '../../utils/formatters';
-import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
+import { KYCBadge, EntryBadge } from '../common/Badge';
 
 interface SecurityQueueProps {
   selectedPlayerId: string | null;
@@ -24,7 +20,7 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
   selectedPlayerId,
   onSelectPlayer,
 }) => {
-  const { players, checkIns, todayCheckIns, approvePlayerEntry } = useClub();
+  const { players, todayCheckIns } = useClub();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
 
@@ -78,6 +74,8 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
         <div style={{ position: 'relative' }}>
           <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
           <input
+            id="security-queue-search"
+            aria-label="Search the entrance queue"
             type="text"
             className="form-input"
             style={{ paddingLeft: '32px', width: '220px', fontSize: '0.8rem' }}
@@ -224,15 +222,6 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
                         >
                           Inspect & Verify
                         </button>
-                        {checkIn?.verificationStatus === 'pending' && (
-                          <button
-                            className="btn btn-emerald btn-sm"
-                            onClick={() => approvePlayerEntry(checkIn.id)}
-                            title="Quick 1-Click Approve"
-                          >
-                            <CheckCircle size={14} />
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>

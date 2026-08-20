@@ -6,13 +6,9 @@ import {
   Wallet,
   Plus,
   Minus,
-  Filter,
-  Calendar,
-  CreditCard,
-  Building,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { CashCategory, PaymentMethod, CashTransaction } from '../../types';
+import { CashCategory, PaymentMethod } from '../../types';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { CashFlowBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
@@ -25,7 +21,6 @@ export const CashManagement: React.FC = () => {
     totalCashOutAmount,
     addCashReceived,
     addCashGiven,
-    players,
   } = useClub();
 
   const [isCashInModalOpen, setIsCashInModalOpen] = useState(false);
@@ -274,8 +269,9 @@ export const CashManagement: React.FC = () => {
       >
         <form onSubmit={handleCashInSubmit}>
           <div className="form-group">
-            <label className="form-label">Category *</label>
+            <label className="form-label" htmlFor="cash-in-category">Category *</label>
             <select
+              id="cash-in-category"
               className="form-select"
               value={cashInData.category}
               onChange={e => setFormDataCategory(e.target.value as CashCategory)}
@@ -291,8 +287,9 @@ export const CashManagement: React.FC = () => {
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Amount Received ($) *</label>
+              <label className="form-label" htmlFor="cash-in-amount">Amount Received (₹) *</label>
               <input
+                id="cash-in-amount"
                 type="number"
                 className="form-input"
                 value={cashInData.amount}
@@ -303,8 +300,9 @@ export const CashManagement: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Payment Method *</label>
+              <label className="form-label" htmlFor="cash-in-method">Payment Method *</label>
               <select
+                id="cash-in-method"
                 className="form-select"
                 value={cashInData.paymentMethod}
                 onChange={e => setCashInData({ ...cashInData, paymentMethod: e.target.value as PaymentMethod })}
@@ -320,8 +318,9 @@ export const CashManagement: React.FC = () => {
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Player Name (Optional)</label>
+              <label className="form-label" htmlFor="cash-in-player">Player Name (Optional)</label>
               <input
+                id="cash-in-player"
                 type="text"
                 className="form-input"
                 placeholder="e.g. Vikram Malhotra"
@@ -331,8 +330,9 @@ export const CashManagement: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Reference ID / Receipt #</label>
+              <label className="form-label" htmlFor="cash-in-reference">Reference ID / Receipt #</label>
               <input
+                id="cash-in-reference"
                 type="text"
                 className="form-input"
                 placeholder="e.g. REC-9921"
@@ -343,8 +343,9 @@ export const CashManagement: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Transaction Description *</label>
+            <label className="form-label" htmlFor="cash-in-description">Transaction Description *</label>
             <textarea
+              id="cash-in-description"
               className="form-textarea"
               placeholder="Notes on the cash received..."
               value={cashInData.description}
@@ -374,8 +375,9 @@ export const CashManagement: React.FC = () => {
       >
         <form onSubmit={handleCashOutSubmit}>
           <div className="form-group">
-            <label className="form-label">Category *</label>
+            <label className="form-label" htmlFor="cash-out-category">Category *</label>
             <select
+              id="cash-out-category"
               className="form-select"
               value={cashOutData.category}
               onChange={e => setCashOutData({ ...cashOutData, category: e.target.value as CashCategory })}
@@ -391,8 +393,9 @@ export const CashManagement: React.FC = () => {
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Amount Paid Out ($) *</label>
+              <label className="form-label" htmlFor="cash-out-amount">Amount Paid Out (₹) *</label>
               <input
+                id="cash-out-amount"
                 type="number"
                 className="form-input"
                 value={cashOutData.amount}
@@ -403,8 +406,9 @@ export const CashManagement: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Payment Method *</label>
+              <label className="form-label" htmlFor="cash-out-method">Payment Method *</label>
               <select
+                id="cash-out-method"
                 className="form-select"
                 value={cashOutData.paymentMethod}
                 onChange={e => setCashOutData({ ...cashOutData, paymentMethod: e.target.value as PaymentMethod })}
@@ -420,8 +424,9 @@ export const CashManagement: React.FC = () => {
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Recipient / Player Name</label>
+              <label className="form-label" htmlFor="cash-out-recipient">Recipient / Player Name</label>
               <input
+                id="cash-out-recipient"
                 type="text"
                 className="form-input"
                 placeholder="e.g. Sophia Chen"
@@ -431,8 +436,9 @@ export const CashManagement: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Reference ID / Payout Ref</label>
+              <label className="form-label" htmlFor="cash-out-reference">Reference ID / Payout Ref</label>
               <input
+                id="cash-out-reference"
                 type="text"
                 className="form-input"
                 placeholder="e.g. PO-8812"
@@ -443,8 +449,9 @@ export const CashManagement: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Payout Description *</label>
+            <label className="form-label" htmlFor="cash-out-description">Payout Description *</label>
             <textarea
+              id="cash-out-description"
               className="form-textarea"
               placeholder="Notes on the payout or cash out..."
               value={cashOutData.description}

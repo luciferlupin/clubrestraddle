@@ -5,9 +5,7 @@ import {
   CreditCard,
   CheckCircle2,
   Clock,
-  Sparkles,
-  ArrowRight,
-  ShieldCheck,
+  Info,
   Smartphone,
   Banknote,
   Building,
@@ -33,6 +31,7 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI/Digital');
   const [submitting, setSubmitting] = useState(false);
   const [successOrder, setSuccessOrder] = useState<any | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   if (!isOpen || !currentPlayer) return null;
 
@@ -46,9 +45,10 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const finalAmount = isCustom ? Number(customAmount) : selectedAmount;
+    setFormError(null);
 
     if (!finalAmount || finalAmount <= 0) {
-      alert('Please select or enter a valid chip amount');
+      setFormError('Select a chip amount or enter a custom amount greater than ₹0.');
       return;
     }
 
@@ -81,6 +81,7 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
 
   return (
     <div
+      className="player-chip-modal-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -95,7 +96,10 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
       onClick={onClose}
     >
       <div
-        className="card"
+        className="card player-chip-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="chip-request-title"
         style={{
           width: '100%',
           maxWidth: '560px',
@@ -128,17 +132,19 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
               <Coins size={22} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+              <h3 id="chip-request-title" style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
                 Request Chips at Table
               </h3>
               <p style={{ fontSize: '0.76rem', color: '#94a3b8', margin: 0 }}>
-                Direct Cashier Vault Delivery • Instant Table Reload
+                Cashier delivery · no in-app charge
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="btn btn-ghost btn-icon"
+            aria-label="Close chip request"
             style={{ color: '#94a3b8' }}
           >
             <X size={20} />
@@ -220,7 +226,12 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form className="player-chip-request-form" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {formError && (
+              <div className="staff-inline-error" role="alert">
+                <Info size={16} aria-hidden="true" /> {formError}
+              </div>
+            )}
             {/* Player Info Summary */}
             <div
               style={{
@@ -245,7 +256,7 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
 
             {/* Chip Amount Selection */}
             <div>
-              <label className="form-label" style={{ fontSize: '0.82rem', marginBottom: '8px' }}>
+              <label className="form-label" htmlFor="chip-custom-amount" style={{ fontSize: '0.82rem', marginBottom: '8px' }}>
                 Select Chip Amount (₹)
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
@@ -276,6 +287,7 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
               {isCustom && (
                 <div style={{ marginTop: '8px' }}>
                   <input
+                    id="chip-custom-amount"
                     type="number"
                     className="form-input"
                     placeholder="Enter amount in ₹ (e.g. 75000)"
@@ -290,8 +302,9 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
             {/* Table & Seat Location */}
             <div className="form-grid-2">
               <div className="form-group">
-                <label className="form-label">Table Number / Game *</label>
+                <label className="form-label" htmlFor="chip-table-number">Table Number / Game *</label>
                 <select
+                  id="chip-table-number"
                   className="form-input"
                   value={tableNumber}
                   onChange={e => setTableNumber(e.target.value)}
@@ -305,8 +318,9 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
               </div>
 
               <div className="form-group">
-                <label className="form-label">Seat Number *</label>
+                <label className="form-label" htmlFor="chip-seat-number">Seat Number *</label>
                 <select
+                  id="chip-seat-number"
                   className="form-input"
                   value={seatNumber}
                   onChange={e => setSeatNumber(e.target.value)}
@@ -322,8 +336,9 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
 
             {/* Payment Settlement Mode */}
             <div className="form-group">
-              <label className="form-label">Mark Payment Mode / Settlement Type *</label>
+              <div className="form-label" id="chip-payment-label">Mark Payment Mode / Settlement Type *</div>
               <div
+                className="player-settlement-note"
                 style={{
                   background: 'rgba(0,0,0,0.4)',
                   border: '1px solid rgba(225, 29, 72, 0.25)',
@@ -334,10 +349,11 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
                   marginBottom: '8px',
                 }}
               >
-                ℹ️ <strong>Physical Settlement:</strong> No payment is charged inside this software. Please pay directly at the cashier desk or table (Cash / UPI / Card POS). This selection simply marks your payment type on the official receipt.
+                <Info size={17} aria-hidden="true" />
+                <span><strong>Physical settlement:</strong> No payment is charged inside this software. Pay directly at the cashier desk or table by cash, UPI, or card. This only records your preferred payment type on the receipt.</span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+              <div role="group" aria-labelledby="chip-payment-label" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
                 {[
                   { mode: 'Cash' as PaymentMethod, label: 'Cash at Table / Desk', icon: <Banknote size={16} /> },
                   { mode: 'UPI/Digital' as PaymentMethod, label: 'UPI / Club QR Scan', icon: <Smartphone size={16} /> },
@@ -360,7 +376,7 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
 
             <button
               type="submit"
-              className="btn btn-primary btn-lg"
+              className="btn btn-primary btn-lg player-chip-submit"
               disabled={submitting}
               style={{ marginTop: '6px', justifyContent: 'center' }}
             >

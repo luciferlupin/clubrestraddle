@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { UserCheck, DollarSign, Receipt, CreditCard, Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import { DollarSign, Receipt } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { PaymentMethod, TournamentEntry } from '../../types';
-import { formatCurrency } from '../../utils/formatters';
+import { PaymentMethod } from '../../types';
+import { formatClubLabel, formatCurrency, generateId } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import confetti from 'canvas-confetti';
 
@@ -34,7 +34,6 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
 
   const [generatedInvoice, setGeneratedInvoice] = useState<ClubInvoiceData | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
-  const [successMsg, setSuccessMsg] = useState(false);
 
   const selectedTournament = tournaments.find(t => t.id === selectedTournamentId);
   const selectedPlayer = players.find(p => p.id === selectedPlayerId);
@@ -47,7 +46,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
     e.preventDefault();
     if (!selectedTournamentId || !selectedPlayerId) return;
 
-    const ref = paymentRef.trim() || `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
+    const ref = paymentRef.trim() || generateId('TXN');
 
     const entry = registerPlayerForTournament({
       tournamentId: selectedTournamentId,
@@ -72,7 +71,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       tableLocation: `${entry.tableNumber} • ${entry.seatNumber}`,
       items: [
         {
-          description: `${entry.tournamentName} - Tournament Buy-in Stack`,
+          description: `${formatClubLabel(entry.tournamentName)} - Tournament Buy-in Stack`,
           details: `${selectedTournament?.startingChips?.toLocaleString()} Starting Chips`,
           chips: selectedTournament?.startingChips,
           amount: entry.buyInAmount,
@@ -93,7 +92,6 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
 
     setGeneratedInvoice(invoiceData);
     setIsInvoiceOpen(true);
-    setSuccessMsg(true);
     setPaymentRef('');
 
     try {
@@ -127,8 +125,9 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       <form onSubmit={handleRegister}>
         {/* Tournament Selection */}
         <div className="form-group">
-          <label className="form-label">Select Active Tournament *</label>
+          <label className="form-label" htmlFor="cashier-entry-tournament">Select Active Tournament *</label>
           <select
+            id="cashier-entry-tournament"
             className="form-select"
             value={selectedTournamentId}
             onChange={e => setSelectedTournamentId(e.target.value)}
@@ -136,7 +135,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
           >
             {tournaments.map(t => (
               <option key={t.id} value={t.id}>
-                🏆 {t.name} — Buy-in: {formatCurrency(t.buyInFee)} + {formatCurrency(t.clubRake)} ({t.status})
+                {formatClubLabel(t.name)} — Buy-in: {formatCurrency(t.buyInFee)} + {formatCurrency(t.clubRake)} ({t.status})
               </option>
             ))}
           </select>
@@ -144,8 +143,9 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
 
         {/* Player Selection */}
         <div className="form-group">
-          <label className="form-label">Select Registered Player *</label>
+          <label className="form-label" htmlFor="cashier-entry-player">Select Registered Player *</label>
           <select
+            id="cashier-entry-player"
             className="form-select"
             value={selectedPlayerId}
             onChange={e => setSelectedPlayerId(e.target.value)}
@@ -155,7 +155,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
               const checkedIn = hasPlayerCheckedInToday(p.id);
               return (
                 <option key={p.id} value={p.id}>
-                  👤 {p.fullName} ({p.id} • {p.phone}) {checkedIn ? '✓ Checked-in Today' : ''}
+                  {p.fullName} ({p.id} • {p.phone}) {checkedIn ? '— Checked in today' : ''}
                 </option>
               );
             })}
@@ -201,8 +201,9 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
         {/* Payment & Seating Details */}
         <div className="form-grid-2">
           <div className="form-group">
-            <label className="form-label">Payment Mode Received *</label>
+            <label className="form-label" htmlFor="cashier-entry-payment">Payment Mode Received *</label>
             <select
+              id="cashier-entry-payment"
               className="form-select"
               value={paymentMethod}
               onChange={e => setPaymentMethod(e.target.value as PaymentMethod)}
@@ -216,8 +217,9 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
           </div>
 
           <div className="form-group">
-            <label className="form-label">Settlement Reference / Notes</label>
+            <label className="form-label" htmlFor="cashier-entry-reference">Settlement Reference / Notes</label>
             <input
+              id="cashier-entry-reference"
               type="text"
               className="form-input"
               placeholder="e.g. Cash Handover or UPI Ref #"
@@ -229,8 +231,9 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
 
         <div className="form-grid-2">
           <div className="form-group">
-            <label className="form-label">Assigned Table Number</label>
+            <label className="form-label" htmlFor="cashier-entry-table">Assigned Table Number</label>
             <input
+              id="cashier-entry-table"
               type="text"
               className="form-input"
               placeholder="e.g. Table 1"
@@ -240,8 +243,9 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
           </div>
 
           <div className="form-group">
-            <label className="form-label">Assigned Seat Number</label>
+            <label className="form-label" htmlFor="cashier-entry-seat">Assigned Seat Number</label>
             <input
+              id="cashier-entry-seat"
               type="text"
               className="form-input"
               placeholder="e.g. Seat 4"

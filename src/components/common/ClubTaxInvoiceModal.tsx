@@ -2,21 +2,15 @@ import React from 'react';
 import {
   Printer,
   X,
-  CheckCircle2,
-  ShieldCheck,
-  Download,
   Copy,
   Check,
-  Building,
-  CreditCard,
-  QrCode,
+  CheckCircle2,
   FileText,
-  User,
-  Sparkles,
+  Spade,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { PaymentMethod } from '../../types';
-import { formatCurrency, formatDateTime, formatINR, maskGovtId, numberToINRWords } from '../../utils/formatters';
+import { formatDateTime, formatINR, maskGovtId, numberToINRWords } from '../../utils/formatters';
 
 export interface ClubInvoiceData {
   invoiceNumber: string;
@@ -65,6 +59,7 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
   onClose,
 }) => {
   const [copied, setCopied] = React.useState(false);
+  const titleId = React.useId();
 
   if (!isOpen || !invoice) return null;
 
@@ -73,7 +68,7 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
   };
 
   const handleCopySummary = () => {
-    const summary = `♠ CLUB RE STRADDLE • OFFICIAL BILLING INVOICE
+    const summary = `CLUB RE STRADDLE • OFFICIAL BILLING INVOICE
 Invoice No: ${invoice.invoiceNumber}
 Date: ${formatDateTime(invoice.invoiceDate)}
 Billed To: ${invoice.playerName} (${invoice.playerId || 'Member'})
@@ -109,6 +104,10 @@ Club GSTIN: 07AAACL1234F1Z8`;
       onClick={onClose}
     >
       <div
+        className="club-invoice-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         style={{
           width: '100%',
           maxWidth: '680px',
@@ -139,13 +138,14 @@ Club GSTIN: 07AAACL1234F1Z8`;
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FileText size={18} color="#e11d48" />
-            <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff' }}>
+            <span id={titleId} style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff' }}>
               Official Tax & Billing Invoice • {invoice.invoiceNumber}
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
+              type="button"
               className="btn btn-secondary btn-sm"
               onClick={handleCopySummary}
               style={{ fontSize: '0.78rem', padding: '6px 12px' }}
@@ -155,6 +155,7 @@ Club GSTIN: 07AAACL1234F1Z8`;
             </button>
 
             <button
+              type="button"
               className="btn btn-primary btn-sm"
               onClick={handlePrint}
               style={{ fontSize: '0.78rem', padding: '6px 14px' }}
@@ -164,9 +165,11 @@ Club GSTIN: 07AAACL1234F1Z8`;
             </button>
 
             <button
+              type="button"
               onClick={onClose}
               className="btn btn-ghost btn-icon btn-sm"
               style={{ color: '#94a3b8' }}
+              aria-label="Close invoice"
             >
               <X size={18} />
             </button>
@@ -188,7 +191,7 @@ Club GSTIN: 07AAACL1234F1Z8`;
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #e11d48', paddingBottom: '16px', marginBottom: '20px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1.4rem', color: '#e11d48', fontWeight: 900 }}>♠</span>
+                <Spade size={22} color="#e11d48" fill="#e11d48" aria-hidden="true" />
                 <h1 style={{ fontSize: '1.25rem', fontWeight: 900, letterSpacing: '0.04em', margin: 0, color: '#0f172a', textTransform: 'uppercase' }}>
                   Club Re Straddle
                 </h1>
@@ -265,7 +268,7 @@ Club GSTIN: 07AAACL1234F1Z8`;
                 Cashier Officer: <strong>{invoice.cashierName}</strong>
               </div>
               <div style={{ fontSize: '0.74rem', color: '#475569' }}>
-                Settlement Status: <strong style={{ color: '#16a34a' }}>✓ Settled & Verified</strong>
+                Settlement Status: <strong style={{ color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><CheckCircle2 size={13} /> Settled & Verified</strong>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -6,21 +6,30 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  User,
   QrCode,
-  Sparkles,
-  Lock,
   History,
-  Check,
-  Camera,
+  ChevronRight,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import { formatDateOnly, formatTimeOnly, maskGovtId } from '../../utils/formatters';
-import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
+import { KYCBadge, EntryBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { QRScannerModal } from './QRScannerModal';
 import confetti from 'canvas-confetti';
+
+const AGE_REFERENCE_DATE = new Date();
+
+const calculateAge = (dobString: string): number => {
+  if (!dobString) return 0;
+  const dob = new Date(dobString);
+  let age = AGE_REFERENCE_DATE.getFullYear() - dob.getFullYear();
+  const birthdayPending =
+    AGE_REFERENCE_DATE.getMonth() < dob.getMonth() ||
+    (AGE_REFERENCE_DATE.getMonth() === dob.getMonth() && AGE_REFERENCE_DATE.getDate() < dob.getDate());
+  if (birthdayPending) age -= 1;
+  return Math.max(0, age);
+};
 
 export const MobileSecurityPortal: React.FC = () => {
   const {
@@ -34,30 +43,22 @@ export const MobileSecurityPortal: React.FC = () => {
 
   const [activeNav, setActiveNav] = useState<'scan' | 'queue' | 'history'>('scan');
   const [search, setSearch] = useState('');
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const params = new URLSearchParams(window.location.search);
+    const scanId = params.get('scan');
+    const playerId = params.get('player') || params.get('playerId');
+    if (scanId) {
+      const foundCheckIn = todayCheckIns.find(c => c.id === scanId);
+      return players.find(p => p.id === foundCheckIn?.playerId) || null;
+    }
+    return players.find(p => p.id === playerId) || null;
+  });
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
   const [verificationSuccessToast, setVerificationSuccessToast] = useState<string | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-
-  // Check URL query parameters for pre-selected scanned check-in
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const scanId = params.get('scan');
-    const playerId = params.get('player') || params.get('playerId');
-
-    if (scanId) {
-      const foundCheckIn = todayCheckIns.find(c => c.id === scanId);
-      if (foundCheckIn) {
-        const foundPlayer = players.find(p => p.id === foundCheckIn.playerId);
-        if (foundPlayer) setSelectedPlayer(foundPlayer);
-      }
-    } else if (playerId) {
-      const foundPlayer = players.find(p => p.id === playerId);
-      if (foundPlayer) setSelectedPlayer(foundPlayer);
-    }
-  }, [todayCheckIns, players]);
+  const [pendingApproval, setPendingApproval] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
 
   const pendingCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'pending');
   const approvedCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'approved');
@@ -77,17 +78,6 @@ export const MobileSecurityPortal: React.FC = () => {
     ? todayCheckIns.find(c => c.playerId === selectedPlayer.id)
     : undefined;
 
-  const calculateAge = (dobString: string): number => {
-    if (!dobString) return 0;
-    const dob = new Date(dobString);
-    const diff = Date.now() - dob.getTime();
-    const ageDate = new Date(diff);
-    return Math.abs(ageDate.getUTCFullYear() - 1970);
-  };
-
-  const age = selectedPlayer ? calculateAge(selectedPlayer.kyc.dateOfBirth) : 0;
-  const is21Plus = age >= 21;
-
   const handleApprove = (player: Player, checkIn?: DailyCheckIn) => {
     if (checkIn) {
       approvePlayerEntry(checkIn.id);
@@ -95,7 +85,7 @@ export const MobileSecurityPortal: React.FC = () => {
       reviewKYC(player.id, 'verified');
     }
 
-    setVerificationSuccessToast(`✓ Entry Approved for ${player.fullName}!`);
+    setVerificationSuccessToast(`Entry approved for ${player.fullName}`);
     setTimeout(() => setVerificationSuccessToast(null), 3000);
 
     try {
@@ -192,7 +182,9 @@ export const MobileSecurityPortal: React.FC = () => {
 
             {/* Quick Pending Clearance Alert if players waiting */}
             {pendingCheckIns.length > 0 && !search && (
-              <div
+              <button
+                type="button"
+                className="security-queue-alert"
                 style={{
                   background: 'rgba(225, 29, 72, 0.15)',
                   border: '1px solid rgba(225, 29, 72, 0.45)',
@@ -202,6 +194,9 @@ export const MobileSecurityPortal: React.FC = () => {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   cursor: 'pointer',
+                  width: '100%',
+                  color: 'inherit',
+                  textAlign: 'left',
                 }}
                 onClick={() => setActiveNav('queue')}
               >
@@ -211,10 +206,10 @@ export const MobileSecurityPortal: React.FC = () => {
                     {pendingCheckIns.length} Player{pendingCheckIns.length > 1 ? 's' : ''} Waiting at Door
                   </span>
                 </div>
-                <span style={{ fontSize: '0.75rem', color: '#fca5a5', fontWeight: 700 }}>
-                  Inspect Queue →
+                <span className="staff-inline-link">
+                  Inspect Queue <ChevronRight size={14} />
                 </span>
-              </div>
+              </button>
             )}
           </div>
 
@@ -233,10 +228,10 @@ export const MobileSecurityPortal: React.FC = () => {
                 searchResults.map(p => {
                   const checkIn = todayCheckIns.find(c => c.playerId === p.id);
                   return (
-                    <div
+                    <button
                       key={p.id}
-                      className="m-list-card"
-                      style={{ cursor: 'pointer' }}
+                      type="button"
+                      className="m-list-card m-list-button"
                       onClick={() => {
                         setSelectedPlayer(p);
                         setSearch('');
@@ -250,7 +245,7 @@ export const MobileSecurityPortal: React.FC = () => {
                         <span>{p.id} • {p.phone}</span>
                         {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
                       </div>
-                    </div>
+                    </button>
                   );
                 })
               )}
@@ -333,7 +328,8 @@ export const MobileSecurityPortal: React.FC = () => {
                         border: '1px solid rgba(139, 0, 0, 0.7)',
                       }}
                     >
-                      {legalAge ? `✓ Age: ${playerAge} (21+ OK)` : `⚠ Age: ${playerAge} (UNDERAGE)`}
+                      {legalAge ? <CheckCircle2 size={13} /> : <ShieldAlert size={13} />}
+                      {legalAge ? `Age ${playerAge} · 21+ verified` : `Age ${playerAge} · Under 21`}
                     </div>
                   </div>
                 </div>
@@ -368,6 +364,25 @@ export const MobileSecurityPortal: React.FC = () => {
                 </div>
 
                 {/* Large 1-Hand Action Buttons */}
+                {pendingApproval?.player.id === playerToInspect.id ? (
+                  <div className="staff-confirm-panel">
+                    <strong>Approve {playerToInspect.fullName} for entry?</strong>
+                    <p>This records a door clearance under your staff account.</p>
+                    <div>
+                      <button
+                        type="button"
+                        className="m-btn m-btn-emerald m-btn-sm"
+                        onClick={() => {
+                          handleApprove(pendingApproval.player, pendingApproval.checkIn);
+                          setPendingApproval(null);
+                        }}
+                      >
+                        <CheckCircle2 size={16} /> Confirm approval
+                      </button>
+                      <button type="button" className="m-btn m-btn-secondary m-btn-sm" onClick={() => setPendingApproval(null)}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
                 <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
                   <button
                     className="m-btn m-btn-danger"
@@ -384,13 +399,14 @@ export const MobileSecurityPortal: React.FC = () => {
                   <button
                     className="m-btn m-btn-emerald"
                     style={{ flex: 2 }}
-                    onClick={() => handleApprove(playerToInspect, checkIn)}
+                    onClick={() => setPendingApproval({ player: playerToInspect, checkIn })}
                     disabled={checkIn?.verificationStatus === 'approved' || !legalAge}
                   >
                     <CheckCircle2 size={20} />
                     <span>{checkIn?.verificationStatus === 'approved' ? 'Already Approved' : 'Approve Entry'}</span>
                   </button>
                 </div>
+                )}
               </div>
             );
           })()}
@@ -418,14 +434,10 @@ export const MobileSecurityPortal: React.FC = () => {
               const player = players.find(p => p.id === c.playerId);
               if (!player) return null;
               return (
-                <div
+                <article
                   key={c.id}
                   className="m-card"
-                  style={{ borderLeft: '4px solid #8B0000', cursor: 'pointer' }}
-                  onClick={() => {
-                    setSelectedPlayer(player);
-                    setActiveNav('scan');
-                  }}
+                  style={{ borderLeft: '4px solid #8B0000' }}
                 >
                   <div className="m-list-row">
                     <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{c.playerName}</span>
@@ -438,14 +450,15 @@ export const MobileSecurityPortal: React.FC = () => {
                   <button
                     className="m-btn m-btn-emerald m-btn-sm"
                     style={{ marginTop: '4px' }}
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleApprove(player, c);
+                    onClick={() => {
+                      setSelectedPlayer(player);
+                      setPendingApproval({ player, checkIn: c });
+                      setActiveNav('scan');
                     }}
                   >
-                    <CheckCircle2 size={16} /> 1-Tap Approve Access
+                    Review & approve
                   </button>
-                </div>
+                </article>
               );
             })
           )}
@@ -467,7 +480,7 @@ export const MobileSecurityPortal: React.FC = () => {
             <div key={c.id} className="m-list-card">
               <div className="m-list-row">
                 <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>{c.playerName}</span>
-                <span className="badge badge-success">✓ Inside Club</span>
+                <span className="badge badge-success"><CheckCircle2 size={12} /> Inside Club</span>
               </div>
               <div className="m-list-row" style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
                 <span>Checked in: {formatTimeOnly(c.checkInTime)}</span>
@@ -536,7 +549,7 @@ export const MobileSecurityPortal: React.FC = () => {
       />
 
       {/* Bottom Navigation */}
-      <nav className="mobile-bottom-nav">
+      <nav className="mobile-bottom-nav" aria-label="Security portal sections">
         <button
           className={`nav-tab-item security-color ${activeNav === 'scan' ? 'active' : ''}`}
           onClick={() => setActiveNav('scan')}

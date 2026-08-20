@@ -3,17 +3,11 @@ import {
   Coins,
   CheckCircle2,
   XCircle,
-  Clock,
   Search,
-  Filter,
   DollarSign,
-  User,
-  Layers,
-  ArrowUpRight,
   ShieldCheck,
   Check,
   Receipt,
-  Sparkles,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { ChipRequest } from '../../types';
@@ -285,7 +279,7 @@ export const ChipOrderManager: React.FC = () => {
         </div>
 
         {/* Requests Table */}
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-container chip-orders-table">
           {filteredRequests.length === 0 ? (
             <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
               <Coins size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
@@ -295,7 +289,7 @@ export const ChipOrderManager: React.FC = () => {
               </p>
             </div>
           ) : (
-            <table className="data-table">
+            <table className="custom-table">
               <thead>
                 <tr>
                   <th>Order ID</th>

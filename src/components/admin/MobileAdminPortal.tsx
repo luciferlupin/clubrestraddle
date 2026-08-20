@@ -3,37 +3,28 @@ import {
   LayoutDashboard,
   Users,
   CheckCircle2,
-  Trophy,
   DollarSign,
   Receipt,
   History,
   RotateCcw,
   ShieldCheck,
-  ArrowDownLeft,
-  ArrowUpRight,
-  Sparkles,
-  Eye,
   Check,
   XCircle,
   Plus,
-  Coins,
+  MoreHorizontal,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { formatCurrency, formatDateTime, formatDateOnly, maskGovtId, formatINR } from '../../utils/formatters';
-import { KYCBadge, EntryBadge, TierBadge, CashFlowBadge, TournamentStatusBadge } from '../common/Badge';
+import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR } from '../../utils/formatters';
+import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { Player, ExpenseCategory, PaymentMethod } from '../../types';
 import { StaffManager } from './StaffManager';
 
 export const MobileAdminPortal: React.FC = () => {
   const {
-    staffName,
     players,
     todayCheckIns,
     checkIns,
-    tournaments,
-    entries,
-    cashTransactions,
     chipRequests,
     pendingChipOrdersCount,
     expenses,
@@ -50,7 +41,9 @@ export const MobileAdminPortal: React.FC = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
+  const [kycAction, setKycAction] = useState<'verified' | 'rejected' | null>(null);
 
   const [expenseData, setExpenseData] = useState({
     category: 'Dealer & Staff Wages' as ExpenseCategory,
@@ -110,7 +103,7 @@ export const MobileAdminPortal: React.FC = () => {
               <span className="m-stat-val" style={{ color: '#ffffff' }}>
                 {chipRequests.length}
               </span>
-              <span className="m-stat-sub">{pendingChipOrdersCount} Pending | ₹{formatINR(totalChipVolume)}</span>
+              <span className="m-stat-sub">{pendingChipOrdersCount} Pending · ₹{formatINR(totalChipVolume)}</span>
             </div>
 
             <div className="m-stat-card" style={{ borderColor: 'var(--border-gold)' }}>
@@ -124,7 +117,7 @@ export const MobileAdminPortal: React.FC = () => {
 
           {/* Business Net Vault Balance Card */}
           <div
-            className="m-card"
+            className="m-card staff-treasury-card"
             style={{
               background: 'linear-gradient(135deg, rgba(225, 29, 72, 0.18), rgba(15, 23, 42, 0.95))',
               border: '1.5px solid var(--border-red)',
@@ -173,42 +166,11 @@ export const MobileAdminPortal: React.FC = () => {
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{log.details}</div>
                   <div className="m-list-row" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
                     <span>By: {log.user}</span>
-                    <span>{formatDateTime(log.timestamp)}</span>
+                    <span>{formatShortDateTime(log.timestamp)}</span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Reset Demo Data Touch Button */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '6px' }}>
-            {!resetConfirm ? (
-              <button
-                className="m-btn m-btn-secondary m-btn-sm"
-                style={{ width: 'auto' }}
-                onClick={() => setResetConfirm(true)}
-              >
-                <RotateCcw size={14} /> Reset Demo Data
-              </button>
-            ) : (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  className="m-btn m-btn-danger m-btn-sm"
-                  onClick={() => {
-                    resetToDemoData();
-                    setResetConfirm(false);
-                  }}
-                >
-                  Confirm Reset Data
-                </button>
-                <button
-                  className="m-btn m-btn-secondary m-btn-sm"
-                  onClick={() => setResetConfirm(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
           </div>
         </>
       )}
@@ -232,12 +194,13 @@ export const MobileAdminPortal: React.FC = () => {
           </div>
 
           {players.map(p => (
-            <div
+            <button
               key={p.id}
-              className="m-list-card"
-              style={{ cursor: 'pointer' }}
+              type="button"
+              className="m-list-card m-list-button"
               onClick={() => {
                 setSelectedPlayer(p);
+                setKycAction(null);
                 setIsPlayerModalOpen(true);
               }}
             >
@@ -252,7 +215,7 @@ export const MobileAdminPortal: React.FC = () => {
                 <span>{p.id} • {p.phone}</span>
                 <span>{p.totalVisits} Visits</span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
@@ -275,12 +238,12 @@ export const MobileAdminPortal: React.FC = () => {
                 <EntryBadge status={c.verificationStatus} />
               </div>
               <div className="m-list-row" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                <span>{formatDateOnly(c.checkInDate)} at {c.checkInTime}</span>
+                <span>{formatDateOnly(c.checkInDate)} at {formatTimeOnly(c.checkInTime)}</span>
                 <span style={{ color: 'var(--gold-light)' }}>{c.tablePreference}</span>
               </div>
               {c.verifiedBy && (
-                <div style={{ fontSize: '0.72rem', color: '#ffffff' }}>
-                  ✓ Clearance verified by {c.verifiedBy}
+                <div className="staff-inline-status">
+                  <CheckCircle2 size={14} /> Clearance verified by {c.verifiedBy}
                 </div>
               )}
             </div>
@@ -357,7 +320,7 @@ export const MobileAdminPortal: React.FC = () => {
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{log.details}</div>
               <div className="m-list-row" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
                 <span>User: {log.user}</span>
-                <span>{formatDateTime(log.timestamp)}</span>
+                <span>{formatShortDateTime(log.timestamp)}</span>
               </div>
             </div>
           ))}
@@ -390,27 +353,35 @@ export const MobileAdminPortal: React.FC = () => {
 
             <div style={{ marginTop: '8px' }}>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Admin KYC Override:</span>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                <button
-                  className="m-btn m-btn-emerald m-btn-sm"
-                  onClick={() => {
-                    reviewKYC(selectedPlayer.id, 'verified');
-                    setIsPlayerModalOpen(false);
-                  }}
-                >
-                  <Check size={14} /> Mark Verified
-                </button>
-
-                <button
-                  className="m-btn m-btn-danger m-btn-sm"
-                  onClick={() => {
-                    reviewKYC(selectedPlayer.id, 'rejected', 'Admin override');
-                    setIsPlayerModalOpen(false);
-                  }}
-                >
-                  <XCircle size={14} /> Mark Rejected
-                </button>
-              </div>
+              {kycAction ? (
+                <div className="staff-confirm-panel">
+                  <strong>{kycAction === 'verified' ? 'Verify this member?' : 'Reject this member’s KYC?'}</strong>
+                  <p>This change is recorded in the audit log.</p>
+                  <div>
+                    <button
+                      type="button"
+                      className={`m-btn m-btn-sm ${kycAction === 'verified' ? 'm-btn-emerald' : 'm-btn-danger'}`}
+                      onClick={() => {
+                        reviewKYC(selectedPlayer.id, kycAction, kycAction === 'rejected' ? 'Admin override' : undefined);
+                        setKycAction(null);
+                        setIsPlayerModalOpen(false);
+                      }}
+                    >
+                      Confirm {kycAction === 'verified' ? 'verification' : 'rejection'}
+                    </button>
+                    <button type="button" className="m-btn m-btn-secondary m-btn-sm" onClick={() => setKycAction(null)}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                  <button type="button" className="m-btn m-btn-emerald m-btn-sm" onClick={() => setKycAction('verified')}>
+                    <Check size={14} /> Mark Verified
+                  </button>
+                  <button type="button" className="m-btn m-btn-danger m-btn-sm" onClick={() => setKycAction('rejected')}>
+                    <XCircle size={14} /> Mark Rejected
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </MobileBottomDrawer>
@@ -439,13 +410,26 @@ export const MobileAdminPortal: React.FC = () => {
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label">Amount ($) *</label>
+            <label className="m-form-label" htmlFor="admin-expense-amount">Amount (₹) *</label>
             <input
+              id="admin-expense-amount"
               type="number"
               className="m-input"
               value={expenseData.amount}
               onChange={e => setExpenseData({ ...expenseData, amount: Number(e.target.value) })}
               required
+            />
+          </div>
+
+          <div className="m-form-group">
+            <label className="m-form-label" htmlFor="admin-expense-description">Description</label>
+            <textarea
+              id="admin-expense-description"
+              className="m-textarea"
+              rows={2}
+              placeholder="What was this payment for?"
+              value={expenseData.description}
+              onChange={e => setExpenseData({ ...expenseData, description: e.target.value })}
             />
           </div>
 
@@ -460,28 +444,70 @@ export const MobileAdminPortal: React.FC = () => {
             />
           </div>
 
+          <div className="m-form-group">
+            <label className="m-form-label" htmlFor="admin-expense-method">Payment Method</label>
+            <select
+              id="admin-expense-method"
+              className="m-select"
+              value={expenseData.paymentMethod}
+              onChange={e => setExpenseData({ ...expenseData, paymentMethod: e.target.value as PaymentMethod })}
+            >
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Credit/Debit Card">Credit / Debit Card</option>
+              <option value="UPI/Digital">UPI / Digital</option>
+            </select>
+          </div>
+
           <button type="submit" className="m-btn m-btn-primary" style={{ marginTop: '8px' }}>
             <Plus size={18} /> Record Expense
           </button>
         </form>
       </MobileBottomDrawer>
 
+      <MobileBottomDrawer
+        isOpen={isMoreOpen}
+        onClose={() => {
+          setIsMoreOpen(false);
+          setResetConfirm(false);
+        }}
+        title="Admin tools"
+        subtitle="Staff access, audit history and demo controls"
+      >
+        <div className="staff-more-menu">
+          <button type="button" onClick={() => { setActiveTab('staff'); setIsMoreOpen(false); }}>
+            <ShieldCheck size={19} />
+            <span><strong>Staff accounts</strong><small>Create, suspend or remove access</small></span>
+          </button>
+          <button type="button" onClick={() => { setActiveTab('audit'); setIsMoreOpen(false); }}>
+            <History size={19} />
+            <span><strong>Audit log</strong><small>Review activity across every desk</small></span>
+          </button>
+          <div className="staff-reset-tool">
+            <span><RotateCcw size={18} /><strong>Reset demo data</strong></span>
+            {!resetConfirm ? (
+              <button type="button" className="m-btn m-btn-secondary m-btn-sm" onClick={() => setResetConfirm(true)}>Review reset</button>
+            ) : (
+              <div className="staff-reset-confirm">
+                <p>This restores all demo records and cannot be undone.</p>
+                <div>
+                  <button type="button" className="m-btn m-btn-danger m-btn-sm" onClick={() => { resetToDemoData(); setResetConfirm(false); setIsMoreOpen(false); }}>Confirm reset</button>
+                  <button type="button" className="m-btn m-btn-secondary m-btn-sm" onClick={() => setResetConfirm(false)}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </MobileBottomDrawer>
+
       {/* Bottom Navigation */}
-      <nav className="mobile-bottom-nav">
+      <nav className="mobile-bottom-nav" aria-label="Admin portal sections">
         <button
           className={`nav-tab-item admin-color ${activeTab === 'dashboard' ? 'active' : ''}`}
           onClick={() => setActiveTab('dashboard')}
         >
           <LayoutDashboard size={20} />
           <span className="nav-tab-label">Dashboard</span>
-        </button>
-
-        <button
-          className={`nav-tab-item admin-color ${activeTab === 'staff' ? 'active' : ''}`}
-          onClick={() => setActiveTab('staff')}
-        >
-          <ShieldCheck size={20} />
-          <span className="nav-tab-label">Staff</span>
         </button>
 
         <button
@@ -509,11 +535,11 @@ export const MobileAdminPortal: React.FC = () => {
         </button>
 
         <button
-          className={`nav-tab-item admin-color ${activeTab === 'audit' ? 'active' : ''}`}
-          onClick={() => setActiveTab('audit')}
+          className={`nav-tab-item admin-color ${activeTab === 'staff' || activeTab === 'audit' ? 'active' : ''}`}
+          onClick={() => setIsMoreOpen(true)}
         >
-          <History size={20} />
-          <span className="nav-tab-label">Audit</span>
+          <MoreHorizontal size={20} />
+          <span className="nav-tab-label">More</span>
         </button>
       </nav>
     </div>

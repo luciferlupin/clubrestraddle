@@ -5,9 +5,7 @@ import {
   UserPlus,
   Receipt,
   Wallet,
-  ShieldAlert,
   Lock,
-  Sparkles,
   Coins,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
@@ -16,10 +14,14 @@ import { PlayerTournamentEntry } from './PlayerTournamentEntry';
 import { CashManagement } from './CashManagement';
 import { BillingHistory } from './BillingHistory';
 import { ChipOrderManager } from './ChipOrderManager';
+import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
+import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
+
+type CashierTab = 'chip-orders' | 'tournaments' | 'register' | 'cash' | 'billing';
 
 export const CashierPortal: React.FC = () => {
-  const { staffName, tournaments, currentCashBalance, pendingChipOrdersCount } = useClub();
-  const [activeTab, setActiveTab] = useState<'chip-orders' | 'tournaments' | 'register' | 'cash' | 'billing'>('chip-orders');
+  const { staffName, tournaments, pendingChipOrdersCount } = useClub();
+  const [activeTab, setActiveTab] = useState<CashierTab>('chip-orders');
   const [selectedTournamentForReg, setSelectedTournamentForReg] = useState<string | undefined>(undefined);
 
   const handleStartRegister = (tournamentId: string) => {
@@ -27,120 +29,30 @@ export const CashierPortal: React.FC = () => {
     setActiveTab('register');
   };
 
+  const sections: DesktopSectionNavItem<CashierTab>[] = [
+    { id: 'chip-orders', label: 'Chip orders', icon: <Coins size={16} />, badge: pendingChipOrdersCount },
+    { id: 'tournaments', label: `Events (${tournaments.length})`, icon: <Trophy size={16} /> },
+    { id: 'register', label: 'New entry', icon: <UserPlus size={16} /> },
+    { id: 'cash', label: 'Cash drawer', icon: <Wallet size={16} /> },
+    { id: 'billing', label: 'Billing records', icon: <Receipt size={16} /> },
+  ];
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Cashier Bar */}
-      <div
-        style={{
-          background: 'linear-gradient(155deg, #130a0e 0%, #090608 100%)',
-          border: '1px solid rgba(225, 29, 72, 0.35)',
-          borderRadius: '16px',
-          padding: '16px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '10px',
-              background: 'rgba(225, 29, 72, 0.2)',
-              border: '1px solid var(--border-red)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-            }}
-          >
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#ffffff' }}>
-              Cashier & Treasury Portal
-            </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              Logged in as: <strong style={{ color: 'var(--gold-light)' }}>{staffName}</strong> • Desk Terminal #1
-            </div>
-          </div>
-        </div>
+    <div className="desktop-portal desktop-cashier-portal">
+      <DesktopPortalHeader
+        icon={<DollarSign size={24} />}
+        eyebrow="Cashier desk"
+        title="Cashier & treasury workspace"
+        subtitle={<>Signed in as <strong>{staffName}</strong> · Terminal 1</>}
+        notice={<><Lock size={14} aria-hidden="true" /> Financial and event tools active · KYC documents restricted</>}
+      />
 
-        {/* Access Control Notice */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '0.75rem',
-            color: '#94a3b8',
-            background: 'rgba(0,0,0,0.3)',
-            padding: '6px 12px',
-            borderRadius: '8px',
-            border: '1px solid var(--border-subtle)',
-          }}
-        >
-          <Lock size={13} color="#ffffff" />
-          <span>Access Control: Financial & tournament privileges active. Sensitive player KYC documents restricted.</span>
-        </div>
-      </div>
-
-      {/* Sub-Navigation Tabs */}
-      <div className="sub-nav-tabs">
-        <button
-          className={`sub-tab-btn ${activeTab === 'chip-orders' ? 'active' : ''}`}
-          onClick={() => setActiveTab('chip-orders')}
-        >
-          <Coins size={16} /> Live Table Chip Orders
-          {pendingChipOrdersCount > 0 && (
-            <span
-              style={{
-                background: '#e11d48',
-                color: '#ffffff',
-                fontSize: '0.7rem',
-                fontWeight: 800,
-                padding: '2px 7px',
-                borderRadius: '10px',
-                marginLeft: '6px',
-              }}
-            >
-              {pendingChipOrdersCount}
-            </span>
-          )}
-        </button>
-
-        <button
-          className={`sub-tab-btn ${activeTab === 'tournaments' ? 'active' : ''}`}
-          onClick={() => setActiveTab('tournaments')}
-        >
-          <Trophy size={16} /> Tournaments & Events ({tournaments.length})
-        </button>
-
-        <button
-          className={`sub-tab-btn ${activeTab === 'register' ? 'active' : ''}`}
-          onClick={() => setActiveTab('register')}
-        >
-          <UserPlus size={16} /> Register Player & Billing
-        </button>
-
-        <button
-          className={`sub-tab-btn ${activeTab === 'cash' ? 'active' : ''}`}
-          onClick={() => setActiveTab('cash')}
-        >
-          <Wallet size={16} /> Cash Management & Float
-        </button>
-
-        <button
-          className={`sub-tab-btn ${activeTab === 'billing' ? 'active' : ''}`}
-          onClick={() => setActiveTab('billing')}
-        >
-          <Receipt size={16} /> Payment & Billing Records
-        </button>
-      </div>
+      <DesktopSectionNav
+        ariaLabel="Cashier sections"
+        activeId={activeTab}
+        items={sections}
+        onChange={setActiveTab}
+      />
 
       {/* Tab Content */}
       {activeTab === 'chip-orders' && <ChipOrderManager />}

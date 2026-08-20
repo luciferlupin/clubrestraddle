@@ -7,24 +7,22 @@ import {
   Receipt,
   Plus,
   Minus,
-  DollarSign,
   ArrowDownLeft,
   ArrowUpRight,
-  Search,
-  Eye,
-  CheckCircle,
-  Clock,
-  Sparkles,
   Coins,
   Check,
+  CheckCircle2,
+  ChevronRight,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { TournamentStatus, PaymentMethod, CashCategory, TournamentEntry, ExpenseCategory } from '../../types';
-import { formatCurrency, formatDateTime, formatDateOnly, formatINR } from '../../utils/formatters';
-import { TournamentStatusBadge, CashFlowBadge } from '../common/Badge';
+import { TournamentStatus, PaymentMethod, CashCategory, ExpenseCategory } from '../../types';
+import { formatClubLabel, formatCurrency, formatShortDateTime, formatINR } from '../../utils/formatters';
+import { TournamentStatusBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import confetti from 'canvas-confetti';
+
+const DEFAULT_TOURNAMENT_START = new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 16);
 
 export const MobileCashierPortal: React.FC = () => {
   const {
@@ -66,7 +64,7 @@ export const MobileCashierPortal: React.FC = () => {
     guaranteedPrizePool: 25000,
     maxSeats: 60,
     blindLevelsMinutes: 20,
-    startTime: new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 16),
+    startTime: DEFAULT_TOURNAMENT_START,
     status: 'Registering' as TournamentStatus,
   });
 
@@ -168,7 +166,7 @@ export const MobileCashierPortal: React.FC = () => {
       tableLocation: `${entry.tableNumber} • ${entry.seatNumber}`,
       items: [
         {
-          description: `${entry.tournamentName} - Tournament Buy-in Stack`,
+          description: `${formatClubLabel(entry.tournamentName)} - Tournament Buy-in Stack`,
           details: `${tournamentObj?.startingChips?.toLocaleString()} Starting Playing Chips`,
           chips: tournamentObj?.startingChips,
           amount: entry.buyInAmount,
@@ -333,7 +331,7 @@ export const MobileCashierPortal: React.FC = () => {
                 </span>
               ) : (
                 <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
-                  ✓ All Clear
+                  <CheckCircle2 size={12} /> All Clear
                 </span>
               )}
             </div>
@@ -407,33 +405,33 @@ export const MobileCashierPortal: React.FC = () => {
             </span>
 
             <div className="m-quick-grid">
-              <div className="m-quick-btn" onClick={() => setIsCashInOpen(true)}>
+              <button type="button" className="m-quick-btn" onClick={() => setIsCashInOpen(true)}>
                 <div className="m-quick-icon-wrap" style={{ color: '#ffffff' }}>
                   <ArrowDownLeft size={22} />
                 </div>
-                <span>+ Cash Received</span>
-              </div>
+                <span>Cash received</span>
+              </button>
 
-              <div className="m-quick-btn" onClick={() => setIsCashOutOpen(true)}>
+              <button type="button" className="m-quick-btn" onClick={() => setIsCashOutOpen(true)}>
                 <div className="m-quick-icon-wrap" style={{ color: '#e11d48' }}>
                   <ArrowUpRight size={22} />
                 </div>
-                <span>- Cash Paid Out</span>
-              </div>
+                <span>Cash paid out</span>
+              </button>
 
-              <div className="m-quick-btn" onClick={() => setActiveTab('players')}>
+              <button type="button" className="m-quick-btn" onClick={() => setActiveTab('players')}>
                 <div className="m-quick-icon-wrap" style={{ color: '#ffffff' }}>
                   <Users size={22} />
                 </div>
-                <span>+ Tournament Entry</span>
-              </div>
+                <span>Tournament entry</span>
+              </button>
 
-              <div className="m-quick-btn" onClick={() => setIsCreateTrnOpen(true)}>
+              <button type="button" className="m-quick-btn" onClick={() => setIsCreateTrnOpen(true)}>
                 <div className="m-quick-icon-wrap" style={{ color: '#ffffff' }}>
                   <Trophy size={22} />
                 </div>
-                <span>+ New Tournament</span>
-              </div>
+                <span>New tournament</span>
+              </button>
             </div>
           </div>
 
@@ -463,7 +461,7 @@ export const MobileCashierPortal: React.FC = () => {
                   </div>
                   <div className="m-list-row" style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
                     <span>{txn.playerName || txn.paymentMethod}</span>
-                    <span>{formatDateTime(txn.timestamp)}</span>
+                    <span>{formatShortDateTime(txn.timestamp)}</span>
                   </div>
                 </div>
               ))}
@@ -487,23 +485,25 @@ export const MobileCashierPortal: React.FC = () => {
 
           <form onSubmit={handleRegisterPlayer} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div className="m-form-group">
-              <label className="m-form-label">Select Tournament *</label>
+              <label className="m-form-label" htmlFor="entry-tournament">Select Tournament *</label>
               <select
+                id="entry-tournament"
                 className="m-select"
                 value={entryFormData.tournamentId}
                 onChange={e => setEntryFormData({ ...entryFormData, tournamentId: e.target.value })}
               >
                 {tournaments.map(t => (
                   <option key={t.id} value={t.id}>
-                    🏆 {t.name} ({formatCurrency(t.buyInFee + t.clubRake)})
+                    {formatClubLabel(t.name)} ({formatCurrency(t.buyInFee + t.clubRake)})
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="m-form-group">
-              <label className="m-form-label">Select Registered Player *</label>
+              <label className="m-form-label" htmlFor="entry-player">Select Registered Player *</label>
               <select
+                id="entry-player"
                 className="m-select"
                 value={entryFormData.playerId}
                 onChange={e => setEntryFormData({ ...entryFormData, playerId: e.target.value })}
@@ -512,7 +512,7 @@ export const MobileCashierPortal: React.FC = () => {
                   const isChecked = hasPlayerCheckedInToday(p.id);
                   return (
                     <option key={p.id} value={p.id}>
-                      👤 {p.fullName} ({p.id}) {isChecked ? '✓ Checked-in' : ''}
+                      {p.fullName} ({p.id}) {isChecked ? '— Checked in' : ''}
                     </option>
                   );
                 })}
@@ -538,8 +538,9 @@ export const MobileCashierPortal: React.FC = () => {
             )}
 
             <div className="m-form-group">
-              <label className="m-form-label">Payment Method</label>
+              <label className="m-form-label" htmlFor="entry-payment-method">Payment Method</label>
               <select
+                id="entry-payment-method"
                 className="m-select"
                 value={entryFormData.paymentMethod}
                 onChange={e => setEntryFormData({ ...entryFormData, paymentMethod: e.target.value as PaymentMethod })}
@@ -553,8 +554,9 @@ export const MobileCashierPortal: React.FC = () => {
             </div>
 
             <div className="m-form-group">
-              <label className="m-form-label">Payment Ref / Txn ID</label>
+              <label className="m-form-label" htmlFor="entry-payment-reference">Payment Ref / Txn ID</label>
               <input
+                id="entry-payment-reference"
                 type="text"
                 className="m-input"
                 placeholder="e.g. CSH-9921 or UPI Ref"
@@ -565,8 +567,9 @@ export const MobileCashierPortal: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <div className="m-form-group">
-                <label className="m-form-label">Table #</label>
+                <label className="m-form-label" htmlFor="entry-table">Table #</label>
                 <input
+                  id="entry-table"
                   type="text"
                   className="m-input"
                   value={entryFormData.tableNum}
@@ -575,8 +578,9 @@ export const MobileCashierPortal: React.FC = () => {
               </div>
 
               <div className="m-form-group">
-                <label className="m-form-label">Seat #</label>
+                <label className="m-form-label" htmlFor="entry-seat">Seat #</label>
                 <input
+                  id="entry-seat"
                   type="text"
                   className="m-input"
                   value={entryFormData.seatNum}
@@ -623,7 +627,7 @@ export const MobileCashierPortal: React.FC = () => {
                     <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--gold-light)' }}>
                       {trn.id}
                     </span>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff' }}>{trn.name}</h4>
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#ffffff' }}>{formatClubLabel(trn.name)}</h4>
                   </div>
                   <TournamentStatusBadge status={trn.status} />
                 </div>
@@ -672,13 +676,13 @@ export const MobileCashierPortal: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginTop: '10px' }}>
               <button className="m-btn m-btn-emerald m-btn-sm" onClick={() => setIsCashInOpen(true)}>
-                + Cash In
+                <ArrowDownLeft size={14} /> Cash In
               </button>
               <button className="m-btn m-btn-danger m-btn-sm" onClick={() => setIsCashOutOpen(true)}>
-                - Cash Out
+                <ArrowUpRight size={14} /> Cash Out
               </button>
               <button className="m-btn m-btn-secondary m-btn-sm" onClick={() => setIsExpenseOpen(true)}>
-                + Expense
+                <Receipt size={14} /> Expense
               </button>
             </div>
           </div>
@@ -706,7 +710,7 @@ export const MobileCashierPortal: React.FC = () => {
                   </div>
                   <div className="m-list-row" style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
                     <span>Balance: {formatCurrency(txn.balanceAfter)}</span>
-                    <span>{formatDateTime(txn.timestamp)}</span>
+                    <span>{formatShortDateTime(txn.timestamp)}</span>
                   </div>
                 </div>
               ))}
@@ -744,7 +748,7 @@ export const MobileCashierPortal: React.FC = () => {
               tableLocation: `${e.tableNumber} • ${e.seatNumber}`,
               items: [
                 {
-                  description: `${e.tournamentName} - Tournament Buy-in Stack`,
+                  description: `${formatClubLabel(e.tournamentName)} - Tournament Buy-in Stack`,
                   details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Playing Chips`,
                   chips: tournamentObj?.startingChips || 50000,
                   amount: e.buyInAmount,
@@ -764,10 +768,10 @@ export const MobileCashierPortal: React.FC = () => {
             };
 
             return (
-              <div
+              <button
                 key={e.id}
-                className="m-list-card"
-                style={{ cursor: 'pointer' }}
+                type="button"
+                className="m-list-card m-list-button"
                 onClick={() => setSelectedInvoice(invoiceData)}
               >
                 <div className="m-list-row">
@@ -779,12 +783,12 @@ export const MobileCashierPortal: React.FC = () => {
                   </span>
                 </div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{e.playerName}</div>
-                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>{e.tournamentName}</div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>{formatClubLabel(e.tournamentName)}</div>
                 <div className="m-list-row" style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
                   <span>{e.tableNumber} • {e.seatNumber}</span>
-                  <span style={{ color: 'var(--gold-light)' }}>Tap to View Official Invoice →</span>
+                  <span className="staff-inline-link">View invoice <ChevronRight size={14} /></span>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -796,7 +800,7 @@ export const MobileCashierPortal: React.FC = () => {
       <MobileBottomDrawer
         isOpen={isCashInOpen}
         onClose={() => setIsCashInOpen(false)}
-        title="+ Record Cash Received (In)"
+        title="Record cash received"
         subtitle="Record money coming into the cashier drawer"
       >
         <form onSubmit={handleCashInSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -816,8 +820,9 @@ export const MobileCashierPortal: React.FC = () => {
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label">Amount ($) *</label>
+            <label className="m-form-label" htmlFor="cash-in-amount">Amount (₹) *</label>
             <input
+              id="cash-in-amount"
               type="number"
               className="m-input"
               value={cashInData.amount}
@@ -838,7 +843,20 @@ export const MobileCashierPortal: React.FC = () => {
               <option value="Bank Transfer">Bank Transfer</option>
               <option value="Credit/Debit Card">Credit/Debit Card</option>
               <option value="Chips">Chips</option>
+              <option value="UPI/Digital">UPI / Digital</option>
             </select>
+          </div>
+
+          <div className="m-form-group">
+            <label className="m-form-label" htmlFor="cash-in-description">Description</label>
+            <textarea
+              id="cash-in-description"
+              className="m-textarea"
+              rows={2}
+              placeholder="Optional note for the ledger"
+              value={cashInData.description}
+              onChange={e => setCashInData({ ...cashInData, description: e.target.value })}
+            />
           </div>
 
           <div className="m-form-group">
@@ -862,7 +880,7 @@ export const MobileCashierPortal: React.FC = () => {
       <MobileBottomDrawer
         isOpen={isCashOutOpen}
         onClose={() => setIsCashOutOpen(false)}
-        title="- Record Cash Given (Payout)"
+        title="Record cash payout"
         subtitle="Record money going out from cashier drawer"
       >
         <form onSubmit={handleCashOutSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -881,14 +899,42 @@ export const MobileCashierPortal: React.FC = () => {
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label">Amount ($) *</label>
+            <label className="m-form-label" htmlFor="cash-out-amount">Amount (₹) *</label>
             <input
+              id="cash-out-amount"
               type="number"
               className="m-input"
               value={cashOutData.amount}
               onChange={e => setCashOutData({ ...cashOutData, amount: Number(e.target.value) })}
               required
               min="1"
+            />
+          </div>
+
+          <div className="m-form-group">
+            <label className="m-form-label" htmlFor="cash-out-method">Payment Method</label>
+            <select
+              id="cash-out-method"
+              className="m-select"
+              value={cashOutData.paymentMethod}
+              onChange={e => setCashOutData({ ...cashOutData, paymentMethod: e.target.value as PaymentMethod })}
+            >
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Credit/Debit Card">Credit / Debit Card</option>
+              <option value="UPI/Digital">UPI / Digital</option>
+            </select>
+          </div>
+
+          <div className="m-form-group">
+            <label className="m-form-label" htmlFor="cash-out-description">Description</label>
+            <textarea
+              id="cash-out-description"
+              className="m-textarea"
+              rows={2}
+              placeholder="Optional payout note"
+              value={cashOutData.description}
+              onChange={e => setCashOutData({ ...cashOutData, description: e.target.value })}
             />
           </div>
 
@@ -918,8 +964,9 @@ export const MobileCashierPortal: React.FC = () => {
       >
         <form onSubmit={handleCreateTournament} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="m-form-group">
-            <label className="m-form-label">Tournament Name *</label>
+            <label className="m-form-label" htmlFor="tournament-name">Tournament Name *</label>
             <input
+              id="tournament-name"
               type="text"
               className="m-input"
               placeholder="e.g. Saturday Night Bounty"
@@ -931,8 +978,9 @@ export const MobileCashierPortal: React.FC = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div className="m-form-group">
-              <label className="m-form-label">Buy-in ($) *</label>
+              <label className="m-form-label" htmlFor="tournament-buyin">Buy-in (₹) *</label>
               <input
+                id="tournament-buyin"
                 type="number"
                 className="m-input"
                 value={trnFormData.buyInFee}
@@ -941,8 +989,9 @@ export const MobileCashierPortal: React.FC = () => {
               />
             </div>
             <div className="m-form-group">
-              <label className="m-form-label">Rake ($) *</label>
+              <label className="m-form-label" htmlFor="tournament-rake">Rake (₹) *</label>
               <input
+                id="tournament-rake"
                 type="number"
                 className="m-input"
                 value={trnFormData.clubRake}
@@ -954,8 +1003,9 @@ export const MobileCashierPortal: React.FC = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div className="m-form-group">
-              <label className="m-form-label">Guaranteed Pool ($)</label>
+              <label className="m-form-label" htmlFor="tournament-pool">Guaranteed Pool (₹)</label>
               <input
+                id="tournament-pool"
                 type="number"
                 className="m-input"
                 value={trnFormData.guaranteedPrizePool}
@@ -963,14 +1013,31 @@ export const MobileCashierPortal: React.FC = () => {
               />
             </div>
             <div className="m-form-group">
-              <label className="m-form-label">Starting Stack</label>
+              <label className="m-form-label" htmlFor="tournament-stack">Starting Stack</label>
               <input
+                id="tournament-stack"
                 type="number"
                 className="m-input"
                 value={trnFormData.startingChips}
                 onChange={e => setTrnFormData({ ...trnFormData, startingChips: Number(e.target.value) })}
               />
             </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div className="m-form-group">
+              <label className="m-form-label" htmlFor="tournament-seats">Maximum Seats</label>
+              <input id="tournament-seats" type="number" className="m-input" min="2" value={trnFormData.maxSeats} onChange={e => setTrnFormData({ ...trnFormData, maxSeats: Number(e.target.value) })} />
+            </div>
+            <div className="m-form-group">
+              <label className="m-form-label" htmlFor="tournament-blinds">Blind Level (min)</label>
+              <input id="tournament-blinds" type="number" className="m-input" min="1" value={trnFormData.blindLevelsMinutes} onChange={e => setTrnFormData({ ...trnFormData, blindLevelsMinutes: Number(e.target.value) })} />
+            </div>
+          </div>
+
+          <div className="m-form-group">
+            <label className="m-form-label" htmlFor="tournament-start">Start Time</label>
+            <input id="tournament-start" type="datetime-local" className="m-input" value={trnFormData.startTime} onChange={e => setTrnFormData({ ...trnFormData, startTime: e.target.value })} />
           </div>
 
           <button type="submit" className="m-btn m-btn-primary" style={{ marginTop: '8px' }}>
@@ -1002,14 +1069,37 @@ export const MobileCashierPortal: React.FC = () => {
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label">Amount ($) *</label>
+            <label className="m-form-label" htmlFor="cashier-expense-amount">Amount (₹) *</label>
             <input
+              id="cashier-expense-amount"
               type="number"
               className="m-input"
               value={expenseData.amount}
               onChange={e => setExpenseData({ ...expenseData, amount: Number(e.target.value) })}
               required
             />
+          </div>
+
+          <div className="m-form-group">
+            <label className="m-form-label" htmlFor="cashier-expense-description">Description</label>
+            <textarea
+              id="cashier-expense-description"
+              className="m-textarea"
+              rows={2}
+              placeholder="What was this payment for?"
+              value={expenseData.description}
+              onChange={e => setExpenseData({ ...expenseData, description: e.target.value })}
+            />
+          </div>
+
+          <div className="m-form-group">
+            <label className="m-form-label" htmlFor="cashier-expense-method">Payment Method</label>
+            <select id="cashier-expense-method" className="m-select" value={expenseData.paymentMethod} onChange={e => setExpenseData({ ...expenseData, paymentMethod: e.target.value as PaymentMethod })}>
+              <option value="Cash">Cash</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Credit/Debit Card">Credit / Debit Card</option>
+              <option value="UPI/Digital">UPI / Digital</option>
+            </select>
           </div>
 
           <div className="m-form-group">
@@ -1037,7 +1127,7 @@ export const MobileCashierPortal: React.FC = () => {
       />
 
       {/* Bottom Navigation Bar */}
-      <nav className="mobile-bottom-nav">
+      <nav className="mobile-bottom-nav" aria-label="Cashier portal sections">
         <button
           className={`nav-tab-item cashier-color ${activeTab === 'dashboard' ? 'active' : ''}`}
           onClick={() => setActiveTab('dashboard')}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { QrCode, ChevronDown, CircleDot, User, LogOut } from 'lucide-react';
+import { QrCode, ChevronDown, CircleDot, Spade } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 
 interface MobileHeaderProps {
@@ -8,7 +8,7 @@ interface MobileHeaderProps {
 }
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, onOpenQR }) => {
-  const { activeRole, setActiveRole, todayCheckIns, currentStaffUser, logoutStaff } = useClub();
+  const { activeRole, setActiveRole, todayCheckIns } = useClub();
 
   const isPlayerMode = activeRole === 'player';
   const pendingCount = todayCheckIns.filter(c => c.verificationStatus === 'pending').length;
@@ -16,13 +16,13 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
   const getPortalLabel = () => {
     switch (activeRole) {
       case 'player':
-        return { name: 'Member Lounge', color: '#ffffff' };
+        return { name: 'Member', color: '#ffffff' };
       case 'cashier':
-        return { name: 'Cashier Desk', color: '#ffffff' };
+        return { name: 'Cashier', color: '#ffffff' };
       case 'security':
-        return { name: 'Security Desk', color: '#ffffff' };
+        return { name: 'Security', color: '#ffffff' };
       case 'admin':
-        return { name: 'Admin Suite', color: '#ffffff' };
+        return { name: 'Admin', color: '#ffffff' };
     }
   };
 
@@ -30,76 +30,41 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
 
   return (
     <header className="mobile-header">
-      <div className="mobile-logo-wrap" onClick={() => setActiveRole('player')}>
-        <div className="mobile-logo-badge">♠</div>
+      <button
+        type="button"
+        className="mobile-logo-wrap"
+        onClick={isPlayerMode ? () => setActiveRole('player') : onOpenRoleSwitcher}
+        aria-label={isPlayerMode ? 'Club Re Straddle member portal' : 'Open staff desk switcher'}
+      >
+        <div className="mobile-logo-badge"><Spade size={19} fill="currentColor" /></div>
         <div className="mobile-logo-text">
           <span className="mobile-logo-title">CLUB RE STRADDLE</span>
           <span className="mobile-portal-pill" style={{ color: portalInfo.color }}>
             <CircleDot size={8} /> {portalInfo.name}
           </span>
         </div>
-      </div>
+      </button>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {/* Only show station switcher and exit button in Staff Mode */}
+        {/* Staff roles and registration stay one tap away without crowding the phone header. */}
         {!isPlayerMode ? (
-          <>
-            <button
-              className="role-switch-btn"
-              onClick={onOpenRoleSwitcher}
-              title="Switch Staff Station"
-            >
-              <span>Desks</span>
-              {activeRole === 'security' && pendingCount > 0 && (
-                <span
-                  style={{
-                    background: '#ef4444',
-                    color: '#fff',
-                    borderRadius: '999px',
-                    padding: '1px 5px',
-                    fontSize: '0.62rem',
-                  }}
-                >
-                  {pendingCount}
-                </span>
-              )}
-              <ChevronDown size={14} />
-            </button>
-
-            <button
-              onClick={() => setActiveRole('player')}
-              style={{
-                background: 'rgba(225, 29, 72, 0.2)',
-                border: '1px solid rgba(225, 29, 72, 0.4)',
-                color: '#ffffff',
-                borderRadius: '8px',
-                padding: '5px 8px',
-                fontSize: '0.72rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                cursor: 'pointer',
-              }}
-              title="Exit to Player App"
-            >
-              <User size={13} /> Exit
-            </button>
-          </>
+          <button
+            type="button"
+            className="role-switch-btn"
+            onClick={onOpenRoleSwitcher}
+            aria-label={`Switch staff desk. Current desk: ${portalInfo.name}`}
+          >
+            <span>{portalInfo.name}</span>
+            {activeRole === 'security' && pendingCount > 0 && <span className="staff-header-count">{pendingCount}</span>}
+            <ChevronDown size={14} />
+          </button>
         ) : null}
 
         <button
+          type="button"
           onClick={onOpenQR}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#ffffff',
-            cursor: 'pointer',
-            padding: '6px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          title="Club Entrance Registration QR"
+          className="mobile-header-action"
+          aria-label="Open club entrance registration QR"
         >
           <QrCode size={20} />
         </button>
