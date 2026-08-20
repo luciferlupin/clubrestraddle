@@ -11,9 +11,10 @@ import {
   ShieldCheck,
   Activity,
   Award,
+  Coins,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
 
 interface AdminDashboardProps {
   onNavigateTab: (tab: string) => void;
@@ -52,6 +53,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
     tournaments,
     entries,
     cashTransactions,
+    chipRequests,
+    pendingChipOrdersCount,
     expenses,
     auditLogs,
     currentCashBalance,
@@ -61,6 +64,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
 
   const activeTournaments = tournaments.filter(t => t.status === 'Registering' || t.status === 'Running');
   const approvedToday = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
+  const deliveredChipOrders = chipRequests.filter(r => r.status === 'delivered');
+  const totalChipVolume = deliveredChipOrders.reduce((sum, r) => sum + r.amount, 0);
 
   const netTreasuryBalance = currentCashBalance - totalExpensesAmount;
 
@@ -89,6 +94,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           value={todayCheckIns.length}
           icon={<CheckCircle2 size={22} color="#ffffff" />}
           helper={`${approvedToday} Approved & Inside Club`}
+        />
+
+        <StatCard
+          label="Live Table Chip Orders"
+          value={chipRequests.length}
+          icon={<Coins size={22} color="#ffffff" />}
+          helper={`${pendingChipOrdersCount} Pending | ₹${formatINR(totalChipVolume)} Delivered`}
         />
 
         <StatCard

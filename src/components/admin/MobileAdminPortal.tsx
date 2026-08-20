@@ -16,9 +16,10 @@ import {
   Check,
   XCircle,
   Plus,
+  Coins,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { formatCurrency, formatDateTime, formatDateOnly, maskGovtId } from '../../utils/formatters';
+import { formatCurrency, formatDateTime, formatDateOnly, maskGovtId, formatINR } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge, CashFlowBadge, TournamentStatusBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { Player, ExpenseCategory, PaymentMethod } from '../../types';
@@ -33,6 +34,8 @@ export const MobileAdminPortal: React.FC = () => {
     tournaments,
     entries,
     cashTransactions,
+    chipRequests,
+    pendingChipOrdersCount,
     expenses,
     auditLogs,
     currentCashBalance,
@@ -58,6 +61,8 @@ export const MobileAdminPortal: React.FC = () => {
   });
 
   const approvedTodayCount = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
+  const deliveredChipOrders = chipRequests.filter(r => r.status === 'delivered');
+  const totalChipVolume = deliveredChipOrders.reduce((sum, r) => sum + r.amount, 0);
 
   const handleExpenseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +85,7 @@ export const MobileAdminPortal: React.FC = () => {
       {/* TAB 1: EXECUTIVE DASHBOARD & TIMELINE */}
       {activeTab === 'dashboard' && (
         <>
-          {/* Top 4 KPI Cards */}
+          {/* Top KPI Cards */}
           <div className="m-stats-grid">
             <div className="m-stat-card" style={{ borderColor: 'rgba(255, 255, 255, 0.25)' }}>
               <span className="m-stat-label">Total Players</span>
@@ -101,19 +106,19 @@ export const MobileAdminPortal: React.FC = () => {
 
           <div className="m-stats-grid">
             <div className="m-stat-card" style={{ borderColor: 'var(--border-red)' }}>
-              <span className="m-stat-label">Cash Balance</span>
+              <span className="m-stat-label">Table Chip Orders</span>
               <span className="m-stat-val" style={{ color: '#ffffff' }}>
+                {chipRequests.length}
+              </span>
+              <span className="m-stat-sub">{pendingChipOrdersCount} Pending | ₹{formatINR(totalChipVolume)}</span>
+            </div>
+
+            <div className="m-stat-card" style={{ borderColor: 'var(--border-gold)' }}>
+              <span className="m-stat-label">Cash Balance</span>
+              <span className="m-stat-val" style={{ color: 'var(--gold-light)' }}>
                 {formatCurrency(currentCashBalance)}
               </span>
               <span className="m-stat-sub">Live Drawer Float</span>
-            </div>
-
-            <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.5)' }}>
-              <span className="m-stat-label">Club Expenses</span>
-              <span className="m-stat-val" style={{ color: '#fda4af' }}>
-                {formatCurrency(totalExpensesAmount)}
-              </span>
-              <span className="m-stat-sub">{expenses.length} Vouchers Recorded</span>
             </div>
           </div>
 
