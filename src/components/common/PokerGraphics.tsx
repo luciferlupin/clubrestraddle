@@ -689,7 +689,7 @@ export const FloatingChipsBackground: React.FC<FloatingChipsBackgroundProps> = (
       style={{
         position: mode,
         inset: 0,
-        zIndex: 1,
+        zIndex: -1,
         pointerEvents: 'none',
         overflow: 'hidden',
         userSelect: 'none',

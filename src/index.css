@@ -145,6 +145,10 @@ body {
   max-width: 100vw;
   overflow-x: hidden;
   position: relative;
+  /* Creates an isolated stacking context so floating chips
+     at z-index:-1 paint BELOW all card/panel content but
+     ABOVE the transparent container bg (body bg shows through). */
+  isolation: isolate;
 }
 
 .app-main {
@@ -4651,9 +4655,10 @@ input[type="radio"] {
   100% { transform: translateY(0px)   translateX(0px)   rotate(8deg);   }
 }
 
-/* Floating chip container sits above body bg (z:1) but below all page content (z:2+) */
+/* Floating chip container: z-index:-1 inside isolated stacking context
+   = behind ALL card/panel content, visible only in background gaps */
 .floating-chip-layer {
-  z-index: 1 !important;
+  z-index: -1 !important;
 }
 .fchip-a { animation-name: fchip-a; }
 .fchip-b { animation-name: fchip-b; }
