@@ -24,7 +24,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     emergencyContactPhone: '',
     photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
     agreedToRules: false,
-    tablePreference: 'NLH Cash Game ($2/$5)',
+    tablePreference: 'NLH Cash Game (₹250/₹500)',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -106,7 +106,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           particleCount: 80,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#f59e0b', '#10b981', '#ffffff'],
+          colors: ['#e11d48', '#ffffff', '#f43f5e', '#be123c'],
         });
       } catch {
         // Fallback
@@ -122,7 +122,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
       <div className="card-header">
         <div>
           <h2 className="card-title">
-            <UserPlus size={20} color="#f59e0b" />
+            <UserPlus size={20} color="#ffffff" />
             New Player KYC Registration
           </h2>
           <p className="card-subtitle">
@@ -135,7 +135,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           onClick={handleAutofill}
           title="Auto-fill sample valid KYC data"
         >
-          <Sparkles size={14} color="#f59e0b" /> Auto-fill Sample Data
+          <Sparkles size={14} color="#ffffff" /> Auto-fill Sample Data
         </button>
       </div>
 
@@ -254,7 +254,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
               <img
                 src={formData.photoUrl}
                 alt="Selected Avatar"
-                style={{ width: '54px', height: '54px', borderRadius: '50%', border: '2px solid var(--gold-light)', objectFit: 'cover' }}
+                style={{ width: '54px', height: '54px', borderRadius: '50%', border: '2px solid #ffffff', objectFit: 'cover' }}
               />
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {samplePhotos.map((p, idx) => (
@@ -309,11 +309,11 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
               value={formData.tablePreference}
               onChange={e => setFormData({ ...formData, tablePreference: e.target.value })}
             >
-              <option value="NLH Cash Game ($1/$3)">No-Limit Holdem ($1/$3)</option>
-              <option value="NLH Cash Game ($2/$5)">No-Limit Holdem ($2/$5)</option>
-              <option value="High Stakes NLH ($5/$10+)">High Stakes NLH ($5/$10+)</option>
-              <option value="Pot-Limit Omaha (PLO)">Pot-Limit Omaha (PLO)</option>
-              <option value="Tournament Table">Tournament Multi-Table</option>
+              <option value="NLH Cash Game (₹100/₹200)">No-Limit Holdem (₹100/₹200)</option>
+              <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500)</option>
+              <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
+              <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (PLO ₹250/₹500)</option>
+              <option value="♠ Re Straddle High Roller Championship">♠ Re Straddle High Roller Championship</option>
               <option value="VIP Private Lounge">VIP Private Lounge</option>
             </select>
           </div>
@@ -324,12 +324,12 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
             <input
               type="checkbox"
-              style={{ marginTop: '3px', accentColor: '#f59e0b', width: '16px', height: '16px' }}
+              style={{ marginTop: '3px', accentColor: '#e11d48', width: '16px', height: '16px' }}
               checked={formData.agreedToRules}
               onChange={e => setFormData({ ...formData, agreedToRules: e.target.checked })}
             />
             <span style={{ fontSize: '0.82rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
-              I certify that I am at least 21 years of age, the government ID provided is authentic, and I agree to abide by Club Showdown house poker rules, zero-tolerance collusion policies, and responsible gaming guidelines.
+              I certify that I am at least 21 years of age, the government ID provided is authentic, and I agree to abide by Club Re Straddle house poker rules, zero-tolerance collusion policies, and responsible gaming guidelines.
             </span>
           </label>
           {errors.agreedToRules && <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '6px' }}>{errors.agreedToRules}</div>}

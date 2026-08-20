@@ -42,19 +42,16 @@ export const AdminCashView: React.FC = () => {
           </div>
         </div>
 
-        <div
-          className="stat-card"
-          style={{ '--stat-glow': 'rgba(16, 185, 129, 0.15)', '--stat-color': '#34d399' } as React.CSSProperties}
-        >
+        <div className="stat-card">
           <div className="stat-info">
             <span className="stat-label">Total Cash In</span>
-            <span className="stat-value" style={{ color: '#34d399' }}>
+            <span className="stat-value" style={{ color: '#ffffff' }}>
               +{formatCurrency(totalCashInAmount)}
             </span>
             <span className="stat-helper">All incoming receipts</span>
           </div>
           <div className="stat-icon-wrapper">
-            <ArrowDownLeft size={22} color="#10b981" />
+            <ArrowDownLeft size={22} color="#ffffff" />
           </div>
         </div>
 
@@ -79,7 +76,7 @@ export const AdminCashView: React.FC = () => {
         <div className="card-header">
           <div>
             <h3 className="card-title">
-              <DollarSign size={18} color="#f59e0b" />
+              <DollarSign size={18} color="#e11d48" />
               Master Cash Flow Ledger & Treasury
             </h3>
             <p className="card-subtitle">Complete chronological record of all cash flow across cashier desks.</p>
@@ -133,7 +130,7 @@ export const AdminCashView: React.FC = () => {
                     className="tabular-num"
                     style={{
                       fontWeight: 800,
-                      color: txn.type === 'in' ? '#34d399' : '#f87171',
+                      color: txn.type === 'in' ? '#ffffff' : '#fca5a5',
                     }}
                   >
                     {txn.type === 'in' ? '+' : '-'}

@@ -1,8 +1,10 @@
-import React from 'react';
-import { ShieldCheck, Award, Calendar, QrCode, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldCheck, Award, Calendar, QrCode, Sparkles, Maximize2, CheckCircle2, Clock } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Player, DailyCheckIn } from '../../types';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
-import { formatDateOnly } from '../../utils/formatters';
+import { formatDateOnly, formatTimeOnly } from '../../utils/formatters';
+import { Modal } from '../common/Modal';
 
 interface PlayerPassProps {
   player: Player;
@@ -10,104 +12,174 @@ interface PlayerPassProps {
 }
 
 export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) => {
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+
+  const verificationUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`
+    : `https://club-re-straddle.vercel.app/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`;
+
   return (
-    <div className="club-pass">
-      <div className="pass-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '1.4rem', color: '#f59e0b' }}>♠</span>
-          <div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.08em', color: '#ffffff' }}>
-              CLUB SHOWDOWN
+    <>
+      <div className="club-pass">
+        <div className="pass-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.4rem', color: '#ffffff' }}>♠</span>
+            <div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.08em', color: '#ffffff' }}>
+                CLUB RE STRADDLE
+              </div>
+              <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                DIGITAL MEMBERSHIP PASS
+              </div>
             </div>
-            <div style={{ fontSize: '0.65rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              DIGITAL MEMBERSHIP PASS
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <TierBadge tier={player.membershipTier} />
+          </div>
+        </div>
+
+        <div className="pass-user-info">
+          {player.kyc.photoUrl ? (
+            <img src={player.kyc.photoUrl} alt={player.fullName} className="pass-avatar" />
+          ) : (
+            <div className="pass-avatar-fallback">
+              {player.fullName.charAt(0)}
+            </div>
+          )}
+
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ffffff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+              {player.fullName}
+            </div>
+            <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: '#ffffff', margin: '2px 0 6px', fontWeight: 600 }}>
+              ID: {player.id}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              <KYCBadge status={player.kycStatus} />
+              {todayCheckIn && <EntryBadge status={todayCheckIn.verificationStatus} />}
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <TierBadge tier={player.membershipTier} />
-        </div>
-      </div>
-
-      <div className="pass-user-info">
-        {player.kyc.photoUrl ? (
-          <img src={player.kyc.photoUrl} alt={player.fullName} className="pass-avatar" />
-        ) : (
-          <div className="pass-avatar-fallback">
-            {player.fullName.charAt(0)}
-          </div>
-        )}
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ffffff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-            {player.fullName}
-          </div>
-          <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: 'var(--gold-light)', margin: '2px 0 6px' }}>
-            ID: {player.id}
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            <KYCBadge status={player.kycStatus} />
-            {todayCheckIn && <EntryBadge status={todayCheckIn.verificationStatus} />}
-          </div>
-        </div>
-      </div>
-
-      {/* Mini QR and Scan Details */}
-      <div
-        style={{
-          background: 'rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(8px)',
-          borderRadius: '12px',
-          padding: '12px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          border: '1px solid rgba(245, 158, 11, 0.2)',
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Security & Cashier Scan Code
-          </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#f8fafc', fontWeight: 600 }}>
-            {player.id} • {player.phone}
-          </span>
-          <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
-            Total Club Visits: <strong>{player.totalVisits}</strong> • Joined: {formatDateOnly(player.registeredAt)}
-          </span>
-        </div>
-
-        {/* Scaled Mini SVG QR */}
+        {/* Mini QR and Scan Details */}
         <div
+          onClick={() => setIsQRModalOpen(true)}
           style={{
-            background: '#ffffff',
-            padding: '4px',
-            borderRadius: '6px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: '14px',
+            padding: '12px 14px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
+            justifyContent: 'space-between',
+            border: '1.5px solid rgba(225, 29, 72, 0.45)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
           }}
+          title="Click to expand QR Code for security scanning"
         >
-          <svg width="44" height="44" viewBox="0 0 100 100" fill="none">
-            <rect width="100" height="100" fill="white" />
-            <rect x="10" y="10" width="26" height="26" rx="4" fill="#0f172a" />
-            <rect x="16" y="16" width="14" height="14" rx="2" fill="white" />
-            <rect x="20" y="20" width="6" height="6" fill="#0f172a" />
-            <rect x="64" y="10" width="26" height="26" rx="4" fill="#0f172a" />
-            <rect x="70" y="16" width="14" height="14" rx="2" fill="white" />
-            <rect x="74" y="20" width="6" height="6" fill="#0f172a" />
-            <rect x="10" y="64" width="26" height="26" rx="4" fill="#0f172a" />
-            <rect x="16" y="70" width="14" height="14" rx="2" fill="white" />
-            <rect x="20" y="74" width="6" height="6" fill="#0f172a" />
-            <rect x="42" y="14" width="12" height="12" fill="#f59e0b" />
-            <rect x="45" y="45" width="18" height="18" rx="4" fill="#0f172a" />
-            <rect x="68" y="68" width="18" height="18" fill="#0f172a" />
-          </svg>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ fontSize: '0.72rem', color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 800 }}>
+              Door Scanner QR • Tap to Enlarge
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', color: '#ffffff', fontWeight: 700 }}>
+              {player.id} • {player.phone}
+            </span>
+            <span style={{ fontSize: '0.7rem', color: '#cbd5e1' }}>
+              {todayCheckIn ? (
+                <>Status: <strong style={{ color: '#ffffff' }}>{todayCheckIn.verificationStatus.toUpperCase()}</strong> ({formatTimeOnly(todayCheckIn.checkInTime)})</>
+              ) : (
+                <>Visits: <strong style={{ color: '#ffffff' }}>{player.totalVisits}</strong> • Member since {formatDateOnly(player.registeredAt)}</>
+              )}
+            </span>
+          </div>
+
+          {/* Real Mini Scannable QR */}
+          <div
+            style={{
+              background: '#ffffff',
+              padding: '5px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <QRCodeSVG
+              value={verificationUrl}
+              size={48}
+              bgColor="#ffffff"
+              fgColor="#0f172a"
+              level="M"
+            />
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Expanded QR Modal for Security Door Check */}
+      <Modal
+        isOpen={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
+        title="Door Clearance Pass QR"
+        subtitle="Show this screen to the security officer at the entrance"
+        size="md"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px' }}>
+          <div
+            style={{
+              background: '#ffffff',
+              padding: '16px',
+              borderRadius: '18px',
+              boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
+              border: '3px solid #e11d48',
+              display: 'inline-flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <QRCodeSVG
+              value={verificationUrl}
+              size={200}
+              bgColor="#ffffff"
+              fgColor="#0f172a"
+              level="H"
+            />
+            <span style={{ color: '#0f172a', fontSize: '0.76rem', fontWeight: 800, marginTop: '10px', letterSpacing: '0.04em' }}>
+              {player.id} • {player.fullName}
+            </span>
+          </div>
+
+          <div style={{ width: '100%', background: '#16080d', border: '1px solid rgba(225, 29, 72, 0.4)', borderRadius: '12px', padding: '12px', textAlign: 'left' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: '4px' }}>
+              <span>Player Name:</span>
+              <strong style={{ color: '#ffffff' }}>{player.fullName}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1', marginBottom: '4px' }}>
+              <span>Verification Status:</span>
+              <strong style={{ color: todayCheckIn?.verificationStatus === 'approved' ? '#ffffff' : '#fb7185' }}>
+                {todayCheckIn?.verificationStatus.toUpperCase() || 'NOT CHECKED IN'}
+              </strong>
+            </div>
+            {todayCheckIn && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                <span>Game Preference:</span>
+                <strong style={{ color: '#ffffff' }}>{todayCheckIn.tablePreference}</strong>
+              </div>
+            )}
+          </div>
+
+          <p style={{ fontSize: '0.78rem', color: '#cbd5e1', margin: 0 }}>
+            The security officer will scan this QR to review your age verification, KYC credentials, and grant door entrance.
+          </p>
+
+          <button className="btn btn-primary" onClick={() => setIsQRModalOpen(false)} style={{ width: '100%' }}>
+            Done
+          </button>
+        </div>
+      </Modal>
+    </>
   );
 };

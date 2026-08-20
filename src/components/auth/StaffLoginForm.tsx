@@ -39,16 +39,16 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
         return {
           title: 'Cashier Terminal Access',
           subtitle: 'Enter cashier or admin credentials to manage tournaments, billing and cash ledger',
-          color: 'var(--gold-light)',
-          icon: <DollarSign size={28} color="var(--gold-light)" />,
+          color: '#8B0000',
+          icon: <DollarSign size={28} color="#ffffff" />,
           allowedRoles: ['cashier', 'admin'],
         };
       case 'security':
         return {
           title: 'Security Door Control',
           subtitle: 'Enter security officer or admin credentials to verify members & door clearance',
-          color: '#34d399',
-          icon: <ShieldCheck size={28} color="#34d399" />,
+          color: '#8B0000',
+          icon: <ShieldCheck size={28} color="#ffffff" />,
           allowedRoles: ['security', 'admin'],
         };
       case 'admin':
@@ -56,8 +56,8 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
         return {
           title: 'Executive Admin Portal',
           subtitle: 'Super Admin login for financial oversight, audit trail & staff account creation',
-          color: '#c084fc',
-          icon: <LayoutDashboard size={28} color="#c084fc" />,
+          color: '#8B0000',
+          icon: <LayoutDashboard size={28} color="#ffffff" />,
           allowedRoles: ['admin'],
         };
     }

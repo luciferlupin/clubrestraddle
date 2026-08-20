@@ -36,12 +36,13 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: 'rgba(15, 23, 42, 0.75)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '10px',
-          padding: '8px 14px',
-          marginBottom: '14px',
-          fontSize: '0.8rem',
+          background: '#130a0e',
+          border: '1px solid rgba(225, 29, 72, 0.35)',
+          borderRadius: '12px',
+          padding: '10px 16px',
+          marginBottom: '16px',
+          fontSize: '0.82rem',
+          boxShadow: '0 4px 14px rgba(0, 0, 0, 0.1)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -51,11 +52,11 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              background: '#10b981',
-              boxShadow: '0 0 8px #10b981',
+              background: '#8B0000',
+              boxShadow: '0 0 8px #8B0000',
             }}
           />
-          <span style={{ color: 'var(--text-muted)' }}>Staff Session:</span>
+          <span style={{ color: '#cbd5e1' }}>Staff Session:</span>
           <strong style={{ color: '#ffffff' }}>{currentStaffUser?.fullName}</strong>
           <span
             style={{
@@ -63,18 +64,9 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
               fontWeight: 800,
               padding: '2px 8px',
               borderRadius: '999px',
-              background:
-                currentStaffUser?.role === 'admin'
-                  ? 'rgba(192, 132, 252, 0.2)'
-                  : currentStaffUser?.role === 'cashier'
-                  ? 'rgba(245, 158, 11, 0.2)'
-                  : 'rgba(16, 185, 129, 0.2)',
-              color:
-                currentStaffUser?.role === 'admin'
-                  ? '#c084fc'
-                  : currentStaffUser?.role === 'cashier'
-                  ? '#fbbf24'
-                  : '#34d399',
+              background: 'linear-gradient(135deg, #8B0000, #4a0000)',
+              color: '#ffffff',
+              border: '1px solid rgba(255, 255, 255, 0.4)',
               textTransform: 'uppercase',
             }}
           >
@@ -83,13 +75,11 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
         </div>
 
         <button
-          className="btn btn-ghost btn-sm"
           onClick={logoutStaff}
-          title="Sign out of staff terminal"
-          style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f87171' }}
+          className="btn btn-ghost btn-sm"
+          style={{ color: '#fda4af', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
         >
-          <LogOut size={13} />
-          <span>Sign Out</span>
+          <LogOut size={13} /> Sign Out
         </button>
       </div>
 

@@ -28,7 +28,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ player }) => {
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <User size={18} color="#f59e0b" />
+            <User size={18} color="#e11d48" />
             Player Profile & KYC Records
           </h3>
           <p className="card-subtitle">
@@ -161,7 +161,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ player }) => {
       <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
         <span>Registered: <strong>{formatDateTime(player.registeredAt)}</strong></span>
         {player.kyc.verifiedAt && (
-          <span style={{ color: '#34d399' }}>
+          <span style={{ color: '#ffffff' }}>
             ✓ Verified by <strong>{player.kyc.verifiedBy || 'Security'}</strong> on {formatDateTime(player.kyc.verifiedAt)}
           </span>
         )}

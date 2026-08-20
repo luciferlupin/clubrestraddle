@@ -58,7 +58,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         particleCount: 50,
         spread: 60,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#34d399'],
+        colors: ['#e11d48', '#ffffff', '#be123c'],
       });
     } catch {
       // Fallback
@@ -83,7 +83,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <ShieldCheck size={18} color="#10b981" />
+            <ShieldCheck size={18} color="#e11d48" />
             Security Verification Desk
           </h3>
           <p className="card-subtitle">
@@ -139,9 +139,9 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
               fontWeight: 800,
               padding: '2px 8px',
               borderRadius: '999px',
-              background: isOfLegalAge ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-              color: isOfLegalAge ? '#34d399' : '#f87171',
-              border: `1px solid ${isOfLegalAge ? '#10b981' : '#ef4444'}`,
+              background: isOfLegalAge ? 'rgba(139, 0, 0, 0.35)' : 'rgba(102, 0, 0, 0.6)',
+              color: '#ffffff',
+              border: `1px solid ${isOfLegalAge ? 'rgba(255, 255, 255, 0.4)' : 'rgba(139, 0, 0, 0.9)'}`,
             }}
           >
             {isOfLegalAge ? `AGE: ${age} (21+ OK)` : `AGE: ${age} (UNDERAGE!)`}
@@ -192,7 +192,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                 Registration Status
               </span>
-              <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#34d399', marginTop: '2px' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#ffffff', marginTop: '2px' }}>
                 ✓ Completed ({formatDateOnly(player.registeredAt)})
               </div>
             </div>
@@ -227,17 +227,17 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
               {checkIn ? (
                 <>
-                  <Clock size={16} color="#fbbf24" />
+                  <Clock size={16} color="#e11d48" />
                   <span style={{ fontWeight: 700, color: '#ffffff' }}>
                     Checked In at {formatTimeOnly(checkIn.checkInTime)}
                   </span>
                   <span style={{ color: 'var(--text-dim)' }}>•</span>
-                  <span style={{ color: 'var(--gold-light)' }}>
+                  <span style={{ color: '#ffffff' }}>
                     Table Preference: {checkIn.tablePreference || 'General Seating'}
                   </span>
                 </>
               ) : (
-                <span style={{ color: '#f87171', fontWeight: 600 }}>
+                <span style={{ color: '#fca5a5', fontWeight: 600 }}>
                   ⚠ Player has not checked in for today yet
                 </span>
               )}
@@ -250,13 +250,13 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         </div>
 
         {checkIn?.rejectionReason && (
-          <div style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
+          <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
             <strong>Rejection Reason:</strong> {checkIn.rejectionReason}
           </div>
         )}
 
         {checkIn?.verifiedBy && (
-          <div style={{ color: '#34d399', fontSize: '0.78rem', marginTop: '8px' }}>
+          <div style={{ color: '#ffffff', fontSize: '0.78rem', marginTop: '8px' }}>
             ✓ Verified by <strong>{checkIn.verifiedBy}</strong> on {formatDateTime(checkIn.verifiedAt)}
           </div>
         )}
@@ -265,7 +265,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
       {/* Verification Action Buttons */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-          <Lock size={12} color="#10b981" />
+          <Lock size={12} color="#ffffff" />
           <span>Security access only. No financial or buy-in data visible.</span>
         </div>
 

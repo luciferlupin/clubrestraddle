@@ -155,7 +155,7 @@ export const MobileCashierPortal: React.FC = () => {
         particleCount: 50,
         spread: 60,
         origin: { y: 0.6 },
-        colors: ['#f59e0b', '#34d399'],
+        colors: ['#e11d48', '#ffffff', '#f43f5e', '#be123c'],
       });
     } catch {
       // Fallback
@@ -248,7 +248,7 @@ export const MobileCashierPortal: React.FC = () => {
 
             <div className="m-stat-card">
               <span className="m-stat-label">Today's Collection</span>
-              <span className="m-stat-val" style={{ color: '#34d399' }}>
+              <span className="m-stat-val" style={{ color: '#ffffff' }}>
                 +{formatCurrency(totalCashInAmount)}
               </span>
               <span className="m-stat-sub">Total Cash In Received</span>
@@ -258,7 +258,7 @@ export const MobileCashierPortal: React.FC = () => {
           <div className="m-stats-grid">
             <div className="m-stat-card">
               <span className="m-stat-label">Total Payouts (Out)</span>
-              <span className="m-stat-val" style={{ color: '#f87171' }}>
+              <span className="m-stat-val" style={{ color: '#fca5a5' }}>
                 -{formatCurrency(totalCashOutAmount)}
               </span>
               <span className="m-stat-sub">Cash-outs & Prize Payouts</span>
@@ -266,7 +266,7 @@ export const MobileCashierPortal: React.FC = () => {
 
             <div className="m-stat-card">
               <span className="m-stat-label">Active Tournaments</span>
-              <span className="m-stat-val" style={{ color: '#38bdf8' }}>
+              <span className="m-stat-val" style={{ color: '#ffffff' }}>
                 {activeTournaments.length}
               </span>
               <span className="m-stat-sub">Live & Registering</span>
@@ -281,28 +281,28 @@ export const MobileCashierPortal: React.FC = () => {
 
             <div className="m-quick-grid">
               <div className="m-quick-btn" onClick={() => setIsCashInOpen(true)}>
-                <div className="m-quick-icon-wrap" style={{ color: '#34d399' }}>
+                <div className="m-quick-icon-wrap" style={{ color: '#ffffff' }}>
                   <ArrowDownLeft size={22} />
                 </div>
                 <span>+ Cash Received</span>
               </div>
 
               <div className="m-quick-btn" onClick={() => setIsCashOutOpen(true)}>
-                <div className="m-quick-icon-wrap" style={{ color: '#f87171' }}>
+                <div className="m-quick-icon-wrap" style={{ color: '#e11d48' }}>
                   <ArrowUpRight size={22} />
                 </div>
                 <span>- Cash Paid Out</span>
               </div>
 
               <div className="m-quick-btn" onClick={() => setActiveTab('players')}>
-                <div className="m-quick-icon-wrap" style={{ color: '#fbbf24' }}>
+                <div className="m-quick-icon-wrap" style={{ color: '#ffffff' }}>
                   <Users size={22} />
                 </div>
                 <span>+ Tournament Entry</span>
               </div>
 
               <div className="m-quick-btn" onClick={() => setIsCreateTrnOpen(true)}>
-                <div className="m-quick-icon-wrap" style={{ color: '#c084fc' }}>
+                <div className="m-quick-icon-wrap" style={{ color: '#ffffff' }}>
                   <Trophy size={22} />
                 </div>
                 <span>+ New Tournament</span>
@@ -314,7 +314,7 @@ export const MobileCashierPortal: React.FC = () => {
           <div className="m-card">
             <div className="m-card-header">
               <span className="m-card-title">
-                <Wallet size={16} color="#f59e0b" />
+                <Wallet size={16} color="#ffffff" />
                 Recent Cash Movements
               </span>
               <button className="m-btn m-btn-ghost m-btn-sm" style={{ width: 'auto' }} onClick={() => setActiveTab('cash')}>
@@ -329,7 +329,7 @@ export const MobileCashierPortal: React.FC = () => {
                     <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{txn.category}</span>
                     <span
                       className="tabular-num"
-                      style={{ fontWeight: 800, color: txn.type === 'in' ? '#34d399' : '#f87171' }}
+                      style={{ fontWeight: 800, color: txn.type === 'in' ? '#ffffff' : '#fca5a5' }}
                     >
                       {txn.type === 'in' ? '+' : '-'}{formatCurrency(txn.amount)}
                     </span>
@@ -351,7 +351,7 @@ export const MobileCashierPortal: React.FC = () => {
           <div className="m-card-header">
             <div>
               <h3 className="m-card-title">
-                <Users size={18} color="#f59e0b" />
+                <Users size={18} color="#ffffff" />
                 Tournament Player Entry & Billing
               </h3>
               <p className="m-card-subtitle">Collect buy-in & generate official entry voucher</p>
@@ -472,7 +472,7 @@ export const MobileCashierPortal: React.FC = () => {
             <div className="m-card-header">
               <div>
                 <h3 className="m-card-title">
-                  <Trophy size={18} color="#f59e0b" />
+                  <Trophy size={18} color="#ffffff" />
                   Tournaments & Events
                 </h3>
                 <p className="m-card-subtitle">{tournaments.length} Tournaments active</p>
@@ -510,7 +510,7 @@ export const MobileCashierPortal: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Guaranteed Pool:</span>
-                    <span style={{ fontWeight: 700, color: '#34d399' }}>{formatCurrency(trn.guaranteedPrizePool)} GTD</span>
+                    <span style={{ fontWeight: 800, color: '#ffffff' }}>{formatCurrency(trn.guaranteedPrizePool)} GTD</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Players Enrolled:</span>
@@ -558,7 +558,7 @@ export const MobileCashierPortal: React.FC = () => {
 
           <div className="m-card">
             <h4 className="m-card-title">
-              <Wallet size={16} color="#f59e0b" />
+              <Wallet size={16} color="#ffffff" />
               Cash Ledger Cards ({cashTransactions.length})
             </h4>
 
@@ -569,7 +569,7 @@ export const MobileCashierPortal: React.FC = () => {
                     <span style={{ fontWeight: 700 }}>{txn.category}</span>
                     <span
                       className="tabular-num"
-                      style={{ fontWeight: 800, color: txn.type === 'in' ? '#34d399' : '#f87171' }}
+                      style={{ fontWeight: 800, color: txn.type === 'in' ? '#ffffff' : '#fca5a5' }}
                     >
                       {txn.type === 'in' ? '+' : '-'}{formatCurrency(txn.amount)}
                     </span>
@@ -593,7 +593,7 @@ export const MobileCashierPortal: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="m-card">
             <h3 className="m-card-title">
-              <Receipt size={18} color="#f59e0b" />
+              <Receipt size={18} color="#ffffff" />
               Issued Payment Receipts ({entries.length})
             </h3>
             <p className="m-card-subtitle">Tap any voucher to preview or print</p>
@@ -613,7 +613,7 @@ export const MobileCashierPortal: React.FC = () => {
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--gold-light)', fontSize: '0.8rem' }}>
                   {e.receiptNumber}
                 </span>
-                <span className="tabular-num" style={{ fontWeight: 800, color: '#34d399' }}>
+                <span className="tabular-num" style={{ fontWeight: 800, color: '#ffffff' }}>
                   {formatCurrency(e.buyInAmount + e.rakeAmount)}
                 </span>
               </div>

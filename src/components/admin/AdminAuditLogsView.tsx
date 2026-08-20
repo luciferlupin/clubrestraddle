@@ -40,7 +40,7 @@ export const AdminAuditLogsView: React.FC = () => {
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <History size={18} color="#f59e0b" />
+            <History size={18} color="#e11d48" />
             Team Activity Audit Trail
           </h3>
           <p className="card-subtitle">
@@ -48,10 +48,10 @@ export const AdminAuditLogsView: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <select
             className="form-select"
-            style={{ width: 'auto', fontSize: '0.8rem' }}
+            style={{ width: 'auto', fontSize: '0.82rem', fontWeight: 600, minHeight: '38px', padding: '8px 36px 8px 14px' }}
             value={portalFilter}
             onChange={e => setPortalFilter(e.target.value)}
           >
@@ -63,12 +63,12 @@ export const AdminAuditLogsView: React.FC = () => {
           </select>
 
           <div style={{ position: 'relative' }}>
-            <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
+            <Search size={15} style={{ position: 'absolute', left: '12px', top: '11px', color: '#94a3b8' }} />
             <input
               type="text"
               className="form-input"
-              style={{ paddingLeft: '32px', width: '220px', fontSize: '0.8rem' }}
-              placeholder="Search audit trail..."
+              style={{ paddingLeft: '36px', width: '210px', fontSize: '0.84rem', minHeight: '38px' }}
+              placeholder="Search logs, staff..."
               value={search}
               onChange={e => setSearch(e.target.value)}
             />

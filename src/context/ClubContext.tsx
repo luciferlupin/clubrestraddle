@@ -114,17 +114,17 @@ interface ClubContextType {
 }
 
 const STORAGE_KEYS = {
-  STAFF_USERS: 'clubshowdown_staff_users_v2',
-  CURRENT_STAFF: 'clubshowdown_current_staff_v2',
-  PLAYERS: 'clubshowdown_players_v2',
-  CHECK_INS: 'clubshowdown_checkins_v2',
-  TOURNAMENTS: 'clubshowdown_tournaments_v2',
-  ENTRIES: 'clubshowdown_entries_v2',
-  CASH_TXNS: 'clubshowdown_cash_txns_v2',
-  EXPENSES: 'clubshowdown_expenses_v2',
-  AUDIT_LOGS: 'clubshowdown_audit_logs_v2',
-  ACTIVE_ROLE: 'clubshowdown_active_role_v2',
-  SELECTED_PLAYER: 'clubshowdown_selected_player_v2',
+  STAFF_USERS: 'clubshowdown_staff_users_v4',
+  CURRENT_STAFF: 'clubshowdown_current_staff_v4',
+  PLAYERS: 'clubshowdown_players_v4',
+  CHECK_INS: 'clubshowdown_checkins_v4',
+  TOURNAMENTS: 'clubshowdown_tournaments_v4',
+  ENTRIES: 'clubshowdown_entries_v4',
+  CASH_TXNS: 'clubshowdown_cash_txns_v4',
+  EXPENSES: 'clubshowdown_expenses_v4',
+  AUDIT_LOGS: 'clubshowdown_audit_logs_v4',
+  ACTIVE_ROLE: 'clubshowdown_active_role_v4',
+  SELECTED_PLAYER: 'clubshowdown_selected_player_v4',
 };
 
 const ClubContext = createContext<ClubContextType | undefined>(undefined);
@@ -731,7 +731,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
     }
 
-    addAuditLog('Cashier', 'Tournament Created', `Created tournament "${newTournament.name}" (Buy-in: $${newTournament.buyInFee} + $${newTournament.clubRake}).`);
+    addAuditLog('Cashier', 'Tournament Created', `Created tournament "${newTournament.name}" (Buy-in: ₹${newTournament.buyInFee} + ₹${newTournament.clubRake}).`);
     return newTournament;
   };
 
@@ -829,7 +829,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addAuditLog(
       'Cashier',
       'Tournament Entry & Billing',
-      `Registered ${player.fullName} for ${tournament.name}. Collected $${totalAmount} via ${params.paymentMethod} (Receipt: ${receiptNum}).`
+      `Registered ${player.fullName} for ${tournament.name}. Collected ₹${totalAmount} via ${params.paymentMethod} (Receipt: ${receiptNum}).`
     );
 
     return newEntry;
@@ -881,7 +881,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addAuditLog(
       'Cashier',
       'Cash Received',
-      `Received $${params.amount} [${params.category}] - ${params.description} (${params.paymentMethod}).`
+      `Received ₹${params.amount} [${params.category}] - ${params.description} (${params.paymentMethod}).`
     );
     return newTxn;
   };
@@ -932,7 +932,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addAuditLog(
       'Cashier',
       'Cash Given / Payout',
-      `Paid out $${params.amount} [${params.category}] - ${params.description} (${params.paymentMethod}).`
+      `Paid out ₹${params.amount} [${params.category}] - ${params.description} (${params.paymentMethod}).`
     );
     return newTxn;
   };
@@ -1111,7 +1111,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addAuditLog(
       'Admin',
       'Club Expense Recorded',
-      `Recorded expense: $${newExpense.amount} for "${newExpense.category}" - ${newExpense.description} (Paid to: ${newExpense.paidTo}).`
+      `Recorded expense: ₹${newExpense.amount} for "${newExpense.category}" - ${newExpense.description} (Paid to: ${newExpense.paidTo}).`
     );
     return newExpense;
   };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserPlus, UserCheck, QrCode, Shield, CheckCircle, User, History } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { KYCRegistrationForm } from './KYCRegistrationForm';
@@ -17,6 +17,12 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
   const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially);
   const [activeTab, setActiveTab] = useState<'pass' | 'history' | 'profile'>('pass');
 
+  useEffect(() => {
+    if (showNewPlayerFormInitially) {
+      setShowKYCForm(true);
+    }
+  }, [showNewPlayerFormInitially]);
+
   const playerCheckIns = currentPlayer
     ? checkIns.filter(c => c.playerId === currentPlayer.id)
     : [];
@@ -28,8 +34,8 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
       {/* Top Banner with Quick Actions & Daily Rules */}
       <div
         style={{
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(16, 185, 129, 0.08))',
-          border: '1px solid rgba(245, 158, 11, 0.25)',
+          background: 'linear-gradient(155deg, #130a0e 0%, #090608 100%)',
+          border: '1px solid rgba(225, 29, 72, 0.35)',
           borderRadius: '16px',
           padding: '16px 20px',
           display: 'flex',
@@ -37,6 +43,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '12px',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -45,11 +52,12 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
               width: '40px',
               height: '40px',
               borderRadius: '10px',
-              background: 'var(--bg-surface-elevated)',
+              background: 'rgba(225, 29, 72, 0.2)',
+              border: '1px solid var(--border-red)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--gold-light)',
+              color: '#ffffff',
             }}
           >
             <QrCode size={22} />
@@ -80,8 +88,8 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
             )}
           </button>
 
-          <button className="btn btn-secondary" onClick={onOpenQR} title="View Physical Registration QR Standee">
-            <QrCode size={16} color="#f59e0b" /> Entrance QR
+          <button className="btn btn-secondary btn-sm" onClick={onOpenQR} title="Entrance QR Standee">
+            <QrCode size={16} color="#ffffff" /> Entrance QR
           </button>
         </div>
       </div>

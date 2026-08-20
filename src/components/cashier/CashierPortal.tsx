@@ -30,8 +30,8 @@ export const CashierPortal: React.FC = () => {
       {/* Top Cashier Bar */}
       <div
         style={{
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(15, 23, 42, 0.9))',
-          border: '1px solid rgba(245, 158, 11, 0.3)',
+          background: 'linear-gradient(155deg, #130a0e 0%, #090608 100%)',
+          border: '1px solid rgba(225, 29, 72, 0.35)',
           borderRadius: '16px',
           padding: '16px 20px',
           display: 'flex',
@@ -39,6 +39,7 @@ export const CashierPortal: React.FC = () => {
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '12px',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -47,12 +48,12 @@ export const CashierPortal: React.FC = () => {
               width: '42px',
               height: '42px',
               borderRadius: '10px',
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-gold)',
+              background: 'rgba(225, 29, 72, 0.2)',
+              border: '1px solid var(--border-red)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--gold-light)',
+              color: '#ffffff',
             }}
           >
             <DollarSign size={24} />
@@ -81,7 +82,7 @@ export const CashierPortal: React.FC = () => {
             border: '1px solid var(--border-subtle)',
           }}
         >
-          <Lock size={13} color="#f59e0b" />
+          <Lock size={13} color="#ffffff" />
           <span>Access Control: Financial & tournament privileges active. Sensitive player KYC documents restricted.</span>
         </div>
       </div>

@@ -47,13 +47,13 @@ export const AdminExpensesView: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div className="card-header" style={{ marginBottom: 0 }}>
+      <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
         <div>
-          <h3 className="card-title">
-            <Receipt size={18} color="#f59e0b" />
+          <h3 className="page-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Receipt size={20} color="#e11d48" />
             Club Operating Expenses Management
           </h3>
-          <p className="card-subtitle">
+          <p className="page-subtitle" style={{ fontSize: '0.84rem', color: '#475569', marginTop: '3px', fontWeight: 500 }}>
             Record dealer payroll, rent, utilities, card/chip supplies, and refreshment costs.
           </p>
         </div>

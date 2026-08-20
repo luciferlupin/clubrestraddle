@@ -24,7 +24,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     emergencyContactPhone: '',
     photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
     agreedToRules: false,
-    tablePreference: 'NLH Cash Game ($2/$5)',
+    tablePreference: 'NLH Cash Game (₹250/₹500)',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -51,7 +51,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
       emergencyContactPhone: '+1 (555) 998-1234',
       photoUrl: sampleAvatars[0],
       agreedToRules: true,
-      tablePreference: 'Showdown High Roller Tournament',
+      tablePreference: 'Re Straddle High Roller Tournament',
     });
     setErrors({});
   };
@@ -105,7 +105,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
           particleCount: 80,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#f59e0b', '#10b981', '#ffffff'],
+          colors: ['#e11d48', '#ffffff', '#f43f5e', '#be123c'],
         });
       } catch {
         // Fallback
@@ -123,7 +123,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <h2 className="m-card-title">
-              <UserPlus size={20} color="#f59e0b" />
+              <UserPlus size={20} color="#ffffff" />
               New Member KYC
             </h2>
             <p className="m-card-subtitle">Required for first-time poker club entry</p>
@@ -134,7 +134,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
             onClick={handleAutofill}
             style={{ width: 'auto' }}
           >
-            <Sparkles size={14} color="#f59e0b" /> Auto-fill
+            <Sparkles size={14} color="#ffffff" /> Auto-fill
           </button>
         </div>
       </div>
@@ -247,7 +247,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
                       height: '38px',
                       borderRadius: '50%',
                       cursor: 'pointer',
-                      border: formData.photoUrl === url ? '2px solid #f59e0b' : '1px solid var(--border-subtle)',
+                      border: formData.photoUrl === url ? '2px solid #e11d48' : '1px solid var(--border-subtle)',
                       opacity: formData.photoUrl === url ? 1 : 0.6,
                     }}
                   />
@@ -270,10 +270,11 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
               value={formData.tablePreference}
               onChange={e => setFormData({ ...formData, tablePreference: e.target.value })}
             >
-              <option value="NLH Cash Game ($1/$3)">No-Limit Holdem ($1/$3 Cash)</option>
-              <option value="NLH Cash Game ($2/$5)">No-Limit Holdem ($2/$5 Cash)</option>
-              <option value="Showdown High Roller Tournament">Showdown High Roller Tournament</option>
-              <option value="Pot-Limit Omaha (PLO)">Pot-Limit Omaha (PLO)</option>
+              <option value="NLH Cash Game (₹100/₹200)">No-Limit Holdem (₹100/₹200 Cash)</option>
+              <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500 Cash)</option>
+              <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
+              <option value="♠ Re Straddle High Roller Championship">♠ Re Straddle High Roller Championship</option>
+              <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (PLO ₹250/₹500)</option>
             </select>
           </div>
 
@@ -291,12 +292,12 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
           >
             <input
               type="checkbox"
-              style={{ marginTop: '2px', accentColor: '#f59e0b', width: '18px', height: '18px' }}
+              style={{ marginTop: '2px', accentColor: '#e11d48', width: '18px', height: '18px' }}
               checked={formData.agreedToRules}
               onChange={e => setFormData({ ...formData, agreedToRules: e.target.checked })}
             />
             <span style={{ fontSize: '0.76rem', color: 'var(--text-main)', lineHeight: 1.35 }}>
-              I certify I am 21+ years old, provided accurate government ID, and agree to Club Showdown house poker rules.
+              I certify I am 21+ years old, provided accurate government ID, and agree to Club Re Straddle house poker rules.
             </span>
           </label>
           {errors.agreedToRules && <span style={{ color: '#ef4444', fontSize: '0.72rem' }}>{errors.agreedToRules}</span>}

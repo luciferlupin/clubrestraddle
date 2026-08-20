@@ -63,7 +63,7 @@ export const LaptopHeader: React.FC<LaptopHeaderProps> = ({
         <div className="brand-wrap">
           <div className="brand-icon">♠</div>
           <div>
-            <div className="brand-title">CLUB SHOWDOWN</div>
+            <div className="brand-title">CLUB RE STRADDLE</div>
             <div className="brand-sub">Poker Lounge & Club OS</div>
           </div>
         </div>
@@ -146,7 +146,7 @@ export const LaptopHeader: React.FC<LaptopHeaderProps> = ({
             players.length > 0 ? (
               <select
                 className="form-select"
-                style={{ padding: '6px 10px', fontSize: '0.78rem', width: 'auto', background: 'var(--bg-surface-elevated)' }}
+                style={{ padding: '7px 34px 7px 12px', fontSize: '0.8rem', fontWeight: 600, width: 'auto', background: '#16080d', borderRadius: '10px', border: '1.5px solid rgba(225, 29, 72, 0.45)', color: '#ffffff', minHeight: '36px' }}
                 value={selectedPlayerId}
                 onChange={e => setSelectedPlayerId(e.target.value)}
                 aria-label="Switch Active Player"
@@ -186,7 +186,7 @@ export const LaptopHeader: React.FC<LaptopHeaderProps> = ({
                 border: '1px solid var(--border-subtle)',
               }}
             >
-              <CircleDot size={10} color="#10b981" />
+              <CircleDot size={10} color="#ffffff" />
               <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{currentStaffUser.fullName}</span>
               <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', color: 'var(--gold-light)' }}>
                 ({currentStaffUser.role})
@@ -211,7 +211,7 @@ export const LaptopHeader: React.FC<LaptopHeaderProps> = ({
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => setActiveRole('admin')}
-              style={{ color: '#c084fc' }}
+              style={{ color: '#fda4af' }}
             >
               <Lock size={12} /> Staff Login
             </button>
@@ -219,7 +219,7 @@ export const LaptopHeader: React.FC<LaptopHeaderProps> = ({
 
           {/* Entrance QR Standee button */}
           <button className="btn btn-secondary btn-sm" onClick={onOpenQR} title="Open Physical Entrance QR Standee">
-            <QrCode size={14} color="#f59e0b" />
+            <QrCode size={14} color="#ffffff" />
             <span>Club QR</span>
           </button>
 

@@ -36,8 +36,8 @@ export const AdminPortal: React.FC = () => {
       {/* Top Admin Station Header */}
       <div
         style={{
-          background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(15, 23, 42, 0.95))',
-          border: '1px solid rgba(168, 85, 247, 0.3)',
+          background: 'linear-gradient(155deg, #130a0e 0%, #090608 100%)',
+          border: '1px solid rgba(225, 29, 72, 0.35)',
           borderRadius: '16px',
           padding: '16px 20px',
           display: 'flex',
@@ -45,6 +45,7 @@ export const AdminPortal: React.FC = () => {
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '12px',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -53,12 +54,12 @@ export const AdminPortal: React.FC = () => {
               width: '42px',
               height: '42px',
               borderRadius: '10px',
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid rgba(168, 85, 247, 0.4)',
+              background: 'rgba(225, 29, 72, 0.2)',
+              border: '1px solid var(--border-red)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#c084fc',
+              color: '#ffffff',
             }}
           >
             <LayoutDashboard size={24} />
@@ -67,8 +68,8 @@ export const AdminPortal: React.FC = () => {
             <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#ffffff' }}>
               Master Admin & Club Operations Center
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              Logged in as: <strong style={{ color: '#c084fc' }}>{currentStaffUser?.fullName || 'Jai Goel (Super Admin)'}</strong> • Full Access
+            <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+              Logged in as: <strong style={{ color: '#ffffff' }}>{currentStaffUser?.fullName || 'Jai Goel (Super Admin)'}</strong> • Full Access
             </div>
           </div>
         </div>
@@ -109,7 +110,7 @@ export const AdminPortal: React.FC = () => {
           className={`sub-tab-btn ${activeTab === 'staff' ? 'active' : ''}`}
           onClick={() => setActiveTab('staff')}
         >
-          <Shield size={15} color="#c084fc" /> Staff Accounts
+          <Shield size={15} color="#8B0000" /> Staff Accounts
         </button>
 
         <button

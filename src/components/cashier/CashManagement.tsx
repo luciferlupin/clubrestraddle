@@ -126,35 +126,29 @@ export const CashManagement: React.FC = () => {
           </div>
         </div>
 
-        <div
-          className="stat-card"
-          style={{ '--stat-glow': 'rgba(16, 185, 129, 0.15)', '--stat-color': '#34d399' } as React.CSSProperties}
-        >
+        <div className="stat-card">
           <div className="stat-info">
             <span className="stat-label">Total Cash Received (In)</span>
-            <span className="stat-value" style={{ color: '#34d399' }}>
+            <span className="stat-value" style={{ color: '#ffffff' }}>
               +{formatCurrency(totalCashInAmount)}
             </span>
             <span className="stat-helper">Buy-ins, Rake, Float Deposits</span>
           </div>
           <div className="stat-icon-wrapper">
-            <ArrowDownLeft size={22} color="#10b981" />
+            <ArrowDownLeft size={22} color="#ffffff" />
           </div>
         </div>
 
-        <div
-          className="stat-card"
-          style={{ '--stat-glow': 'rgba(239, 68, 68, 0.15)', '--stat-color': '#f87171' } as React.CSSProperties}
-        >
+        <div className="stat-card">
           <div className="stat-info">
             <span className="stat-label">Total Cash Given (Out)</span>
-            <span className="stat-value" style={{ color: '#f87171' }}>
+            <span className="stat-value" style={{ color: '#fca5a5' }}>
               -{formatCurrency(totalCashOutAmount)}
             </span>
             <span className="stat-helper">Prize Payouts, Cash-outs</span>
           </div>
           <div className="stat-icon-wrapper">
-            <ArrowUpRight size={22} color="#ef4444" />
+            <ArrowUpRight size={22} color="#e11d48" />
           </div>
         </div>
       </div>
@@ -175,7 +169,7 @@ export const CashManagement: React.FC = () => {
         <div className="card-header">
           <div>
             <h3 className="card-title">
-              <DollarSign size={18} color="#f59e0b" />
+              <DollarSign size={18} color="#e11d48" />
               Cashier Cash Flow Ledger
             </h3>
             <p className="card-subtitle">
@@ -237,7 +231,7 @@ export const CashManagement: React.FC = () => {
                     className="tabular-num"
                     style={{
                       fontWeight: 800,
-                      color: txn.type === 'in' ? '#34d399' : '#f87171',
+                      color: txn.type === 'in' ? '#ffffff' : '#fca5a5',
                     }}
                   >
                     {txn.type === 'in' ? '+' : '-'}

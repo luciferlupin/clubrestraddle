@@ -80,7 +80,7 @@ export const StaffManager: React.FC = () => {
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <Shield size={20} color="#c084fc" />
+            <Shield size={20} color="#e11d48" />
             Staff Accounts & Access Management
           </h3>
           <p className="card-subtitle">
@@ -95,11 +95,11 @@ export const StaffManager: React.FC = () => {
       {success && (
         <div
           style={{
-            background: 'rgba(16, 185, 129, 0.15)',
-            border: '1px solid rgba(16, 185, 129, 0.4)',
+            background: 'rgba(139, 0, 0, 0.25)',
+            border: '1px solid rgba(139, 0, 0, 0.6)',
             borderRadius: '10px',
             padding: '12px 16px',
-            color: '#34d399',
+            color: '#ffffff',
             fontSize: '0.85rem',
             fontWeight: 700,
             display: 'flex',
@@ -107,7 +107,7 @@ export const StaffManager: React.FC = () => {
             gap: '8px',
           }}
         >
-          <CheckCircle2 size={18} />
+          <CheckCircle2 size={18} color="#ffffff" />
           <span>{success}</span>
         </div>
       )}
@@ -137,13 +137,14 @@ export const StaffManager: React.FC = () => {
                           width: '32px',
                           height: '32px',
                           borderRadius: '50%',
-                          background: 'var(--bg-surface-elevated)',
+                          background: '#150508',
+                          border: '1px solid rgba(139, 0, 0, 0.5)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontWeight: 800,
                           fontSize: '0.85rem',
-                          color: user.role === 'admin' ? '#c084fc' : user.role === 'cashier' ? 'var(--gold-light)' : '#34d399',
+                          color: '#ffffff',
                         }}
                       >
                         {user.fullName.charAt(0)}
@@ -238,7 +239,7 @@ export const StaffManager: React.FC = () => {
             <input
               type="email"
               className="form-input"
-              placeholder="e.g. cashier1@clubshowdown.com"
+              placeholder="e.g. cashier1@clubrestraddle.com"
               value={formData.email}
               onChange={e => setFormData({ ...formData, email: e.target.value })}
               required

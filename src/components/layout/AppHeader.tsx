@@ -54,7 +54,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
         <div className="brand-wrap" onClick={() => setActiveRole('player')}>
           <div className="brand-icon">♠</div>
           <div>
-            <div className="brand-title">CLUB SHOWDOWN</div>
+            <div className="brand-title">CLUB RE STRADDLE</div>
             <div className="brand-sub">Poker Lounge & OS</div>
           </div>
         </div>
@@ -120,12 +120,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
               <select
                 className="form-select"
                 style={{
-                  padding: '5px 8px',
-                  fontSize: '0.76rem',
+                  padding: '7px 34px 7px 12px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
                   width: 'auto',
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border-subtle)',
+                  background: '#16080d',
+                  borderRadius: '10px',
+                  border: '1.5px solid rgba(225, 29, 72, 0.45)',
+                  color: '#ffffff',
+                  minHeight: '36px',
                 }}
                 value={selectedPlayerId}
                 onChange={e => setSelectedPlayerId(e.target.value)}
@@ -147,14 +150,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
                 alignItems: 'center',
                 gap: '6px',
                 fontSize: '0.76rem',
-                background: 'rgba(255, 255, 255, 0.05)',
+                background: '#16090d',
                 padding: '4px 10px',
                 borderRadius: 'var(--radius-full)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid rgba(225, 29, 72, 0.4)',
               }}
             >
-              <CircleDot size={9} color="#10b981" />
-              <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{currentStaffUser.fullName}</span>
+              <CircleDot size={9} color="#ffffff" />
+              <span style={{ fontWeight: 600, color: '#ffffff' }}>{currentStaffUser.fullName}</span>
               <button
                 onClick={logoutStaff}
                 title="Sign out"
@@ -175,7 +178,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => setActiveRole('admin')}
-              style={{ color: '#c084fc', padding: '5px 10px' }}
+              style={{ color: '#fda4af', padding: '5px 10px' }}
             >
               <Lock size={12} /> Staff Login
             </button>
@@ -183,7 +186,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
 
           {/* Entrance QR Standee button */}
           <button className="btn btn-secondary btn-sm" onClick={onOpenQR} title="Club Registration QR Standee">
-            <QrCode size={13} color="#f59e0b" />
+            <QrCode size={13} color="#ffffff" />
             <span style={{ display: 'inline' }}>QR</span>
           </button>
         </div>

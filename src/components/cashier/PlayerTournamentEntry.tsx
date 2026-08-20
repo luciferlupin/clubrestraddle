@@ -64,10 +64,10 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
 
     try {
       confetti({
-        particleCount: 50,
+        particleCount: 60,
         spread: 60,
         origin: { y: 0.6 },
-        colors: ['#f59e0b', '#34d399'],
+        colors: ['#e11d48', '#ffffff', '#f43f5e', '#be123c'],
       });
     } catch {
       // Fallback
@@ -81,7 +81,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <DollarSign size={18} color="#f59e0b" />
+            <DollarSign size={18} color="#e11d48" />
             Tournament Player Registration & Billing Desk
           </h3>
           <p className="card-subtitle">
@@ -132,8 +132,8 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
         {selectedTournament && (
           <div
             style={{
-              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(16, 185, 129, 0.06))',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
+              background: '#110406',
+              border: '1px solid rgba(139, 0, 0, 0.55)',
               borderRadius: '12px',
               padding: '16px',
               marginBottom: '20px',

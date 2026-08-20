@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CreditCard,
   History,
@@ -16,6 +16,7 @@ import {
   Mail,
   ChevronRight,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import { formatTimeOnly, formatDateOnly, maskGovtId } from '../../utils/formatters';
@@ -44,10 +45,16 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   const [activeTab, setActiveTab] = useState<'home' | 'history' | 'profile' | 'new_kyc'>(
     showNewPlayerFormInitially ? 'new_kyc' : 'home'
   );
-  const [tablePref, setTablePref] = useState('NLH Cash Game ($2/$5)');
+  const [tablePref, setTablePref] = useState('NLH Cash Game (₹250/₹500)');
   const [checkingIn, setCheckingIn] = useState(false);
   const [registrationSuccessData, setRegistrationSuccessData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
   const [isCheckInSuccessOpen, setIsCheckInSuccessOpen] = useState(false);
+
+  useEffect(() => {
+    if (showNewPlayerFormInitially) {
+      setActiveTab('new_kyc');
+    }
+  }, [showNewPlayerFormInitially]);
 
   const todayCheckIn = currentPlayer ? hasPlayerCheckedInToday(currentPlayer.id) : undefined;
   const isCheckedIn = !!todayCheckIn;
@@ -68,7 +75,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
           particleCount: 60,
           spread: 60,
           origin: { y: 0.6 },
-          colors: ['#10b981', '#f59e0b', '#38bdf8'],
+          colors: ['#e11d48', '#ffffff', '#f43f5e', '#ffffff', '#be123c'],
         });
       } catch {
         // Fallback
@@ -105,18 +112,19 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
               {/* Welcome Banner */}
               <div
                 style={{
-                  background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(16, 185, 129, 0.08))',
-                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                  background: 'linear-gradient(135deg, rgba(225, 29, 72, 0.22), rgba(159, 18, 57, 0.28))',
+                  border: '1px solid rgba(225, 29, 72, 0.45)',
                   borderRadius: '16px',
                   padding: '14px 16px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  boxShadow: '0 4px 16px rgba(225, 29, 72, 0.15)',
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Welcome to Club Showdown
+                  <div style={{ fontSize: '0.72rem', color: '#fda4af', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
+                    Welcome to Club Re Straddle
                   </div>
                   <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', marginTop: '1px' }}>
                     {currentPlayer.fullName.split(' ')[0]}
@@ -131,18 +139,18 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
               {/* Digital Pass Card */}
               <div
                 style={{
-                  background: 'linear-gradient(135deg, #151c2e 0%, #0c101a 100%)',
-                  border: '1.5px solid rgba(245, 158, 11, 0.4)',
+                  background: 'linear-gradient(135deg, #1c080d 0%, #0d0305 60%, #150609 100%)',
+                  border: '1.5px solid rgba(225, 29, 72, 0.6)',
                   borderRadius: '20px',
                   padding: '18px',
                   position: 'relative',
                   overflow: 'hidden',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(245, 158, 11, 0.1)',
+                  boxShadow: '0 12px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(225, 29, 72, 0.25)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '1.2rem', color: '#f59e0b' }}>♠</span>
+                    <span style={{ fontSize: '1.2rem', color: '#ffffff' }}>♠</span>
                     <span style={{ fontSize: '0.82rem', fontWeight: 800, letterSpacing: '0.06em', color: '#ffffff' }}>
                       MEMBER PASS
                     </span>
@@ -234,7 +242,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
               <div className="m-card">
                 <div className="m-card-header">
                   <span className="m-card-title">
-                    <CheckCircle2 size={18} color="#10b981" />
+                    <CheckCircle2 size={18} color="#e11d48" />
                     Today's Check-In Status
                   </span>
                   {isCheckedIn ? (
@@ -285,18 +293,44 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
 
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px', marginTop: '2px', fontSize: '0.8rem' }}>
                       {todayCheckIn.verificationStatus === 'approved' && (
-                        <span style={{ color: '#34d399', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <ShieldCheck size={16} /> Entry Approved by {todayCheckIn.verifiedBy || 'Security'}
+                        <span style={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <ShieldCheck size={16} color="#ffffff" /> Entry Approved by {todayCheckIn.verifiedBy || 'Security'}
                         </span>
                       )}
                       {todayCheckIn.verificationStatus === 'pending' && (
-                        <span style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Clock size={16} /> Awaiting Door Clearance (Show pass to officer)
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '6px 0', textAlign: 'center' }}>
+                          <div
+                            style={{
+                              background: '#ffffff',
+                              padding: '10px',
+                              borderRadius: '14px',
+                              border: '2.5px solid #e11d48',
+                              boxShadow: '0 4px 18px rgba(0,0,0,0.6)',
+                              display: 'inline-flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <QRCodeSVG
+                              value={typeof window !== 'undefined' ? `${window.location.origin}/?portal=security&scan=${todayCheckIn.id}&player=${currentPlayer.id}` : `https://club-re-straddle.vercel.app/?portal=security&scan=${todayCheckIn.id}&player=${currentPlayer.id}`}
+                              size={135}
+                              bgColor="#ffffff"
+                              fgColor="#0f172a"
+                              level="H"
+                            />
+                            <span style={{ color: '#0f172a', fontSize: '0.66rem', fontWeight: 800, marginTop: '4px', letterSpacing: '0.04em' }}>
+                              DOOR CLEARANCE PASS
+                            </span>
+                          </div>
+
+                          <span style={{ color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}>
+                            <Clock size={15} color="#e11d48" /> Hold this QR in front of door security officer
+                          </span>
+                        </div>
                       )}
                       {todayCheckIn.verificationStatus === 'rejected' && (
-                        <span style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <ShieldAlert size={16} /> Entry Denied: {todayCheckIn.rejectionReason}
+                        <span style={{ color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <ShieldAlert size={16} color="#ef4444" /> Entry Denied: {todayCheckIn.rejectionReason}
                         </span>
                       )}
                     </div>
@@ -314,10 +348,11 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                         value={tablePref}
                         onChange={e => setTablePref(e.target.value)}
                       >
-                        <option value="NLH Cash Game ($1/$3)">No-Limit Holdem ($1/$3)</option>
-                        <option value="NLH Cash Game ($2/$5)">No-Limit Holdem ($2/$5)</option>
-                        <option value="Showdown High Roller Tournament">Showdown High Roller Tournament</option>
-                        <option value="Pot-Limit Omaha (PLO)">Pot-Limit Omaha (PLO)</option>
+                        <option value="NLH Cash Game (₹100/₹200)">No-Limit Holdem (₹100/₹200)</option>
+                        <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500)</option>
+                        <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
+                        <option value="♠ Re Straddle High Roller Championship">♠ Re Straddle High Roller Championship</option>
+                        <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (PLO ₹250/₹500)</option>
                       </select>
                     </div>
 
@@ -341,7 +376,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div className="m-card">
                 <h3 className="m-card-title">
-                  <History size={18} color="#f59e0b" />
+                  <History size={18} color="#ffffff" />
                   Visit & Check-In History
                 </h3>
                 <p className="m-card-subtitle">{playerCheckIns.length} Total visits recorded</p>
@@ -451,7 +486,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
         isOpen={isCheckInSuccessOpen}
         onClose={() => setIsCheckInSuccessOpen(false)}
         title="Check-In Confirmed!"
-        subtitle="You are checked in for today at Club Showdown"
+        subtitle="You are checked in for today at Club Re Straddle"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'center', textAlign: 'center' }}>
           <div
@@ -459,14 +494,15 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
               width: '54px',
               height: '54px',
               borderRadius: '50%',
-              background: 'rgba(16, 185, 129, 0.2)',
-              border: '2px solid #10b981',
+              background: 'rgba(139, 0, 0, 0.25)',
+              border: '2px solid #e11d48',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              boxShadow: '0 0 16px var(--red-glow)',
             }}
           >
-            <CheckCircle2 size={30} color="#34d399" />
+            <CheckCircle2 size={30} color="#ffffff" />
           </div>
 
           <p style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>

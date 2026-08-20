@@ -1,6 +1,6 @@
-# React + TypeScript + Vite
+# Club Re Straddle • Poker Club OS
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Professional Poker Club Management System featuring dedicated portals for Players, Cashiers, Door Security, and Administration.
 
 Currently, two official plugins are available:
 

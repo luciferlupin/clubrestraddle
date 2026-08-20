@@ -40,7 +40,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
       <div className="receipt-paper" id="printable-receipt">
         <div className="receipt-header">
           <div style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.04em', color: '#0f172a' }}>
-            ♠ CLUB SHOWDOWN POKER LOUNGE ♠
+            ♠ CLUB RE STRADDLE POKER LOUNGE ♠
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
             OFFICIAL TOURNAMENT ENTRY & PAYMENT VOUCHER
@@ -100,13 +100,13 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
 
         <div className="receipt-total">
           <span>TOTAL PAID:</span>
-          <span style={{ color: '#047857' }}>{formatCurrency(totalPaid)}</span>
+          <span style={{ color: '#e11d48', fontWeight: 800 }}>{formatCurrency(totalPaid)}</span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748b' }}>
           <span>Cashier: <strong>{entry.cashierName}</strong></span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#059669' }}>
-            <CheckCircle size={12} /> Payment Confirmed
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#e11d48', fontWeight: 700 }}>
+            <CheckCircle size={12} color="#e11d48" /> Payment Confirmed
           </span>
         </div>
 

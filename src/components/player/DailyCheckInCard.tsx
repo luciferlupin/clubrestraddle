@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, ShieldCheck, MapPin, AlertCircle, ShieldAlert, Sparkles } from 'lucide-react';
+import { CheckCircle2, Clock, ShieldCheck, MapPin, AlertCircle, ShieldAlert, Sparkles, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
 import { Player } from '../../types';
 import { formatDateOnly, formatTimeOnly } from '../../utils/formatters';
@@ -12,7 +13,7 @@ interface DailyCheckInCardProps {
 
 export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) => {
   const { hasPlayerCheckedInToday, performDailyCheckIn } = useClub();
-  const [tablePref, setTablePref] = useState('NLH Cash Game ($2/$5)');
+  const [tablePref, setTablePref] = useState('NLH Cash Game (₹250/₹500)');
   const [checkingIn, setCheckingIn] = useState(false);
 
   const todayCheckIn = hasPlayerCheckedInToday(player.id);
@@ -28,7 +29,7 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
           particleCount: 60,
           spread: 60,
           origin: { y: 0.7 },
-          colors: ['#10b981', '#f59e0b', '#38bdf8'],
+          colors: ['#e11d48', '#ffffff', '#f43f5e', '#ffffff', '#be123c'],
         });
       } catch {
         // Safe fallback
@@ -41,7 +42,7 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <CheckCircle2 size={18} color="#10b981" />
+            <CheckCircle2 size={18} color="#e11d48" />
             Daily Club Check-In
           </h3>
           <p className="card-subtitle">
@@ -65,16 +66,16 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
             style={{
               background:
                 todayCheckIn.verificationStatus === 'approved'
-                  ? 'rgba(16, 185, 129, 0.08)'
+                  ? 'rgba(255, 255, 255, 0.08)'
                   : todayCheckIn.verificationStatus === 'rejected'
-                  ? 'rgba(239, 68, 68, 0.08)'
-                  : 'rgba(245, 158, 11, 0.08)',
+                  ? 'rgba(159, 18, 57, 0.2)'
+                  : 'rgba(225, 29, 72, 0.12)',
               border: `1px solid ${
                 todayCheckIn.verificationStatus === 'approved'
-                  ? 'rgba(16, 185, 129, 0.3)'
+                  ? 'rgba(255, 255, 255, 0.4)'
                   : todayCheckIn.verificationStatus === 'rejected'
-                  ? 'rgba(239, 68, 68, 0.3)'
-                  : 'rgba(245, 158, 11, 0.3)'
+                  ? 'rgba(225, 29, 72, 0.5)'
+                  : 'rgba(225, 29, 72, 0.4)'
               }`,
               borderRadius: '12px',
               padding: '16px',
@@ -82,46 +83,72 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Clock size={16} color="#94a3b8" />
+                <Clock size={16} color="#cbd5e1" />
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Check-in Timestamp:</span>
               </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-main)' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#ffffff' }}>
                 Today at {formatTimeOnly(todayCheckIn.checkInTime)}
               </span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={16} color="#94a3b8" />
+                <MapPin size={16} color="#cbd5e1" />
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Table Preference:</span>
               </div>
-              <span style={{ fontWeight: 600, color: 'var(--gold-light)' }}>
+              <span style={{ fontWeight: 600, color: '#ffffff' }}>
                 {todayCheckIn.tablePreference || 'General Seating'}
               </span>
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px', marginTop: '10px' }}>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', marginTop: '10px' }}>
               {todayCheckIn.verificationStatus === 'approved' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontSize: '0.86rem' }}>
-                  <ShieldCheck size={18} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff', fontSize: '0.86rem' }}>
+                  <ShieldCheck size={18} color="#ffffff" />
                   <span>
-                    <strong>Entry Approved</strong> by {todayCheckIn.verifiedBy || 'Security'}. Welcome to Club Showdown!
+                    <strong>Entry Approved</strong> by {todayCheckIn.verifiedBy || 'Security'}. Welcome to Club Re Straddle!
                   </span>
                 </div>
               )}
 
               {todayCheckIn.verificationStatus === 'pending' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fbbf24', fontSize: '0.86rem' }}>
-                  <Clock size={18} />
-                  <span>
-                    <strong>Awaiting Security Clearance:</strong> Present your Digital Pass QR to the security officer at the door.
-                  </span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', textAlign: 'center', padding: '6px 0' }}>
+                  <div
+                    style={{
+                      background: '#ffffff',
+                      padding: '12px',
+                      borderRadius: '14px',
+                      border: '3px solid #e11d48',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                      display: 'inline-flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <QRCodeSVG
+                      value={typeof window !== 'undefined' ? `${window.location.origin}/?portal=security&scan=${todayCheckIn.id}&player=${player.id}` : `https://club-re-straddle.vercel.app/?portal=security&scan=${todayCheckIn.id}&player=${player.id}`}
+                      size={140}
+                      bgColor="#ffffff"
+                      fgColor="#0f172a"
+                      level="H"
+                    />
+                    <span style={{ color: '#0f172a', fontSize: '0.68rem', fontWeight: 800, marginTop: '6px', letterSpacing: '0.04em' }}>
+                      DOOR CLEARANCE QR PASS
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fca5a5', fontSize: '0.82rem' }}>
+                    <Clock size={16} color="#e11d48" />
+                    <span>
+                      <strong>Awaiting Security Clearance:</strong> Hold this QR code in front of the door officer's scanner.
+                    </span>
+                  </div>
                 </div>
               )}
 
               {todayCheckIn.verificationStatus === 'rejected' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171', fontSize: '0.86rem' }}>
-                  <ShieldAlert size={18} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fca5a5', fontSize: '0.86rem' }}>
+                  <ShieldAlert size={18} color="#ef4444" />
                   <span>
                     <strong>Entry Denied:</strong> {todayCheckIn.rejectionReason || 'Security clearance rejected.'}
                   </span>
@@ -143,12 +170,12 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
               value={tablePref}
               onChange={e => setTablePref(e.target.value)}
             >
-              <option value="NLH Cash Game ($1/$3)">No-Limit Holdem ($1/$3 Cash)</option>
-              <option value="NLH Cash Game ($2/$5)">No-Limit Holdem ($2/$5 Cash)</option>
-              <option value="High Stakes NLH ($5/$10+)">High Stakes NLH ($5/$10+)</option>
-              <option value="Pot-Limit Omaha (PLO)">Pot-Limit Omaha (PLO)</option>
-              <option value="Showdown High Roller Tournament">Showdown High Roller Tournament</option>
-              <option value="Midnight Turbo Bounty Tournament">Midnight Turbo Bounty Tournament</option>
+              <option value="NLH Cash Game (₹100/₹200)">No-Limit Holdem (₹100/₹200 Cash)</option>
+              <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500 Cash)</option>
+              <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
+              <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (PLO ₹250/₹500)</option>
+              <option value="♠ Re Straddle High Roller Championship">♠ Re Straddle High Roller Championship</option>
+              <option value="♦ Midnight Bounty Knockout Series">♦ Midnight Bounty Knockout Series</option>
             </select>
           </div>
 

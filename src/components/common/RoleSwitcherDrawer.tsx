@@ -20,30 +20,30 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
       role: 'player',
       title: '1. Player Portal',
       desc: 'Mobile Check-in & KYC Registration Pass',
-      icon: <User size={20} color="#38bdf8" />,
-      color: '#38bdf8',
+      icon: <User size={20} color="#ffffff" />,
+      color: '#e11d48',
     },
     {
       role: 'cashier',
       title: '2. Cashier Portal',
       desc: 'Tournaments, Entries, Billing & Cash Float',
-      icon: <DollarSign size={20} color="#f59e0b" />,
-      color: '#f59e0b',
+      icon: <DollarSign size={20} color="#ffffff" />,
+      color: '#e11d48',
     },
     {
       role: 'security',
       title: '3. Security Portal',
       desc: 'Door Entrance Scanner & KYC Verification',
-      icon: <ShieldCheck size={20} color="#10b981" />,
-      color: '#10b981',
+      icon: <ShieldCheck size={20} color="#ffffff" />,
+      color: '#e11d48',
       badge: pendingCount > 0 ? pendingCount : undefined,
     },
     {
       role: 'admin',
       title: '4. Admin Portal',
       desc: 'Operations Dashboard, Treasury & Audit Logs',
-      icon: <LayoutDashboard size={20} color="#c084fc" />,
-      color: '#c084fc',
+      icon: <LayoutDashboard size={20} color="#ffffff" />,
+      color: '#e11d48',
     },
   ];
 
@@ -152,7 +152,7 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
             onOpenQR();
           }}
         >
-          <QrCode size={16} color="#f59e0b" /> Show Club Registration QR Standee
+          <QrCode size={16} color="#ffffff" /> Show Club Registration QR Standee
         </button>
       </div>
     </MobileBottomDrawer>

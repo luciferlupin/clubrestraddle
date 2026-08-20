@@ -82,17 +82,17 @@ export const MobileAdminPortal: React.FC = () => {
         <>
           {/* Top 4 KPI Cards */}
           <div className="m-stats-grid">
-            <div className="m-stat-card" style={{ borderColor: 'rgba(56, 189, 248, 0.3)' }}>
+            <div className="m-stat-card" style={{ borderColor: 'rgba(255, 255, 255, 0.25)' }}>
               <span className="m-stat-label">Total Players</span>
-              <span className="m-stat-val" style={{ color: '#38bdf8' }}>
+              <span className="m-stat-val" style={{ color: '#ffffff' }}>
                 {players.length}
               </span>
               <span className="m-stat-sub">{players.filter(p => p.kycStatus === 'verified').length} KYC Verified</span>
             </div>
 
-            <div className="m-stat-card" style={{ borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+            <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.4)' }}>
               <span className="m-stat-label">Today's Check-ins</span>
-              <span className="m-stat-val" style={{ color: '#34d399' }}>
+              <span className="m-stat-val" style={{ color: '#ffffff' }}>
                 {todayCheckIns.length}
               </span>
               <span className="m-stat-sub">{approvedTodayCount} Inside Club</span>
@@ -100,17 +100,17 @@ export const MobileAdminPortal: React.FC = () => {
           </div>
 
           <div className="m-stats-grid">
-            <div className="m-stat-card" style={{ borderColor: 'var(--border-gold)' }}>
+            <div className="m-stat-card" style={{ borderColor: 'var(--border-red)' }}>
               <span className="m-stat-label">Cash Balance</span>
-              <span className="m-stat-val" style={{ color: 'var(--gold-light)' }}>
+              <span className="m-stat-val" style={{ color: '#ffffff' }}>
                 {formatCurrency(currentCashBalance)}
               </span>
               <span className="m-stat-sub">Live Drawer Float</span>
             </div>
 
-            <div className="m-stat-card" style={{ borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+            <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.5)' }}>
               <span className="m-stat-label">Club Expenses</span>
-              <span className="m-stat-val" style={{ color: '#f87171' }}>
+              <span className="m-stat-val" style={{ color: '#fda4af' }}>
                 {formatCurrency(totalExpensesAmount)}
               </span>
               <span className="m-stat-sub">{expenses.length} Vouchers Recorded</span>
@@ -121,8 +121,8 @@ export const MobileAdminPortal: React.FC = () => {
           <div
             className="m-card"
             style={{
-              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(15, 23, 42, 0.95))',
-              border: '1.5px solid rgba(168, 85, 247, 0.35)',
+              background: 'linear-gradient(135deg, rgba(225, 29, 72, 0.18), rgba(15, 23, 42, 0.95))',
+              border: '1.5px solid var(--border-red)',
             }}
           >
             <span className="m-stat-label">Net Business Treasury Balance</span>
@@ -138,7 +138,7 @@ export const MobileAdminPortal: React.FC = () => {
           <div className="m-card">
             <div className="m-card-header">
               <span className="m-card-title">
-                <History size={16} color="#c084fc" />
+                <History size={16} color="#ffffff" />
                 Live Club Activity Timeline
               </span>
               <button className="m-btn m-btn-ghost m-btn-sm" style={{ width: 'auto' }} onClick={() => setActiveTab('audit')}>
@@ -157,18 +157,9 @@ export const MobileAdminPortal: React.FC = () => {
                         fontWeight: 700,
                         padding: '2px 6px',
                         borderRadius: '999px',
-                        background:
-                          log.portal === 'Cashier'
-                            ? 'rgba(245, 158, 11, 0.15)'
-                            : log.portal === 'Security'
-                            ? 'rgba(16, 185, 129, 0.15)'
-                            : 'rgba(56, 189, 248, 0.15)',
-                        color:
-                          log.portal === 'Cashier'
-                            ? '#fbbf24'
-                            : log.portal === 'Security'
-                            ? '#34d399'
-                            : '#38bdf8',
+                        background: 'rgba(139, 0, 0, 0.35)',
+                        color: '#ffffff',
+                        border: '1px solid rgba(139, 0, 0, 0.6)',
                       }}
                     >
                       {log.portal}
@@ -229,7 +220,7 @@ export const MobileAdminPortal: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="m-card">
             <h3 className="m-card-title">
-              <Users size={18} color="#38bdf8" />
+              <Users size={18} color="#e11d48" />
               Member Directory ({players.length})
             </h3>
             <p className="m-card-subtitle">Tap any player to inspect credentials or override KYC</p>
@@ -266,7 +257,7 @@ export const MobileAdminPortal: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="m-card">
             <h3 className="m-card-title">
-              <CheckCircle2 size={18} color="#10b981" />
+              <CheckCircle2 size={18} color="#e11d48" />
               Attendance Records ({checkIns.length})
             </h3>
             <p className="m-card-subtitle">Log of check-ins and entrance approvals</p>
@@ -283,7 +274,7 @@ export const MobileAdminPortal: React.FC = () => {
                 <span style={{ color: 'var(--gold-light)' }}>{c.tablePreference}</span>
               </div>
               {c.verifiedBy && (
-                <div style={{ fontSize: '0.72rem', color: '#34d399' }}>
+                <div style={{ fontSize: '0.72rem', color: '#ffffff' }}>
                   ✓ Clearance verified by {c.verifiedBy}
                 </div>
               )}
@@ -316,7 +307,7 @@ export const MobileAdminPortal: React.FC = () => {
           {/* Expenses List */}
           <div className="m-card">
             <h4 className="m-card-title">
-              <Receipt size={16} color="#f87171" />
+              <Receipt size={16} color="#e11d48" />
               Club Operating Expenses ({expenses.length})
             </h4>
 
@@ -325,7 +316,7 @@ export const MobileAdminPortal: React.FC = () => {
                 <div key={exp.id} className="m-list-card">
                   <div className="m-list-row">
                     <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{exp.category}</span>
-                    <span className="tabular-num" style={{ fontWeight: 800, color: '#f87171' }}>
+                    <span className="tabular-num" style={{ fontWeight: 800, color: '#fca5a5' }}>
                       -{formatCurrency(exp.amount)}
                     </span>
                   </div>
@@ -346,7 +337,7 @@ export const MobileAdminPortal: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="m-card">
             <h3 className="m-card-title">
-              <History size={18} color="#c084fc" />
+              <History size={18} color="#e11d48" />
               Team Activity Audit Trail ({auditLogs.length})
             </h3>
             <p className="m-card-subtitle">Chronological actions across all 4 portals</p>

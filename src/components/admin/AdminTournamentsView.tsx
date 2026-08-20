@@ -29,35 +29,29 @@ export const AdminTournamentsView: React.FC = () => {
           </div>
         </div>
 
-        <div
-          className="stat-card"
-          style={{ '--stat-glow': 'rgba(16, 185, 129, 0.15)', '--stat-color': '#34d399' } as React.CSSProperties}
-        >
+        <div className="stat-card">
           <div className="stat-info">
             <span className="stat-label">Total Buy-in Pool</span>
-            <span className="stat-value" style={{ color: '#34d399' }}>
+            <span className="stat-value" style={{ color: '#ffffff' }}>
               {formatCurrency(totalBuyInsCollected)}
             </span>
             <span className="stat-helper">Collected from {entries.length} entries</span>
           </div>
           <div className="stat-icon-wrapper">
-            <DollarSign size={22} />
+            <DollarSign size={22} color="#ffffff" />
           </div>
         </div>
 
-        <div
-          className="stat-card"
-          style={{ '--stat-glow': 'rgba(168, 85, 247, 0.15)', '--stat-color': '#c084fc' } as React.CSSProperties}
-        >
+        <div className="stat-card">
           <div className="stat-info">
             <span className="stat-label">House Rake Earned</span>
-            <span className="stat-value" style={{ color: '#c084fc' }}>
+            <span className="stat-value" style={{ color: '#ffffff' }}>
               {formatCurrency(totalRakeEarned)}
             </span>
             <span className="stat-helper">Club fee revenue</span>
           </div>
           <div className="stat-icon-wrapper">
-            <Award size={22} />
+            <Award size={22} color="#ffffff" />
           </div>
         </div>
       </div>
@@ -67,7 +61,7 @@ export const AdminTournamentsView: React.FC = () => {
         <div className="card-header">
           <div>
             <h3 className="card-title">
-              <Trophy size={18} color="#f59e0b" />
+              <Trophy size={18} color="#e11d48" />
               Tournament Records & Prize Structures
             </h3>
             <p className="card-subtitle">Complete schedule of tournaments, rake fees, and player entries.</p>
@@ -101,7 +95,7 @@ export const AdminTournamentsView: React.FC = () => {
                       {formatCurrency(trn.buyInFee)} + {formatCurrency(trn.clubRake)}
                     </td>
                     <td className="tabular-num">{trn.startingChips.toLocaleString()}</td>
-                    <td className="tabular-num" style={{ color: '#34d399', fontWeight: 700 }}>
+                    <td className="tabular-num" style={{ color: '#ffffff', fontWeight: 800 }}>
                       {formatCurrency(trn.guaranteedPrizePool)}
                     </td>
                     <td>

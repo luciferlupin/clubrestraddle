@@ -30,7 +30,7 @@ export const AdminPlayersView: React.FC = () => {
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <Users size={18} color="#f59e0b" />
+            <Users size={18} color="#e11d48" />
             Registered Players & KYC Registry
           </h3>
           <p className="card-subtitle">

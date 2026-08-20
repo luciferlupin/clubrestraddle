@@ -15,13 +15,13 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
   const getPortalLabel = () => {
     switch (activeRole) {
       case 'player':
-        return { name: 'Player Portal', color: '#38bdf8' };
+        return { name: 'Player Portal', color: '#ffffff' };
       case 'cashier':
-        return { name: 'Cashier Desk', color: '#f59e0b' };
+        return { name: 'Cashier Desk', color: '#ffffff' };
       case 'security':
-        return { name: 'Security Desk', color: '#10b981' };
+        return { name: 'Security Desk', color: '#ffffff' };
       case 'admin':
-        return { name: 'Admin Center', color: '#c084fc' };
+        return { name: 'Admin Center', color: '#ffffff' };
     }
   };
 
@@ -32,7 +32,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
       <div className="mobile-logo-wrap">
         <div className="mobile-logo-badge">♠</div>
         <div className="mobile-logo-text">
-          <span className="mobile-logo-title">CLUB SHOWDOWN</span>
+          <span className="mobile-logo-title">CLUB RE STRADDLE</span>
           <span className="mobile-portal-pill" style={{ color: portalInfo.color }}>
             <CircleDot size={8} /> {portalInfo.name}
           </span>
@@ -67,7 +67,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
           style={{
             background: 'none',
             border: 'none',
-            color: 'var(--gold-light)',
+            color: '#ffffff',
             cursor: 'pointer',
             padding: '6px',
             display: 'flex',

@@ -62,13 +62,13 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div className="card-header" style={{ marginBottom: 0 }}>
+      <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
         <div>
-          <h3 className="card-title">
-            <Trophy size={18} color="#f59e0b" />
+          <h3 className="page-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Trophy size={20} color="#e11d48" />
             Club Tournaments & Events
           </h3>
-          <p className="card-subtitle">
+          <p className="page-subtitle" style={{ fontSize: '0.84rem', color: '#475569', marginTop: '3px', fontWeight: 500 }}>
             Create new poker tournaments, configure entry details, and manage player seating.
           </p>
         </div>
@@ -107,7 +107,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '6px' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Guaranteed Pool:</span>
-                    <span style={{ fontWeight: 700, color: '#34d399' }}>
+                    <span style={{ fontWeight: 800, color: '#ffffff' }}>
                       {formatCurrency(effectivePrizePool)} GTD
                     </span>
                   </div>

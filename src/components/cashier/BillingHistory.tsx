@@ -29,7 +29,7 @@ export const BillingHistory: React.FC = () => {
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <Receipt size={18} color="#f59e0b" />
+            <Receipt size={18} color="#e11d48" />
             Billing & Tournament Entry Records
           </h3>
           <p className="card-subtitle">
@@ -89,7 +89,7 @@ export const BillingHistory: React.FC = () => {
                     <td style={{ maxWidth: '180px', fontSize: '0.82rem' }}>
                       {entry.tournamentName}
                     </td>
-                    <td className="tabular-num" style={{ fontWeight: 700, color: '#34d399' }}>
+                    <td className="tabular-num" style={{ fontWeight: 800, color: '#ffffff' }}>
                       {formatCurrency(totalPaid)}
                     </td>
                     <td>

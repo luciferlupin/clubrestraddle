@@ -14,7 +14,7 @@ export const CheckInHistory: React.FC<CheckInHistoryProps> = ({ checkIns }) => {
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <History size={18} color="#f59e0b" />
+            <History size={18} color="#e11d48" />
             Check-In & Club Visit History
           </h3>
           <p className="card-subtitle">

@@ -61,7 +61,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQR }) => {
             <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>♠</span>
           </div>
           <div>
-            <div className="logo-title">CLUB SHOWDOWN</div>
+            <div className="logo-title">CLUB RE STRADDLE</div>
             <div className="logo-subtitle">Poker Lounge & Club OS</div>
           </div>
         </div>
@@ -151,14 +151,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQR }) => {
                 border: '1px solid var(--border-subtle)',
               }}
             >
-              <CircleDot size={10} color="#10b981" />
+              <CircleDot size={10} color="#ffffff" />
               <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{staffName}</span>
             </div>
           )}
 
           {/* Club QR Code button */}
           <button className="action-btn-pill" onClick={onOpenQR} title="Open Physical Entrance QR Code">
-            <QrCode size={14} color="#f59e0b" />
+            <QrCode size={14} color="#ffffff" />
             <span>Club QR</span>
           </button>
 

@@ -67,7 +67,7 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <ShieldCheck size={18} color="#10b981" />
+            <ShieldCheck size={18} color="#e11d48" />
             Live Entrance & KYC Verification Queue
           </h3>
           <p className="card-subtitle">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -12,12 +12,14 @@ import {
   Lock,
   History,
   Check,
+  Camera,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import { formatDateOnly, formatTimeOnly, maskGovtId } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
+import { QRScannerModal } from './QRScannerModal';
 import confetti from 'canvas-confetti';
 
 export const MobileSecurityPortal: React.FC = () => {
@@ -36,6 +38,26 @@ export const MobileSecurityPortal: React.FC = () => {
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
   const [verificationSuccessToast, setVerificationSuccessToast] = useState<string | null>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+  // Check URL query parameters for pre-selected scanned check-in
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const scanId = params.get('scan');
+    const playerId = params.get('player') || params.get('playerId');
+
+    if (scanId) {
+      const foundCheckIn = todayCheckIns.find(c => c.id === scanId);
+      if (foundCheckIn) {
+        const foundPlayer = players.find(p => p.id === foundCheckIn.playerId);
+        if (foundPlayer) setSelectedPlayer(foundPlayer);
+      }
+    } else if (playerId) {
+      const foundPlayer = players.find(p => p.id === playerId);
+      if (foundPlayer) setSelectedPlayer(foundPlayer);
+    }
+  }, [todayCheckIns, players]);
 
   const pendingCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'pending');
   const approvedCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'approved');
@@ -81,7 +103,7 @@ export const MobileSecurityPortal: React.FC = () => {
         particleCount: 50,
         spread: 60,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#34d399'],
+        colors: ['#e11d48', '#ffffff', '#be123c'],
       });
     } catch {
       // Fallback
@@ -109,14 +131,14 @@ export const MobileSecurityPortal: React.FC = () => {
       {verificationSuccessToast && (
         <div
           style={{
-            background: 'linear-gradient(135deg, #059669, #10b981)',
+            background: 'linear-gradient(135deg, #8B0000, #520000)',
             color: '#ffffff',
             padding: '12px 16px',
             borderRadius: '12px',
             fontWeight: 800,
             fontSize: '0.88rem',
             textAlign: 'center',
-            boxShadow: '0 8px 24px rgba(16, 185, 129, 0.4)',
+            boxShadow: '0 8px 24px var(--red-glow)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -131,12 +153,11 @@ export const MobileSecurityPortal: React.FC = () => {
       {/* TAB 1: DOOR SCANNER / VERIFICATION MAIN */}
       {activeNav === 'scan' && (
         <>
-          {/* Main Large Touch Search & Scanner Card */}
-          <div className="m-card" style={{ border: '1.5px solid rgba(16, 185, 129, 0.35)' }}>
+          <div className="m-card" style={{ border: '1.5px solid var(--border-red)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <h3 className="m-card-title">
-                  <ShieldCheck size={20} color="#10b981" />
+                  <ShieldCheck size={20} color="#ffffff" />
                   Entrance Door Scanner
                 </h3>
                 <p className="m-card-subtitle">Fast 1-hand player clearance</p>
@@ -146,8 +167,18 @@ export const MobileSecurityPortal: React.FC = () => {
               </span>
             </div>
 
+            {/* Quick QR Scanner Launch Button */}
+            <button
+              className="m-btn m-btn-primary"
+              onClick={() => setIsScannerOpen(true)}
+              style={{ marginTop: '2px' }}
+            >
+              <QrCode size={18} />
+              <span>Open Camera QR Scanner</span>
+            </button>
+
             {/* Big Touch Search Bar */}
-            <div style={{ position: 'relative', marginTop: '4px' }}>
+            <div style={{ position: 'relative', marginTop: '2px' }}>
               <Search size={18} style={{ position: 'absolute', left: '14px', top: '15px', color: '#94a3b8' }} />
               <input
                 type="text"
@@ -163,8 +194,8 @@ export const MobileSecurityPortal: React.FC = () => {
             {pendingCheckIns.length > 0 && !search && (
               <div
                 style={{
-                  background: 'rgba(245, 158, 11, 0.12)',
-                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                  background: 'rgba(225, 29, 72, 0.15)',
+                  border: '1px solid rgba(225, 29, 72, 0.45)',
                   borderRadius: '12px',
                   padding: '12px',
                   display: 'flex',
@@ -175,12 +206,12 @@ export const MobileSecurityPortal: React.FC = () => {
                 onClick={() => setActiveNav('queue')}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Clock size={18} color="#fbbf24" />
+                  <Clock size={18} color="#8B0000" />
                   <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>
                     {pendingCheckIns.length} Player{pendingCheckIns.length > 1 ? 's' : ''} Waiting at Door
                   </span>
                 </div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--gold-light)', fontWeight: 700 }}>
+                <span style={{ fontSize: '0.75rem', color: '#fca5a5', fontWeight: 700 }}>
                   Inspect Queue →
                 </span>
               </div>
@@ -236,9 +267,9 @@ export const MobileSecurityPortal: React.FC = () => {
             const legalAge = playerAge >= 21;
 
             return (
-              <div className="m-card" style={{ border: '1.5px solid var(--border-gold)' }}>
+              <div className="m-card" style={{ border: '1.5px solid var(--border-red)' }}>
                 <div className="m-card-header">
-                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gold-light)', textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#ffffff', textTransform: 'uppercase' }}>
                     Verification Inspection
                   </span>
                   <div style={{ display: 'flex', gap: '6px' }}>
@@ -257,7 +288,7 @@ export const MobileSecurityPortal: React.FC = () => {
                         height: '64px',
                         borderRadius: '50%',
                         objectFit: 'cover',
-                        border: '2px solid var(--gold-light)',
+                        border: '2px solid #ffffff',
                         boxShadow: '0 0 12px rgba(0,0,0,0.5)',
                       }}
                     />
@@ -297,8 +328,9 @@ export const MobileSecurityPortal: React.FC = () => {
                         fontWeight: 800,
                         padding: '2px 8px',
                         borderRadius: '999px',
-                        background: legalAge ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                        color: legalAge ? '#34d399' : '#f87171',
+                        background: legalAge ? 'rgba(139, 0, 0, 0.35)' : 'rgba(102, 0, 0, 0.6)',
+                        color: '#ffffff',
+                        border: '1px solid rgba(139, 0, 0, 0.7)',
                       }}
                     >
                       {legalAge ? `✓ Age: ${playerAge} (21+ OK)` : `⚠ Age: ${playerAge} (UNDERAGE)`}
@@ -370,7 +402,7 @@ export const MobileSecurityPortal: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="m-card">
             <h3 className="m-card-title">
-              <Clock size={18} color="#f59e0b" />
+              <Clock size={18} color="#ffffff" />
               Live Door Queue ({pendingCheckIns.length} Awaiting)
             </h3>
             <p className="m-card-subtitle">Tap player to inspect and approve entry</p>
@@ -378,7 +410,7 @@ export const MobileSecurityPortal: React.FC = () => {
 
           {pendingCheckIns.length === 0 ? (
             <div className="m-card" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>
-              <CheckCircle2 size={36} color="#10b981" style={{ margin: '0 auto 8px' }} />
+              <CheckCircle2 size={36} color="#ffffff" style={{ margin: '0 auto 8px' }} />
               <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>No players waiting in door queue.</p>
             </div>
           ) : (
@@ -389,7 +421,7 @@ export const MobileSecurityPortal: React.FC = () => {
                 <div
                   key={c.id}
                   className="m-card"
-                  style={{ borderLeft: '4px solid #f59e0b', cursor: 'pointer' }}
+                  style={{ borderLeft: '4px solid #8B0000', cursor: 'pointer' }}
                   onClick={() => {
                     setSelectedPlayer(player);
                     setActiveNav('scan');
@@ -425,7 +457,7 @@ export const MobileSecurityPortal: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="m-card">
             <h3 className="m-card-title">
-              <History size={18} color="#10b981" />
+              <History size={18} color="#e11d48" />
               Approved Entries Today ({approvedCheckIns.length})
             </h3>
             <p className="m-card-subtitle">Active players cleared to play on the club floor</p>
@@ -492,6 +524,16 @@ export const MobileSecurityPortal: React.FC = () => {
           </button>
         </form>
       </MobileBottomDrawer>
+
+      {/* Camera & Quick Door Scanner Modal */}
+      <QRScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onSelectPlayer={(player) => {
+          setSelectedPlayer(player);
+          setActiveNav('scan');
+        }}
+      />
 
       {/* Bottom Navigation */}
       <nav className="mobile-bottom-nav">

@@ -25,7 +25,7 @@ export const AdminAttendanceView: React.FC = () => {
       <div className="card-header">
         <div>
           <h3 className="card-title">
-            <CheckCircle2 size={18} color="#10b981" />
+            <CheckCircle2 size={18} color="#e11d48" />
             Club Attendance & Daily Check-In Registry
           </h3>
           <p className="card-subtitle">
@@ -33,10 +33,10 @@ export const AdminAttendanceView: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <select
             className="form-select"
-            style={{ width: 'auto', fontSize: '0.8rem' }}
+            style={{ width: 'auto', fontSize: '0.82rem', fontWeight: 600, minHeight: '38px', padding: '8px 36px 8px 14px' }}
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
           >
@@ -47,11 +47,11 @@ export const AdminAttendanceView: React.FC = () => {
           </select>
 
           <div style={{ position: 'relative' }}>
-            <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
+            <Search size={15} style={{ position: 'absolute', left: '12px', top: '11px', color: '#94a3b8' }} />
             <input
               type="text"
               className="form-input"
-              style={{ paddingLeft: '32px', width: '200px', fontSize: '0.8rem' }}
+              style={{ paddingLeft: '36px', width: '210px', fontSize: '0.84rem', minHeight: '38px' }}
               placeholder="Search player, phone..."
               value={search}
               onChange={e => setSearch(e.target.value)}
