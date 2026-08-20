@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QrCode, Check, Copy, UserPlus, UserCheck, Sparkles } from 'lucide-react';
+import { QrCode, Check, Copy, UserPlus, UserCheck, Sparkles, ExternalLink } from 'lucide-react';
 import { Modal } from './Modal';
 import { useClub } from '../../context/ClubContext';
 
@@ -17,7 +17,7 @@ export const ClubQRModal: React.FC<ClubQRModalProps> = ({
   const { setActiveRole, setSelectedPlayerId, players } = useClub();
   const [copied, setCopied] = useState(false);
 
-  const clubUrl = `${window.location.origin}/?portal=player&action=qr_scan`;
+  const clubUrl = typeof window !== 'undefined' ? `${window.location.origin}/?portal=player&action=kyc` : 'https://clubshowdown.vercel.app/?portal=player&action=kyc';
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(clubUrl);
@@ -42,20 +42,20 @@ export const ClubQRModal: React.FC<ClubQRModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Club Entrance Registration QR"
-      subtitle="Physical QR code placed at the poker room front desk"
+      subtitle="Physical QR standee placed at the club front desk"
       size="md"
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px' }}>
         <div
           style={{
             background: '#ffffff',
-            padding: '20px',
+            padding: '18px',
             borderRadius: '16px',
             boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
             display: 'inline-flex',
             flexDirection: 'column',
             alignItems: 'center',
-            border: '4px solid #f59e0b',
+            border: '3px solid #f59e0b',
           }}
         >
           {/* Stylized QR Code SVG Representation */}
@@ -99,30 +99,32 @@ export const ClubQRModal: React.FC<ClubQRModalProps> = ({
             <rect x="130" y="140" width="25" height="15" fill="#0f172a" />
           </svg>
           <span style={{ color: '#0f172a', fontSize: '0.72rem', fontWeight: 800, marginTop: '8px', letterSpacing: '0.05em' }}>
-            SCAN TO CHECK-IN / REGISTER
+            SCAN FOR KYC REGISTRATION & CHECK-IN
           </span>
         </div>
 
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', maxWidth: '380px' }}>
-          When players arrive at the club, scanning this QR code automatically opens the <strong>Player Portal</strong> to either complete <strong>new KYC registration</strong> or perform <strong>daily check-in</strong>.
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', maxWidth: '380px' }}>
+          When players arrive at the club, scanning this QR code automatically opens the <strong>Player Portal</strong> to complete <strong>KYC registration</strong> or perform <strong>daily check-in</strong>.
         </p>
 
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <button className="btn btn-primary" onClick={handleSimulateNewPlayer} style={{ width: '100%' }}>
-            <UserPlus size={16} /> Simulate Scan as New Player (KYC Form)
+            <UserPlus size={16} /> Open New Player KYC Form
           </button>
 
           <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-            <button
-              className="btn btn-secondary"
-              onClick={() => handleSimulateExistingPlayer(players[0]?.id || 'PLR-1001')}
-              style={{ flex: 1 }}
-            >
-              <UserCheck size={16} /> Scan as {players[0]?.fullName.split(' ')[0] || 'Member'}
-            </button>
-            <button className="btn btn-secondary" onClick={handleCopyUrl} style={{ minWidth: '110px' }}>
-              {copied ? <Check size={16} color="#10b981" /> : <Copy size={16} />}
-              {copied ? 'Copied' : 'Copy Link'}
+            {players.length > 0 && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => handleSimulateExistingPlayer(players[0].id)}
+                style={{ flex: 1 }}
+              >
+                <UserCheck size={16} /> Check-in as {players[0].fullName.split(' ')[0]}
+              </button>
+            )}
+            <button className="btn btn-secondary" onClick={handleCopyUrl} style={{ flex: 1 }}>
+              {copied ? <Check size={15} color="#10b981" /> : <Copy size={15} />}
+              <span>{copied ? 'Link Copied' : 'Copy Registration Link'}</span>
             </button>
           </div>
         </div>
