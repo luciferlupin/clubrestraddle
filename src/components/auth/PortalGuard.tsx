@@ -1,7 +1,7 @@
 import React from 'react';
 import { useClub } from '../../context/ClubContext';
 import { StaffLoginForm } from './StaffLoginForm';
-import { LogOut, ShieldCheck, UserCheck } from 'lucide-react';
+import { LogOut, ShieldCheck, DollarSign, LayoutDashboard } from 'lucide-react';
 
 interface PortalGuardProps {
   requiredRole: 'cashier' | 'security' | 'admin';
@@ -30,7 +30,7 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
 
   return (
     <div>
-      {/* Active Staff Session Bar */}
+      {/* Active Staff Session Bar with 1-Click Station Switcher */}
       <div
         style={{
           display: 'flex',
@@ -43,6 +43,8 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
           marginBottom: '16px',
           fontSize: '0.82rem',
           boxShadow: '0 4px 14px rgba(0, 0, 0, 0.1)',
+          flexWrap: 'wrap',
+          gap: '10px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -52,11 +54,11 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              background: '#8B0000',
-              boxShadow: '0 0 8px #8B0000',
+              background: '#e11d48',
+              boxShadow: '0 0 8px #e11d48',
             }}
           />
-          <span style={{ color: '#cbd5e1' }}>Staff Session:</span>
+          <span style={{ color: '#cbd5e1' }}>Logged in as:</span>
           <strong style={{ color: '#ffffff' }}>{currentStaffUser?.fullName}</strong>
           <span
             style={{
@@ -64,7 +66,7 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
               fontWeight: 800,
               padding: '2px 8px',
               borderRadius: '999px',
-              background: 'linear-gradient(135deg, #8B0000, #4a0000)',
+              background: 'linear-gradient(135deg, #e11d48, #9f1239)',
               color: '#ffffff',
               border: '1px solid rgba(255, 255, 255, 0.4)',
               textTransform: 'uppercase',
@@ -74,13 +76,73 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
           </span>
         </div>
 
-        <button
-          onClick={logoutStaff}
-          className="btn btn-ghost btn-sm"
-          style={{ color: '#fda4af', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
-        >
-          <LogOut size={13} /> Sign Out
-        </button>
+        {/* 1-Click Station Switcher for Staff */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            onClick={() => setActiveRole('admin')}
+            style={{
+              background: requiredRole === 'admin' ? '#e11d48' : 'rgba(255,255,255,0.06)',
+              border: requiredRole === 'admin' ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.1)',
+              color: '#ffffff',
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontSize: '0.74rem',
+              fontWeight: requiredRole === 'admin' ? 800 : 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <LayoutDashboard size={12} /> Admin
+          </button>
+
+          <button
+            onClick={() => setActiveRole('cashier')}
+            style={{
+              background: requiredRole === 'cashier' ? '#e11d48' : 'rgba(255,255,255,0.06)',
+              border: requiredRole === 'cashier' ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.1)',
+              color: '#ffffff',
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontSize: '0.74rem',
+              fontWeight: requiredRole === 'cashier' ? 800 : 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <DollarSign size={12} /> Cashier
+          </button>
+
+          <button
+            onClick={() => setActiveRole('security')}
+            style={{
+              background: requiredRole === 'security' ? '#e11d48' : 'rgba(255,255,255,0.06)',
+              border: requiredRole === 'security' ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.1)',
+              color: '#ffffff',
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontSize: '0.74rem',
+              fontWeight: requiredRole === 'security' ? 800 : 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            <ShieldCheck size={12} /> Security
+          </button>
+
+          <button
+            onClick={logoutStaff}
+            className="btn btn-ghost btn-sm"
+            style={{ color: '#fda4af', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}
+          >
+            <LogOut size={13} /> Sign Out
+          </button>
+        </div>
       </div>
 
       {children}
