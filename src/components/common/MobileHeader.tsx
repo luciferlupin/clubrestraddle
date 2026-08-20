@@ -1,5 +1,6 @@
 import React from 'react';
-import { QrCode, ChevronDown, CircleDot, Spade } from 'lucide-react';
+import { QrCode, ChevronDown, CircleDot } from 'lucide-react';
+import { QuadSuits, CardSuit } from './PokerGraphics';
 import { useClub } from '../../context/ClubContext';
 
 interface MobileHeaderProps {
@@ -36,11 +37,14 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
         onClick={isPlayerMode ? () => setActiveRole('player') : onOpenRoleSwitcher}
         aria-label={isPlayerMode ? 'Club Re Straddle member portal' : 'Open staff desk switcher'}
       >
-        <div className="mobile-logo-badge"><Spade size={19} fill="currentColor" /></div>
+        <div className="mobile-logo-badge" style={{ background: 'transparent', border: 'none' }}>
+          <QuadSuits size={38} />
+        </div>
         <div className="mobile-logo-text">
           <span className="mobile-logo-title">CLUB RE STRADDLE</span>
-          <span className="mobile-portal-pill" style={{ color: portalInfo.color }}>
-            <CircleDot size={8} /> {portalInfo.name}
+          <span className="mobile-portal-pill" style={{ color: portalInfo.color, display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <CardSuit suit={activeRole === 'player' ? 'spade' : activeRole === 'cashier' ? 'diamond' : activeRole === 'security' ? 'club' : 'heart'} size={9} />
+            {portalInfo.name}
           </span>
         </div>
       </button>

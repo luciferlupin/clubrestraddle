@@ -17,7 +17,8 @@ import { MobileSecurityPortal } from './components/security/MobileSecurityPortal
 import { MobileAdminPortal } from './components/admin/MobileAdminPortal';
 import { MobileHeader } from './components/common/MobileHeader';
 import { RoleSwitcherDrawer } from './components/common/RoleSwitcherDrawer';
-import { LogOut, Spade } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { AnimatedSuitsRow } from './components/common/PokerGraphics';
 
 const MainApp: React.FC = () => {
   const { activeRole, setActiveRole } = useClub();
@@ -195,7 +196,9 @@ const MainApp: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Spade size={14} color="#ffffff" fill="currentColor" aria-hidden="true" />
+          <span className="footer-suits-row">
+            <AnimatedSuitsRow size={15} gap={6} />
+          </span>
           <span style={{ fontWeight: 700, color: '#ffffff' }}>
             {isPlayerMode ? 'CLUB RE STRADDLE • Luxury Poker Lounge & Member Club' : 'CLUB RE STRADDLE • Staff Operations OS'}
           </span>

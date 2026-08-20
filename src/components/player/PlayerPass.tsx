@@ -5,6 +5,7 @@ import { Player, DailyCheckIn } from '../../types';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { formatDateOnly, formatTimeOnly } from '../../utils/formatters';
 import { Modal } from '../common/Modal';
+import { SuitWatermark, PassCornerPip, CardSuit } from '../common/PokerGraphics';
 
 interface PlayerPassProps {
   player: Player;
@@ -20,7 +21,14 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
 
   return (
     <>
-      <div className="club-pass">
+      <div className="club-pass poker-pass-wrap">
+        {/* Suit watermark background */}
+        <SuitWatermark suit="spade" size={180} opacity={0.07} color="#ffffff" className="poker-pass-watermark" />
+        {/* Corner pips — top-left */}
+        <PassCornerPip rank="A" suit="spade" size={26} style={{ position: 'absolute', top: 10, left: 12 }} />
+        {/* Corner pips — bottom-right (flipped) */}
+        <PassCornerPip rank="A" suit="spade" size={26} flipped style={{ position: 'absolute', bottom: 10, right: 12 }} />
+
         <div className="pass-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Spade size={22} color="#ffffff" fill="currentColor" aria-hidden="true" />
@@ -35,6 +43,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CardSuit suit="heart" size={14} color="#e11d48" />
             <TierBadge tier={player.membershipTier} />
           </div>
         </div>

@@ -8,10 +8,10 @@ import {
   CircleDot,
   LogOut,
   Lock,
-  Spade,
   UserRound,
   UsersRound,
 } from 'lucide-react';
+import { QuadSuits, CardSuit, AnimatedSuitsRow } from '../common/PokerGraphics';
 import { useClub } from '../../context/ClubContext';
 
 interface AppHeaderProps {
@@ -60,7 +60,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
           onClick={() => setActiveRole('player')}
           aria-label="Open the player portal"
         >
-          <span className="brand-icon" aria-hidden="true"><Spade size={21} fill="currentColor" /></span>
+          <span className="brand-icon" aria-hidden="true">
+            <QuadSuits size={34} />
+          </span>
           <div>
             <div className="brand-title">CLUB RE STRADDLE</div>
             <div className="brand-sub">
@@ -118,7 +120,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
           /* Player Live Clock & Club Status */
           <div className="player-club-status" aria-label={`Club open, current time ${currentTime}`}>
             <div className="player-club-status-pill">
-              <span className="player-club-status-dot" aria-hidden="true" />
+              <AnimatedSuitsRow size={12} gap={4} />
+              <span style={{ opacity: 0.4, margin: '0 2px' }}>•</span>
               <span style={{ color: '#fda4af', fontWeight: 700 }}>Club Open</span>
               <span style={{ opacity: 0.5 }}>•</span>
               <span style={{ fontFamily: 'var(--font-mono)' }}>{currentTime}</span>

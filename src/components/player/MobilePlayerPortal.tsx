@@ -8,7 +8,6 @@ import {
   History,
   Phone,
   QrCode,
-  ShieldCheck,
   User,
   UserPlus,
 } from 'lucide-react';
@@ -22,6 +21,7 @@ import { MobilePlayerProfile } from './MobilePlayerProfile';
 import { MobilePlayerVisits } from './MobilePlayerVisits';
 import { MobileRegistrationSuccess } from './MobileRegistrationSuccess';
 import { TableChipRequestModal } from './TableChipRequestModal';
+import { CardDeckFan, CardSuit, AnimatedSuitsRow } from '../common/PokerGraphics';
 
 interface MobilePlayerPortalProps {
   onOpenQR: () => void;
@@ -145,14 +145,24 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
           {entryView === 'choice' && !currentPlayer ? (
             <>
               <section className="mobile-welcome-card" aria-labelledby="player-welcome-title">
-                <div className="mobile-welcome-icon" aria-hidden="true"><ShieldCheck size={26} /></div>
+                {/* Card fan hero */}
+                <div className="welcome-card-fan-hero" aria-hidden="true">
+                  <CardDeckFan size={130} />
+                </div>
+                {/* Animated suit strip */}
+                <div className="mobile-welcome-suits" aria-hidden="true">
+                  <CardSuit suit="spade" size={20} color="#ffffff" className="suit-hover-anim" />
+                  <CardSuit suit="heart" size={20} color="#e11d48" className="suit-hover-anim suit-delay-1" />
+                  <CardSuit suit="diamond" size={20} color="#e11d48" className="suit-hover-anim suit-delay-2" />
+                  <CardSuit suit="club" size={20} color="#ffffff" className="suit-hover-anim suit-delay-3" />
+                </div>
                 <span className="mobile-flow-eyebrow">Player access</span>
                 <h1 id="player-welcome-title">Welcome to the club</h1>
                 <p>Load your member pass or register for your first visit.</p>
                 <div className="mobile-trust-row">
-                  <span><CheckCircle2 size={14} /> Members only</span>
-                  <span><ShieldCheck size={14} /> Secure KYC</span>
-                  <span><Clock size={14} /> Under 2 min</span>
+                  <span><CardSuit suit="spade" size={13} color="#ffffff" /> Members only</span>
+                  <span><CardSuit suit="club" size={13} color="#ffffff" /> Secure KYC</span>
+                  <span><CardSuit suit="diamond" size={13} color="#e11d48" /> Under 2 min</span>
                 </div>
               </section>
 

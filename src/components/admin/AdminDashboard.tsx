@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
+import { SuitWatermark } from '../common/PokerGraphics';
 
 interface AdminDashboardProps {
   onNavigateTab: (tab: string) => void;
@@ -21,6 +22,7 @@ interface StatCardProps {
   value: string | number;
   icon: React.ReactNode;
   helper?: string;
+  suit?: 'spade' | 'heart' | 'diamond' | 'club';
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -28,8 +30,10 @@ const StatCard: React.FC<StatCardProps> = ({
   value,
   icon,
   helper,
+  suit = 'spade',
 }) => (
   <div className="stat-card">
+    <SuitWatermark suit={suit} size={52} opacity={0.06} color="#ffffff" className="stat-suit-accent" />
     <div className="stat-info">
       <span className="stat-label">{label}</span>
       <span className="stat-value">{value}</span>
@@ -78,6 +82,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           value={players.length}
           icon={<Users size={22} color="#ffffff" />}
           helper={`${players.filter(p => p.kycStatus === 'verified').length} KYC Verified`}
+          suit="spade"
         />
 
         <StatCard
@@ -85,6 +90,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           value={todayCheckIns.length}
           icon={<CheckCircle2 size={22} color="#ffffff" />}
           helper={`${approvedToday} Approved & Inside Club`}
+          suit="heart"
         />
 
         <StatCard
@@ -92,11 +98,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           value={chipRequests.length}
           icon={<Coins size={22} color="#ffffff" />}
           helper={`${pendingChipOrdersCount} Pending | ₹${formatINR(totalChipVolume)} Delivered`}
+          suit="diamond"
         />
 
         <StatCard
           label="Active Tournaments"
           value={activeTournaments.length}
+
           icon={<Trophy size={22} color="#ffffff" />}
           helper={`${tournaments.length} Total Events in System`}
         />

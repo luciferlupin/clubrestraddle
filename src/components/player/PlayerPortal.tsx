@@ -21,6 +21,7 @@ import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceMo
 import { formatClubLabel, formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
+import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark } from '../common/PokerGraphics';
 
 type PlayerTab = 'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history';
 
@@ -236,12 +237,18 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {chipRequests.filter(r => r.playerId === currentPlayer.id).length === 0 ? (
-                    <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94a3b8' }}>
-                      <Coins size={36} style={{ opacity: 0.3, marginBottom: '8px' }} />
-                      <div style={{ color: '#ffffff', fontWeight: 600 }}>No Table Chip Orders Yet</div>
-                      <p style={{ fontSize: '0.8rem', marginTop: '4px' }}>
-                        Click "Request Chips Now" when seated at a cash game or tournament table.
+                    <div className="chip-empty-state">
+                      <PokerChipStack count={4} size={72} color="#e11d48" />
+                      <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '1rem' }}>No Table Chip Orders Yet</div>
+                      <p style={{ fontSize: '0.8rem', marginTop: '2px', color: '#94a3b8', maxWidth: '280px' }}>
+                        Click <strong style={{ color: '#fb7185' }}>"Request Chips Now"</strong> when seated at a cash game or tournament table.
                       </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', opacity: 0.5, marginTop: '4px' }}>
+                        <CardSuit suit="spade" size={14} color="#ffffff" />
+                        <CardSuit suit="heart" size={14} color="#e11d48" />
+                        <CardSuit suit="diamond" size={14} color="#e11d48" />
+                        <CardSuit suit="club" size={14} color="#ffffff" />
+                      </div>
                     </div>
                   ) : (
                     <div className="table-container">
@@ -332,14 +339,26 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '10px',
+                        position: 'relative',
+                        overflow: 'hidden',
                       }}
+                      className="tournament-felt-bg"
                     >
+                      {/* Ghost watermark suit per game type */}
+                      <SuitWatermark
+                        suit={t.name.toUpperCase().includes('PLO') || t.name.toUpperCase().includes('OMAHA') ? 'diamond' : t.name.toUpperCase().includes('HIGH') ? 'heart' : t.name.toUpperCase().includes('STRADDLE') ? 'club' : 'spade'}
+                        size={90}
+                        opacity={0.05}
+                        color="#ffffff"
+                        style={{ position: 'absolute', right: 10, bottom: -10 }}
+                      />
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                         <div>
-                          <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#ffffff' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 800, fontSize: '1.05rem', color: '#ffffff' }}>
+                            <GameTypeBadge gameType={t.name} size={17} />
                             {formatClubLabel(t.name)}
                           </div>
-                          <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                          <div style={{ fontSize: '0.78rem', color: '#cbd5e1', marginTop: '2px' }}>
                             Starts: {formatDateTime(t.startTime)} • Blinds: {t.blindLevelsMinutes} mins
                           </div>
                         </div>
@@ -357,20 +376,21 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
                         </div>
                         <div>
                           <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase' }}>Guaranteed Prize</span>
-                          <div style={{ fontWeight: 800, color: '#fb7185', fontSize: '0.95rem' }}>
+                          <div style={{ fontWeight: 800, color: '#fb7185', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <CardSuit suit="heart" size={12} color="#e11d48" />
                             {formatCurrency(t.guaranteedPrizePool)}
                           </div>
                         </div>
                         <div>
                           <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase' }}>Starting Stack</span>
-                          <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>
+                          <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <CardSuit suit="spade" size={12} color="#ffffff" />
                             {t.startingChips.toLocaleString()} Chips
                           </div>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  ))}                </div>
               </div>
             )}
 

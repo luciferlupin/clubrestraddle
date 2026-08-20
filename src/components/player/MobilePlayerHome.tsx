@@ -18,6 +18,7 @@ import { ChipRequest, DailyCheckIn, Player, Tournament, TournamentEntry } from '
 import { formatClubLabel, formatCurrency, formatDateTime, formatShortDateTime, formatTimeOnly } from '../../utils/formatters';
 import { EntryBadge, KYCBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
+import { GameTypeBadge, SuitWatermark, PokerChipStack, CardSuit } from '../common/PokerGraphics';
 
 interface MobilePlayerHomeProps {
   player: Player;
@@ -83,11 +84,17 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
 
   return (
     <div className="player-home-screen">
-      <header className="player-home-greeting">
+      <header className="player-home-greeting" style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* Ghost suit watermark behind greeting */}
+        <SuitWatermark suit="spade" size={110} opacity={0.05} color="#ffffff"
+          style={{ position: 'absolute', right: 48, top: -16, pointerEvents: 'none' }} />
         <div>
           <span className="mobile-flow-eyebrow">Welcome back</span>
           <h1>{player.fullName.split(' ')[0]}</h1>
-          <p>{player.membershipTier} member · {player.totalVisits} club visits</p>
+          <p style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <CardSuit suit="heart" size={12} color="#e11d48" />
+            {player.membershipTier} member · {player.totalVisits} club visits
+          </p>
         </div>
         <button type="button" className="player-avatar-button" onClick={onOpenProfile} aria-label="Open my profile">
           {player.kyc.photoUrl ? (
@@ -201,9 +208,12 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
           </div>
           <div className="player-event-scroller">
             {tournaments.map((tournament) => (
-              <article key={tournament.id} className="player-event-card">
+              <article key={tournament.id} className="player-event-card tournament-felt-bg">
                 <div className="player-event-topline">
-                  <span className="player-event-icon"><Trophy size={17} /></span>
+                  <span className="player-event-icon" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <GameTypeBadge gameType={tournament.name} size={15} />
+                    <Trophy size={14} />
+                  </span>
                   <span className={`badge ${tournament.status === 'Registering' ? 'badge-success' : tournament.status === 'Running' ? 'badge-danger' : 'badge-warning'}`}>
                     {tournament.status}
                   </span>
@@ -212,7 +222,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
                 <dl>
                   <div><dt>Starts</dt><dd>{formatShortDateTime(tournament.startTime)}</dd></div>
                   <div><dt>Buy-in</dt><dd>{formatCurrency(tournament.buyInFee + tournament.clubRake)}</dd></div>
-                  <div><dt>Guaranteed</dt><dd>{formatCurrency(tournament.guaranteedPrizePool)}</dd></div>
+                  <div><dt>Guaranteed</dt><dd style={{ color: '#fb7185' }}>{formatCurrency(tournament.guaranteedPrizePool)}</dd></div>
                 </dl>
               </article>
             ))}
