@@ -9,6 +9,10 @@ import {
   Trophy,
   Receipt,
   Coins,
+  CreditCard,
+  ChevronRight,
+  ArrowLeft,
+  Phone,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { KYCRegistrationForm } from './KYCRegistrationForm';
@@ -21,7 +25,7 @@ import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceMo
 import { formatClubLabel, formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
-import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark } from '../common/PokerGraphics';
+import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, FloatingChipsBackground, AnimatedSuitsRow } from '../common/PokerGraphics';
 
 type PlayerTab = 'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history';
 
@@ -46,6 +50,9 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
     lookupMemberByPhone,
   } = useClub();
   const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially || !currentPlayer);
+  const [entryView, setEntryView] = useState<'welcome' | 'lookup' | 'register'>(
+    showNewPlayerFormInitially ? 'register' : 'welcome'
+  );
   const [isChipModalOpen, setIsChipModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
   const [lookupPhone, setLookupPhone] = useState('');
@@ -75,9 +82,10 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
 
     if (matched) {
       setShowKYCForm(false);
+      setEntryView('welcome');
       setLookupPhone('');
     } else {
-      setLookupError('No registered member found with this mobile number or ID. Please complete KYC registration below.');
+      setLookupError('No registered member found with this mobile number. Register below or try again.');
     }
   };
 
@@ -92,10 +100,12 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
 
   return (
     <div className="desktop-portal desktop-player-portal">
+      {/* Portal header — hide on hero welcome to avoid double branding */}
+      {(currentPlayer || (!currentPlayer && entryView !== 'welcome')) && (
       <DesktopPortalHeader
         icon={<QrCode size={23} />}
-        eyebrow={currentPlayer ? 'Player portal' : 'Member registration'}
-        title={currentPlayer ? `${currentPlayer.fullName}'s member portal` : 'Create your Club Re Straddle profile'}
+        eyebrow={currentPlayer ? 'Player portal' : entryView === 'lookup' ? 'Existing member' : 'New registration'}
+        title={currentPlayer ? `${currentPlayer.fullName}'s member portal` : entryView === 'lookup' ? 'Open your player pass' : 'Create your Club Re Straddle profile'}
         subtitle={currentPlayer ? (
           <>Member <strong>{currentPlayer.id}</strong> · {currentPlayer.totalVisits} club visits</>
         ) : (
@@ -115,7 +125,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
           {currentPlayer && (
             <button
               className="btn btn-secondary"
-              onClick={() => setShowKYCForm(!showKYCForm)}
+              onClick={() => { setShowKYCForm(!showKYCForm); setEntryView('register'); }}
             >
               {showKYCForm ? (
                 <>
@@ -135,62 +145,214 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
           </>
         }
       />
+      )}
 
-      {/* If New Player or showKYCForm is active */}
+      {/* ── WELCOME / ENTRY STATE (no player yet, or re-register) ── */}
       {(!currentPlayer || showKYCForm) ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Returning Member Lookup Bar */}
-          <div
-            style={{
-              background: '#13080c',
-              border: '1px solid rgba(225, 29, 72, 0.3)',
-              borderRadius: '12px',
-              padding: '14px 18px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '12px',
-            }}
-          >
-            <div>
-              <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#ffffff' }}>
-                Already a registered club member?
-              </span>
-              <p style={{ fontSize: '0.76rem', color: '#94a3b8', margin: 0 }}>
-                Enter your mobile number to load your Digital Membership Pass onto this device.
-              </p>
-            </div>
 
-            <form onSubmit={handleLookupMember} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                className="form-input"
-                style={{ minWidth: '220px', padding: '6px 12px', fontSize: '0.82rem' }}
-                placeholder="Mobile number (e.g. 9810234891)"
-                value={lookupPhone}
-                onChange={e => setLookupPhone(e.target.value)}
-              />
-              <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '6px 14px' }} disabled={isLookingUp}>
-                <UserCheck size={14} /> {isLookingUp ? 'Searching...' : 'Find Pass'}
+        entryView === 'welcome' ? (
+          /* ─────────────────────────────────────────────────
+             HERO WELCOME SCREEN  (mirrors mobile first page)
+             ───────────────────────────────────────────────── */
+          <div style={{
+            minHeight: '72vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0',
+            position: 'relative',
+          }}>
+            {/* Floating chips in bg */}
+            <FloatingChipsBackground mode="absolute" opacity={0.10} chipCount={12} />
+
+            {/* Hero card */}
+            <div style={{
+              position: 'relative',
+              zIndex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0',
+              maxWidth: '480px',
+              width: '100%',
+              textAlign: 'center',
+              padding: '0 16px',
+            }}>
+              {/* Card fan hero */}
+              <div className="welcome-card-fan-hero" aria-hidden="true" style={{ marginBottom: '6px' }}>
+                <CardDeckFan size={200} />
+              </div>
+
+              {/* Animated suit strip */}
+              <div className="mobile-welcome-suits" aria-hidden="true" style={{ gap: '18px', marginBottom: '18px' }}>
+                <CardSuit suit="spade" size={26} color="#ffffff" className="suit-hover-anim" />
+                <CardSuit suit="heart" size={26} color="#e11d48" className="suit-hover-anim suit-delay-1" />
+                <CardSuit suit="diamond" size={26} color="#e11d48" className="suit-hover-anim suit-delay-2" />
+                <CardSuit suit="club" size={26} color="#ffffff" className="suit-hover-anim suit-delay-3" />
+              </div>
+
+              <span className="mobile-flow-eyebrow" style={{ marginBottom: '10px', fontSize: '0.78rem' }}>
+                Player access
+              </span>
+              <h1 style={{
+                fontSize: 'clamp(1.8rem, 3vw, 2.6rem)',
+                fontWeight: 900,
+                color: '#ffffff',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.15,
+                margin: '0 0 12px',
+              }}>
+                Welcome to the club
+              </h1>
+              <p style={{ fontSize: '1rem', color: '#94a3b8', margin: '0 0 24px', lineHeight: 1.55 }}>
+                Load your member pass or register for your first visit.
+              </p>
+
+              {/* Trust badges */}
+              <div className="mobile-trust-row" style={{ justifyContent: 'center', gap: '20px', marginBottom: '36px', flexWrap: 'wrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                  <CardSuit suit="spade" size={14} color="#ffffff" /> Members only
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                  <CardSuit suit="club" size={14} color="#ffffff" /> Secure KYC
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#e11d48' }}>
+                  <CardSuit suit="diamond" size={14} color="#e11d48" /> Under 2 min
+                </span>
+              </div>
+
+              {/* CTA buttons */}
+              <div className="mobile-start-options" style={{ width: '100%', maxWidth: '400px', gap: '12px' }}>
+                <button
+                  type="button"
+                  className="mobile-start-option primary"
+                  onClick={() => setEntryView('lookup')}
+                >
+                  <span className="mobile-start-icon"><CreditCard size={24} /></span>
+                  <span>
+                    <strong>I&apos;m already a member</strong>
+                    <small>Open my digital pass</small>
+                  </span>
+                  <ChevronRight size={22} aria-hidden="true" />
+                </button>
+
+                <button
+                  type="button"
+                  className="mobile-start-option"
+                  onClick={() => setEntryView('register')}
+                >
+                  <span className="mobile-start-icon"><UserPlus size={24} /></span>
+                  <span>
+                    <strong>I&apos;m new here</strong>
+                    <small>Create a pass and check in</small>
+                  </span>
+                  <ChevronRight size={22} aria-hidden="true" />
+                </button>
+              </div>
+
+              {/* QR shortcut */}
+              <button
+                type="button"
+                className="mobile-entrance-qr"
+                onClick={onOpenQR}
+                style={{ marginTop: '20px', maxWidth: '400px', width: '100%' }}
+              >
+                <QrCode size={18} /> Open the entrance registration QR
               </button>
-            </form>
+            </div>
           </div>
 
-          {lookupError && (
-            <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', padding: '10px 14px', borderRadius: '8px', color: '#fca5a5', fontSize: '0.8rem' }}>
-              {lookupError}
+        ) : entryView === 'lookup' ? (
+          /* ─────────────────────────────────────────────────
+             MEMBER LOOKUP (phone input)
+             ───────────────────────────────────────────────── */
+          <div style={{
+            maxWidth: '480px',
+            margin: '48px auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0',
+          }}>
+            <div className="mobile-flow-heading">
+              <button
+                type="button"
+                className="mobile-icon-button"
+                onClick={() => { setEntryView('welcome'); setLookupError(null); }}
+                aria-label="Back to welcome"
+              >
+                <ArrowLeft size={21} />
+              </button>
+              <div>
+                <span className="mobile-flow-eyebrow">Existing member</span>
+                <h1>Open your player pass</h1>
+                <p>Use the mobile number linked to your membership.</p>
+              </div>
             </div>
-          )}
 
-          <KYCRegistrationForm
-            onSuccess={() => {
-              setShowKYCForm(false);
-              onRegistrationFlowComplete?.();
-            }}
-            onCancel={currentPlayer ? () => setShowKYCForm(false) : undefined}
-          />
-        </div>
+            <form className="m-card mobile-lookup-card" onSubmit={handleLookupMember} noValidate>
+              <div className="m-form-group">
+                <label className="m-form-label" htmlFor="desktop-lookup-phone">Mobile number</label>
+                <div className="mobile-phone-field">
+                  <span aria-hidden="true">+91</span>
+                  <input
+                    id="desktop-lookup-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    className="m-input"
+                    placeholder="98765 43210"
+                    value={lookupPhone}
+                    aria-invalid={Boolean(lookupError)}
+                    aria-describedby={lookupError ? 'desktop-lookup-error' : undefined}
+                    onChange={(e) => { setLookupPhone(e.target.value); setLookupError(null); }}
+                  />
+                </div>
+                {lookupError && (
+                  <span id="desktop-lookup-error" className="m-field-error" role="alert">
+                    {lookupError}
+                  </span>
+                )}
+              </div>
+              <button type="submit" className="m-btn m-btn-primary" disabled={isLookingUp}>
+                <Phone size={18} /> {isLookingUp ? 'Finding your pass…' : 'Find my pass'}
+              </button>
+            </form>
+
+            <button
+              type="button"
+              className="mobile-secondary-link"
+              style={{ marginTop: '16px', textAlign: 'center' }}
+              onClick={() => { setEntryView('register'); setLookupError(null); }}
+            >
+              New to the club? Create a member pass <ChevronRight size={17} />
+            </button>
+          </div>
+
+        ) : (
+          /* ─────────────────────────────────────────────────
+             KYC REGISTRATION FORM
+             ───────────────────────────────────────────────── */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <button
+              type="button"
+              className="mobile-icon-button"
+              style={{ alignSelf: 'flex-start' }}
+              onClick={() => setEntryView(currentPlayer ? 'welcome' : 'welcome')}
+              aria-label="Back"
+            >
+              <ArrowLeft size={21} /> <span style={{ fontSize: '0.85rem', color: '#94a3b8', marginLeft: '4px' }}>Back</span>
+            </button>
+            <KYCRegistrationForm
+              onSuccess={() => {
+                setShowKYCForm(false);
+                setEntryView('welcome');
+                onRegistrationFlowComplete?.();
+              }}
+              onCancel={currentPlayer ? () => { setShowKYCForm(false); setEntryView('welcome'); } : undefined}
+            />
+          </div>
+        )
       ) : currentPlayer ? (
         <div className="desktop-player-layout">
           {/* Left Column: Digital Pass & Daily Check-in */}
