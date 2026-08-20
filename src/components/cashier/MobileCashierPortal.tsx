@@ -270,7 +270,35 @@ export const MobileCashierPortal: React.FC = () => {
   const selectedTournamentObj = tournaments.find(t => t.id === entryFormData.tournamentId);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+    <div className="staff-mobile-portal">
+
+      {/* ── Station Banner ─────────────────────────────────── */}
+      <div className="staff-station-banner">
+        <div className="staff-banner-left">
+          <span className="staff-banner-role">♦ Cashier Station</span>
+          <span className="staff-banner-name">{staffName}</span>
+        </div>
+        <div className="staff-banner-right">
+          {pendingChipOrdersCount > 0 && (
+            <span style={{
+              background: 'rgba(225,29,72,0.18)',
+              border: '1px solid rgba(225,29,72,0.5)',
+              borderRadius: '999px',
+              padding: '3px 8px',
+              fontSize: '0.68rem',
+              fontWeight: 800,
+              color: '#fca5a5',
+            }}>
+              {pendingChipOrdersCount} chip orders
+            </span>
+          )}
+          <span className="staff-live-dot cashier">On Duty</span>
+        </div>
+      </div>
+
+      {/* ── Scrollable content ─────────────────────────────── */}
+      <div className="staff-scroll-area">
+
       {/* TAB 1: MAIN CASHIER DASHBOARD */}
       {activeTab === 'dashboard' && (
         <>
@@ -398,39 +426,25 @@ export const MobileCashierPortal: React.FC = () => {
             )}
           </div>
 
-          {/* Quick Action Touch Buttons */}
-          <div className="m-card">
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Quick Cashier Actions
-            </span>
-
-            <div className="m-quick-grid">
-              <button type="button" className="m-quick-btn" onClick={() => setIsCashInOpen(true)}>
-                <div className="m-quick-icon-wrap" style={{ color: '#ffffff' }}>
-                  <ArrowDownLeft size={22} />
-                </div>
-                <span>Cash received</span>
+          {/* Quick Action Strip */}
+          <div>
+            <p className="staff-section-title">Quick Actions</p>
+            <div className="staff-quick-actions" style={{ marginTop: '8px' }}>
+              <button type="button" className="staff-quick-btn cash-in" onClick={() => setIsCashInOpen(true)}>
+                <div className="staff-quick-icon"><ArrowDownLeft size={20} /></div>
+                Cash Received
               </button>
-
-              <button type="button" className="m-quick-btn" onClick={() => setIsCashOutOpen(true)}>
-                <div className="m-quick-icon-wrap" style={{ color: '#e11d48' }}>
-                  <ArrowUpRight size={22} />
-                </div>
-                <span>Cash paid out</span>
+              <button type="button" className="staff-quick-btn cash-out" onClick={() => setIsCashOutOpen(true)}>
+                <div className="staff-quick-icon"><ArrowUpRight size={20} /></div>
+                Cash Paid Out
               </button>
-
-              <button type="button" className="m-quick-btn" onClick={() => setActiveTab('players')}>
-                <div className="m-quick-icon-wrap" style={{ color: '#ffffff' }}>
-                  <Users size={22} />
-                </div>
-                <span>Tournament entry</span>
+              <button type="button" className="staff-quick-btn entry" onClick={() => setActiveTab('players')}>
+                <div className="staff-quick-icon"><Users size={20} /></div>
+                Tourney Entry
               </button>
-
-              <button type="button" className="m-quick-btn" onClick={() => setIsCreateTrnOpen(true)}>
-                <div className="m-quick-icon-wrap" style={{ color: '#ffffff' }}>
-                  <Trophy size={22} />
-                </div>
-                <span>New tournament</span>
+              <button type="button" className="staff-quick-btn tourney" onClick={() => setIsCreateTrnOpen(true)}>
+                <div className="staff-quick-icon"><Trophy size={20} /></div>
+                New Tournament
               </button>
             </div>
           </div>
@@ -1168,6 +1182,8 @@ export const MobileCashierPortal: React.FC = () => {
           <span className="nav-tab-label">Vouchers</span>
         </button>
       </nav>
+
+      </div>{/* end staff-scroll-area */}
     </div>
   );
 };

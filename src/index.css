@@ -4668,3 +4668,254 @@ input[type="radio"] {
 .fchip-k { animation-name: fchip-k; }
 .fchip-l { animation-name: fchip-l; }
 
+/* =============================================================
+   STAFF PORTAL MOBILE UX — Cashier · Security · Admin
+   ============================================================= */
+
+/* ── Root portal layout ──────────────────────────────────────── */
+.staff-mobile-portal {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--header-height));
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Scrollable content zone — clears fixed bottom nav ───────── */
+.staff-scroll-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 16px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Station Banner ───────────────────────────────────────────── */
+.staff-station-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 16px;
+  background: linear-gradient(135deg, rgba(15,5,9,0.98) 0%, rgba(25,8,14,0.95) 100%);
+  border-bottom: 1px solid rgba(225,29,72,0.3);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.staff-banner-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.staff-banner-role {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+  color: #ffffff;
+}
+
+.staff-banner-name {
+  font-size: 1.0rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.staff-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.staff-live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #ffffff;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid;
+  letter-spacing: 0.02em;
+}
+
+/* Cashier — amber */
+.staff-live-dot.cashier {
+  background: rgba(245,158,11,0.14);
+  border-color: rgba(245,158,11,0.4);
+  color: #fbbf24;
+}
+.staff-live-dot.cashier::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245,158,11,0.9);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+/* Security — emerald */
+.staff-live-dot.security {
+  background: rgba(16,185,129,0.12);
+  border-color: rgba(16,185,129,0.35);
+  color: #34d399;
+}
+.staff-live-dot.security::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16,185,129,0.9);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+/* Admin — violet */
+.staff-live-dot.admin {
+  background: rgba(139,92,246,0.14);
+  border-color: rgba(139,92,246,0.35);
+  color: #a78bfa;
+}
+.staff-live-dot.admin::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #8b5cf6;
+  box-shadow: 0 0 6px rgba(139,92,246,0.9);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* ── Role-colour tints for active bottom nav tabs ────────────── */
+/* Cashier — amber active */
+.nav-tab-item.cashier-color.active { color: #fbbf24; }
+.nav-tab-item.cashier-color.active svg {
+  color: #f59e0b;
+  filter: drop-shadow(0 0 7px rgba(245,158,11,0.7));
+}
+
+/* Security — emerald active */
+.nav-tab-item.security-color.active { color: #34d399; }
+.nav-tab-item.security-color.active svg {
+  color: #10b981;
+  filter: drop-shadow(0 0 7px rgba(16,185,129,0.7));
+}
+
+/* Admin — violet active */
+.nav-tab-item.admin-color.active { color: #a78bfa; }
+.nav-tab-item.admin-color.active svg {
+  color: #8b5cf6;
+  filter: drop-shadow(0 0 7px rgba(139,92,246,0.7));
+}
+
+/* ── Section title divider ───────────────────────────────────── */
+.staff-section-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  padding: 2px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.staff-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+}
+
+/* ── Quick action grid ───────────────────────────────────────── */
+.staff-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.staff-quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 16px 12px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 82px;
+}
+
+.staff-quick-btn:active { transform: scale(0.94); }
+
+.staff-quick-btn:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.15);
+}
+
+.staff-quick-icon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Cashier quick btn colours */
+.staff-quick-btn.cash-in  .staff-quick-icon { background: rgba(16,185,129,0.18); color: #34d399; }
+.staff-quick-btn.cash-out .staff-quick-icon { background: rgba(239,68,68,0.15);  color: #fca5a5; }
+.staff-quick-btn.entry    .staff-quick-icon { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.staff-quick-btn.tourney  .staff-quick-icon { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+.staff-quick-btn.expense  .staff-quick-icon { background: rgba(239,68,68,0.15);  color: #fca5a5; }
+.staff-quick-btn.kyc      .staff-quick-icon { background: rgba(139,92,246,0.15); color: #c4b5fd; }
+.staff-quick-btn.chips    .staff-quick-icon { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.staff-quick-btn.records  .staff-quick-icon { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+
+/* ── KPI stat grid (2-up) ─────────────────────────────────────── */
+/* Already have m-stats-grid; add role-coloured border helpers */
+.stat-cashier { border-color: rgba(245,158,11,0.4) !important; }
+.stat-security { border-color: rgba(16,185,129,0.4) !important; }
+.stat-admin   { border-color: rgba(139,92,246,0.4) !important; }
+
+/* ── Pending badge on nav tab ─────────────────────────────────── */
+.nav-badge {
+  position: absolute;
+  top: 6px; right: 50%;
+  transform: translateX(8px);
+  min-width: 16px; height: 16px;
+  background: #e11d48;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 0 6px rgba(225,29,72,0.7);
+}
+
+

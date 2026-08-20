@@ -22,6 +22,7 @@ import { StaffManager } from './StaffManager';
 
 export const MobileAdminPortal: React.FC = () => {
   const {
+    staffName,
     players,
     todayCheckIns,
     checkIns,
@@ -74,7 +75,35 @@ export const MobileAdminPortal: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+    <div className="staff-mobile-portal">
+
+      {/* ── Station Banner ─────────────────────────────────── */}
+      <div className="staff-station-banner">
+        <div className="staff-banner-left">
+          <span className="staff-banner-role">♥ Admin Command Centre</span>
+          <span className="staff-banner-name">{staffName}</span>
+        </div>
+        <div className="staff-banner-right">
+          {pendingChipOrdersCount > 0 && (
+            <span style={{
+              background: 'rgba(225,29,72,0.18)',
+              border: '1px solid rgba(225,29,72,0.5)',
+              borderRadius: '999px',
+              padding: '3px 8px',
+              fontSize: '0.68rem',
+              fontWeight: 800,
+              color: '#fca5a5',
+            }}>
+              {pendingChipOrdersCount} chip orders
+            </span>
+          )}
+          <span className="staff-live-dot admin">Command</span>
+        </div>
+      </div>
+
+      {/* ── Scrollable content ─────────────────────────────── */}
+      <div className="staff-scroll-area">
+
       {/* TAB 1: EXECUTIVE DASHBOARD & TIMELINE */}
       {activeTab === 'dashboard' && (
         <>
@@ -112,6 +141,29 @@ export const MobileAdminPortal: React.FC = () => {
                 {formatCurrency(currentCashBalance)}
               </span>
               <span className="m-stat-sub">Live Drawer Float</span>
+            </div>
+          </div>
+
+          {/* Quick Admin Actions */}
+          <div>
+            <p className="staff-section-title">Quick Actions</p>
+            <div className="staff-quick-actions" style={{ marginTop: '8px' }}>
+              <button type="button" className="staff-quick-btn expense" onClick={() => setIsAddExpenseOpen(true)}>
+                <div className="staff-quick-icon"><Plus size={20} /></div>
+                Add Expense
+              </button>
+              <button type="button" className="staff-quick-btn kyc" onClick={() => setActiveTab('players')}>
+                <div className="staff-quick-icon"><ShieldCheck size={20} /></div>
+                Verify KYC
+              </button>
+              <button type="button" className="staff-quick-btn entry" onClick={() => setActiveTab('players')}>
+                <div className="staff-quick-icon"><Users size={20} /></div>
+                Players
+              </button>
+              <button type="button" className="staff-quick-btn records" onClick={() => setActiveTab('attendance')}>
+                <div className="staff-quick-icon"><CheckCircle2 size={20} /></div>
+                Attendance
+              </button>
             </div>
           </div>
 
@@ -542,6 +594,8 @@ export const MobileAdminPortal: React.FC = () => {
           <span className="nav-tab-label">More</span>
         </button>
       </nav>
+
+      </div>{/* end staff-scroll-area */}
     </div>
   );
 };

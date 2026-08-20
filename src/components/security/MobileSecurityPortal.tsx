@@ -116,7 +116,35 @@ export const MobileSecurityPortal: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+    <div className="staff-mobile-portal">
+
+      {/* ── Station Banner ─────────────────────────────────── */}
+      <div className="staff-station-banner">
+        <div className="staff-banner-left">
+          <span className="staff-banner-role">♣ Door Security</span>
+          <span className="staff-banner-name">{staffName}</span>
+        </div>
+        <div className="staff-banner-right">
+          {pendingCheckIns.length > 0 && (
+            <span style={{
+              background: 'rgba(225,29,72,0.18)',
+              border: '1px solid rgba(225,29,72,0.5)',
+              borderRadius: '999px',
+              padding: '3px 8px',
+              fontSize: '0.68rem',
+              fontWeight: 800,
+              color: '#fca5a5',
+            }}>
+              {pendingCheckIns.length} waiting
+            </span>
+          )}
+          <span className="staff-live-dot security">On Post</span>
+        </div>
+      </div>
+
+      {/* ── Scrollable content ─────────────────────────────── */}
+      <div className="staff-scroll-area">
+
       {/* Toast Notification */}
       {verificationSuccessToast && (
         <div
@@ -575,6 +603,8 @@ export const MobileSecurityPortal: React.FC = () => {
           <span className="nav-tab-label">Approved ({approvedCheckIns.length})</span>
         </button>
       </nav>
+
+      </div>{/* end staff-scroll-area */}
     </div>
   );
 };
