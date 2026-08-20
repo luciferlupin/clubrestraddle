@@ -19,6 +19,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
   const {
     activeRole,
     setActiveRole,
+    currentPlayer,
     players,
     selectedPlayerId,
     setSelectedPlayerId,
@@ -143,33 +144,41 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
         {/* Header Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {isPlayerMode ? (
-            /* Player Profile Selector */
-            players.length > 0 ? (
-              <select
-                className="form-select"
+            /* Active Member Profile Badge (Only when registered / loaded) */
+            currentPlayer ? (
+              <div
                 style={{
-                  padding: '7px 34px 7px 12px',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  width: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
                   background: '#16080d',
+                  padding: '5px 12px',
                   borderRadius: '10px',
-                  border: '1.5px solid rgba(225, 29, 72, 0.45)',
-                  color: '#ffffff',
-                  minHeight: '36px',
+                  border: '1.5px solid rgba(225, 29, 72, 0.4)',
                 }}
-                value={selectedPlayerId}
-                onChange={e => setSelectedPlayerId(e.target.value)}
-                aria-label="Switch Active Member"
               >
-                <optgroup label="Member Profile:">
-                  {players.map(p => (
-                    <option key={p.id} value={p.id}>
-                      👤 {p.fullName} ({p.membershipTier})
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
+                <span style={{ color: '#ffffff', fontWeight: 700, fontSize: '0.82rem' }}>
+                  👤 {currentPlayer.fullName}
+                </span>
+                <span style={{ fontSize: '0.68rem', color: '#fda4af', background: 'rgba(225,29,72,0.25)', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                  {currentPlayer.membershipTier}
+                </span>
+                <button
+                  onClick={() => setSelectedPlayerId('')}
+                  title="Switch to another player or register new"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    textDecoration: 'underline',
+                    padding: '0 2px',
+                  }}
+                >
+                  Change
+                </button>
+              </div>
             ) : null
           ) : currentStaffUser ? (
             /* Staff Session Info */

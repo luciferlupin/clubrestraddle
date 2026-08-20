@@ -522,7 +522,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Derived Calculations
   const currentPlayer = useMemo(() => {
-    return players.find(p => p.id === selectedPlayerId) || players[0];
+    if (!selectedPlayerId) return undefined;
+    return players.find(p => p.id === selectedPlayerId);
   }, [players, selectedPlayerId]);
 
   const today = getTodayDateString();

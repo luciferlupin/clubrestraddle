@@ -39,6 +39,8 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
 }) => {
   const {
     currentPlayer,
+    setSelectedPlayerId,
+    players,
     checkIns,
     tournaments,
     entries,
@@ -47,18 +49,20 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<'home' | 'history' | 'profile' | 'new_kyc'>(
-    showNewPlayerFormInitially ? 'new_kyc' : 'home'
+    (!currentPlayer || showNewPlayerFormInitially) ? 'new_kyc' : 'home'
   );
+  const [lookupPhone, setLookupPhone] = useState('');
+  const [lookupError, setLookupError] = useState<string | null>(null);
   const [tablePref, setTablePref] = useState('NLH Cash Game (₹250/₹500)');
   const [checkingIn, setCheckingIn] = useState(false);
   const [registrationSuccessData, setRegistrationSuccessData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
   const [isCheckInSuccessOpen, setIsCheckInSuccessOpen] = useState(false);
 
   useEffect(() => {
-    if (showNewPlayerFormInitially) {
+    if (showNewPlayerFormInitially || !currentPlayer) {
       setActiveTab('new_kyc');
     }
-  }, [showNewPlayerFormInitially]);
+  }, [showNewPlayerFormInitially, currentPlayer]);
 
   const todayCheckIn = currentPlayer ? hasPlayerCheckedInToday(currentPlayer.id) : undefined;
   const isCheckedIn = !!todayCheckIn;
@@ -66,6 +70,26 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   const playerCheckIns = currentPlayer
     ? checkIns.filter(c => c.playerId === currentPlayer.id)
     : [];
+
+  const handleLookupMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLookupError(null);
+    const cleanPhone = lookupPhone.trim().replace(/[\s\-\(\)]/g, '');
+    if (!cleanPhone) return;
+
+    const matched = players.find(p => {
+      const pPhone = p.phone.replace(/[\s\-\(\)]/g, '');
+      return pPhone.includes(cleanPhone) || p.id.toLowerCase() === cleanPhone.toLowerCase();
+    });
+
+    if (matched) {
+      setSelectedPlayerId(matched.id);
+      setActiveTab('home');
+      setLookupPhone('');
+    } else {
+      setLookupError('No member found with this mobile number. Please fill out the KYC registration below.');
+    }
+  };
 
   const handleDailyCheckIn = () => {
     if (!currentPlayer) return;
@@ -103,11 +127,41 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
             setActiveTab('home');
           }}
         />
-      ) : activeTab === 'new_kyc' ? (
-        <MobileKYCForm
-          onSuccess={handleKYCSuccess}
-          onCancel={() => setActiveTab('home')}
-        />
+      ) : (!currentPlayer || activeTab === 'new_kyc') ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Member Lookup Bar */}
+          <div className="m-card">
+            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ffffff' }}>
+              Already registered?
+            </span>
+            <p style={{ fontSize: '0.74rem', color: '#94a3b8', margin: '2px 0 8px' }}>
+              Enter your mobile number to load your digital pass:
+            </p>
+            <form onSubmit={handleLookupMember} style={{ display: 'flex', gap: '6px' }}>
+              <input
+                type="text"
+                className="m-input"
+                style={{ flex: 1, padding: '8px 10px', fontSize: '0.82rem' }}
+                placeholder="Mobile number (e.g. 9810234891)"
+                value={lookupPhone}
+                onChange={e => setLookupPhone(e.target.value)}
+              />
+              <button type="submit" className="m-btn m-btn-secondary m-btn-sm" style={{ width: 'auto' }}>
+                Load
+              </button>
+            </form>
+            {lookupError && (
+              <div style={{ color: '#fca5a5', fontSize: '0.72rem', marginTop: '6px' }}>
+                {lookupError}
+              </div>
+            )}
+          </div>
+
+          <MobileKYCForm
+            onSuccess={handleKYCSuccess}
+            onCancel={currentPlayer ? () => setActiveTab('home') : undefined}
+          />
+        </div>
       ) : currentPlayer ? (
         <>
           {/* TAB 1: HOME & DIGITAL PASS */}

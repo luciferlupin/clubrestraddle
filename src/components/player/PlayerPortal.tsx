@@ -30,15 +30,17 @@ interface PlayerPortalProps {
 }
 
 export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPlayerFormInitially = false }) => {
-  const { currentPlayer, checkIns, tournaments, entries, hasPlayerCheckedInToday } = useClub();
+  const { currentPlayer, setSelectedPlayerId, players, checkIns, tournaments, entries, hasPlayerCheckedInToday } = useClub();
   const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially);
+  const [lookupPhone, setLookupPhone] = useState('');
+  const [lookupError, setLookupError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'pass' | 'tournaments' | 'billing' | 'profile' | 'history'>('pass');
 
   useEffect(() => {
-    if (showNewPlayerFormInitially) {
+    if (showNewPlayerFormInitially || !currentPlayer) {
       setShowKYCForm(true);
     }
-  }, [showNewPlayerFormInitially]);
+  }, [showNewPlayerFormInitially, currentPlayer]);
 
   const playerCheckIns = currentPlayer
     ? checkIns.filter(c => c.playerId === currentPlayer.id)
@@ -50,9 +52,29 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
 
   const todayCheckIn = currentPlayer ? hasPlayerCheckedInToday(currentPlayer.id) : undefined;
 
+  const handleLookupMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLookupError(null);
+    const cleanPhone = lookupPhone.trim().replace(/[\s\-\(\)]/g, '');
+    if (!cleanPhone) return;
+
+    const matched = players.find(p => {
+      const pPhone = p.phone.replace(/[\s\-\(\)]/g, '');
+      return pPhone.includes(cleanPhone) || p.id.toLowerCase() === cleanPhone.toLowerCase();
+    });
+
+    if (matched) {
+      setSelectedPlayerId(matched.id);
+      setShowKYCForm(false);
+      setLookupPhone('');
+    } else {
+      setLookupError('No registered member found with this mobile number or ID. Please complete KYC registration.');
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Banner with Quick Actions & Daily Rules */}
+      {/* Top Banner with Quick Actions */}
       <div
         style={{
           background: 'linear-gradient(155deg, #130a0e 0%, #090608 100%)',
@@ -85,45 +107,94 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '1rem', color: '#ffffff' }}>
-              {currentPlayer ? `${currentPlayer.fullName}'s Dashboard` : 'Player Portal • Daily Club Entry'}
+              {currentPlayer ? `${currentPlayer.fullName}'s Member Portal` : 'Club Re Straddle • Member Registration'}
             </div>
             <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
               {currentPlayer ? (
                 <>Member ID: <strong style={{ color: '#ffffff' }}>{currentPlayer.id}</strong> • Total Visits: <strong style={{ color: '#ffffff' }}>{currentPlayer.totalVisits}</strong></>
               ) : (
-                <>New player → Complete KYC. Registered member → Daily door check-in.</>
+                <>First-time guest? Complete KYC below to generate your Digital Pass.</>
               )}
             </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            className={`btn ${showKYCForm ? 'btn-secondary' : 'btn-primary'}`}
-            onClick={() => setShowKYCForm(!showKYCForm)}
-          >
-            {showKYCForm ? (
-              <>
-                <UserCheck size={16} /> View Member Dashboard
-              </>
-            ) : (
-              <>
-                <UserPlus size={16} /> Register New Player (KYC)
-              </>
-            )}
-          </button>
+          {currentPlayer && (
+            <button
+              className={`btn ${showKYCForm ? 'btn-secondary' : 'btn-primary'}`}
+              onClick={() => setShowKYCForm(!showKYCForm)}
+            >
+              {showKYCForm ? (
+                <>
+                  <UserCheck size={16} /> View My Dashboard
+                </>
+              ) : (
+                <>
+                  <UserPlus size={16} /> Register Another Member (KYC)
+                </>
+              )}
+            </button>
+          )}
 
           <button className="btn btn-secondary btn-sm" onClick={onOpenQR} title="Entrance QR Standee">
-            <QrCode size={16} color="#ffffff" /> Entrance QR
+            <QrCode size={16} color="#ffffff" /> Entrance Standee QR
           </button>
         </div>
       </div>
 
-      {showKYCForm ? (
-        <KYCRegistrationForm
-          onSuccess={() => setShowKYCForm(false)}
-          onCancel={() => setShowKYCForm(false)}
-        />
+      {/* If New Player or showKYCForm is active */}
+      {(!currentPlayer || showKYCForm) ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Returning Member Lookup Bar */}
+          <div
+            style={{
+              background: '#13080c',
+              border: '1px solid rgba(225, 29, 72, 0.3)',
+              borderRadius: '12px',
+              padding: '14px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div>
+              <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#ffffff' }}>
+                Already a registered club member?
+              </span>
+              <p style={{ fontSize: '0.76rem', color: '#94a3b8', margin: 0 }}>
+                Enter your mobile number to load your Digital Membership Pass onto this device.
+              </p>
+            </div>
+
+            <form onSubmit={handleLookupMember} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                className="form-input"
+                style={{ minWidth: '220px', padding: '6px 12px', fontSize: '0.82rem' }}
+                placeholder="Mobile number (e.g. 9810234891)"
+                value={lookupPhone}
+                onChange={e => setLookupPhone(e.target.value)}
+              />
+              <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '6px 14px' }}>
+                <UserCheck size={14} /> Find Pass
+              </button>
+            </form>
+          </div>
+
+          {lookupError && (
+            <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', padding: '10px 14px', borderRadius: '8px', color: '#fca5a5', fontSize: '0.8rem' }}>
+              {lookupError}
+            </div>
+          )}
+
+          <KYCRegistrationForm
+            onSuccess={() => setShowKYCForm(false)}
+            onCancel={currentPlayer ? () => setShowKYCForm(false) : undefined}
+          />
+        </div>
       ) : currentPlayer ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 380px) 1fr', gap: '20px' }}>
           {/* Left Column: Digital Pass & Daily Check-in */}

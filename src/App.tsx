@@ -188,31 +188,17 @@ const MainApp: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ color: '#ffffff' }}>♠</span>
-          <span style={{ fontWeight: 700, color: '#ffffff' }}>CLUB RE STRADDLE • Luxury Poker Lounge</span>
+          <span style={{ fontWeight: 700, color: '#ffffff' }}>
+            {isPlayerMode ? 'CLUB RE STRADDLE • Luxury Poker Lounge & Member Club' : 'CLUB RE STRADDLE • Staff Operations OS'}
+          </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.74rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.74rem', color: '#94a3b8' }}>
           {isPlayerMode ? (
-            <button
-              onClick={() => setActiveRole('admin')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#64748b',
-                cursor: 'pointer',
-                fontSize: '0.72rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                transition: 'color 0.2s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#fda4af')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}
-              title="Authorized staff sign-in"
-            >
-              🔒 Staff Operations Terminal
-            </button>
+            <>
+              <span>Members Only • 21+ Required</span>
+              <span>•</span>
+              <span>Responsible Gaming</span>
+            </>
           ) : (
             <button
               onClick={() => setActiveRole('player')}
@@ -226,7 +212,7 @@ const MainApp: React.FC = () => {
                 borderRadius: '6px',
               }}
             >
-              👤 Exit to Member Portal
+              👤 Exit Staff Station
             </button>
           )}
         </div>
