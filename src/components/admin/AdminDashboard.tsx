@@ -3,14 +3,12 @@ import {
   Users,
   CheckCircle2,
   Trophy,
-  DollarSign,
-  Receipt,
-  Wallet,
   ShieldCheck,
   Coins,
+  UserCheck,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
+import { formatDateTime, formatINR } from '../../utils/formatters';
 import { SuitWatermark } from '../common/PokerGraphics';
 
 interface AdminDashboardProps {
@@ -53,35 +51,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
     chipRequests,
     pendingChipOrdersCount,
     auditLogs,
-    currentCashBalance,
-    totalExpensesAmount,
   } = useClub();
 
   const activeTournaments = tournaments.filter(t => t.status === 'Registering' || t.status === 'Running');
   const approvedToday = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
+  const verifiedPlayersCount = players.filter(p => p.kycStatus === 'verified').length;
   const deliveredChipOrders = chipRequests.filter(r => r.status === 'delivered');
   const totalChipVolume = deliveredChipOrders.reduce((sum, r) => sum + r.amount, 0);
 
-  const netTreasuryBalance = currentCashBalance - totalExpensesAmount;
-
-  // Recent Cashier & Security activity
-  const cashierActivities = auditLogs
-    .filter(l => l.portal === 'Cashier')
-    .slice(0, 5);
+  // Operational activity logs (Security & Attendance, excluding cash amounts)
+  const operationsLogs = auditLogs
+    .filter(l => l.portal === 'Security' || l.portal === 'Admin')
+    .slice(0, 6);
 
   const securityActivities = auditLogs
     .filter(l => l.portal === 'Security')
-    .slice(0, 5);
+    .slice(0, 6);
 
   return (
     <div className="admin-dashboard">
-      {/* Top Required Admin Dashboard Metrics */}
+      {/* Top Admin Dashboard Operational Metrics (Zero Cash Exposed on Main Dashboard) */}
       <div className="stats-grid admin-kpi-grid">
         <StatCard
           label="Total Registered Players"
           value={players.length}
           icon={<Users size={22} color="#ffffff" />}
-          helper={`${players.filter(p => p.kycStatus === 'verified').length} KYC Verified`}
+          helper={`${verifiedPlayersCount} KYC Verified`}
           suit="spade"
         />
 
@@ -104,33 +99,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         <StatCard
           label="Active Tournaments"
           value={activeTournaments.length}
-
           icon={<Trophy size={22} color="#ffffff" />}
           helper={`${tournaments.length} Total Events in System`}
+          suit="club"
         />
 
         <StatCard
-          label="Cash Balance (Vault)"
-          value={formatCurrency(currentCashBalance)}
-          icon={<Wallet size={22} color="#ffffff" />}
-          helper="Live Cashier Drawer Float"
+          label="KYC Verified Members"
+          value={verifiedPlayersCount}
+          icon={<UserCheck size={22} color="#ffffff" />}
+          helper="Approved Identity Profiles"
+          suit="spade"
         />
 
         <StatCard
-          label="Total Club Expenses"
-          value={formatCurrency(totalExpensesAmount)}
-          icon={<Receipt size={22} color="#ffffff" />}
-          helper="Operating Costs Recorded"
+          label="Club Access Queue"
+          value={todayCheckIns.filter(c => c.verificationStatus === 'pending').length}
+          icon={<ShieldCheck size={22} color="#ffffff" />}
+          helper="Awaiting Door Clearance"
+          suit="heart"
         />
       </div>
 
-      {/* Financial Health Summary Banner */}
+      {/* Operations Quick-Access Bar */}
       <div
         style={{
           background: 'linear-gradient(155deg, #110406 0%, #080203 100%)',
-          border: '1px solid rgba(139, 0, 0, 0.5)',
+          border: '1px solid rgba(139, 0, 0, 0.45)',
           borderRadius: '18px',
-          padding: '22px 26px',
+          padding: '20px 24px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -142,50 +139,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
       >
         <div>
           <div style={{ fontSize: '0.78rem', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
-            Treasury & Net Business Cash Balance
+            Operational Control Desk
           </div>
-          <div style={{ fontSize: '1.85rem', fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-number)', marginTop: '2px' }}>
-            {formatCurrency(netTreasuryBalance)}
+          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', marginTop: '2px' }}>
+            Club Operations & Member Management
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#fca5a5', marginTop: '2px' }}>
-            Reconciliation: {formatCurrency(currentCashBalance)} Cashier Float − {formatCurrency(totalExpensesAmount)} Expenses
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+            Manage staff, players, attendance records, and live tournament events
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => onNavigateTab('cash')}>
-            <DollarSign size={14} /> View Cash Ledger
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button className="btn btn-secondary btn-sm" onClick={() => onNavigateTab('players')}>
+            <Users size={14} /> Member Directory
           </button>
-          <button className="btn btn-primary btn-sm" onClick={() => onNavigateTab('expenses')}>
-            <Receipt size={14} /> Manage Expenses
+          <button className="btn btn-secondary btn-sm" onClick={() => onNavigateTab('attendance')}>
+            <CheckCircle2 size={14} /> Attendance Logs
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => onNavigateTab('tournaments')}>
+            <Trophy size={14} /> Tournament Events
           </button>
         </div>
       </div>
 
-      {/* 2-Column Feeds: Live Cashier Activity & Live Security Activity */}
+      {/* 2-Column Feeds: Live Operations Activity & Live Security Activity */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
-        {/* Cashier Activity Feed */}
+        {/* Operations Activity Feed */}
         <div className="card">
           <div className="card-header">
             <div>
               <h3 className="card-title">
-                <DollarSign size={18} color="#e11d48" />
-                Live Cashier Activity
+                <ShieldCheck size={18} color="#e11d48" />
+                Live Club Operations
               </h3>
-              <p className="card-subtitle">Recent buy-ins, payouts, and cash transactions</p>
+              <p className="card-subtitle">Recent system, staff, and member verification events</p>
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={() => onNavigateTab('cash')}>
-              View All
+            <button className="btn btn-ghost btn-sm" onClick={() => onNavigateTab('audit')}>
+              Full Audit Log
             </button>
           </div>
 
-          {cashierActivities.length === 0 ? (
+          {operationsLogs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-dim)' }}>
-              No recent cashier events.
+              No recent operations events.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {cashierActivities.map(log => (
+              {operationsLogs.map(log => (
                 <div
                   key={log.id}
                   style={{
@@ -206,11 +206,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                       {formatDateTime(log.timestamp)}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#ffffff' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
                     {log.details}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#fca5a5' }}>
-                    By: <strong>{log.user}</strong>
+                    By: <strong>{log.user}</strong> ({log.portal})
                   </div>
                 </div>
               ))}
@@ -224,12 +224,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
             <div>
               <h3 className="card-title">
                 <ShieldCheck size={18} color="#e11d48" />
-                Live Security Activity
+                Live Door & Entrance Activity
               </h3>
               <p className="card-subtitle">Recent entry approvals, rejections, and KYC verifications</p>
             </div>
             <button className="btn btn-ghost btn-sm" onClick={() => onNavigateTab('attendance')}>
-              View All
+              View Attendance
             </button>
           </div>
 
@@ -275,3 +275,4 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
     </div>
   );
 };
+

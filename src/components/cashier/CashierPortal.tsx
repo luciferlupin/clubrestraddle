@@ -21,7 +21,43 @@ type CashierTab = 'chip-orders' | 'tournaments' | 'register' | 'cash' | 'billing
 
 export const CashierPortal: React.FC = () => {
   const { staffName, tournaments, pendingChipOrdersCount } = useClub();
-  const [activeTab, setActiveTab] = useState<CashierTab>('chip-orders');
+  
+  // Read initial tab from URL query params or path (e.g. ?tab=cash or ?portal=cashier&tab=cash)
+  const [activeTab, setActiveTabState] = useState<CashierTab>(() => {
+    if (typeof window === 'undefined') return 'chip-orders';
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = (params.get('tab') || params.get('view') || '').toLowerCase();
+    const pathname = window.location.pathname.toLowerCase();
+    
+    if (tabParam === 'cash' || tabParam === 'drawer' || pathname.includes('/cash')) {
+      return 'cash';
+    }
+    if (tabParam === 'tournaments' || tabParam === 'events' || pathname.includes('/tournaments')) {
+      return 'tournaments';
+    }
+    if (tabParam === 'register' || tabParam === 'entry') {
+      return 'register';
+    }
+    if (tabParam === 'billing' || tabParam === 'vouchers') {
+      return 'billing';
+    }
+    return 'chip-orders';
+  });
+
+  const setActiveTab = (tab: CashierTab) => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('portal', 'cashier');
+      if (tab === 'chip-orders') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
   const [selectedTournamentForReg, setSelectedTournamentForReg] = useState<string | undefined>(undefined);
 
   const handleStartRegister = (tournamentId: string) => {

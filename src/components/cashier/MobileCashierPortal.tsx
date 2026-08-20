@@ -44,9 +44,38 @@ export const MobileCashierPortal: React.FC = () => {
     addCashGiven,
     addExpense,
     hasPlayerCheckedInToday,
+    todayCheckIns,
   } = useClub();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash' | 'records'>('dashboard');
+  const [activeTab, setActiveTabState] = useState<'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash' | 'records'>(() => {
+    if (typeof window === 'undefined') return 'dashboard';
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = (params.get('tab') || params.get('view') || '').toLowerCase();
+    
+    if (tabParam === 'cash' || tabParam === 'drawer' || tabParam === 'treasury') {
+      return 'cash';
+    }
+    if (tabParam === 'chips' || tabParam === 'chip-orders') return 'chips';
+    if (tabParam === 'players' || tabParam === 'entries' || tabParam === 'entry') return 'players';
+    if (tabParam === 'tournaments' || tabParam === 'events') return 'tournaments';
+    if (tabParam === 'records' || tabParam === 'vouchers' || tabParam === 'billing') return 'records';
+    
+    return 'dashboard';
+  });
+
+  const setActiveTab = (tab: 'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash' | 'records') => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('portal', 'cashier');
+      if (tab === 'dashboard') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
 
   // Modals / Drawers State
   const [isCashInOpen, setIsCashInOpen] = useState(false);
@@ -102,6 +131,7 @@ export const MobileCashierPortal: React.FC = () => {
   });
 
   const activeTournaments = tournaments.filter(t => t.status === 'Registering' || t.status === 'Running');
+  const approvedTodayCount = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
 
   // Submit Handlers
   const handleCreateTournament = (e: React.FormEvent) => {
@@ -138,13 +168,11 @@ export const MobileCashierPortal: React.FC = () => {
     e.preventDefault();
     if (!entryFormData.tournamentId || !entryFormData.playerId) return;
 
-    const ref = entryFormData.paymentRef.trim() || `TXN-${Math.floor(100000 + Math.random() * 900000)}`;
-
     const entry = registerPlayerForTournament({
       tournamentId: entryFormData.tournamentId,
       playerId: entryFormData.playerId,
       paymentMethod: entryFormData.paymentMethod,
-      paymentReference: ref,
+      paymentReference: entryFormData.paymentRef.trim() || `TXN-${Math.floor(100000 + Math.random() * 900000)}`,
       tableNumber: entryFormData.tableNum,
       seatNumber: entryFormData.seatNum,
     });
@@ -187,13 +215,12 @@ export const MobileCashierPortal: React.FC = () => {
 
     setSelectedInvoice(invoiceData);
     setEntryFormData(prev => ({ ...prev, paymentRef: '' }));
-
     try {
       confetti({
-        particleCount: 50,
-        spread: 60,
+        particleCount: 70,
+        spread: 70,
         origin: { y: 0.6 },
-        colors: ['#e11d48', '#ffffff', '#f43f5e', '#be123c'],
+        colors: ['#e11d48', '#fbbf24', '#ffffff'],
       });
     } catch {
       // Fallback
@@ -299,43 +326,43 @@ export const MobileCashierPortal: React.FC = () => {
       {/* ── Scrollable content ─────────────────────────────── */}
       <div className="staff-scroll-area">
 
-      {/* TAB 1: MAIN CASHIER DASHBOARD */}
+      {/* TAB 1: MAIN CASHIER DASHBOARD (Zero Cash on Main Dashboard) */}
       {activeTab === 'dashboard' && (
         <>
-          {/* Top KPI Cards */}
+          {/* Top Operational KPI Cards */}
           <div className="m-stats-grid">
-            <div className="m-stat-card" style={{ borderColor: 'var(--border-gold)' }}>
-              <span className="m-stat-label">Current Cash Balance</span>
-              <span className="m-stat-val" style={{ color: 'var(--gold-light)' }}>
-                {formatCurrency(currentCashBalance)}
+            <div className="m-stat-card" style={{ borderColor: 'var(--border-red)' }}>
+              <span className="m-stat-label">Table Chip Orders</span>
+              <span className="m-stat-val" style={{ color: '#ffffff' }}>
+                {chipRequests.length}
               </span>
-              <span className="m-stat-sub">Physical Drawer Vault Float</span>
+              <span className="m-stat-sub">{pendingChipOrdersCount} Pending Dispatch</span>
             </div>
 
-            <div className="m-stat-card">
-              <span className="m-stat-label">Today's Collection</span>
+            <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.35)' }}>
+              <span className="m-stat-label">Active Events</span>
               <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                +{formatCurrency(totalCashInAmount)}
+                {activeTournaments.length}
               </span>
-              <span className="m-stat-sub">Total Cash In Received</span>
+              <span className="m-stat-sub">Live & Registering</span>
             </div>
           </div>
 
           <div className="m-stats-grid">
             <div className="m-stat-card">
-              <span className="m-stat-label">Total Payouts (Out)</span>
-              <span className="m-stat-val" style={{ color: '#fca5a5' }}>
-                -{formatCurrency(totalCashOutAmount)}
+              <span className="m-stat-label">Today's Check-ins</span>
+              <span className="m-stat-val" style={{ color: '#ffffff' }}>
+                {todayCheckIns.length}
               </span>
-              <span className="m-stat-sub">Cash-outs & Prize Payouts</span>
+              <span className="m-stat-sub">{approvedTodayCount} Inside Club</span>
             </div>
 
             <div className="m-stat-card">
-              <span className="m-stat-label">Active Tournaments</span>
+              <span className="m-stat-label">Club Members</span>
               <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {activeTournaments.length}
+                {players.length}
               </span>
-              <span className="m-stat-sub">Live & Registering</span>
+              <span className="m-stat-sub">{players.filter(p => p.kycStatus === 'verified').length} KYC Verified</span>
             </div>
           </div>
 
@@ -430,14 +457,6 @@ export const MobileCashierPortal: React.FC = () => {
           <div>
             <p className="staff-section-title">Quick Actions</p>
             <div className="staff-quick-actions" style={{ marginTop: '8px' }}>
-              <button type="button" className="staff-quick-btn cash-in" onClick={() => setIsCashInOpen(true)}>
-                <div className="staff-quick-icon"><ArrowDownLeft size={20} /></div>
-                Cash Received
-              </button>
-              <button type="button" className="staff-quick-btn cash-out" onClick={() => setIsCashOutOpen(true)}>
-                <div className="staff-quick-icon"><ArrowUpRight size={20} /></div>
-                Cash Paid Out
-              </button>
               <button type="button" className="staff-quick-btn entry" onClick={() => setActiveTab('players')}>
                 <div className="staff-quick-icon"><Users size={20} /></div>
                 Tourney Entry
@@ -446,39 +465,14 @@ export const MobileCashierPortal: React.FC = () => {
                 <div className="staff-quick-icon"><Trophy size={20} /></div>
                 New Tournament
               </button>
-            </div>
-          </div>
-
-          {/* Recent Cash Flow Records */}
-          <div className="m-card">
-            <div className="m-card-header">
-              <span className="m-card-title">
-                <Wallet size={16} color="#ffffff" />
-                Recent Cash Movements
-              </span>
-              <button className="m-btn m-btn-ghost m-btn-sm" style={{ width: 'auto' }} onClick={() => setActiveTab('cash')}>
-                View All
+              <button type="button" className="staff-quick-btn chips" onClick={() => setActiveTab('chips')}>
+                <div className="staff-quick-icon"><Coins size={20} /></div>
+                Table Chips
               </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {cashTransactions.slice(0, 4).map(txn => (
-                <div key={txn.id} className="m-list-card">
-                  <div className="m-list-row">
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{txn.category}</span>
-                    <span
-                      className="tabular-num"
-                      style={{ fontWeight: 800, color: txn.type === 'in' ? '#ffffff' : '#fca5a5' }}
-                    >
-                      {txn.type === 'in' ? '+' : '-'}{formatCurrency(txn.amount)}
-                    </span>
-                  </div>
-                  <div className="m-list-row" style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                    <span>{txn.playerName || txn.paymentMethod}</span>
-                    <span>{formatShortDateTime(txn.timestamp)}</span>
-                  </div>
-                </div>
-              ))}
+              <button type="button" className="staff-quick-btn records" onClick={() => setActiveTab('records')}>
+                <div className="staff-quick-icon"><Receipt size={20} /></div>
+                Vouchers
+              </button>
             </div>
           </div>
         </>

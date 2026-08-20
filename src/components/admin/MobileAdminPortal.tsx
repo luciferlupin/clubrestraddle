@@ -26,6 +26,7 @@ export const MobileAdminPortal: React.FC = () => {
     players,
     todayCheckIns,
     checkIns,
+    tournaments,
     chipRequests,
     pendingChipOrdersCount,
     expenses,
@@ -38,7 +39,37 @@ export const MobileAdminPortal: React.FC = () => {
     resetToDemoData,
   } = useClub();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'staff' | 'players' | 'attendance' | 'finance' | 'audit'>('dashboard');
+  // Read initial tab from URL query params or path (e.g. ?tab=finance or ?portal=admin&tab=finance)
+  const [activeTab, setActiveTabState] = useState<'dashboard' | 'staff' | 'players' | 'attendance' | 'finance' | 'audit'>(() => {
+    if (typeof window === 'undefined') return 'dashboard';
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = (params.get('tab') || params.get('view') || '').toLowerCase();
+    
+    if (tabParam === 'finance' || tabParam === 'cash' || tabParam === 'treasury' || tabParam === 'expenses') {
+      return 'finance';
+    }
+    if (tabParam === 'staff') return 'staff';
+    if (tabParam === 'players' || tabParam === 'kyc') return 'players';
+    if (tabParam === 'attendance') return 'attendance';
+    if (tabParam === 'audit') return 'audit';
+    
+    return 'dashboard';
+  });
+
+  const setActiveTab = (tab: 'dashboard' | 'staff' | 'players' | 'attendance' | 'finance' | 'audit') => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('portal', 'admin');
+      if (tab === 'dashboard') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
@@ -57,6 +88,8 @@ export const MobileAdminPortal: React.FC = () => {
   const approvedTodayCount = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
   const deliveredChipOrders = chipRequests.filter(r => r.status === 'delivered');
   const totalChipVolume = deliveredChipOrders.reduce((sum, r) => sum + r.amount, 0);
+  const activeTournamentsCount = (tournaments || []).filter(t => t.status === 'Registering' || t.status === 'Running').length;
+  const verifiedCount = players.filter(p => p.kycStatus === 'verified').length;
 
   const handleExpenseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,14 +140,14 @@ export const MobileAdminPortal: React.FC = () => {
       {/* TAB 1: EXECUTIVE DASHBOARD & TIMELINE */}
       {activeTab === 'dashboard' && (
         <>
-          {/* Top KPI Cards */}
+          {/* Top KPI Cards (Zero Cash on Main Dashboard) */}
           <div className="m-stats-grid">
             <div className="m-stat-card" style={{ borderColor: 'rgba(255, 255, 255, 0.25)' }}>
               <span className="m-stat-label">Total Players</span>
               <span className="m-stat-val" style={{ color: '#ffffff' }}>
                 {players.length}
               </span>
-              <span className="m-stat-sub">{players.filter(p => p.kycStatus === 'verified').length} KYC Verified</span>
+              <span className="m-stat-sub">{verifiedCount} KYC Verified</span>
             </div>
 
             <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.4)' }}>
@@ -135,12 +168,12 @@ export const MobileAdminPortal: React.FC = () => {
               <span className="m-stat-sub">{pendingChipOrdersCount} Pending · ₹{formatINR(totalChipVolume)}</span>
             </div>
 
-            <div className="m-stat-card" style={{ borderColor: 'var(--border-gold)' }}>
-              <span className="m-stat-label">Cash Balance</span>
-              <span className="m-stat-val" style={{ color: 'var(--gold-light)' }}>
-                {formatCurrency(currentCashBalance)}
+            <div className="m-stat-card" style={{ borderColor: 'var(--border-subtle)' }}>
+              <span className="m-stat-label">Active Events</span>
+              <span className="m-stat-val" style={{ color: '#ffffff' }}>
+                {activeTournamentsCount}
               </span>
-              <span className="m-stat-sub">Live Drawer Float</span>
+              <span className="m-stat-sub">Live & Registering</span>
             </div>
           </div>
 
@@ -148,10 +181,6 @@ export const MobileAdminPortal: React.FC = () => {
           <div>
             <p className="staff-section-title">Quick Actions</p>
             <div className="staff-quick-actions" style={{ marginTop: '8px' }}>
-              <button type="button" className="staff-quick-btn expense" onClick={() => setIsAddExpenseOpen(true)}>
-                <div className="staff-quick-icon"><Plus size={20} /></div>
-                Add Expense
-              </button>
               <button type="button" className="staff-quick-btn kyc" onClick={() => setActiveTab('players')}>
                 <div className="staff-quick-icon"><ShieldCheck size={20} /></div>
                 Verify KYC
@@ -164,25 +193,13 @@ export const MobileAdminPortal: React.FC = () => {
                 <div className="staff-quick-icon"><CheckCircle2 size={20} /></div>
                 Attendance
               </button>
+              <button type="button" className="staff-quick-btn tourney" onClick={() => setIsMoreOpen(true)}>
+                <div className="staff-quick-icon"><MoreHorizontal size={20} /></div>
+                Staff Tools
+              </button>
             </div>
           </div>
 
-          {/* Business Net Vault Balance Card */}
-          <div
-            className="m-card staff-treasury-card"
-            style={{
-              background: 'linear-gradient(135deg, rgba(225, 29, 72, 0.18), rgba(15, 23, 42, 0.95))',
-              border: '1.5px solid var(--border-red)',
-            }}
-          >
-            <span className="m-stat-label">Net Business Treasury Balance</span>
-            <div style={{ fontSize: '1.7rem', fontWeight: 800, color: '#ffffff', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-              {formatCurrency(netTreasuryBalance)}
-            </div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-              Formula: Float ({formatCurrency(currentCashBalance)}) − Expenses ({formatCurrency(totalExpensesAmount)})
-            </div>
-          </div>
 
           {/* Activity Monitoring: Live Timeline */}
           <div className="m-card">
