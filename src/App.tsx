@@ -96,7 +96,7 @@ const MainApp: React.FC = () => {
            All page content (z-index:2+) sits above, cards block chips
            with their opaque dark backgrounds. Only bare bg gaps show chips.
            ──────────────────────────────────────────────────────────────── */}
-      <FloatingChipsBackground mode="fixed" opacity={0.09} chipCount={12} />
+      <FloatingChipsBackground mode="fixed" opacity={0.13} chipCount={14} />
 
       {/* Header: Adaptive Mobile Header on Phones, Glass Header on Desktop */}
       {isMobile ? (
@@ -108,8 +108,8 @@ const MainApp: React.FC = () => {
         <AppHeader onOpenQR={() => setIsQRModalOpen(true)} />
       )}
 
-      {/* Main Viewport Fitted Canvas — z-index:2 sits above the global chip layer */}
-      <main className="app-main" style={{ position: 'relative', zIndex: 2 }}>
+      {/* Main Viewport Fitted Canvas */}
+      <main className="app-main">
         {isMobile ? (
           /* Mobile Dedicated Portals */
           <>
