@@ -17,7 +17,7 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
 }) => {
   const verificationUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/?portal=security&scan=${checkIn.id}&player=${player.id}`
-    : `https://club-re-straddle.vercel.app/?portal=security&scan=${checkIn.id}&player=${player.id}`;
+    : `https://clubrestraddle.vercel.app/?portal=security&scan=${checkIn.id}&player=${player.id}`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', textAlign: 'center', padding: '12px 0' }}>

@@ -126,7 +126,7 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
                     }}
                   >
                     <QRCodeSVG
-                      value={typeof window !== 'undefined' ? `${window.location.origin}/?portal=security&scan=${todayCheckIn.id}&player=${player.id}` : `https://club-re-straddle.vercel.app/?portal=security&scan=${todayCheckIn.id}&player=${player.id}`}
+                      value={typeof window !== 'undefined' ? `${window.location.origin}/?portal=security&scan=${todayCheckIn.id}&player=${player.id}` : `https://clubrestraddle.vercel.app/?portal=security&scan=${todayCheckIn.id}&player=${player.id}`}
                       size={140}
                       bgColor="#ffffff"
                       fgColor="#0f172a"

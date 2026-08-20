@@ -316,7 +316,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                             }}
                           >
                             <QRCodeSVG
-                              value={typeof window !== 'undefined' ? `${window.location.origin}/?portal=security&scan=${todayCheckIn.id}&player=${currentPlayer.id}` : `https://club-re-straddle.vercel.app/?portal=security&scan=${todayCheckIn.id}&player=${currentPlayer.id}`}
+                              value={typeof window !== 'undefined' ? `${window.location.origin}/?portal=security&scan=${todayCheckIn.id}&player=${currentPlayer.id}` : `https://clubrestraddle.vercel.app/?portal=security&scan=${todayCheckIn.id}&player=${currentPlayer.id}`}
                               size={135}
                               bgColor="#ffffff"
                               fgColor="#0f172a"

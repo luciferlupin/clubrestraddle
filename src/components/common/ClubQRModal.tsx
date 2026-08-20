@@ -18,7 +18,7 @@ export const ClubQRModal: React.FC<ClubQRModalProps> = ({
   const { setActiveRole, setSelectedPlayerId, players } = useClub();
   const [copied, setCopied] = useState(false);
 
-  const clubUrl = typeof window !== 'undefined' ? `${window.location.origin}/?portal=player&action=kyc` : 'https://club-re-straddle.vercel.app/?portal=player&action=kyc';
+  const clubUrl = typeof window !== 'undefined' ? `${window.location.origin}/?action=kyc` : 'https://clubrestraddle.vercel.app/?action=kyc';
 
   const handleCopyUrl = () => {
     navigator.clipboard.writeText(clubUrl);

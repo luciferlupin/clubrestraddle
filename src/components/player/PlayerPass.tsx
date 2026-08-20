@@ -16,7 +16,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
 
   const verificationUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`
-    : `https://club-re-straddle.vercel.app/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`;
+    : `https://clubrestraddle.vercel.app/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`;
 
   return (
     <>
