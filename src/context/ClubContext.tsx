@@ -14,6 +14,7 @@ import {
   KYCStatus,
   StaffUser,
   StaffRole,
+  ChipRequest,
 } from '../types';
 import {
   initialStaffUsers,
@@ -24,6 +25,7 @@ import {
   initialCashTransactions,
   initialExpenses,
   initialAuditLogs,
+  initialChipRequests,
 } from '../data/seedData';
 import {
   generateId,
@@ -58,10 +60,12 @@ interface ClubContextType {
   cashTransactions: CashTransaction[];
   expenses: Expense[];
   auditLogs: AuditLog[];
+  chipRequests: ChipRequest[];
 
   // Derived Values
   currentPlayer: Player | undefined;
   todayCheckIns: DailyCheckIn[];
+  pendingChipOrdersCount: number;
   currentCashBalance: number;
   totalExpensesAmount: number;
   totalCashInAmount: number;
@@ -74,6 +78,7 @@ interface ClubContextType {
   updatePlayerKYC: (playerId: string, updatedKYC: Partial<PlayerKYC>) => void;
   hasPlayerCheckedInToday: (playerId: string) => DailyCheckIn | undefined;
   lookupMemberByPhone: (phoneOrId: string) => Promise<Player | null>;
+  requestBuyChips: (params: { playerId: string; amount: number; tableNumber: string; seatNumber: string; paymentMethod: PaymentMethod; notes?: string }) => ChipRequest;
 
   // Cashier Actions
   createTournament: (tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'createdBy'>) => Tournament;
@@ -85,6 +90,8 @@ interface ClubContextType {
     tableNumber?: string;
     seatNumber?: string;
   }) => TournamentEntry;
+  fulfillChipRequest: (requestId: string) => void;
+  cancelChipRequest: (requestId: string, reason?: string) => void;
   addCashReceived: (params: {
     category: CashCategory;
     amount: number;
@@ -124,6 +131,7 @@ const STORAGE_KEYS = {
   CASH_TXNS: 'clubshowdown_cash_txns_v4',
   EXPENSES: 'clubshowdown_expenses_v4',
   AUDIT_LOGS: 'clubshowdown_audit_logs_v4',
+  CHIP_REQUESTS: 'clubshowdown_chip_requests_v4',
   ACTIVE_ROLE: 'clubshowdown_active_role_v4',
   SELECTED_PLAYER: 'clubshowdown_selected_player_v4',
 };
@@ -186,6 +194,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() =>
     loadFromStorage(STORAGE_KEYS.AUDIT_LOGS, initialAuditLogs)
   );
+  const [chipRequests, setChipRequests] = useState<ChipRequest[]>(() =>
+    loadFromStorage(STORAGE_KEYS.CHIP_REQUESTS, initialChipRequests)
+  );
 
   // Sync state to LocalStorage
   useEffect(() => saveToStorage(STORAGE_KEYS.STAFF_USERS, staffUsers), [staffUsers]);
@@ -197,6 +208,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => saveToStorage(STORAGE_KEYS.CASH_TXNS, cashTransactions), [cashTransactions]);
   useEffect(() => saveToStorage(STORAGE_KEYS.EXPENSES, expenses), [expenses]);
   useEffect(() => saveToStorage(STORAGE_KEYS.AUDIT_LOGS, auditLogs), [auditLogs]);
+  useEffect(() => saveToStorage(STORAGE_KEYS.CHIP_REQUESTS, chipRequests), [chipRequests]);
   useEffect(() => saveToStorage(STORAGE_KEYS.ACTIVE_ROLE, activeRole), [activeRole]);
   useEffect(() => saveToStorage(STORAGE_KEYS.SELECTED_PLAYER, selectedPlayerId), [selectedPlayerId]);
 
@@ -373,6 +385,28 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             timestamp: l.timestamp,
           }));
           setAuditLogs(mappedLogs);
+        }
+
+        const { data: chipData } = await client.from('chip_requests').select('*').order('requested_at', { ascending: false });
+        if (chipData && chipData.length > 0) {
+          const mappedChips: ChipRequest[] = chipData.map((c: any) => ({
+            id: c.id,
+            playerId: c.player_id,
+            playerName: c.player_name,
+            playerPhone: c.player_phone,
+            amount: Number(c.amount),
+            chipsQuantity: Number(c.chips_quantity || c.amount),
+            tableNumber: c.table_number,
+            seatNumber: c.seat_number,
+            paymentMethod: c.payment_method,
+            status: c.status,
+            requestedAt: c.requested_at,
+            fulfilledBy: c.fulfilled_by,
+            fulfilledAt: c.fulfilled_at,
+            receiptNumber: c.receipt_number,
+            notes: c.notes,
+          }));
+          setChipRequests(mappedChips);
         }
       } catch (err) {
         console.warn('Supabase fetch error, fallback to local storage:', err);
@@ -554,6 +588,10 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return currentCashBalance - totalExpensesAmount;
   }, [currentCashBalance, totalExpensesAmount]);
 
+  const pendingChipOrdersCount = useMemo(() => {
+    return chipRequests.filter(r => r.status === 'pending').length;
+  }, [chipRequests]);
+
   const hasPlayerCheckedInToday = (playerId: string) => {
     return checkIns.find(c => c.playerId === playerId && c.checkInDate === today);
   };
@@ -706,6 +744,61 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     return null;
+  };
+
+  const requestBuyChips = (params: {
+    playerId: string;
+    amount: number;
+    tableNumber: string;
+    seatNumber: string;
+    paymentMethod: PaymentMethod;
+    notes?: string;
+  }): ChipRequest => {
+    const player = players.find(p => p.id === params.playerId);
+    const nowIso = new Date().toISOString();
+    const newId = generateId('CHP');
+
+    const newRequest: ChipRequest = {
+      id: newId,
+      playerId: params.playerId,
+      playerName: player ? player.fullName : 'Club Player',
+      playerPhone: player ? player.phone : '',
+      amount: params.amount,
+      chipsQuantity: params.amount,
+      tableNumber: params.tableNumber || 'Table 1',
+      seatNumber: params.seatNumber || 'Seat 1',
+      paymentMethod: params.paymentMethod,
+      status: 'pending',
+      requestedAt: nowIso,
+      notes: params.notes,
+    };
+
+    setChipRequests(prev => [newRequest, ...prev]);
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('chip_requests').insert({
+        id: newRequest.id,
+        player_id: newRequest.playerId,
+        player_name: newRequest.playerName,
+        player_phone: newRequest.playerPhone,
+        amount: newRequest.amount,
+        chips_quantity: newRequest.chipsQuantity,
+        table_number: newRequest.tableNumber,
+        seat_number: newRequest.seatNumber,
+        payment_method: newRequest.paymentMethod,
+        status: newRequest.status,
+        requested_at: newRequest.requestedAt,
+        notes: newRequest.notes,
+      });
+    }
+
+    addAuditLog(
+      'Player',
+      'Table Chip Purchase Requested',
+      `Player ${newRequest.playerName} requested ₹${newRequest.amount} in chips at ${newRequest.tableNumber}, ${newRequest.seatNumber} (${newRequest.paymentMethod}).`
+    );
+
+    return newRequest;
   };
 
   const performDailyCheckIn = (playerId: string, tablePreference?: string): DailyCheckIn => {
@@ -1025,6 +1118,85 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addAuditLog('Cashier', 'Tournament Status Updated', `Updated tournament ${tournamentId} status to ${status}.`);
   };
 
+  const fulfillChipRequest = (requestId: string) => {
+    const req = chipRequests.find(r => r.id === requestId);
+    if (!req) return;
+
+    const nowIso = new Date().toISOString();
+    const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
+    const receiptNum = generateReceiptNumber();
+
+    setChipRequests(prev =>
+      prev.map(r =>
+        r.id === requestId
+          ? {
+              ...r,
+              status: 'delivered',
+              fulfilledBy: staff,
+              fulfilledAt: nowIso,
+              receiptNumber: receiptNum,
+            }
+          : r
+      )
+    );
+
+    // Automatically record vault cash received
+    addCashReceived({
+      category: 'Chip Purchase',
+      amount: req.amount,
+      description: `Table chips delivered to ${req.playerName} at ${req.tableNumber}, ${req.seatNumber}`,
+      paymentMethod: req.paymentMethod,
+      playerName: req.playerName,
+      referenceId: receiptNum,
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('chip_requests').update({
+        status: 'delivered',
+        fulfilled_by: staff,
+        fulfilled_at: nowIso,
+        receipt_number: receiptNum,
+      }).eq('id', requestId);
+    }
+
+    addAuditLog(
+      'Cashier',
+      'Table Chips Delivered',
+      `Cashier ${staff} fulfilled and delivered ₹${req.amount} in chips to ${req.playerName} at ${req.tableNumber}, ${req.seatNumber} (Receipt: ${receiptNum}).`
+    );
+  };
+
+  const cancelChipRequest = (requestId: string, reason?: string) => {
+    const req = chipRequests.find(r => r.id === requestId);
+    if (!req) return;
+
+    const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
+    setChipRequests(prev =>
+      prev.map(r =>
+        r.id === requestId
+          ? {
+              ...r,
+              status: 'cancelled',
+              notes: reason || 'Cancelled by cashier',
+            }
+          : r
+      )
+    );
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('chip_requests').update({
+        status: 'cancelled',
+        notes: reason || 'Cancelled by cashier',
+      }).eq('id', requestId);
+    }
+
+    addAuditLog(
+      'Cashier',
+      'Table Chip Order Cancelled',
+      `Order ${requestId} for ${req.playerName} cancelled by ${staff}. Reason: ${reason || 'N/A'}`
+    );
+  };
+
   // SECURITY ACTIONS
   const approvePlayerEntry = (checkInId: string) => {
     const nowIso = new Date().toISOString();
@@ -1241,8 +1413,10 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         cashTransactions,
         expenses,
         auditLogs,
+        chipRequests,
         currentPlayer,
         todayCheckIns,
+        pendingChipOrdersCount,
         currentCashBalance,
         totalExpensesAmount,
         totalCashInAmount,
@@ -1253,8 +1427,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updatePlayerKYC,
         hasPlayerCheckedInToday,
         lookupMemberByPhone,
+        requestBuyChips,
         createTournament,
         registerPlayerForTournament,
+        fulfillChipRequest,
+        cancelChipRequest,
         addCashReceived,
         addCashGiven,
         updateTournamentStatus,

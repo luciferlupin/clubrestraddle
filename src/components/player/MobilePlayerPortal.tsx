@@ -17,14 +17,16 @@ import {
   ChevronRight,
   Trophy,
   Receipt,
+  Coins,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatTimeOnly, formatDateOnly, maskGovtId, formatCurrency, formatDateTime } from '../../utils/formatters';
+import { formatTimeOnly, formatDateOnly, maskGovtId, formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileKYCForm } from './MobileKYCForm';
 import { MobileRegistrationSuccess } from './MobileRegistrationSuccess';
+import { TableChipRequestModal } from './TableChipRequestModal';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import confetti from 'canvas-confetti';
 
@@ -44,6 +46,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
     checkIns,
     tournaments,
     entries,
+    chipRequests,
     hasPlayerCheckedInToday,
     performDailyCheckIn,
     lookupMemberByPhone,
@@ -55,6 +58,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
+  const [isChipModalOpen, setIsChipModalOpen] = useState(false);
   const [tablePref, setTablePref] = useState('NLH Cash Game (₹250/₹500)');
   const [checkingIn, setCheckingIn] = useState(false);
   const [registrationSuccessData, setRegistrationSuccessData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
@@ -300,6 +304,25 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Instant Table Chip Reload Quick Action */}
+              <button
+                className="m-btn m-btn-primary"
+                onClick={() => setIsChipModalOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
+                  boxShadow: '0 4px 18px rgba(225, 29, 72, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px',
+                  fontWeight: 800,
+                }}
+              >
+                <Coins size={20} />
+                <span>Buy Chips / Reload at Table</span>
+              </button>
 
               {/* Today's Daily Check-In Card / 1-Tap Check-In */}
               <div className="m-card">
@@ -692,6 +715,12 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
           <span className="nav-tab-label">New KYC</span>
         </button>
       </nav>
+
+      {/* Table Chip Request Modal */}
+      <TableChipRequestModal
+        isOpen={isChipModalOpen}
+        onClose={() => setIsChipModalOpen(false)}
+      />
     </div>
   );
 };

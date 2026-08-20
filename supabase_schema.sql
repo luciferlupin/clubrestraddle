@@ -201,19 +201,43 @@ CREATE INDEX idx_audit_logs_portal ON audit_logs(portal);
 CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
 
 -- ------------------------------------------------------------------------------
--- 10. REALTIME PUBLICATION ENABLEMENT (Supabase WebSockets)
+-- 10. CHIP ORDERS & TABLE RELOADS TABLE (Real-Time Cashier Vault Requests)
+-- ------------------------------------------------------------------------------
+CREATE TABLE chip_requests (
+    id VARCHAR(32) PRIMARY KEY, -- e.g. 'CHP-1001'
+    player_id VARCHAR(32) NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    player_name VARCHAR(120) NOT NULL,
+    player_phone VARCHAR(32),
+    amount NUMERIC(14, 2) NOT NULL,
+    chips_quantity INTEGER NOT NULL,
+    table_number VARCHAR(80) NOT NULL,
+    seat_number VARCHAR(32) NOT NULL,
+    payment_method VARCHAR(32) NOT NULL,
+    status VARCHAR(24) DEFAULT 'pending' CHECK (status IN ('pending', 'delivered', 'cancelled')),
+    requested_at TIMESTAMPTZ DEFAULT NOW(),
+    fulfilled_by VARCHAR(120),
+    fulfilled_at TIMESTAMPTZ,
+    receipt_number VARCHAR(48),
+    notes TEXT
+);
+
+CREATE INDEX idx_chip_requests_status ON chip_requests(status);
+CREATE INDEX idx_chip_requests_player ON chip_requests(player_id);
+
+-- ------------------------------------------------------------------------------
+-- 11. REALTIME PUBLICATION ENABLEMENT (Supabase WebSockets)
 -- ------------------------------------------------------------------------------
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE staff_users, players, daily_check_ins, tournaments, tournament_entries, cash_transactions, expenses, audit_logs;
+        ALTER PUBLICATION supabase_realtime ADD TABLE staff_users, players, daily_check_ins, tournaments, tournament_entries, cash_transactions, expenses, audit_logs, chip_requests;
     END IF;
 EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;
 
 -- ------------------------------------------------------------------------------
--- 11. ROW LEVEL SECURITY (RLS) POLICIES
+-- 12. ROW LEVEL SECURITY (RLS) POLICIES
 -- ------------------------------------------------------------------------------
 ALTER TABLE staff_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
@@ -223,6 +247,7 @@ ALTER TABLE tournament_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cash_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chip_requests ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Public Read/Write Staff Users" ON staff_users FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Read/Write Players" ON players FOR ALL USING (true) WITH CHECK (true);
@@ -232,6 +257,7 @@ CREATE POLICY "Public Read/Write Tournament Entries" ON tournament_entries FOR A
 CREATE POLICY "Public Read/Write Cash Transactions" ON cash_transactions FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Read/Write Expenses" ON expenses FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Read/Write Audit Logs" ON audit_logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public Read/Write Chip Requests" ON chip_requests FOR ALL USING (true) WITH CHECK (true);
 
 -- ------------------------------------------------------------------------------
 -- 12. HELPER REPORTING VIEWS

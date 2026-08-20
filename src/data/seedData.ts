@@ -7,6 +7,7 @@ import {
   Expense,
   AuditLog,
   StaffUser,
+  ChipRequest,
 } from '../types';
 
 // Default Staff Users (Club Owners & Operating Staff)
@@ -301,5 +302,24 @@ export const initialAuditLogs: AuditLog[] = [
     action: 'Tournament Voucher Issued',
     details: 'Issued High Roller entry RCP-2026-001 for Sofia Valenti (₹27,500 total).',
     timestamp: new Date(Date.now() - 3600000).toISOString(),
+  },
+];
+
+export const initialChipRequests: ChipRequest[] = [
+  {
+    id: 'CHP-1001',
+    playerId: 'MEM-2026-882',
+    playerName: 'Sofia Valenti',
+    playerPhone: '+91 98102 34891',
+    amount: 50000,
+    chipsQuantity: 50000,
+    tableNumber: 'Table 1 (VIP High Roller)',
+    seatNumber: 'Seat 4',
+    paymentMethod: 'UPI/Digital',
+    status: 'delivered',
+    requestedAt: new Date(Date.now() - 1800000).toISOString(),
+    fulfilledBy: 'Elena Rostova',
+    fulfilledAt: new Date(Date.now() - 1200000).toISOString(),
+    receiptNumber: 'REC-CHP-1001',
   },
 ];

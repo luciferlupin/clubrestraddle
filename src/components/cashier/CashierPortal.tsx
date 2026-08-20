@@ -8,16 +8,18 @@ import {
   ShieldAlert,
   Lock,
   Sparkles,
+  Coins,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentManager } from './TournamentManager';
 import { PlayerTournamentEntry } from './PlayerTournamentEntry';
 import { CashManagement } from './CashManagement';
 import { BillingHistory } from './BillingHistory';
+import { ChipOrderManager } from './ChipOrderManager';
 
 export const CashierPortal: React.FC = () => {
-  const { staffName, tournaments, currentCashBalance } = useClub();
-  const [activeTab, setActiveTab] = useState<'tournaments' | 'register' | 'cash' | 'billing'>('tournaments');
+  const { staffName, tournaments, currentCashBalance, pendingChipOrdersCount } = useClub();
+  const [activeTab, setActiveTab] = useState<'chip-orders' | 'tournaments' | 'register' | 'cash' | 'billing'>('chip-orders');
   const [selectedTournamentForReg, setSelectedTournamentForReg] = useState<string | undefined>(undefined);
 
   const handleStartRegister = (tournamentId: string) => {
@@ -90,6 +92,28 @@ export const CashierPortal: React.FC = () => {
       {/* Sub-Navigation Tabs */}
       <div className="sub-nav-tabs">
         <button
+          className={`sub-tab-btn ${activeTab === 'chip-orders' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chip-orders')}
+        >
+          <Coins size={16} /> Live Table Chip Orders
+          {pendingChipOrdersCount > 0 && (
+            <span
+              style={{
+                background: '#e11d48',
+                color: '#ffffff',
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                padding: '2px 7px',
+                borderRadius: '10px',
+                marginLeft: '6px',
+              }}
+            >
+              {pendingChipOrdersCount}
+            </span>
+          )}
+        </button>
+
+        <button
           className={`sub-tab-btn ${activeTab === 'tournaments' ? 'active' : ''}`}
           onClick={() => setActiveTab('tournaments')}
         >
@@ -119,6 +143,8 @@ export const CashierPortal: React.FC = () => {
       </div>
 
       {/* Tab Content */}
+      {activeTab === 'chip-orders' && <ChipOrderManager />}
+
       {activeTab === 'tournaments' && (
         <TournamentManager onRegisterPlayer={handleStartRegister} />
       )}

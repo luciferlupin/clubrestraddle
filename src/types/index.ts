@@ -171,3 +171,22 @@ export interface AuditLog {
   details: string;
   timestamp: string;
 }
+
+export interface ChipRequest {
+  id: string; // e.g., 'CHP-1001'
+  playerId: string;
+  playerName: string;
+  playerPhone: string;
+  amount: number;
+  chipsQuantity: number;
+  tableNumber: string;
+  seatNumber: string;
+  paymentMethod: PaymentMethod;
+  status: 'pending' | 'delivered' | 'cancelled';
+  requestedAt: string;
+  fulfilledBy?: string;
+  fulfilledAt?: string;
+  receiptNumber?: string;
+  notes?: string;
+}
+

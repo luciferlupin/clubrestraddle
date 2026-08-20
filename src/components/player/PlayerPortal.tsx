@@ -14,6 +14,7 @@ import {
   Clock,
   MapPin,
   Flame,
+  Coins,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { KYCRegistrationForm } from './KYCRegistrationForm';
@@ -21,8 +22,9 @@ import { DailyCheckInCard } from './DailyCheckInCard';
 import { PlayerPass } from './PlayerPass';
 import { CheckInHistory } from './CheckInHistory';
 import { PlayerProfile } from './PlayerProfile';
+import { TableChipRequestModal } from './TableChipRequestModal';
 import { TierBadge, KYCBadge, EntryBadge } from '../common/Badge';
-import { formatCurrency, formatDateTime, formatDateOnly } from '../../utils/formatters';
+import { formatCurrency, formatDateTime, formatDateOnly, formatINR } from '../../utils/formatters';
 
 interface PlayerPortalProps {
   onOpenQR: () => void;
@@ -37,14 +39,16 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
     checkIns,
     tournaments,
     entries,
+    chipRequests,
     hasPlayerCheckedInToday,
     lookupMemberByPhone,
   } = useClub();
   const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially);
+  const [isChipModalOpen, setIsChipModalOpen] = useState(false);
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pass' | 'tournaments' | 'billing' | 'profile' | 'history'>('pass');
+  const [activeTab, setActiveTab] = useState<'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history'>('pass');
 
   useEffect(() => {
     if (showNewPlayerFormInitially || !currentPlayer) {
@@ -130,7 +134,17 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {currentPlayer && (
             <button
-              className={`btn ${showKYCForm ? 'btn-secondary' : 'btn-primary'}`}
+              className="btn btn-primary"
+              onClick={() => setIsChipModalOpen(true)}
+              style={{ background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', boxShadow: '0 0 15px rgba(225, 29, 72, 0.4)' }}
+            >
+              <Coins size={16} /> Buy Chips (Table Reload)
+            </button>
+          )}
+
+          {currentPlayer && (
+            <button
+              className={`btn ${showKYCForm ? 'btn-secondary' : 'btn-secondary'}`}
               onClick={() => setShowKYCForm(!showKYCForm)}
             >
               {showKYCForm ? (
@@ -221,6 +235,12 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
                 <CheckCircle size={15} /> Overview & Clearance
               </button>
               <button
+                className={`sub-tab-btn ${activeTab === 'chips' ? 'active' : ''}`}
+                onClick={() => setActiveTab('chips')}
+              >
+                <Coins size={15} /> Buy Chips at Table
+              </button>
+              <button
                 className={`sub-tab-btn ${activeTab === 'tournaments' ? 'active' : ''}`}
                 onClick={() => setActiveTab('tournaments')}
               >
@@ -251,6 +271,93 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <PlayerProfile player={currentPlayer} />
                 <CheckInHistory checkIns={playerCheckIns} />
+              </div>
+            )}
+
+            {/* TAB: BUY CHIPS AT TABLE */}
+            {activeTab === 'chips' && (
+              <div className="card">
+                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <h3 className="card-title">
+                      <Coins size={18} color="#e11d48" />
+                      Table Chip Purchase & Reload Orders
+                    </h3>
+                    <p className="card-subtitle">
+                      Order chips straight to your table seat. Cashier vault dispatches in real-time.
+                    </p>
+                  </div>
+                  <button className="btn btn-primary" onClick={() => setIsChipModalOpen(true)}>
+                    <Coins size={16} /> Request Chips Now
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {chipRequests.filter(r => r.playerId === currentPlayer.id).length === 0 ? (
+                    <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94a3b8' }}>
+                      <Coins size={36} style={{ opacity: 0.3, marginBottom: '8px' }} />
+                      <div style={{ color: '#ffffff', fontWeight: 600 }}>No Table Chip Orders Yet</div>
+                      <p style={{ fontSize: '0.8rem', marginTop: '4px' }}>
+                        Click "Request Chips Now" when seated at a cash game or tournament table.
+                      </p>
+                    </div>
+                  ) : (
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Order ID</th>
+                          <th>Table & Seat</th>
+                          <th>Chip Amount</th>
+                          <th>Payment Method</th>
+                          <th>Time</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {chipRequests
+                          .filter(r => r.playerId === currentPlayer.id)
+                          .map(order => (
+                            <tr key={order.id}>
+                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#ffffff' }}>
+                                {order.id}
+                              </td>
+                              <td style={{ fontWeight: 600, color: '#ffffff' }}>
+                                {order.tableNumber}, {order.seatNumber}
+                              </td>
+                              <td style={{ fontWeight: 800, color: '#ffffff' }}>
+                                ₹{formatINR(order.amount)}
+                              </td>
+                              <td>
+                                <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
+                                  {order.paymentMethod}
+                                </span>
+                              </td>
+                              <td style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                                {formatDateTime(order.requestedAt)}
+                              </td>
+                              <td>
+                                {order.status === 'pending' && (
+                                  <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>
+                                    <span className="badge-dot" /> Dispatching to Table...
+                                  </span>
+                                )}
+                                {order.status === 'delivered' && (
+                                  <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
+                                    <CheckCircle size={12} /> Delivered ({order.receiptNumber})
+                                  </span>
+                                )}
+                                {order.status === 'cancelled' && (
+                                  <span className="badge badge-danger" style={{ fontSize: '0.72rem' }}>
+                                    Cancelled
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
             )}
 
@@ -412,6 +519,12 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({ onOpenQR, showNewPla
           </button>
         </div>
       )}
+
+      {/* Table Chip Request Modal */}
+      <TableChipRequestModal
+        isOpen={isChipModalOpen}
+        onClose={() => setIsChipModalOpen(false)}
+      />
     </div>
   );
 };

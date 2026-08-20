@@ -10,6 +10,7 @@ import {
   RotateCcw,
   ShieldCheck,
   Shield,
+  Coins,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { AdminDashboard } from './AdminDashboard';
@@ -20,9 +21,10 @@ import { AdminCashView } from './AdminCashView';
 import { AdminExpensesView } from './AdminExpensesView';
 import { AdminAuditLogsView } from './AdminAuditLogsView';
 import { StaffManager } from './StaffManager';
+import { ChipOrderManager } from '../cashier/ChipOrderManager';
 
 export const AdminPortal: React.FC = () => {
-  const { currentStaffUser, resetToDemoData } = useClub();
+  const { currentStaffUser, resetToDemoData, pendingChipOrdersCount } = useClub();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [resetConfirm, setResetConfirm] = useState(false);
 
@@ -62,31 +64,35 @@ export const AdminPortal: React.FC = () => {
               color: '#ffffff',
             }}
           >
-            <LayoutDashboard size={24} />
+            <ShieldCheck size={24} />
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#ffffff' }}>
-              Master Admin & Club Operations Center
+              Club Operations • Executive Control Room
             </div>
-            <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
-              Logged in as: <strong style={{ color: '#ffffff' }}>{currentStaffUser?.fullName || 'Jai Goel (Super Admin)'}</strong> • Full Access
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              Logged in as: <strong style={{ color: 'var(--gold-light)' }}>{currentStaffUser ? currentStaffUser.fullName : 'Super Admin'}</strong> (Admin Station)
             </div>
           </div>
         </div>
 
-        {/* Demo Reset Utility */}
+        {/* Action Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {!resetConfirm ? (
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => setResetConfirm(true)}
-              title="Reset system to clean initial state"
+              style={{ fontSize: '0.78rem', padding: '6px 12px', color: '#fca5a5' }}
             >
-              <RotateCcw size={14} /> Reset Data
+              <RotateCcw size={14} /> Reset Demo Data
             </button>
           ) : (
             <div style={{ display: 'flex', gap: '6px' }}>
-              <button className="btn btn-danger btn-sm" onClick={handleReset}>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={handleReset}
+                style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+              >
                 Confirm Reset
               </button>
               <button className="btn btn-secondary btn-sm" onClick={() => setResetConfirm(false)}>
@@ -104,6 +110,28 @@ export const AdminPortal: React.FC = () => {
           onClick={() => setActiveTab('dashboard')}
         >
           <LayoutDashboard size={15} /> Dashboard & Feeds
+        </button>
+
+        <button
+          className={`sub-tab-btn ${activeTab === 'chip-orders' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chip-orders')}
+        >
+          <Coins size={15} color="#e11d48" /> Live Table Chip Orders
+          {pendingChipOrdersCount > 0 && (
+            <span
+              style={{
+                background: '#e11d48',
+                color: '#ffffff',
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                padding: '2px 7px',
+                borderRadius: '10px',
+                marginLeft: '6px',
+              }}
+            >
+              {pendingChipOrdersCount}
+            </span>
+          )}
         </button>
 
         <button
@@ -160,6 +188,8 @@ export const AdminPortal: React.FC = () => {
       {activeTab === 'dashboard' && (
         <AdminDashboard onNavigateTab={tab => setActiveTab(tab)} />
       )}
+
+      {activeTab === 'chip-orders' && <ChipOrderManager />}
 
       {activeTab === 'staff' && <StaffManager />}
 

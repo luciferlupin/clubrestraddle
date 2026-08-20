@@ -15,10 +15,12 @@ import {
   CheckCircle,
   Clock,
   Sparkles,
+  Coins,
+  Check,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentStatus, PaymentMethod, CashCategory, TournamentEntry, ExpenseCategory } from '../../types';
-import { formatCurrency, formatDateTime, formatDateOnly } from '../../utils/formatters';
+import { formatCurrency, formatDateTime, formatDateOnly, formatINR } from '../../utils/formatters';
 import { TournamentStatusBadge, CashFlowBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { ReceiptModal } from '../common/ReceiptModal';
@@ -34,6 +36,10 @@ export const MobileCashierPortal: React.FC = () => {
     currentCashBalance,
     totalCashInAmount,
     totalCashOutAmount,
+    chipRequests,
+    pendingChipOrdersCount,
+    fulfillChipRequest,
+    cancelChipRequest,
     createTournament,
     registerPlayerForTournament,
     addCashReceived,
@@ -42,7 +48,7 @@ export const MobileCashierPortal: React.FC = () => {
     hasPlayerCheckedInToday,
   } = useClub();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'players' | 'tournaments' | 'cash' | 'records'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash' | 'records'>('dashboard');
 
   // Modals / Drawers State
   const [isCashInOpen, setIsCashInOpen] = useState(false);
@@ -271,6 +277,93 @@ export const MobileCashierPortal: React.FC = () => {
               </span>
               <span className="m-stat-sub">Live & Registering</span>
             </div>
+          </div>
+
+          {/* Real-Time Table Chip Orders Card */}
+          <div
+            className="m-card"
+            style={{
+              border: pendingChipOrdersCount > 0 ? '1.5px solid #e11d48' : '1px solid var(--border-subtle)',
+              background: pendingChipOrdersCount > 0 ? 'linear-gradient(135deg, #18070b 0%, #0d0305 100%)' : undefined,
+              boxShadow: pendingChipOrdersCount > 0 ? '0 4px 20px rgba(225, 29, 72, 0.25)' : undefined,
+            }}
+          >
+            <div className="m-card-header">
+              <span className="m-card-title" style={{ color: pendingChipOrdersCount > 0 ? '#ffffff' : undefined }}>
+                <Coins size={18} color="#e11d48" />
+                Live Table Chip Requests
+              </span>
+              {pendingChipOrdersCount > 0 ? (
+                <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>
+                  <span className="badge-dot" /> {pendingChipOrdersCount} Pending Dispatch
+                </span>
+              ) : (
+                <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
+                  ✓ All Clear
+                </span>
+              )}
+            </div>
+
+            {chipRequests.filter(r => r.status === 'pending').length === 0 ? (
+              <div style={{ fontSize: '0.78rem', color: '#94a3b8', padding: '6px 0' }}>
+                No active table chip requests right now. When seated players order chips, they appear here for 1-tap dispatch.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {chipRequests
+                  .filter(r => r.status === 'pending')
+                  .map(req => (
+                    <div
+                      key={req.id}
+                      style={{
+                        background: 'rgba(0, 0, 0, 0.4)',
+                        border: '1px solid rgba(225, 29, 72, 0.4)',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#ffffff' }}>
+                            {req.playerName}
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--gold-light)' }}>
+                            {req.tableNumber} • {req.seatNumber}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontWeight: 900, fontSize: '1.05rem', color: '#ffffff' }}>
+                            ₹{formatINR(req.amount)}
+                          </div>
+                          <span className="badge badge-secondary" style={{ fontSize: '0.66rem' }}>
+                            {req.paymentMethod}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+                        <button
+                          className="m-btn m-btn-primary m-btn-sm"
+                          style={{ flex: 1, padding: '8px' }}
+                          onClick={() => fulfillChipRequest(req.id)}
+                        >
+                          <Check size={14} /> Fulfill & Dispatch
+                        </button>
+                        <button
+                          className="m-btn m-btn-secondary m-btn-sm"
+                          style={{ width: 'auto', padding: '8px 12px', color: '#fca5a5' }}
+                          onClick={() => cancelChipRequest(req.id, 'Cancelled on mobile')}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
 
           {/* Quick Action Touch Buttons */}
