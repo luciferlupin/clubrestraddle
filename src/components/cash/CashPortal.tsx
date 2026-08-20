@@ -15,9 +15,12 @@ import {
   Coins,
   FileSpreadsheet,
   CheckCircle2,
+  Edit3,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { CashCategory, PaymentMethod, ExpenseCategory } from '../../types';
+import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction } from '../../types';
 import { formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
 import { CashFlowBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
@@ -40,14 +43,31 @@ export const CashPortal: React.FC = () => {
     netTreasuryBalance,
     addCashReceived,
     addCashGiven,
+    deleteCashTransaction,
     addExpense,
+    updateExpense,
+    deleteExpense,
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<CashPortalTab>('overview');
   const [isCashInModalOpen, setIsCashInModalOpen] = useState(false);
   const [isCashOutModalOpen, setIsCashOutModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isEditExpenseModalOpen, setIsEditExpenseModalOpen] = useState(false);
+  const [isDeleteExpenseModalOpen, setIsDeleteExpenseModalOpen] = useState(false);
+  const [isVoidTxnModalOpen, setIsVoidTxnModalOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [selectedTxn, setSelectedTxn] = useState<CashTransaction | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
+
+  const [editExpenseData, setEditExpenseData] = useState({
+    category: 'Dealer & Staff Wages' as ExpenseCategory,
+    amount: 500,
+    description: '',
+    paidTo: '',
+    paymentMethod: 'Cash' as PaymentMethod,
+    date: new Date().toISOString().slice(0, 10),
+  });
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'in' | 'out'>('all');
@@ -162,6 +182,50 @@ export const CashPortal: React.FC = () => {
       paidTo: '',
       paymentMethod: 'Cash',
     });
+  };
+
+  const handleOpenEditExpense = (exp: Expense) => {
+    setSelectedExpense(exp);
+    setEditExpenseData({
+      category: exp.category,
+      amount: exp.amount,
+      description: exp.description,
+      paidTo: exp.paidTo,
+      paymentMethod: exp.paymentMethod,
+      date: exp.date,
+    });
+    setIsEditExpenseModalOpen(true);
+  };
+
+  const handleEditExpenseSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedExpense || !editExpenseData.amount || editExpenseData.amount <= 0) return;
+
+    updateExpense(selectedExpense.id, {
+      category: editExpenseData.category,
+      amount: Number(editExpenseData.amount),
+      description: editExpenseData.description,
+      paidTo: editExpenseData.paidTo,
+      paymentMethod: editExpenseData.paymentMethod,
+      date: editExpenseData.date,
+    });
+
+    setIsEditExpenseModalOpen(false);
+    setSelectedExpense(null);
+  };
+
+  const handleDeleteExpense = () => {
+    if (!selectedExpense) return;
+    deleteExpense(selectedExpense.id);
+    setIsDeleteExpenseModalOpen(false);
+    setSelectedExpense(null);
+  };
+
+  const handleVoidTxn = () => {
+    if (!selectedTxn) return;
+    deleteCashTransaction(selectedTxn.id);
+    setIsVoidTxnModalOpen(false);
+    setSelectedTxn(null);
   };
 
   const filteredTransactions = cashTransactions.filter(t => {
@@ -541,6 +605,7 @@ export const CashPortal: React.FC = () => {
                   <th>Cashier</th>
                   <th>Balance After</th>
                   <th>Timestamp</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -581,6 +646,20 @@ export const CashPortal: React.FC = () => {
                     <td style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
                       {formatDateTime(txn.timestamp)}
                     </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ color: '#ef4444', padding: '3px 6px' }}
+                        title="Void Transaction"
+                        onClick={() => {
+                          setSelectedTxn(txn);
+                          setIsVoidTxnModalOpen(true);
+                        }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -616,6 +695,7 @@ export const CashPortal: React.FC = () => {
                   <th>Paid To</th>
                   <th>Method</th>
                   <th>Date</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -632,6 +712,31 @@ export const CashPortal: React.FC = () => {
                     <td style={{ fontSize: '0.82rem' }}>{exp.paidTo}</td>
                     <td style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>{exp.paymentMethod}</td>
                     <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{exp.date}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '3px 6px' }}
+                          title="Edit"
+                          onClick={() => handleOpenEditExpense(exp)}
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ color: '#ef4444', padding: '3px 6px' }}
+                          title="Delete"
+                          onClick={() => {
+                            setSelectedExpense(exp);
+                            setIsDeleteExpenseModalOpen(true);
+                          }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -890,6 +995,195 @@ export const CashPortal: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* MODAL: EDIT EXPENSE */}
+      {selectedExpense && (
+        <Modal
+          isOpen={isEditExpenseModalOpen}
+          onClose={() => {
+            setIsEditExpenseModalOpen(false);
+            setSelectedExpense(null);
+          }}
+          title={`Edit Expense Voucher: ${selectedExpense.id}`}
+          subtitle={`Paid To: ${selectedExpense.paidTo}`}
+          size="md"
+        >
+          <form onSubmit={handleEditExpenseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="form-group">
+              <label className="form-label">Expense Category *</label>
+              <select
+                className="form-input"
+                value={editExpenseData.category}
+                onChange={e => setEditExpenseData({ ...editExpenseData, category: e.target.value as ExpenseCategory })}
+              >
+                <option value="Dealer & Staff Wages">Dealer & Staff Wages</option>
+                <option value="Rent & Utilities">Rent & Utilities</option>
+                <option value="Cards, Chips & Tables">Cards, Chips & Tables</option>
+                <option value="Refreshments & F&B">Refreshments & F&B</option>
+                <option value="Security & Surveillance">Security & Surveillance</option>
+                <option value="Licensing & Compliance">Licensing & Compliance</option>
+                <option value="Maintenance & Repairs">Maintenance & Repairs</option>
+                <option value="Miscellaneous">Miscellaneous</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Amount (₹) *</label>
+              <input
+                type="number"
+                className="form-input"
+                value={editExpenseData.amount}
+                onChange={e => setEditExpenseData({ ...editExpenseData, amount: Number(e.target.value) })}
+                min={1}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Paid To / Supplier *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editExpenseData.paidTo}
+                onChange={e => setEditExpenseData({ ...editExpenseData, paidTo: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Description</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editExpenseData.description}
+                onChange={e => setEditExpenseData({ ...editExpenseData, description: e.target.value })}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setIsEditExpenseModalOpen(false);
+                  setSelectedExpense(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Save Expense Changes
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* MODAL: DELETE EXPENSE CONFIRMATION */}
+      {selectedExpense && (
+        <Modal
+          isOpen={isDeleteExpenseModalOpen}
+          onClose={() => {
+            setIsDeleteExpenseModalOpen(false);
+            setSelectedExpense(null);
+          }}
+          title="Delete Expense Record"
+          subtitle="Irreversible financial action"
+          size="sm"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
+            <div
+              style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1.5px solid #ef4444',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                color: '#ef4444',
+              }}
+            >
+              <AlertTriangle size={28} />
+            </div>
+
+            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>
+              Are you sure you want to delete expense <strong>{selectedExpense.id}</strong> (₹{selectedExpense.amount.toLocaleString('en-IN')} for {selectedExpense.category})?
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setIsDeleteExpenseModalOpen(false);
+                  setSelectedExpense(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleDeleteExpense}>
+                Delete Expense
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* MODAL: VOID / DELETE CASH TRANSACTION CONFIRMATION */}
+      {selectedTxn && (
+        <Modal
+          isOpen={isVoidTxnModalOpen}
+          onClose={() => {
+            setIsVoidTxnModalOpen(false);
+            setSelectedTxn(null);
+          }}
+          title="Void / Delete Transaction"
+          subtitle="Audit ledger deletion"
+          size="sm"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
+            <div
+              style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1.5px solid #ef4444',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                color: '#ef4444',
+              }}
+            >
+              <AlertTriangle size={28} />
+            </div>
+
+            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>
+              Are you sure you want to void transaction <strong>{selectedTxn.id}</strong> ({selectedTxn.type === 'in' ? '+' : '-'}₹{selectedTxn.amount.toLocaleString('en-IN')} for {selectedTxn.category})?
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setIsVoidTxnModalOpen(false);
+                  setSelectedTxn(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleVoidTxn}>
+                Void Transaction
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Official Tax Invoice Modal */}
       <ClubTaxInvoiceModal

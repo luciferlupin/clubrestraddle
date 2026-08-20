@@ -72,16 +72,20 @@ interface ClubContextType {
   totalCashOutAmount: number;
   netTreasuryBalance: number;
 
-  // Player Actions
+  // Player CRUD Actions
   registerNewPlayer: (kycData: Omit<PlayerKYC, 'submittedAt'>, tablePreference?: string) => { player: Player; checkIn: DailyCheckIn };
   performDailyCheckIn: (playerId: string, tablePreference?: string) => DailyCheckIn;
+  updatePlayer: (playerId: string, updates: Partial<Player>) => void;
+  deletePlayer: (playerId: string) => void;
   updatePlayerKYC: (playerId: string, updatedKYC: Partial<PlayerKYC>) => void;
   hasPlayerCheckedInToday: (playerId: string) => DailyCheckIn | undefined;
   lookupMemberByPhone: (phoneOrId: string) => Promise<Player | null>;
   requestBuyChips: (params: { playerId: string; amount: number; tableNumber: string; seatNumber: string; paymentMethod: PaymentMethod; notes?: string }) => ChipRequest;
 
-  // Cashier Actions
+  // Cashier & Tournament CRUD Actions
   createTournament: (tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'createdBy'>) => Tournament;
+  updateTournament: (tournamentId: string, updates: Partial<Tournament>) => void;
+  deleteTournament: (tournamentId: string) => void;
   registerPlayerForTournament: (params: {
     tournamentId: string;
     playerId: string;
@@ -108,6 +112,7 @@ interface ClubContextType {
     playerName?: string;
     referenceId?: string;
   }) => CashTransaction;
+  deleteCashTransaction: (transactionId: string) => void;
   updateTournamentStatus: (tournamentId: string, status: Tournament['status']) => void;
 
   // Security Actions
@@ -115,8 +120,11 @@ interface ClubContextType {
   rejectPlayerEntry: (checkInId: string, reason: string) => void;
   reviewKYC: (playerId: string, status: KYCStatus, reason?: string) => void;
 
-  // Admin Actions
+  // Admin & Expense CRUD Actions
   addExpense: (expenseData: Omit<Expense, 'id' | 'recordedBy'>) => Expense;
+  updateExpense: (expenseId: string, updates: Partial<Expense>) => void;
+  deleteExpense: (expenseId: string) => void;
+  updateStaffUser: (staffId: string, updates: Partial<StaffUser>) => void;
   resetToDemoData: () => void;
   addAuditLog: (portal: AuditLog['portal'], action: string, details: string) => void;
 }
@@ -529,6 +537,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addAuditLog('Admin', 'Staff Status Changed', `Changed status of ${user.fullName} to ${newStatus}.`);
   };
 
+  const updateStaffUser = (staffId: string, updates: Partial<StaffUser>) => {
+    setStaffUsers(prev =>
+      prev.map(u => (u.id === staffId ? { ...u, ...updates } : u))
+    );
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('staff_users').update(updates).eq('id', staffId);
+    }
+    addAuditLog('Admin', 'Staff Account Updated', `Updated profile for staff member ${staffId}.`);
+  };
+
   const addAuditLog = (portal: AuditLog['portal'], action: string, details: string) => {
     const newLog: AuditLog = {
       id: generateId('LOG'),
@@ -874,6 +892,51 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addAuditLog('Player', 'KYC Resubmitted', `Player ${playerId} re-submitted KYC verification information.`);
   };
 
+  const updatePlayer = (playerId: string, updates: Partial<Player>) => {
+    setPlayers(prev =>
+      prev.map(p => {
+        if (p.id === playerId) {
+          const updated = { ...p, ...updates };
+          if (updates.kyc) {
+            updated.kyc = { ...p.kyc, ...updates.kyc };
+          }
+          return updated;
+        }
+        return p;
+      })
+    );
+
+    if (isSupabaseConfigured && supabase) {
+      const p = updates;
+      supabase.from('players').update({
+        ...(p.fullName ? { full_name: p.fullName } : {}),
+        ...(p.phone ? { phone: p.phone } : {}),
+        ...(p.email ? { email: p.email } : {}),
+        ...(p.membershipTier ? { membership_tier: p.membershipTier } : {}),
+        ...(p.kycStatus ? { kyc_status: p.kycStatus } : {}),
+        ...(p.notes !== undefined ? { notes: p.notes } : {}),
+      }).eq('id', playerId);
+    }
+
+    addAuditLog('Admin', 'Player Profile Updated', `Updated member profile for ${playerId}.`);
+  };
+
+  const deletePlayer = (playerId: string) => {
+    const p = players.find(x => x.id === playerId);
+    setPlayers(prev => prev.filter(x => x.id !== playerId));
+    setCheckIns(prev => prev.filter(c => c.playerId !== playerId));
+    if (selectedPlayerId === playerId) {
+      setSelectedPlayerIdState('');
+    }
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('players').delete().eq('id', playerId);
+      supabase.from('daily_check_ins').delete().eq('player_id', playerId);
+    }
+
+    addAuditLog('Admin', 'Player Record Deleted', `Removed player member: ${p ? p.fullName : playerId} (${playerId}).`);
+  };
+
   // CASHIER ACTIONS
   const createTournament = (tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'createdBy'>): Tournament => {
     const newTournament: Tournament = {
@@ -904,6 +967,29 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     addAuditLog('Cashier', 'Tournament Created', `Created tournament "${newTournament.name}" (Buy-in: ₹${newTournament.buyInFee} + ₹${newTournament.clubRake}).`);
     return newTournament;
+  };
+
+  const updateTournament = (tournamentId: string, updates: Partial<Tournament>) => {
+    setTournaments(prev =>
+      prev.map(t => (t.id === tournamentId ? { ...t, ...updates } : t))
+    );
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('tournaments').update(updates).eq('id', tournamentId);
+    }
+
+    addAuditLog('Cashier', 'Tournament Updated', `Updated tournament details for ${tournamentId}.`);
+  };
+
+  const deleteTournament = (tournamentId: string) => {
+    const trn = tournaments.find(t => t.id === tournamentId);
+    setTournaments(prev => prev.filter(t => t.id !== tournamentId));
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('tournaments').delete().eq('id', tournamentId);
+    }
+
+    addAuditLog('Cashier', 'Tournament Deleted', `Deleted tournament: ${trn ? trn.name : tournamentId}.`);
   };
 
   const registerPlayerForTournament = (params: {
@@ -1366,6 +1452,40 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return newExpense;
   };
 
+  const updateExpense = (expenseId: string, updates: Partial<Expense>) => {
+    setExpenses(prev =>
+      prev.map(e => (e.id === expenseId ? { ...e, ...updates } : e))
+    );
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('expenses').update(updates).eq('id', expenseId);
+    }
+
+    addAuditLog('Admin', 'Expense Updated', `Updated expense record ${expenseId}.`);
+  };
+
+  const deleteExpense = (expenseId: string) => {
+    const exp = expenses.find(e => e.id === expenseId);
+    setExpenses(prev => prev.filter(e => e.id !== expenseId));
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('expenses').delete().eq('id', expenseId);
+    }
+
+    addAuditLog('Admin', 'Expense Deleted', `Deleted expense: ${exp ? `₹${exp.amount} for ${exp.category}` : expenseId}.`);
+  };
+
+  const deleteCashTransaction = (transactionId: string) => {
+    const txn = cashTransactions.find(t => t.id === transactionId);
+    setCashTransactions(prev => prev.filter(t => t.id !== transactionId));
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('cash_transactions').delete().eq('id', transactionId);
+    }
+
+    addAuditLog('Admin', 'Cash Transaction Voided', `Voided/Deleted cash transaction: ${txn ? `₹${txn.amount} (${txn.category})` : transactionId}.`);
+  };
+
   const resetToDemoData = () => {
     setStaffUsers(initialStaffUsers);
     setCurrentStaffUser(initialStaffUsers[0]);
@@ -1406,6 +1526,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loginStaff,
         logoutStaff,
         createStaffUser,
+        updateStaffUser,
         deleteStaffUser,
         toggleStaffStatus,
         players,
@@ -1426,21 +1547,28 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         netTreasuryBalance,
         registerNewPlayer,
         performDailyCheckIn,
+        updatePlayer,
+        deletePlayer,
         updatePlayerKYC,
         hasPlayerCheckedInToday,
         lookupMemberByPhone,
         requestBuyChips,
         createTournament,
+        updateTournament,
+        deleteTournament,
         registerPlayerForTournament,
         fulfillChipRequest,
         cancelChipRequest,
         addCashReceived,
         addCashGiven,
+        deleteCashTransaction,
         updateTournamentStatus,
         approvePlayerEntry,
         rejectPlayerEntry,
         reviewKYC,
         addExpense,
+        updateExpense,
+        deleteExpense,
         resetToDemoData,
         addAuditLog,
       }}

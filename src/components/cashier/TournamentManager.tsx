@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Trophy, Plus, Users, Calendar } from 'lucide-react';
+import { Trophy, Plus, Users, Calendar, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { TournamentStatus } from '../../types';
+import { Tournament, TournamentStatus } from '../../types';
 import { formatClubLabel, formatCurrency, formatDateTime } from '../../utils/formatters';
 import { TournamentStatusBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
@@ -11,8 +11,11 @@ interface TournamentManagerProps {
 }
 
 export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegisterPlayer }) => {
-  const { tournaments, entries, createTournament, updateTournamentStatus } = useClub();
+  const { tournaments, entries, createTournament, updateTournament, deleteTournament, updateTournamentStatus } = useClub();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
 
   const [formData, setFormData] = useState(() => ({
     name: '',
@@ -25,6 +28,61 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
     startTime: new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 16),
     status: 'Registering' as TournamentStatus,
   }));
+
+  const [editFormData, setEditFormData] = useState(() => ({
+    name: '',
+    buyInFee: 500,
+    clubRake: 50,
+    startingChips: 30000,
+    guaranteedPrizePool: 25000,
+    maxSeats: 60,
+    blindLevelsMinutes: 20,
+    startTime: new Date().toISOString().slice(0, 16),
+    status: 'Registering' as TournamentStatus,
+  }));
+
+  const handleOpenEdit = (trn: Tournament) => {
+    setSelectedTournament(trn);
+    setEditFormData({
+      name: trn.name,
+      buyInFee: trn.buyInFee,
+      clubRake: trn.clubRake,
+      startingChips: trn.startingChips,
+      guaranteedPrizePool: trn.guaranteedPrizePool,
+      maxSeats: trn.maxSeats,
+      blindLevelsMinutes: trn.blindLevelsMinutes,
+      startTime: trn.startTime ? new Date(trn.startTime).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+      status: trn.status,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTournament || !editFormData.name.trim()) return;
+
+    updateTournament(selectedTournament.id, {
+      name: editFormData.name,
+      buyInFee: Number(editFormData.buyInFee),
+      clubRake: Number(editFormData.clubRake),
+      startingChips: Number(editFormData.startingChips),
+      guaranteedPrizePool: Number(editFormData.guaranteedPrizePool),
+      maxSeats: Number(editFormData.maxSeats),
+      blindLevelsMinutes: Number(editFormData.blindLevelsMinutes),
+      startTime: new Date(editFormData.startTime).toISOString(),
+      status: editFormData.status,
+    });
+
+    setIsEditModalOpen(false);
+    setSelectedTournament(null);
+  };
+
+  const handleDelete = () => {
+    if (!selectedTournament) return;
+    deleteTournament(selectedTournament.id);
+    setIsDeleteModalOpen(false);
+    setSelectedTournament(null);
+  };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,10 +124,10 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
         <div>
           <h3 className="page-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Trophy size={20} color="#e11d48" />
-            Club Tournaments & Events
+            Club Tournaments & Events ({tournaments.length})
           </h3>
           <p className="page-subtitle" style={{ fontSize: '0.84rem', color: '#475569', marginTop: '3px', fontWeight: 500 }}>
-            Create new poker tournaments, configure entry details, and manage player seating.
+            Create, edit, manage, and register players for all poker events.
           </p>
         </div>
         <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
@@ -95,38 +153,60 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
                       {formatClubLabel(trn.name)}
                     </h4>
                   </div>
-                  <TournamentStatusBadge status={trn.status} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <TournamentStatusBadge status={trn.status} />
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '3px 6px' }}
+                      title="Edit Tournament"
+                      onClick={() => handleOpenEdit(trn)}
+                    >
+                      <Edit3 size={13} />
+                    </button>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '3px 6px', color: '#ef4444' }}
+                      title="Delete Tournament"
+                      onClick={() => {
+                        setSelectedTournament(trn);
+                        setIsDeleteModalOpen(true);
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
 
-                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '10px', marginBottom: '14px', border: '1px solid var(--border-subtle)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '6px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Buy-in + Rake:</span>
-                    <span style={{ fontWeight: 700, color: 'var(--gold-light)' }}>
+                <div className="form-grid-2" style={{ gap: '10px', marginBottom: '12px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Buy-in / Rake:</span>
+                    <div style={{ fontWeight: 800, color: 'var(--gold-light)', fontSize: '0.9rem' }}>
                       {formatCurrency(trn.buyInFee)} + {formatCurrency(trn.clubRake)}
-                    </span>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '6px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Guaranteed Pool:</span>
-                    <span style={{ fontWeight: 800, color: '#ffffff' }}>
-                      {formatCurrency(effectivePrizePool)} GTD
-                    </span>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Guaranteed Prize:</span>
+                    <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.9rem' }}>
+                      {formatCurrency(effectivePrizePool)}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '6px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Starting Chips:</span>
-                    <span className="tabular-num">{trn.startingChips.toLocaleString()} chips</span>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Starting Stack:</span>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                      {trn.startingChips.toLocaleString()} Chips
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Seats Enrolled:</span>
-                    <span style={{ fontWeight: 600 }}>
-                      {trnEntries.length} / {trn.maxSeats} Players
-                    </span>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Registered:</span>
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                      {trnEntries.length} / {trn.maxSeats} Seats
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', color: 'var(--text-dim)', marginBottom: '16px' }}>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
                   <Calendar size={13} />
-                  <span>Starts: {formatDateTime(trn.startTime)}</span>
-                  <span>({trn.blindLevelsMinutes}m blinds)</span>
+                  <span>Start: {formatDateTime(trn.startTime)} ({trn.blindLevelsMinutes}m blinds)</span>
                 </div>
               </div>
 
@@ -290,6 +370,174 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
           </div>
         </form>
       </Modal>
+
+      {/* Edit Tournament Modal */}
+      {selectedTournament && (
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          title={`Edit Tournament: ${selectedTournament.name}`}
+          subtitle={`Event ID: ${selectedTournament.id}`}
+          size="md"
+        >
+          <form onSubmit={handleEditSubmit}>
+            <div className="form-group">
+              <label className="form-label">Tournament Name *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.name}
+                onChange={e => setEditFormData({ ...editFormData, name: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Buy-in Fee (₹) *</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={editFormData.buyInFee}
+                  onChange={e => setEditFormData({ ...editFormData, buyInFee: Number(e.target.value) })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Club Entry Rake (₹) *</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={editFormData.clubRake}
+                  onChange={e => setEditFormData({ ...editFormData, clubRake: Number(e.target.value) })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Starting Stack (Chips) *</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={editFormData.startingChips}
+                  onChange={e => setEditFormData({ ...editFormData, startingChips: Number(e.target.value) })}
+                  required
+                  step="5000"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Guaranteed Prize Pool (₹) *</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={editFormData.guaranteedPrizePool}
+                  onChange={e => setEditFormData({ ...editFormData, guaranteedPrizePool: Number(e.target.value) })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-grid-3">
+              <div className="form-group">
+                <label className="form-label">Max Seats</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={editFormData.maxSeats}
+                  onChange={e => setEditFormData({ ...editFormData, maxSeats: Number(e.target.value) })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Blind Levels (Mins)</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={editFormData.blindLevelsMinutes}
+                  onChange={e => setEditFormData({ ...editFormData, blindLevelsMinutes: Number(e.target.value) })}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Event Status</label>
+                <select
+                  className="form-select"
+                  value={editFormData.status}
+                  onChange={e => setEditFormData({ ...editFormData, status: e.target.value as TournamentStatus })}
+                >
+                  <option value="Upcoming">Upcoming</option>
+                  <option value="Registering">Registering</option>
+                  <option value="Running">Running</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Tournament Start Date & Time</label>
+              <input
+                type="datetime-local"
+                className="form-input"
+                value={editFormData.startTime}
+                onChange={e => setEditFormData({ ...editFormData, startTime: e.target.value })}
+              />
+            </div>
+
+            <div className="modal-footer" style={{ margin: '20px -24px -24px', padding: '16px 24px' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Save Tournament Changes
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Delete Tournament Confirmation Modal */}
+      {selectedTournament && (
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Delete Tournament"
+          subtitle="Irreversible action"
+          size="sm"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
+            <div
+              style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1.5px solid #ef4444',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                color: '#ef4444',
+              }}
+            >
+              <AlertTriangle size={28} />
+            </div>
+
+            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>
+              Are you sure you want to delete tournament <strong>{selectedTournament.name}</strong> ({selectedTournament.id})?
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setIsDeleteModalOpen(false)}>
+                Cancel
+              </button>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleDelete}>
+                Delete Tournament
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

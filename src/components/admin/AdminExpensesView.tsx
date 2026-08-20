@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Receipt, Plus } from 'lucide-react';
+import { Receipt, Plus, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { ExpenseCategory, PaymentMethod } from '../../types';
+import { Expense, ExpenseCategory, PaymentMethod } from '../../types';
 import { formatCurrency, formatDateOnly, getTodayDateString } from '../../utils/formatters';
 import { Modal } from '../common/Modal';
 
 export const AdminExpensesView: React.FC = () => {
-  const { expenses, totalExpensesAmount, addExpense } = useClub();
+  const { expenses, totalExpensesAmount, addExpense, updateExpense, deleteExpense } = useClub();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
 
   const [formData, setFormData] = useState({
     category: 'Dealer & Staff Wages' as ExpenseCategory,
@@ -18,6 +21,55 @@ export const AdminExpensesView: React.FC = () => {
     date: getTodayDateString(),
     receiptNumber: '',
   });
+
+  const [editFormData, setEditFormData] = useState({
+    category: 'Dealer & Staff Wages' as ExpenseCategory,
+    amount: 500,
+    description: '',
+    paidTo: '',
+    paymentMethod: 'Cash' as PaymentMethod,
+    date: getTodayDateString(),
+    receiptNumber: '',
+  });
+
+  const handleOpenEdit = (exp: Expense) => {
+    setSelectedExpense(exp);
+    setEditFormData({
+      category: exp.category,
+      amount: exp.amount,
+      description: exp.description,
+      paidTo: exp.paidTo,
+      paymentMethod: exp.paymentMethod,
+      date: exp.date,
+      receiptNumber: exp.receiptNumber || '',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedExpense || !editFormData.amount || editFormData.amount <= 0) return;
+
+    updateExpense(selectedExpense.id, {
+      category: editFormData.category,
+      amount: Number(editFormData.amount),
+      description: editFormData.description,
+      paidTo: editFormData.paidTo,
+      paymentMethod: editFormData.paymentMethod,
+      date: editFormData.date,
+      receiptNumber: editFormData.receiptNumber,
+    });
+
+    setIsEditModalOpen(false);
+    setSelectedExpense(null);
+  };
+
+  const handleDelete = () => {
+    if (!selectedExpense) return;
+    deleteExpense(selectedExpense.id);
+    setIsDeleteModalOpen(false);
+    setSelectedExpense(null);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,10 +103,10 @@ export const AdminExpensesView: React.FC = () => {
         <div>
           <h3 className="page-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Receipt size={20} color="#e11d48" />
-            Club Operating Expenses Management
+            Club Operating Expenses Management ({expenses.length})
           </h3>
           <p className="page-subtitle" style={{ fontSize: '0.84rem', color: '#475569', marginTop: '3px', fontWeight: 500 }}>
-            Record dealer payroll, rent, utilities, card/chip supplies, and refreshment costs.
+            Record, edit, and audit dealer payroll, rent, utilities, card/chip supplies, and refreshment costs.
           </p>
         </div>
 
@@ -102,6 +154,7 @@ export const AdminExpensesView: React.FC = () => {
                 <th>Payment Mode</th>
                 <th>Date</th>
                 <th>Recorded By</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -123,6 +176,29 @@ export const AdminExpensesView: React.FC = () => {
                   </td>
                   <td>{formatDateOnly(exp.date)}</td>
                   <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{exp.recordedBy}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleOpenEdit(exp)}
+                        title="Edit Expense"
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        onClick={() => {
+                          setSelectedExpense(exp);
+                          setIsDeleteModalOpen(true);
+                        }}
+                        title="Delete Expense"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -171,59 +247,56 @@ export const AdminExpensesView: React.FC = () => {
                 min="1"
               />
             </div>
-
             <div className="form-group">
-              <label className="form-label" htmlFor="expense-vendor">Paid To / Vendor *</label>
-              <input
-                id="expense-vendor"
-                type="text"
-                className="form-input"
-                placeholder="e.g. Floor Dealer Crew"
-                value={formData.paidTo}
-                onChange={e => setFormData({ ...formData, paidTo: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-grid-2">
-            <div className="form-group">
-              <label className="form-label" htmlFor="expense-method">Payment Method *</label>
+              <label className="form-label" htmlFor="expense-method">Payment Mode *</label>
               <select
                 id="expense-method"
                 className="form-select"
                 value={formData.paymentMethod}
                 onChange={e => setFormData({ ...formData, paymentMethod: e.target.value as PaymentMethod })}
               >
-                <option value="Cash">Cash Drawer</option>
+                <option value="Cash">Cash</option>
+                <option value="UPI/Digital">UPI / Digital</option>
                 <option value="Bank Transfer">Bank Transfer</option>
-                <option value="Credit/Debit Card">Company Card</option>
-                <option value="Chips">Chips</option>
+                <option value="Credit/Debit Card">Credit/Debit Card</option>
               </select>
             </div>
+          </div>
 
+          <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label" htmlFor="expense-reference">Receipt / Invoice Ref</label>
+              <label className="form-label" htmlFor="expense-paidto">Paid To (Vendor / Staff) *</label>
               <input
-                id="expense-reference"
+                id="expense-paidto"
                 type="text"
                 className="form-input"
-                placeholder="e.g. INV-8812"
-                value={formData.receiptNumber}
-                onChange={e => setFormData({ ...formData, receiptNumber: e.target.value })}
+                placeholder="e.g. Master Cards Supplies Ltd"
+                value={formData.paidTo}
+                onChange={e => setFormData({ ...formData, paidTo: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="expense-date">Expense Date</label>
+              <input
+                id="expense-date"
+                type="date"
+                className="form-input"
+                value={formData.date}
+                onChange={e => setFormData({ ...formData, date: e.target.value })}
               />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="expense-description">Description / Notes *</label>
-            <textarea
+            <label className="form-label" htmlFor="expense-description">Expense Description / Notes</label>
+            <input
               id="expense-description"
-              className="form-textarea"
-              placeholder="Provide context for this operating cost..."
+              type="text"
+              className="form-input"
+              placeholder="e.g. 50 Copag 100% plastic playing card decks"
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
-              rows={2}
             />
           </div>
 
@@ -232,11 +305,153 @@ export const AdminExpensesView: React.FC = () => {
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              <Plus size={16} /> Record Expense
+              <Plus size={16} /> Record Expense Voucher
             </button>
           </div>
         </form>
       </Modal>
+
+      {/* Edit Expense Modal */}
+      {selectedExpense && (
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          title={`Edit Expense Voucher: ${selectedExpense.id}`}
+          subtitle={`Recorded by: ${selectedExpense.recordedBy}`}
+          size="md"
+        >
+          <form onSubmit={handleEditSubmit}>
+            <div className="form-group">
+              <label className="form-label">Expense Category *</label>
+              <select
+                className="form-select"
+                value={editFormData.category}
+                onChange={e => setEditFormData({ ...editFormData, category: e.target.value as ExpenseCategory })}
+              >
+                <option value="Dealer & Staff Wages">Dealer & Staff Wages</option>
+                <option value="Rent & Utilities">Rent & Utilities</option>
+                <option value="Cards, Chips & Tables">Cards, Chips & Table Supplies</option>
+                <option value="Refreshments & F&B">Refreshments & F&B Services</option>
+                <option value="Security & Surveillance">Security & Surveillance</option>
+                <option value="Licensing & Compliance">Licensing & Compliance</option>
+                <option value="Maintenance & Repairs">Maintenance & Repairs</option>
+                <option value="Miscellaneous">Miscellaneous</option>
+              </select>
+            </div>
+
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Amount (₹) *</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={editFormData.amount}
+                  onChange={e => setEditFormData({ ...editFormData, amount: Number(e.target.value) })}
+                  required
+                  min="1"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Payment Mode *</label>
+                <select
+                  className="form-select"
+                  value={editFormData.paymentMethod}
+                  onChange={e => setEditFormData({ ...editFormData, paymentMethod: e.target.value as PaymentMethod })}
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="UPI/Digital">UPI / Digital</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Credit/Debit Card">Credit/Debit Card</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Paid To (Vendor / Staff) *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editFormData.paidTo}
+                  onChange={e => setEditFormData({ ...editFormData, paidTo: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Expense Date</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={editFormData.date}
+                  onChange={e => setEditFormData({ ...editFormData, date: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Expense Description / Notes</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.description}
+                onChange={e => setEditFormData({ ...editFormData, description: e.target.value })}
+              />
+            </div>
+
+            <div className="modal-footer" style={{ margin: '20px -24px -24px', padding: '16px 24px' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Save Expense Changes
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Delete Expense Confirmation Modal */}
+      {selectedExpense && (
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          title="Delete Expense Record"
+          subtitle="Irreversible financial action"
+          size="sm"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
+            <div
+              style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1.5px solid #ef4444',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                color: '#ef4444',
+              }}
+            >
+              <AlertTriangle size={28} />
+            </div>
+
+            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>
+              Are you sure you want to delete expense <strong>{selectedExpense.id}</strong> (₹{selectedExpense.amount.toLocaleString('en-IN')} for {selectedExpense.category})?
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setIsDeleteModalOpen(false)}>
+                Cancel
+              </button>
+              <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleDelete}>
+                Delete Expense
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

@@ -6,15 +6,18 @@ import {
   Mail,
   CheckCircle2,
   Ban,
+  Edit3,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { StaffRole } from '../../types';
+import { StaffRole, StaffUser } from '../../types';
 import { formatDateOnly } from '../../utils/formatters';
 import { Modal } from '../common/Modal';
 
 export const StaffManager: React.FC = () => {
-  const { staffUsers, createStaffUser, deleteStaffUser, toggleStaffStatus } = useClub();
+  const { staffUsers, createStaffUser, updateStaffUser, deleteStaffUser, toggleStaffStatus } = useClub();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<StaffUser | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -24,9 +27,44 @@ export const StaffManager: React.FC = () => {
     role: 'cashier' as 'cashier' | 'security',
   });
 
+  const [editFormData, setEditFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    role: 'cashier' as 'cashier' | 'security' | 'admin',
+  });
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const pendingDeleteUser = staffUsers.find(user => user.id === pendingDeleteId);
+
+  const handleOpenEdit = (user: StaffUser) => {
+    setEditingUser(user);
+    setEditFormData({
+      fullName: user.fullName,
+      email: user.email,
+      password: user.password,
+      role: user.role,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser || !editFormData.fullName.trim() || !editFormData.email.trim()) return;
+
+    updateStaffUser(editingUser.id, {
+      fullName: editFormData.fullName,
+      email: editFormData.email,
+      role: editFormData.role as StaffRole,
+      password: editFormData.password || editingUser.password,
+    });
+
+    setSuccess(`Updated staff profile for ${editFormData.fullName}!`);
+    setTimeout(() => setSuccess(null), 3000);
+    setIsEditModalOpen(false);
+    setEditingUser(null);
+  };
 
   const confirmDelete = () => {
     if (!pendingDeleteId) return;
@@ -179,6 +217,16 @@ export const StaffManager: React.FC = () => {
                       <div style={{ display: 'inline-flex', gap: '6px' }}>
                         <button
                           type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleOpenEdit(user)}
+                          title="Edit staff account"
+                        >
+                          <Edit3 size={12} />
+                          <span>Edit</span>
+                        </button>
+
+                        <button
+                          type="button"
                           className={`btn btn-sm ${user.status === 'active' ? 'btn-secondary' : 'btn-emerald'}`}
                           onClick={() => toggleStaffStatus(user.id)}
                           title={user.status === 'active' ? 'Suspend staff account' : 'Reactivate account'}
@@ -199,9 +247,20 @@ export const StaffManager: React.FC = () => {
                       </div>
                     )}
                     {isSuperAdmin && (
-                      <span style={{ fontSize: '0.72rem', color: 'var(--gold-light)', fontWeight: 700 }}>
-                        Primary Master Admin
-                      </span>
+                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleOpenEdit(user)}
+                          title="Edit master admin profile"
+                        >
+                          <Edit3 size={12} />
+                          <span>Edit</span>
+                        </button>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--gold-light)', fontWeight: 700, padding: '4px 6px' }}>
+                          Primary Admin
+                        </span>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -229,28 +288,35 @@ export const StaffManager: React.FC = () => {
                 <span className={`badge ${user.status === 'active' ? 'badge-success' : 'badge-danger'}`}>
                   <span className="badge-dot" /> {user.status}
                 </span>
-                {isSuperAdmin ? (
-                  <span className="staff-master-label">Master admin</span>
-                ) : (
-                  <div>
-                    <button
-                      type="button"
-                      className={`btn btn-sm ${user.status === 'active' ? 'btn-secondary' : 'btn-emerald'}`}
-                      onClick={() => toggleStaffStatus(user.id)}
-                    >
-                      {user.status === 'active' ? <Ban size={13} /> : <CheckCircle2 size={13} />}
-                      {user.status === 'active' ? 'Suspend' : 'Activate'}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm btn-icon"
-                      aria-label={`Delete ${user.fullName}`}
-                      onClick={() => setPendingDeleteId(user.id)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
+                <div style={{ display: 'inline-flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => handleOpenEdit(user)}
+                  >
+                    <Edit3 size={13} /> Edit
+                  </button>
+                  {!isSuperAdmin && (
+                    <>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${user.status === 'active' ? 'btn-secondary' : 'btn-emerald'}`}
+                        onClick={() => toggleStaffStatus(user.id)}
+                      >
+                        {user.status === 'active' ? <Ban size={13} /> : <CheckCircle2 size={13} />}
+                        {user.status === 'active' ? 'Suspend' : 'Activate'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm btn-icon"
+                        aria-label={`Delete ${user.fullName}`}
+                        onClick={() => setPendingDeleteId(user.id)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </article>
           );
@@ -335,6 +401,86 @@ export const StaffManager: React.FC = () => {
         </form>
       </Modal>
 
+      {/* Edit Staff Account Modal */}
+      {editingUser && (
+        <Modal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingUser(null);
+          }}
+          title={`Edit Staff Profile: ${editingUser.fullName}`}
+          subtitle={`Staff ID: ${editingUser.id}`}
+          size="md"
+        >
+          <form onSubmit={handleEditSubmit}>
+            <div className="form-group">
+              <label className="form-label">Full Name *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={editFormData.fullName}
+                onChange={e => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Login Email Address *</label>
+              <input
+                type="email"
+                className="form-input"
+                value={editFormData.email}
+                onChange={e => setEditFormData({ ...editFormData, email: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="Leave blank to keep existing password"
+                value={editFormData.password}
+                onChange={e => setEditFormData({ ...editFormData, password: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Assigned Role</label>
+              <select
+                className="form-select"
+                value={editFormData.role}
+                onChange={e => setEditFormData({ ...editFormData, role: e.target.value as any })}
+                disabled={editingUser.role === 'admin'}
+              >
+                <option value="cashier">Cashier Desk</option>
+                <option value="security">Security Door Desk</option>
+                <option value="admin">Super Admin</option>
+              </select>
+            </div>
+
+            <div className="modal-footer" style={{ margin: '18px -24px -22px', padding: '16px 24px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditingUser(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-primary">
+                Save Staff Changes
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={!!pendingDeleteUser}
         onClose={() => setPendingDeleteId(null)}
