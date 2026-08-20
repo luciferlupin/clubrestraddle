@@ -36,7 +36,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   onClose,
   onSelectPlayer,
 }) => {
-  const { players, todayCheckIns, approvePlayerEntry } = useClub();
+  const { players, todayCheckIns, approvePlayerEntry, performDailyCheckIn } = useClub();
   const [manualCode, setManualCode] = useState('');
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -58,18 +58,16 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
     if (!isOpen || !cameraActive) {
       stopCurrentStream();
-      return stopCurrentStream;
+      return;
     }
 
     let cancelled = false;
     const startCamera = async () => {
+      setCameraError(null);
       try {
-        if (!navigator.mediaDevices?.getUserMedia) {
-          setCameraError('Camera access is not supported on this browser.');
-          return;
-        }
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
+          video: { facingMode: 'environment' },
+          audio: false,
         });
         if (cancelled) {
           stream.getTracks().forEach(track => track.stop());
@@ -99,26 +97,74 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     if (!trimmed) return;
     setScanError(null);
 
-    // Check if code contains player ID or check-in ID or URL
+    let extractedPlayerId: string | null = null;
+    let extractedScanId: string | null = null;
+
+    // 1. Try URL parsing if it looks like a URL or query string
+    if (trimmed.includes('?') || trimmed.includes('/') || trimmed.startsWith('http')) {
+      try {
+        const urlStr = trimmed.startsWith('http') ? trimmed : `https://dummy.club/${trimmed.startsWith('?') ? trimmed : `?${trimmed}`}`;
+        const urlObj = new URL(urlStr);
+        extractedPlayerId = urlObj.searchParams.get('player') || urlObj.searchParams.get('playerId');
+        extractedScanId = urlObj.searchParams.get('scan') || urlObj.searchParams.get('checkInId');
+      } catch {
+        // Fallback
+      }
+    }
+
+    // 2. Try JSON parsing
+    if (!extractedPlayerId && trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        extractedPlayerId = parsed.playerId || parsed.player || parsed.id;
+        extractedScanId = parsed.scan || parsed.checkInId;
+      } catch {
+        // Fallback
+      }
+    }
+
+    // 3. Resolve Player & Check-In
     let foundPlayer: Player | undefined;
     let foundCheckIn: DailyCheckIn | undefined;
 
-    // Check by checkIn ID
-    foundCheckIn = todayCheckIns.find(c => c.id.toLowerCase() === trimmed.toLowerCase() || trimmed.includes(c.id));
+    // Check by extracted or raw scan/check-in ID
+    const searchScanId = extractedScanId || trimmed;
+    foundCheckIn = todayCheckIns.find(
+      c => c.id.toLowerCase() === searchScanId.toLowerCase() || (searchScanId.length > 5 && trimmed.includes(c.id))
+    );
 
     if (foundCheckIn) {
       foundPlayer = players.find(p => p.id === foundCheckIn!.playerId);
-    } else {
-      // Check by Player ID
-      foundPlayer = players.find(p => p.id.toLowerCase() === trimmed.toLowerCase() || trimmed.includes(p.id));
+    }
+
+    // Check by extracted or raw player ID
+    if (!foundPlayer) {
+      const searchPlayerId = extractedPlayerId || trimmed;
+      foundPlayer = players.find(
+        p => p.id.toLowerCase() === searchPlayerId.toLowerCase() || (searchPlayerId.length > 4 && trimmed.includes(p.id))
+      );
       if (foundPlayer) {
         foundCheckIn = todayCheckIns.find(c => c.playerId === foundPlayer!.id);
       }
     }
 
-    // Check by Phone number
+    // Check by phone number (clean non-digits)
     if (!foundPlayer) {
-      foundPlayer = players.find(p => p.phone.includes(trimmed) || trimmed.includes(p.phone));
+      const cleanInputDigits = trimmed.replace(/\D/g, '');
+      if (cleanInputDigits.length >= 5) {
+        foundPlayer = players.find(p => {
+          const cleanPhoneDigits = p.phone.replace(/\D/g, '');
+          return cleanPhoneDigits.includes(cleanInputDigits) || cleanInputDigits.includes(cleanPhoneDigits);
+        });
+        if (foundPlayer) {
+          foundCheckIn = todayCheckIns.find(c => c.playerId === foundPlayer!.id);
+        }
+      }
+    }
+
+    // Check by player name (fuzzy match)
+    if (!foundPlayer && trimmed.length >= 3) {
+      foundPlayer = players.find(p => p.fullName.toLowerCase().includes(trimmed.toLowerCase()));
       if (foundPlayer) {
         foundCheckIn = todayCheckIns.find(c => c.playerId === foundPlayer!.id);
       }
@@ -128,7 +174,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       setScannedResult({ player: foundPlayer, checkIn: foundCheckIn });
       setManualCode('');
     } else {
-      setScanError(`No player matched “${trimmed}”. Check the code or select someone from the active queue.`);
+      setScanError(`No player matched “${trimmed}”. Check the QR code or select someone from the active queue.`);
     }
   };
 
@@ -141,8 +187,13 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     if (!scannedResult) return;
     setIsVerifying(true);
 
-    if (scannedResult.checkIn) {
-      approvePlayerEntry(scannedResult.checkIn.id);
+    let activeCheckIn = scannedResult.checkIn;
+    if (activeCheckIn) {
+      approvePlayerEntry(activeCheckIn.id);
+    } else {
+      // Auto-create daily check-in and approve entry immediately
+      activeCheckIn = performDailyCheckIn(scannedResult.player.id, 'Door Scanner Clearance');
+      approvePlayerEntry(activeCheckIn.id);
     }
 
     try {
@@ -158,7 +209,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
     setTimeout(() => {
       setIsVerifying(false);
-      onSelectPlayer(scannedResult.player, scannedResult.checkIn);
+      onSelectPlayer(scannedResult.player, activeCheckIn);
       onClose();
     }, 400);
   };

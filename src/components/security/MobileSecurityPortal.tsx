@@ -39,6 +39,7 @@ export const MobileSecurityPortal: React.FC = () => {
     approvePlayerEntry,
     rejectPlayerEntry,
     reviewKYC,
+    performDailyCheckIn,
   } = useClub();
 
   const [activeNav, setActiveNav] = useState<'scan' | 'queue' | 'history'>('scan');
@@ -81,7 +82,12 @@ export const MobileSecurityPortal: React.FC = () => {
   const handleApprove = (player: Player, checkIn?: DailyCheckIn) => {
     if (checkIn) {
       approvePlayerEntry(checkIn.id);
-    } else if (player.kycStatus === 'pending') {
+    } else {
+      const newCheckIn = performDailyCheckIn(player.id, 'Door Scanner Clearance');
+      approvePlayerEntry(newCheckIn.id);
+    }
+
+    if (player.kycStatus === 'pending') {
       reviewKYC(player.id, 'verified');
     }
 
