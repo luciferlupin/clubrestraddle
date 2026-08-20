@@ -81,11 +81,11 @@ export const AdminPortal: React.FC = () => {
         }
       />
 
-      <DesktopSectionNav
+      <DesktopSectionNav<AdminTab>
         ariaLabel="Admin sections"
         activeId={activeTab}
         items={sections}
-        onChange={setActiveTab}
+        onChange={tab => setActiveTab(tab)}
         className="desktop-section-nav-admin"
       />
 

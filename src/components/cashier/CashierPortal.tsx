@@ -46,11 +46,11 @@ export const CashierPortal: React.FC = () => {
         notice={<><Lock size={14} aria-hidden="true" /> Event registration, chip dispatch & member vouchers</>}
       />
 
-      <DesktopSectionNav
+      <DesktopSectionNav<CashierTab>
         ariaLabel="Cashier sections"
         activeId={activeTab}
         items={sections}
-        onChange={setActiveTab}
+        onChange={tab => setActiveTab(tab)}
       />
 
       {/* Tab Content */}
