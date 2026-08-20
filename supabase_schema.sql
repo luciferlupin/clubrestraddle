@@ -281,12 +281,14 @@ FROM cash_transactions;
 -- 13. SEED DEFAULT SUPER ADMIN & INITIAL OPERATIONAL DATA (CLUB RE STRADDLE)
 -- ------------------------------------------------------------------------------
 
--- Staff Accounts (Admin, Cashier, Security)
+-- Staff Accounts (Club Owners, Admin, Cashier, Security)
 INSERT INTO staff_users (id, full_name, email, password_hash, role, status, created_by, created_at)
 VALUES
-('STF-ADM-001', 'Jai Goel', 'jaigoel2206@gmail.com', '12345', 'admin', 'active', 'System Initializer', NOW()),
-('STF-CSH-001', 'Karan Verma', 'karan.cashier@restraddle.club', '12345', 'cashier', 'active', 'Jai Goel', NOW()),
-('STF-SEC-001', 'Vikram Singh', 'vikram.security@restraddle.club', '12345', 'security', 'active', 'Jai Goel', NOW())
+('STF-OWN-001', 'Shivam Gupta', 'shivamgupta@restraddle.club', '12345', 'admin', 'active', 'System Initializer', NOW()),
+('STF-OWN-002', 'Rajbeer Gupta', 'rajbeergupta@restraddle.club', '12345', 'admin', 'active', 'System Initializer', NOW()),
+('STF-ADM-003', 'Jai Goel', 'jaigoel2206@gmail.com', '12345', 'admin', 'active', 'Shivam Gupta', NOW()),
+('STF-CSH-004', 'Elena Rostova', 'cashier@club-restraddle.com', '12345', 'cashier', 'active', 'Shivam Gupta', NOW()),
+('STF-SEC-005', 'Marcus Vance', 'security@club-restraddle.com', '12345', 'security', 'active', 'Shivam Gupta', NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Initial Club Tournaments (INR)

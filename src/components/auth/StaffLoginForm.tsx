@@ -324,6 +324,36 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
+                onClick={() => handleSelectAccount('shivamgupta@restraddle.club', '12345')}
+                style={{
+                  justifyContent: 'flex-start',
+                  fontSize: '0.74rem',
+                  padding: '6px 10px',
+                  background: email === 'shivamgupta@restraddle.club' ? 'rgba(225, 29, 72, 0.25)' : undefined,
+                  border: email === 'shivamgupta@restraddle.club' ? '1px solid #e11d48' : undefined,
+                }}
+              >
+                👑 <strong>Club Owner / Admin</strong> (Shivam Gupta)
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => handleSelectAccount('rajbeergupta@restraddle.club', '12345')}
+                style={{
+                  justifyContent: 'flex-start',
+                  fontSize: '0.74rem',
+                  padding: '6px 10px',
+                  background: email === 'rajbeergupta@restraddle.club' ? 'rgba(225, 29, 72, 0.25)' : undefined,
+                  border: email === 'rajbeergupta@restraddle.club' ? '1px solid #e11d48' : undefined,
+                }}
+              >
+                👑 <strong>Club Owner / Admin</strong> (Rajbeer Gupta)
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
                 onClick={() => handleSelectAccount('jaigoel2206@gmail.com', '12345')}
                 style={{
                   justifyContent: 'flex-start',

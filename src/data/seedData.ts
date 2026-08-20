@@ -9,12 +9,12 @@ import {
   StaffUser,
 } from '../types';
 
-// Default Staff Users (Admin configured with requested email & credentials)
+// Default Staff Users (Club Owners & Operating Staff)
 export const initialStaffUsers: StaffUser[] = [
   {
-    id: 'STF-ADM-001',
-    fullName: 'Jai Goel',
-    email: 'jaigoel2206@gmail.com',
+    id: 'STF-OWN-001',
+    fullName: 'Shivam Gupta',
+    email: 'shivamgupta@restraddle.club',
     password: '12345',
     role: 'admin',
     status: 'active',
@@ -22,24 +22,44 @@ export const initialStaffUsers: StaffUser[] = [
     createdBy: 'System Initializer',
   },
   {
-    id: 'STF-CSH-002',
+    id: 'STF-OWN-002',
+    fullName: 'Rajbeer Gupta',
+    email: 'rajbeergupta@restraddle.club',
+    password: '12345',
+    role: 'admin',
+    status: 'active',
+    createdAt: '2026-08-20T00:00:00Z',
+    createdBy: 'System Initializer',
+  },
+  {
+    id: 'STF-ADM-003',
+    fullName: 'Jai Goel',
+    email: 'jaigoel2206@gmail.com',
+    password: '12345',
+    role: 'admin',
+    status: 'active',
+    createdAt: '2026-08-20T00:00:00Z',
+    createdBy: 'Shivam Gupta',
+  },
+  {
+    id: 'STF-CSH-004',
     fullName: 'Elena Rostova',
     email: 'cashier@club-restraddle.com',
     password: '12345',
     role: 'cashier',
     status: 'active',
     createdAt: '2026-08-20T00:00:00Z',
-    createdBy: 'Jai Goel',
+    createdBy: 'Shivam Gupta',
   },
   {
-    id: 'STF-SEC-003',
+    id: 'STF-SEC-005',
     fullName: 'Marcus Vance',
     email: 'security@club-restraddle.com',
     password: '12345',
     role: 'security',
     status: 'active',
     createdAt: '2026-08-20T00:00:00Z',
-    createdBy: 'Jai Goel',
+    createdBy: 'Shivam Gupta',
   },
 ];
 
