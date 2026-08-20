@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ShieldCheck, UserPlus, CheckCircle, Sparkles, AlertCircle, FileText, Lock } from 'lucide-react';
+import { ShieldCheck, UserPlus, CheckCircle2, Sparkles, AlertCircle, FileText, Lock, ArrowRight, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
-import { GovtIdType } from '../../types';
+import { GovtIdType, Player, DailyCheckIn } from '../../types';
+import { formatTimeOnly } from '../../utils/formatters';
 import confetti from 'canvas-confetti';
 
 interface KYCRegistrationFormProps {
@@ -29,6 +31,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [registeredData, setRegisteredData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
 
   const samplePhotos = [
     { label: 'Avatar 1', url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80' },
@@ -84,7 +87,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
     setSubmitting(true);
     setTimeout(() => {
-      registerNewPlayer(
+      const result = registerNewPlayer(
         {
           fullName: formData.fullName,
           phone: formData.phone,
@@ -103,8 +106,8 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
       try {
         confetti({
-          particleCount: 80,
-          spread: 70,
+          particleCount: 90,
+          spread: 80,
           origin: { y: 0.6 },
           colors: ['#e11d48', '#ffffff', '#f43f5e', '#be123c'],
         });
@@ -113,7 +116,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
       }
 
       setSubmitting(false);
-      onSuccess();
+      setRegisteredData(result);
     }, 400);
   };
 
@@ -133,6 +136,135 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
         return 'Enter Government ID Number';
     }
   };
+
+  // If Registration succeeded, show the Door Clearance QR Pass
+  if (registeredData) {
+    const verificationUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/?portal=security&scan=${registeredData.checkIn.id}&player=${registeredData.player.id}`
+      : `https://clubrestraddle.vercel.app/?portal=security&scan=${registeredData.checkIn.id}&player=${registeredData.player.id}`;
+
+    return (
+      <div
+        className="card"
+        style={{
+          maxWidth: '580px',
+          margin: '0 auto',
+          border: '1.5px solid #e11d48',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.8), 0 0 30px rgba(225,29,72,0.2)',
+          padding: '32px 24px',
+          textAlign: 'center',
+          background: 'linear-gradient(160deg, #15060b 0%, #090305 100%)',
+        }}
+      >
+        <div
+          style={{
+            width: '68px',
+            height: '68px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, rgba(225, 29, 72, 0.35), rgba(159, 18, 57, 0.5))',
+            border: '2px solid #e11d48',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '16px',
+            boxShadow: '0 0 24px rgba(225,29,72,0.4)',
+          }}
+        >
+          <CheckCircle2 size={38} color="#ffffff" />
+        </div>
+
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff', marginBottom: '6px' }}>
+          KYC Registration Completed!
+        </h2>
+        <p style={{ fontSize: '0.86rem', color: '#cbd5e1', marginBottom: '20px' }}>
+          Welcome to Club Re Straddle, <strong>{registeredData.player.fullName}</strong>. Your membership pass has been generated.
+        </p>
+
+        {/* High-Contrast QR Clearance Pass */}
+        <div
+          style={{
+            background: '#ffffff',
+            padding: '16px',
+            borderRadius: '16px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.8)',
+            border: '3px solid #e11d48',
+            display: 'inline-flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            marginBottom: '20px',
+          }}
+        >
+          <QRCodeSVG
+            value={verificationUrl}
+            size={180}
+            bgColor="#ffffff"
+            fgColor="#0f172a"
+            level="H"
+          />
+          <span style={{ color: '#0f172a', fontSize: '0.74rem', fontWeight: 800, marginTop: '8px', letterSpacing: '0.04em' }}>
+            DOOR CLEARANCE QR PASS • {registeredData.player.id}
+          </span>
+        </div>
+
+        {/* Clearance Card Info */}
+        <div
+          style={{
+            background: 'rgba(0, 0, 0, 0.4)',
+            border: '1px solid rgba(225, 29, 72, 0.35)',
+            borderRadius: '12px',
+            padding: '14px 18px',
+            textAlign: 'left',
+            marginBottom: '20px',
+            fontSize: '0.82rem',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ color: '#94a3b8' }}>Member ID:</span>
+            <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{registeredData.player.id}</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ color: '#94a3b8' }}>Identity Document:</span>
+            <strong style={{ color: '#ffffff' }}>{registeredData.player.kyc.govtIdType}</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ color: '#94a3b8' }}>Check-In Time:</span>
+            <strong style={{ color: '#ffffff' }}>Today at {formatTimeOnly(registeredData.checkIn.checkInTime)}</strong>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#94a3b8' }}>Status:</span>
+            <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>
+              <span className="badge-dot" /> Awaiting Security Scan
+            </span>
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: 'rgba(225, 29, 72, 0.12)',
+            border: '1px solid rgba(225, 29, 72, 0.3)',
+            borderRadius: '10px',
+            padding: '12px 16px',
+            fontSize: '0.8rem',
+            color: '#fda4af',
+            textAlign: 'left',
+            marginBottom: '20px',
+          }}
+        >
+          👉 <strong>Next Step:</strong> Please present the QR code above to the <strong>Security Officer</strong> at the club entrance. They will scan and verify your Aadhaar / PAN for instant door clearance.
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-primary btn-lg"
+          onClick={onSuccess}
+          style={{ width: '100%', justifyContent: 'center' }}
+        >
+          <span>Enter Member Lounge Dashboard</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="card" style={{ maxWidth: '720px', margin: '0 auto', border: '1px solid var(--border-gold)', position: 'relative' }}>
