@@ -1376,6 +1376,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setCashTransactions(initialCashTransactions);
     setExpenses(initialExpenses);
     setAuditLogs(initialAuditLogs);
+    setChipRequests(initialChipRequests);
     setSelectedPlayerIdState('');
 
     saveToStorage(STORAGE_KEYS.STAFF_USERS, initialStaffUsers);
@@ -1387,6 +1388,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     saveToStorage(STORAGE_KEYS.CASH_TXNS, initialCashTransactions);
     saveToStorage(STORAGE_KEYS.EXPENSES, initialExpenses);
     saveToStorage(STORAGE_KEYS.AUDIT_LOGS, initialAuditLogs);
+    saveToStorage(STORAGE_KEYS.CHIP_REQUESTS, initialChipRequests);
     saveToStorage(STORAGE_KEYS.SELECTED_PLAYER, '');
   };
 
