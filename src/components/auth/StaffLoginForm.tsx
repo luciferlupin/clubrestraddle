@@ -27,9 +27,10 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
   onBackToPlayer,
 }) => {
   const { loginStaff, setActiveRole } = useClub();
+  const [selectedDesk, setSelectedDesk] = useState<'admin' | 'cashier' | 'security'>(portalRole);
 
-  const getDefaultEmail = () => {
-    switch (portalRole) {
+  const getDefaultEmail = (desk: 'admin' | 'cashier' | 'security') => {
+    switch (desk) {
       case 'cashier':
         return 'cashier@club-restraddle.com';
       case 'security':
@@ -40,37 +41,45 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
     }
   };
 
-  const [email, setEmail] = useState(getDefaultEmail());
+  const [email, setEmail] = useState(getDefaultEmail(portalRole));
   const [password, setPassword] = useState('12345');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const handleDeskChange = (desk: 'admin' | 'cashier' | 'security') => {
+    setSelectedDesk(desk);
+    setActiveRole(desk);
+    setEmail(getDefaultEmail(desk));
+    setPassword('12345');
+    setErrorMessage(null);
+  };
+
   const getPortalInfo = () => {
-    switch (portalRole) {
+    switch (selectedDesk) {
       case 'cashier':
         return {
           title: 'Cashier Desk Terminal',
-          subtitle: 'Enter cashier or admin credentials to manage tournaments, billing, and vault ledger',
+          subtitle: 'Manage tournament buy-ins, player seating, cash transactions & prize pool payouts',
           color: '#e11d48',
-          icon: <DollarSign size={28} color="#ffffff" />,
+          icon: <DollarSign size={26} color="#ffffff" />,
           allowedRoles: ['cashier', 'admin'],
         };
       case 'security':
         return {
           title: 'Security Door Control Station',
-          subtitle: 'Enter security officer or admin credentials to verify members & issue door clearance',
+          subtitle: 'Verify player Aadhaar / PAN documents, live camera QR scanner & door clearance',
           color: '#e11d48',
-          icon: <ShieldCheck size={28} color="#ffffff" />,
+          icon: <ShieldCheck size={26} color="#ffffff" />,
           allowedRoles: ['security', 'admin'],
         };
       case 'admin':
       default:
         return {
           title: 'Executive Admin Center',
-          subtitle: 'Super Admin credentials required for financial oversight, staff provisioning, and audit logs',
+          subtitle: 'Super Admin credentials required for financial oversight, staff accounts & audit trail',
           color: '#e11d48',
-          icon: <LayoutDashboard size={28} color="#ffffff" />,
+          icon: <LayoutDashboard size={26} color="#ffffff" />,
           allowedRoles: ['admin'],
         };
     }
@@ -87,7 +96,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
       const result = loginStaff(email, password);
 
       if (!result.success || !result.user) {
-        setErrorMessage(result.message || 'Invalid email or password.');
+        setErrorMessage(result.message || 'Invalid staff email or password.');
         setSubmitting(false);
         return;
       }
@@ -95,7 +104,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
       // Check role authorization
       if (!portal.allowedRoles.includes(result.user.role)) {
         setErrorMessage(
-          `Access Denied: Your account role is "${result.user.role.toUpperCase()}". Only ${portal.allowedRoles.map(r => r.toUpperCase()).join(' or ')} accounts can access this portal.`
+          `Access Denied: Your account role is "${result.user.role.toUpperCase()}". Only ${portal.allowedRoles.map(r => r.toUpperCase()).join(' or ')} accounts can access this desk.`
         );
         setSubmitting(false);
         return;
@@ -103,7 +112,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
 
       setSubmitting(false);
       if (onSuccess) onSuccess();
-    }, 300);
+    }, 250);
   };
 
   const handleSelectAccount = (accEmail: string, accPass: string = '12345') => {
@@ -118,38 +127,120 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: '70vh',
+        minHeight: '72vh',
         padding: '16px',
       }}
     >
       <div
         className="card"
         style={{
-          maxWidth: '440px',
+          maxWidth: '460px',
           width: '100%',
-          border: `1.5px solid ${portal.color}`,
-          boxShadow: `0 12px 40px rgba(0,0,0,0.8), 0 0 25px rgba(245, 158, 11, 0.08)`,
+          border: '1.5px solid rgba(225, 29, 72, 0.5)',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.8), 0 0 30px rgba(225, 29, 72, 0.15)',
           padding: '28px',
+          background: '#0d0407',
         }}
       >
+        {/* Station Selection Tabs */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '6px',
+            background: '#15060b',
+            padding: '4px',
+            borderRadius: '10px',
+            border: '1px solid rgba(225, 29, 72, 0.3)',
+            marginBottom: '20px',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => handleDeskChange('admin')}
+            style={{
+              padding: '7px 4px',
+              borderRadius: '7px',
+              border: 'none',
+              background: selectedDesk === 'admin' ? 'linear-gradient(135deg, #e11d48, #9f1239)' : 'transparent',
+              color: selectedDesk === 'admin' ? '#ffffff' : '#94a3b8',
+              fontWeight: selectedDesk === 'admin' ? 800 : 600,
+              fontSize: '0.74rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              transition: 'all 0.2s',
+            }}
+          >
+            <LayoutDashboard size={13} /> Admin
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDeskChange('cashier')}
+            style={{
+              padding: '7px 4px',
+              borderRadius: '7px',
+              border: 'none',
+              background: selectedDesk === 'cashier' ? 'linear-gradient(135deg, #e11d48, #9f1239)' : 'transparent',
+              color: selectedDesk === 'cashier' ? '#ffffff' : '#94a3b8',
+              fontWeight: selectedDesk === 'cashier' ? 800 : 600,
+              fontSize: '0.74rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              transition: 'all 0.2s',
+            }}
+          >
+            <DollarSign size={13} /> Cashier
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDeskChange('security')}
+            style={{
+              padding: '7px 4px',
+              borderRadius: '7px',
+              border: 'none',
+              background: selectedDesk === 'security' ? 'linear-gradient(135deg, #e11d48, #9f1239)' : 'transparent',
+              color: selectedDesk === 'security' ? '#ffffff' : '#94a3b8',
+              fontWeight: selectedDesk === 'security' ? 800 : 600,
+              fontSize: '0.74rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              transition: 'all 0.2s',
+            }}
+          >
+            <ShieldCheck size={13} /> Security
+          </button>
+        </div>
+
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <div
             style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: `1px solid ${portal.color}`,
+              width: '54px',
+              height: '54px',
+              borderRadius: '14px',
+              background: 'rgba(225, 29, 72, 0.15)',
+              border: '1.5px solid #e11d48',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              marginBottom: '12px',
+              marginBottom: '10px',
+              boxShadow: '0 0 16px rgba(225, 29, 72, 0.25)',
             }}
           >
             {portal.icon}
           </div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>{portal.title}</h2>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ffffff' }}>{portal.title}</h2>
+          <p style={{ fontSize: '0.78rem', color: '#cbd5e1', marginTop: '4px' }}>
             {portal.subtitle}
           </p>
         </div>
