@@ -22,7 +22,7 @@ export type KYCStatus = 'pending' | 'verified' | 'rejected';
 
 export type EntryVerificationStatus = 'pending' | 'approved' | 'rejected';
 
-export type GovtIdType = 'Passport' | 'Driving License' | 'National ID' | 'State ID' | 'Voter ID';
+export type GovtIdType = 'Aadhaar Card' | 'PAN Card' | 'Passport' | 'Driving License' | 'Voter ID';
 
 export type MembershipTier = 'Standard' | 'Silver' | 'Gold' | 'VIP' | 'High Roller';
 

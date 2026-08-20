@@ -78,8 +78,17 @@ export const generateReceiptNumber = (): string => {
 
 export const maskGovtId = (idNumber: string): string => {
   if (!idNumber) return '';
-  if (idNumber.length <= 4) return idNumber;
-  const visible = idNumber.slice(-4);
-  const masked = '*'.repeat(idNumber.length - 4);
+  const clean = idNumber.replace(/\s+/g, '');
+  // Aadhaar 12-digit format
+  if (clean.length === 12 && /^\d+$/.test(clean)) {
+    return `•••• •••• ${clean.slice(-4)}`;
+  }
+  // PAN 10-character format (ABCDE1234F)
+  if (clean.length === 10 && /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(clean)) {
+    return `•••••${clean.slice(5).toUpperCase()}`;
+  }
+  if (clean.length <= 4) return clean;
+  const visible = clean.slice(-4);
+  const masked = '•'.repeat(Math.min(clean.length - 4, 8));
   return `${masked}${visible}`;
 };

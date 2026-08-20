@@ -17,7 +17,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     phone: '',
     email: '',
     dateOfBirth: '',
-    govtIdType: 'Passport' as GovtIdType,
+    govtIdType: 'Aadhaar Card' as GovtIdType,
     govtIdNumber: '',
     address: '',
     emergencyContactName: '',
@@ -38,22 +38,39 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
   ];
 
   const handleAutofill = () => {
-    const randomId = Math.floor(100000 + Math.random() * 900000);
+    const randomId = Math.floor(1000 + Math.random() * 9000);
     setFormData({
-      fullName: 'Alexander Wright',
-      phone: `+1 (555) 7${Math.floor(10 + Math.random() * 89)}-${Math.floor(1000 + Math.random() * 9000)}`,
-      email: `alex.wright.${randomId}@clubpoker.com`,
-      dateOfBirth: '1991-08-14',
-      govtIdType: 'Passport',
-      govtIdNumber: `P${randomId}`,
-      address: '1420 Luxury Strip Blvd, Las Vegas, NV',
-      emergencyContactName: 'Rachel Wright',
-      emergencyContactPhone: '+1 (555) 998-1234',
+      fullName: 'Aditya Singhal',
+      phone: `+91 98${Math.floor(10 + Math.random() * 89)} ${Math.floor(1000 + Math.random() * 9000)}`,
+      email: `aditya.singhal.${randomId}@gmail.com`,
+      dateOfBirth: '1993-06-18',
+      govtIdType: 'Aadhaar Card',
+      govtIdNumber: `5432 8765 ${randomId}`,
+      address: 'DLF Cyber City, Phase 2, Gurugram, Haryana - 122002',
+      emergencyContactName: 'Pooja Singhal',
+      emergencyContactPhone: '+91 98112 34567',
       photoUrl: sampleAvatars[0],
       agreedToRules: true,
-      tablePreference: 'Re Straddle High Roller Tournament',
+      tablePreference: '♠ Re Straddle High Roller Championship',
     });
     setErrors({});
+  };
+
+  const getIdPlaceholder = () => {
+    switch (formData.govtIdType) {
+      case 'Aadhaar Card':
+        return 'e.g. 5432 8765 4321 (12 digits)';
+      case 'PAN Card':
+        return 'e.g. ABCDE1234F (10 characters)';
+      case 'Passport':
+        return 'e.g. A1234567';
+      case 'Driving License':
+        return 'e.g. DL-1420110012345';
+      case 'Voter ID':
+        return 'e.g. EPIC-9923841';
+      default:
+        return 'Enter Government ID Number';
+    }
   };
 
   const validate = () => {
@@ -91,7 +108,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
           dateOfBirth: formData.dateOfBirth,
           govtIdType: formData.govtIdType,
           govtIdNumber: formData.govtIdNumber,
-          address: formData.address || 'Las Vegas, NV',
+          address: formData.address || 'Delhi NCR, India',
           emergencyContactName: formData.emergencyContactName,
           emergencyContactPhone: formData.emergencyContactPhone,
           photoUrl: formData.photoUrl,
@@ -124,9 +141,9 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
           <div>
             <h2 className="m-card-title">
               <UserPlus size={20} color="#ffffff" />
-              New Member KYC
+              Member KYC Registration
             </h2>
-            <p className="m-card-subtitle">Required for first-time poker club entry</p>
+            <p className="m-card-subtitle">Required for first-time poker club entry (21+)</p>
           </div>
           <button
             type="button"
@@ -142,16 +159,16 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {/* Section: Personal Info */}
         <div className="m-card">
-          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            1. Personal Details
+          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            1. Personal Information
           </span>
 
           <div className="m-form-group">
-            <label className="m-form-label">Full Legal Name *</label>
+            <label className="m-form-label">Full Legal Name (as per Govt ID) *</label>
             <input
               type="text"
               className="m-input"
-              placeholder="e.g. Vikram Malhotra"
+              placeholder="e.g. Aditya Singhal"
               value={formData.fullName}
               onChange={e => setFormData({ ...formData, fullName: e.target.value })}
             />
@@ -159,11 +176,11 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label">Mobile Phone Number *</label>
+            <label className="m-form-label">Primary Mobile Number *</label>
             <input
               type="tel"
               className="m-input"
-              placeholder="+1 (555) 000-0000"
+              placeholder="+91 98765 43210"
               value={formData.phone}
               onChange={e => setFormData({ ...formData, phone: e.target.value })}
             />
@@ -196,8 +213,8 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
 
         {/* Section: Government ID */}
         <div className="m-card">
-          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            2. Government ID
+          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            2. Government ID (Aadhaar / PAN)
           </span>
 
           <div className="m-form-group">
@@ -207,10 +224,11 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
               value={formData.govtIdType}
               onChange={e => setFormData({ ...formData, govtIdType: e.target.value as GovtIdType })}
             >
+              <option value="Aadhaar Card">Aadhaar Card (12-Digit UIDAI)</option>
+              <option value="PAN Card">PAN Card (10-Digit Alphanumeric)</option>
               <option value="Passport">Passport</option>
               <option value="Driving License">Driving License</option>
-              <option value="National ID">National ID</option>
-              <option value="State ID">State ID</option>
+              <option value="Voter ID">Voter ID</option>
             </select>
           </div>
 
@@ -219,7 +237,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
             <input
               type="text"
               className="m-input"
-              placeholder="e.g. P99218392"
+              placeholder={getIdPlaceholder()}
               value={formData.govtIdNumber}
               onChange={e => setFormData({ ...formData, govtIdNumber: e.target.value })}
             />

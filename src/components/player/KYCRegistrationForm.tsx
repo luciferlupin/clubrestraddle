@@ -17,7 +17,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     phone: '',
     email: '',
     dateOfBirth: '',
-    govtIdType: 'Passport' as GovtIdType,
+    govtIdType: 'Aadhaar Card' as GovtIdType,
     govtIdNumber: '',
     address: '',
     emergencyContactName: '',
@@ -38,20 +38,20 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
   ];
 
   const handleAutofill = () => {
-    const randomId = Math.floor(100000 + Math.random() * 900000);
+    const randomId = Math.floor(1000 + Math.random() * 9000);
     setFormData({
-      fullName: 'Alexander Wright',
-      phone: `+1 (555) 7${Math.floor(10 + Math.random() * 89)}-${Math.floor(1000 + Math.random() * 9000)}`,
-      email: `alex.wright.${randomId}@clubpoker.com`,
-      dateOfBirth: '1991-08-14',
-      govtIdType: 'Passport',
-      govtIdNumber: `P${randomId}`,
-      address: '1420 Luxury Strip Blvd, Penthouse 18, Las Vegas, NV',
-      emergencyContactName: 'Rachel Wright',
-      emergencyContactPhone: '+1 (555) 998-1234',
+      fullName: 'Aditya Singhal',
+      phone: `+91 98${Math.floor(10 + Math.random() * 89)} ${Math.floor(1000 + Math.random() * 9000)}`,
+      email: `aditya.singhal.${randomId}@gmail.com`,
+      dateOfBirth: '1993-06-18',
+      govtIdType: 'Aadhaar Card',
+      govtIdNumber: `5432 8765 ${randomId}`,
+      address: 'Tower 4, DLF Cyber City, Phase 2, Gurugram, Haryana - 122002',
+      emergencyContactName: 'Pooja Singhal',
+      emergencyContactPhone: '+91 98112 34567',
       photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
       agreedToRules: true,
-      tablePreference: 'High Roller Tournament',
+      tablePreference: '♠ Re Straddle High Roller Championship',
     });
     setErrors({});
   };
@@ -117,44 +117,71 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     }, 400);
   };
 
-  return (
-    <div className="card" style={{ maxWidth: '720px', margin: '0 auto' }}>
-      <div className="card-header">
-        <div>
-          <h2 className="card-title">
-            <UserPlus size={20} color="#ffffff" />
-            New Player KYC Registration
-          </h2>
-          <p className="card-subtitle">
-            First-time club entry requirement. Submitting automatically checks you in for today.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={handleAutofill}
-          title="Auto-fill sample valid KYC data"
-        >
-          <Sparkles size={14} color="#ffffff" /> Auto-fill Sample Data
-        </button>
-      </div>
+  const getIdPlaceholder = () => {
+    switch (formData.govtIdType) {
+      case 'Aadhaar Card':
+        return 'e.g. 5432 8765 4321 (12 digits)';
+      case 'PAN Card':
+        return 'e.g. ABCDE1234F (10 characters)';
+      case 'Passport':
+        return 'e.g. A1234567';
+      case 'Driving License':
+        return 'e.g. DL-1420110012345';
+      case 'Voter ID':
+        return 'e.g. EPIC-9923841';
+      default:
+        return 'Enter Government ID Number';
+    }
+  };
 
+  return (
+    <div className="card" style={{ maxWidth: '720px', margin: '0 auto', border: '1px solid var(--border-gold)', position: 'relative' }}>
       <form onSubmit={handleSubmit}>
+        <div className="card-header">
+          <div>
+            <h3 className="card-title">
+              <UserPlus size={18} color="#e11d48" />
+              Member KYC & Profile Registration
+            </h3>
+            <p className="card-subtitle">
+              Verify player identity, Aadhaar / PAN documentation, age requirement (21+), and club registration.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleAutofill}
+              style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+            >
+              <Sparkles size={14} /> Quick Demo Fill
+            </button>
+            {onCancel && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onCancel}
+                style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Section 1: Personal Details */}
         <div style={{ marginBottom: '20px' }}>
-          <h4 style={{ fontSize: '0.85rem', color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <FileText size={14} /> 1. Personal & Contact Details
+          <h4 style={{ fontSize: '0.85rem', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <FileText size={14} /> 1. Personal & Contact Information
           </h4>
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">
-                Full Name (as on Govt ID) *
-              </label>
+              <label className="form-label">Full Legal Name (as per Govt ID) *</label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="e.g. Vikram Malhotra"
+                placeholder="e.g. Aditya Singhal"
                 value={formData.fullName}
                 onChange={e => setFormData({ ...formData, fullName: e.target.value })}
               />
@@ -162,11 +189,11 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             </div>
 
             <div className="form-group">
-              <label className="form-label">Phone Number *</label>
+              <label className="form-label">Primary Mobile Number *</label>
               <input
-                type="text"
+                type="tel"
                 className="form-input"
-                placeholder="e.g. +1 (555) 000-0000"
+                placeholder="+91 98765 43210"
                 value={formData.phone}
                 onChange={e => setFormData({ ...formData, phone: e.target.value })}
               />
@@ -204,7 +231,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             <input
               type="text"
               className="form-input"
-              placeholder="Street address, City, State, ZIP"
+              placeholder="Street address, City, State, PIN Code"
               value={formData.address}
               onChange={e => setFormData({ ...formData, address: e.target.value })}
             />
@@ -214,8 +241,8 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
         {/* Section 2: Government ID & Verification */}
         <div style={{ marginBottom: '20px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
-          <h4 style={{ fontSize: '0.85rem', color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Lock size={14} /> 2. Government Identity Verification
+          <h4 style={{ fontSize: '0.85rem', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Lock size={14} /> 2. Government Identity Verification (Aadhaar / PAN)
           </h4>
 
           <div className="form-grid-2">
@@ -226,10 +253,10 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                 value={formData.govtIdType}
                 onChange={e => setFormData({ ...formData, govtIdType: e.target.value as GovtIdType })}
               >
+                <option value="Aadhaar Card">Aadhaar Card (12-Digit UIDAI)</option>
+                <option value="PAN Card">PAN Card (10-Digit Alphanumeric)</option>
                 <option value="Passport">Passport</option>
                 <option value="Driving License">Driving License</option>
-                <option value="National ID">National ID</option>
-                <option value="State ID">State ID</option>
                 <option value="Voter ID">Voter ID</option>
               </select>
             </div>
@@ -239,7 +266,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
               <input
                 type="text"
                 className="form-input"
-                placeholder="e.g. P12345678 or DL-992384"
+                placeholder={getIdPlaceholder()}
                 value={formData.govtIdNumber}
                 onChange={e => setFormData({ ...formData, govtIdNumber: e.target.value })}
               />

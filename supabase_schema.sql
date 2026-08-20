@@ -52,7 +52,7 @@ CREATE TABLE players (
     
     -- KYC Government Identity
     date_of_birth DATE NOT NULL,
-    govt_id_type VARCHAR(40) NOT NULL CHECK (govt_id_type IN ('Passport', 'Driving License', 'National ID', 'State ID', 'Voter ID')),
+    govt_id_type VARCHAR(40) NOT NULL CHECK (govt_id_type IN ('Aadhaar Card', 'PAN Card', 'Passport', 'Driving License', 'National ID', 'State ID', 'Voter ID')),
     govt_id_number VARCHAR(64) NOT NULL,
     address TEXT,
     emergency_contact_name VARCHAR(120),
