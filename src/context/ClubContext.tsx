@@ -432,6 +432,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addAuditLog('Admin', 'Staff Logout', `Staff member ${currentStaffUser.fullName} (${currentStaffUser.role.toUpperCase()}) logged out.`);
     }
     setCurrentStaffUser(null);
+    setActiveRoleState('player');
   };
 
   const createStaffUser = (params: { fullName: string; email: string; password: string; role: 'cashier' | 'security' }) => {

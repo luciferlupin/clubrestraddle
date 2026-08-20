@@ -48,7 +48,9 @@ const MainApp: React.FC = () => {
     const scanParam = params.get('scan');
     const playerParam = params.get('player') || params.get('playerId');
 
-    if (portalParam && ['player', 'cashier', 'security', 'admin'].includes(portalParam)) {
+    if (portalParam === 'staff') {
+      setActiveRole('admin');
+    } else if (portalParam && ['player', 'cashier', 'security', 'admin'].includes(portalParam)) {
       setActiveRole(portalParam as any);
     } else if (scanParam || playerParam) {
       setActiveRole('security');
@@ -64,6 +66,8 @@ const MainApp: React.FC = () => {
     setActiveRole('player');
     setShowNewPlayerForm(true);
   };
+
+  const isPlayerMode = activeRole === 'player';
 
   return (
     <div className={`app-container ${isMobile ? 'is-mobile-device' : 'is-desktop-device'}`}>
@@ -138,8 +142,8 @@ const MainApp: React.FC = () => {
         )}
       </main>
 
-      {/* Mobile Station Switcher Bottom Sheet */}
-      {isMobile && (
+      {/* Mobile Station Switcher Bottom Sheet (Only in Staff Mode) */}
+      {isMobile && !isPlayerMode && (
         <RoleSwitcherDrawer
           isOpen={isRoleSwitcherOpen}
           onClose={() => setIsRoleSwitcherOpen(false)}
@@ -151,7 +155,7 @@ const MainApp: React.FC = () => {
       <footer
         style={{
           borderTop: '1px solid rgba(225, 29, 72, 0.35)',
-          padding: '16px 24px',
+          padding: '14px 20px',
           background: '#0c080b',
           backdropFilter: 'blur(16px)',
           color: '#cbd5e1',
@@ -169,11 +173,47 @@ const MainApp: React.FC = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ color: '#ffffff' }}>♠</span>
-          <span style={{ fontWeight: 700, color: '#ffffff' }}>CLUB RE STRADDLE • Poker Lounge & Club OS</span>
+          <span style={{ fontWeight: 700, color: '#ffffff' }}>CLUB RE STRADDLE • Luxury Poker Lounge</span>
         </div>
-        <div style={{ display: 'flex', gap: '14px', fontSize: '0.74rem', color: '#cbd5e1' }}>
-          <span>Role-Based Portal Access Control</span>
-          <span>Apple San Francisco & DM Sans Typography</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.74rem' }}>
+          {isPlayerMode ? (
+            <button
+              onClick={() => setActiveRole('admin')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#64748b',
+                cursor: 'pointer',
+                fontSize: '0.72rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                transition: 'color 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#fda4af')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}
+              title="Authorized staff sign-in"
+            >
+              🔒 Staff Operations Terminal
+            </button>
+          ) : (
+            <button
+              onClick={() => setActiveRole('player')}
+              style={{
+                background: 'rgba(225, 29, 72, 0.2)',
+                border: '1px solid rgba(225, 29, 72, 0.4)',
+                color: '#ffffff',
+                cursor: 'pointer',
+                fontSize: '0.72rem',
+                padding: '4px 10px',
+                borderRadius: '6px',
+              }}
+            >
+              👤 Exit to Member Portal
+            </button>
+          )}
         </div>
       </footer>
 
