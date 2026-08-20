@@ -4651,7 +4651,10 @@ input[type="radio"] {
   100% { transform: translateY(0px)   translateX(0px)   rotate(8deg);   }
 }
 
-/* Bind animation-name per class (duration/delay set inline from JS) */
+/* Floating chip container sits above body bg (z:1) but below all page content (z:2+) */
+.floating-chip-layer {
+  z-index: 1 !important;
+}
 .fchip-a { animation-name: fchip-a; }
 .fchip-b { animation-name: fchip-b; }
 .fchip-c { animation-name: fchip-c; }

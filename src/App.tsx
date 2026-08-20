@@ -18,7 +18,7 @@ import { MobileAdminPortal } from './components/admin/MobileAdminPortal';
 import { MobileHeader } from './components/common/MobileHeader';
 import { RoleSwitcherDrawer } from './components/common/RoleSwitcherDrawer';
 import { LogOut } from 'lucide-react';
-import { AnimatedSuitsRow } from './components/common/PokerGraphics';
+import { AnimatedSuitsRow, FloatingChipsBackground } from './components/common/PokerGraphics';
 
 const MainApp: React.FC = () => {
   const { activeRole, setActiveRole } = useClub();
@@ -91,6 +91,13 @@ const MainApp: React.FC = () => {
 
   return (
     <div className={`app-container ${isMobile ? 'is-mobile-device' : 'is-desktop-device'}`}>
+      {/* ── Global floating 3D chips on the page background ─────────────
+           Fixed, z-index:1, pointer-events:none.
+           All page content (z-index:2+) sits above, cards block chips
+           with their opaque dark backgrounds. Only bare bg gaps show chips.
+           ──────────────────────────────────────────────────────────────── */}
+      <FloatingChipsBackground mode="fixed" opacity={0.09} chipCount={12} />
+
       {/* Header: Adaptive Mobile Header on Phones, Glass Header on Desktop */}
       {isMobile ? (
         <MobileHeader
@@ -101,8 +108,8 @@ const MainApp: React.FC = () => {
         <AppHeader onOpenQR={() => setIsQRModalOpen(true)} />
       )}
 
-      {/* Main Viewport Fitted Canvas */}
-      <main className="app-main">
+      {/* Main Viewport Fitted Canvas — z-index:2 sits above the global chip layer */}
+      <main className="app-main" style={{ position: 'relative', zIndex: 2 }}>
         {isMobile ? (
           /* Mobile Dedicated Portals */
           <>

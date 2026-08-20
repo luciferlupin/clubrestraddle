@@ -5,7 +5,6 @@ import { useClub } from '../../context/ClubContext';
 import { GovtIdType, Player, DailyCheckIn } from '../../types';
 import { formatTimeOnly } from '../../utils/formatters';
 import confetti from 'canvas-confetti';
-import { FloatingChipsBackground } from '../common/PokerGraphics';
 
 interface KYCRegistrationFormProps {
   onSuccess: () => void;
@@ -269,8 +268,6 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
   return (
     <div className="card" style={{ maxWidth: '720px', margin: '0 auto', border: '1px solid var(--border-gold)', position: 'relative' }}>
-      {/* 3D chips floating in background — no interaction */}
-      <FloatingChipsBackground mode="fixed" opacity={0.10} chipCount={10} />
       <form onSubmit={handleSubmit}>
         <div className="card-header">
           <div>

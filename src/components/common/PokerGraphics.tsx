@@ -614,10 +614,11 @@ export const FloatingChipsBackground: React.FC<FloatingChipsBackgroundProps> = (
   return (
     <div
       aria-hidden="true"
+      className="floating-chip-layer"
       style={{
         position: mode,
         inset: 0,
-        zIndex: 0,
+        zIndex: 1,
         pointerEvents: 'none',
         overflow: 'hidden',
         userSelect: 'none',

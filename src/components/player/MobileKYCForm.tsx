@@ -12,7 +12,6 @@ import {
 import { useClub } from '../../context/ClubContext';
 import { GovtIdType, Player, DailyCheckIn } from '../../types';
 import confetti from 'canvas-confetti';
-import { FloatingChipsBackground } from '../common/PokerGraphics';
 
 interface MobileKYCFormProps {
   onSuccess: (result: { player: Player; checkIn: DailyCheckIn }) => void;
@@ -168,8 +167,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
 
   return (
     <section className="mobile-kyc-flow" ref={formTopRef} aria-labelledby="mobile-kyc-title">
-      {/* 3D chips floating in background — no interaction */}
-      <FloatingChipsBackground mode="fixed" opacity={0.11} chipCount={12} />
       <div className="mobile-flow-heading">
         <button type="button" className="mobile-icon-button" onClick={onCancel} aria-label="Back to player options">
           <ArrowLeft size={21} />

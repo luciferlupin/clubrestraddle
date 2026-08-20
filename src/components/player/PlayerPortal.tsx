@@ -25,7 +25,7 @@ import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceMo
 import { formatClubLabel, formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
-import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, FloatingChipsBackground, AnimatedSuitsRow } from '../common/PokerGraphics';
+import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, AnimatedSuitsRow } from '../common/PokerGraphics';
 
 type PlayerTab = 'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history';
 
@@ -163,9 +163,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
             gap: '0',
             position: 'relative',
           }}>
-            {/* Floating chips in bg */}
-            <FloatingChipsBackground mode="absolute" opacity={0.10} chipCount={12} />
-
             {/* Hero card */}
             <div style={{
               position: 'relative',
