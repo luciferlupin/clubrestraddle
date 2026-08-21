@@ -16,6 +16,8 @@ import { formatTimeOnly, maskGovtId } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import confetti from 'canvas-confetti';
 
+import jsQR from 'jsqr';
+
 interface QRScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -37,6 +39,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanLoopRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -130,7 +133,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     }
   }, [players, todayCheckIns, lookupMemberByPhone]);
 
-  // Continuous frame scanner using BarcodeDetector on video element
+  // Continuous frame scanner using BarcodeDetector + jsQR on video element
   useEffect(() => {
     if (!isOpen || !cameraActive || scannedResult) {
       if (scanLoopRef.current) {
@@ -149,21 +152,65 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       }
     }
 
+    // Lazy create off-screen canvas for jsQR
+    if (!canvasRef.current && typeof document !== 'undefined') {
+      canvasRef.current = document.createElement('canvas');
+    }
+
     let isScanning = true;
+    let frameSkip = 0;
+
     const scanFrame = async () => {
       if (!isScanning) return;
 
-      if (detector && videoRef.current && videoRef.current.readyState >= 2) {
-        try {
-          const barcodes = await detector.detect(videoRef.current);
-          if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
-            const raw = barcodes[0].rawValue;
+      const video = videoRef.current;
+      if (video && video.readyState >= 2 && video.videoWidth > 0) {
+        frameSkip++;
+        // Scan every 2nd frame to keep UI responsive and butter smooth
+        if (frameSkip % 2 === 0) {
+          let detectedCode: string | null = null;
+
+          // Attempt 1: Native BarcodeDetector if available
+          if (detector) {
+            try {
+              const barcodes = await detector.detect(video);
+              if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                detectedCode = barcodes[0].rawValue;
+              }
+            } catch {
+              // Frame skip
+            }
+          }
+
+          // Attempt 2: High-accuracy jsQR canvas fallback (works on iOS Safari & everywhere)
+          if (!detectedCode && canvasRef.current) {
+            try {
+              const canvas = canvasRef.current;
+              const ctx = canvas.getContext('2d', { willReadFrequently: true });
+              if (ctx) {
+                const width = Math.min(video.videoWidth, 640);
+                const height = Math.min(video.videoHeight, 480);
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(video, 0, 0, width, height);
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                  inversionAttempts: 'attemptBoth',
+                });
+                if (code && code.data) {
+                  detectedCode = code.data;
+                }
+              }
+            } catch {
+              // Ignore canvas read errors
+            }
+          }
+
+          if (detectedCode) {
             isScanning = false;
-            await processScanCode(raw);
+            await processScanCode(detectedCode);
             return;
           }
-        } catch {
-          // Frame skip
         }
       }
 
@@ -226,33 +273,56 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     };
   }, [isOpen, cameraActive]);
 
-  // Scan from photo upload
+  // Scan from photo upload using jsQR + canvas
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
-      try {
-        const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        img.onload = async () => {
-          try {
-            const barcodes = await detector.detect(img);
-            if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
-              await processScanCode(barcodes[0].rawValue);
-            } else {
-              setScanError('No QR code detected in the uploaded image. Please try another image or manual search.');
-            }
-          } catch {
-            setScanError('Could not decode QR code from image.');
+    try {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = async () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (!ctx) {
+            setScanError('Canvas context unavailable.');
+            return;
           }
-        };
-      } catch {
-        setScanError('Image barcode detection is not supported on this browser.');
-      }
-    } else {
-      setScanError('Direct image decoding not available. Please type the player phone or ID.');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'attemptBoth',
+          });
+
+          if (code && code.data) {
+            await processScanCode(code.data);
+          } else {
+            // Attempt BarcodeDetector as second chance
+            if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+              try {
+                const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+                const barcodes = await detector.detect(img);
+                if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                  await processScanCode(barcodes[0].rawValue);
+                  return;
+                }
+              } catch {
+                // fall through
+              }
+            }
+            setScanError('No QR code detected in the uploaded image. Please try a clearer photo or manual search.');
+          }
+        } catch (readErr) {
+          console.error('Image decode error:', readErr);
+          setScanError('Could not decode QR code from image.');
+        }
+      };
+    } catch (err) {
+      console.error('File load error:', err);
+      setScanError('Failed to read image file.');
     }
   };
 

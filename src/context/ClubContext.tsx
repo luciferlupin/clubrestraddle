@@ -266,35 +266,77 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const { data: playersData, error: pErr } = await client.from('players').select('*').order('created_at', { ascending: false });
         if (!pErr && playersData) {
           if (playersData.length > 0) {
-            const mappedPlayers: Player[] = playersData.map((p: any) => ({
-              id: p.id,
-              fullName: p.full_name || 'Member Player',
-              phone: p.phone || '',
-              email: p.email || '',
-              membershipTier: p.membership_tier || 'Standard',
-              kycStatus: p.kyc_status || 'pending',
-              registeredAt: p.created_at || new Date().toISOString(),
-              totalVisits: p.total_visits || 1,
-              notes: p.notes,
-              kyc: {
+            const mappedPlayers: Player[] = playersData.map((p: any) => {
+              const idNum = p.govt_id_number || '';
+              let aadhaarParsed = '';
+              let panParsed = '';
+              const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
+              if (panMatch) panParsed = panMatch[1].toUpperCase();
+              const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
+              if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
+
+              if (!panParsed && /^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(idNum.trim())) {
+                panParsed = idNum.trim().toUpperCase();
+              }
+              if (!aadhaarParsed && /^\d{12}$/.test(idNum.replace(/\s/g, ''))) {
+                aadhaarParsed = idNum.trim();
+              }
+
+              return {
+                id: p.id,
                 fullName: p.full_name || 'Member Player',
                 phone: p.phone || '',
                 email: p.email || '',
-                dateOfBirth: p.date_of_birth || '1995-01-01',
-                govtIdType: p.govt_id_type || 'Aadhaar Card',
-                govtIdNumber: p.govt_id_number || 'KYC-PENDING',
-                address: p.address || 'Delhi NCR, India',
-                emergencyContactName: p.emergency_contact_name || '',
-                emergencyContactPhone: p.emergency_contact_phone || '',
-                photoUrl: p.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
-                agreedToRules: p.agreed_to_rules ?? true,
-                submittedAt: p.created_at || new Date().toISOString(),
-                verifiedAt: p.verified_at,
-                verifiedBy: p.verified_by,
-                rejectionReason: p.rejection_reason,
-              },
-            }));
+                membershipTier: p.membership_tier || 'Standard',
+                kycStatus: p.kyc_status || 'pending',
+                registeredAt: p.created_at || new Date().toISOString(),
+                totalVisits: p.total_visits || 1,
+                notes: p.notes,
+                kyc: {
+                  fullName: p.full_name || 'Member Player',
+                  phone: p.phone || '',
+                  email: p.email || '',
+                  dateOfBirth: p.date_of_birth || '1995-01-01',
+                  aadhaarNumber: aadhaarParsed,
+                  panNumber: panParsed,
+                  govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
+                  govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+                  address: p.address || 'Delhi NCR, India',
+                  emergencyContactName: p.emergency_contact_name || '',
+                  emergencyContactPhone: p.emergency_contact_phone || '',
+                  photoUrl: p.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+                  agreedToRules: p.agreed_to_rules ?? true,
+                  submittedAt: p.created_at || new Date().toISOString(),
+                  verifiedAt: p.verified_at,
+                  verifiedBy: p.verified_by,
+                  rejectionReason: p.rejection_reason,
+                },
+              };
+            });
             setPlayers(mappedPlayers);
+          } else if (initialPlayers.length > 0) {
+            // Seed initial players if database table is empty
+            const seedRows = initialPlayers.map(ip => ({
+              id: ip.id,
+              full_name: ip.fullName,
+              phone: ip.phone,
+              email: ip.email,
+              membership_tier: ip.membershipTier,
+              kyc_status: ip.kycStatus,
+              date_of_birth: ip.kyc.dateOfBirth || '1995-01-01',
+              govt_id_type: 'Aadhaar Card',
+              govt_id_number: ip.kyc.govtIdNumber,
+              address: ip.kyc.address,
+              emergency_contact_name: ip.kyc.emergencyContactName,
+              emergency_contact_phone: ip.kyc.emergencyContactPhone,
+              photo_url: ip.kyc.photoUrl,
+              agreed_to_rules: true,
+              total_visits: ip.totalVisits,
+              created_at: ip.registeredAt,
+            }));
+            client.from('players').insert(seedRows).then(() => {
+              console.log('Seeded initial players to Supabase');
+            });
           }
         }
 
@@ -315,6 +357,21 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               tablePreference: c.table_preference || 'Open Seating',
             }));
             setCheckIns(mappedCheckIns);
+          } else if (initialCheckIns.length > 0) {
+            // Seed initial check-ins if table is empty
+            const seedChkRows = initialCheckIns.map(ic => ({
+              id: ic.id,
+              player_id: ic.playerId,
+              player_name: ic.playerName,
+              player_phone: ic.playerPhone,
+              check_in_date: ic.checkInDate,
+              check_in_time: ic.checkInTime,
+              verification_status: ic.verificationStatus,
+              table_preference: ic.tablePreference,
+            }));
+            client.from('daily_check_ins').insert(seedChkRows).then(() => {
+              console.log('Seeded initial check-ins to Supabase');
+            });
           }
         }
 
@@ -444,6 +501,21 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         (payload: any) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const p = payload.new;
+            const idNum = p.govt_id_number || '';
+            let aadhaarParsed = '';
+            let panParsed = '';
+            const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
+            if (panMatch) panParsed = panMatch[1].toUpperCase();
+            const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
+            if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
+
+            if (!panParsed && /^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(idNum.trim())) {
+              panParsed = idNum.trim().toUpperCase();
+            }
+            if (!aadhaarParsed && /^\d{12}$/.test(idNum.replace(/\s/g, ''))) {
+              aadhaarParsed = idNum.trim();
+            }
+
             const updatedPlayer: Player = {
               id: p.id,
               fullName: p.full_name || 'Member Player',
@@ -459,7 +531,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 phone: p.phone || '',
                 email: p.email || '',
                 dateOfBirth: p.date_of_birth || '1995-01-01',
-                govtIdType: p.govt_id_type || 'Aadhaar Card',
+                aadhaarNumber: aadhaarParsed,
+                panNumber: panParsed,
+                govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
                 govtIdNumber: p.govt_id_number || 'KYC-PENDING',
                 address: p.address || 'Delhi NCR, India',
                 emergencyContactName: p.emergency_contact_name || '',
