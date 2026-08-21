@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   Users,
   CheckCircle2,
-  DollarSign,
   Receipt,
   History,
   RotateCcw,
@@ -16,13 +15,30 @@ import {
   Trash2,
   ArrowLeft,
   LogOut,
+  Search,
+  ChevronRight,
+  TrendingUp,
+  Coins,
+  Sparkles,
+  Filter,
+  FileText,
+  CreditCard,
+  Building2,
+  Calendar,
+  AlertCircle,
+  Trophy,
+  Clock,
+  MapPin,
+  CheckCircle,
+  ExternalLink
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
-import { Player, ExpenseCategory, PaymentMethod } from '../../types';
+import { Player, ExpenseCategory, PaymentMethod, ChipRequest, Tournament } from '../../types';
 import { StaffManager } from './StaffManager';
+import { PlayerLedger } from '../player/PlayerLedger';
 
 export const MobileAdminPortal: React.FC = () => {
   const {
@@ -30,6 +46,7 @@ export const MobileAdminPortal: React.FC = () => {
     logoutStaff,
     players,
     tournaments,
+    entries,
     todayCheckIns,
     checkIns,
     chipRequests,
@@ -43,16 +60,22 @@ export const MobileAdminPortal: React.FC = () => {
     updatePlayer,
     deletePlayer,
     addExpense,
+    fulfillChipRequest,
+    cancelChipRequest,
     resetToDemoData,
   } = useClub();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'staff' | 'players' | 'attendance' | 'finance' | 'audit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'players' | 'attendance' | 'finance' | 'staff' | 'audit'>('dashboard');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [playerDrawerTab, setPlayerDrawerTab] = useState<'info' | 'ledger'>('info');
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const [isChipsDrawerOpen, setIsChipsDrawerOpen] = useState(false);
+  const [isTournamentsDrawerOpen, setIsTournamentsDrawerOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [kycAction, setKycAction] = useState<'verified' | 'rejected' | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [expenseData, setExpenseData] = useState({
     category: 'Dealer & Staff Wages' as ExpenseCategory,
@@ -63,8 +86,21 @@ export const MobileAdminPortal: React.FC = () => {
   });
 
   const approvedTodayCount = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
+  const pendingKYCCount = players.filter(p => p.kycStatus === 'pending').length;
   const deliveredChipOrders = chipRequests.filter(r => r.status === 'delivered');
-  const totalChipVolume = deliveredChipOrders.reduce((sum, r) => sum + r.amount, 0);
+  const totalChipVolume = chipRequests.reduce((sum, r) => sum + r.amount, 0);
+
+  const filteredPlayers = players.filter(p =>
+    p.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.phone.includes(searchQuery) ||
+    p.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredCheckIns = checkIns.filter(c =>
+    c.playerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.playerPhone.includes(searchQuery) ||
+    c.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleExpenseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,411 +119,1295 @@ export const MobileAdminPortal: React.FC = () => {
   };
 
   return (
-    <div className="staff-mobile-portal admin-mobile-theme">
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100dvh',
+      width: '100%',
+      backgroundColor: '#0c0a0e',
+      color: '#f8fafc',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif',
+      boxSizing: 'border-box'
+    }}>
 
-      {/* ── Station Banner ─────────────────────────────────── */}
-      <div className="staff-station-banner">
-        <div className="staff-banner-left">
-          <span className="staff-banner-role">♥ Admin Command</span>
-          <span className="staff-banner-name">{staffName}</span>
+      {/* ── Apple Style Navigation Bar ─────────────────────────────── */}
+      <header style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 30,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '14px 18px',
+        backgroundColor: 'rgba(18, 14, 20, 0.92)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '11px',
+            background: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 10px rgba(225, 29, 72, 0.4)'
+          }}>
+            <ShieldCheck size={20} color="#ffffff" />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em', color: '#ffffff' }}>
+                Admin Portal
+              </span>
+              <span style={{
+                fontSize: '0.62rem',
+                fontWeight: 700,
+                padding: '2px 7px',
+                borderRadius: '999px',
+                background: 'rgba(16, 185, 129, 0.16)',
+                color: '#34d399',
+                border: '1px solid rgba(16, 185, 129, 0.3)'
+              }}>
+                LIVE
+              </span>
+            </div>
+            <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+              {staffName}
+            </div>
+          </div>
         </div>
-        <div className="staff-banner-right">
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {pendingChipOrdersCount > 0 && (
-            <span className="staff-pending-pill">
-              {pendingChipOrdersCount} chips
-            </span>
+            <button
+              type="button"
+              onClick={() => setIsChipsDrawerOpen(true)}
+              style={{
+                background: 'rgba(244, 63, 94, 0.2)',
+                border: '1px solid rgba(244, 63, 94, 0.5)',
+                borderRadius: '999px',
+                padding: '4px 10px',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                color: '#fda4af',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <Coins size={12} /> {pendingChipOrdersCount} chips
+            </button>
           )}
-          <span className="staff-live-dot admin">Live</span>
           <button
             type="button"
-            className="staff-header-signout"
             onClick={logoutStaff}
-            aria-label="Sign out of staff portal"
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '10px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#fda4af',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'background 0.2s'
+            }}
             title="Sign out"
           >
-            <LogOut size={14} />
+            <LogOut size={16} />
           </button>
         </div>
+      </header>
+
+      {/* ── Segmented Control Bar (Apple iOS Filter Strip) ─────────── */}
+      <div style={{
+        padding: '10px 16px',
+        backgroundColor: '#0c0a0e',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+        display: 'flex',
+        gap: '6px',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        scrollbarWidth: 'none'
+      }}>
+        {[
+          { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+          { id: 'players', label: 'Members', icon: Users, count: players.length },
+          { id: 'attendance', label: 'Attendance', icon: CheckCircle2, count: todayCheckIns.length },
+          { id: 'finance', label: 'Expenses', icon: Receipt },
+          { id: 'staff', label: 'Staff Access', icon: ShieldCheck },
+          { id: 'audit', label: 'Logs', icon: History },
+        ].map(tab => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setActiveTab(tab.id as any);
+                setSearchQuery('');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 14px',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? '#ffffff' : '#94a3b8',
+                background: isActive ? 'linear-gradient(135deg, rgba(225, 29, 72, 0.3) 0%, rgba(225, 29, 72, 0.15) 100%)' : 'rgba(255, 255, 255, 0.04)',
+                border: isActive ? '1px solid rgba(225, 29, 72, 0.5)' : '1px solid rgba(255, 255, 255, 0.05)',
+                whiteSpace: 'nowrap',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Icon size={14} color={isActive ? '#f43f5e' : '#94a3b8'} />
+              <span>{tab.label}</span>
+              {tab.count !== undefined && (
+                <span style={{
+                  fontSize: '0.7rem',
+                  padding: '1px 6px',
+                  borderRadius: '10px',
+                  background: isActive ? 'rgba(225, 29, 72, 0.4)' : 'rgba(255, 255, 255, 0.1)',
+                  color: isActive ? '#ffffff' : '#cbd5e1'
+                }}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* ── Scrollable content ─────────────────────────────── */}
-      <div className="staff-scroll-area">
+      {/* ── Scrollable Content Area ────────────────────────────────── */}
+      <main style={{
+        flex: 1,
+        padding: '16px 16px calc(76px + env(safe-area-inset-bottom)) 16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        boxSizing: 'border-box',
+        overflowY: 'auto'
+      }}>
 
-      {activeTab !== 'dashboard' && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', background: 'rgba(225, 29, 72, 0.12)', padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            <ArrowLeft size={14} /> Back to Dashboard
-          </button>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fda4af', textTransform: 'capitalize' }}>
-            {activeTab === 'players' ? 'Member Directory' : activeTab === 'attendance' ? 'Attendance' : activeTab === 'finance' ? 'Treasury & Expenses' : activeTab === 'staff' ? 'Staff Accounts' : 'Audit Logs'}
-          </span>
-        </div>
-      )}
+        {/* ── TAB 1: EXECUTIVE OVERVIEW ────────────────────────────── */}
+        {activeTab === 'dashboard' && (
+          <>
+            {/* Apple Style 2x2 Tapable Metric Widgets */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              
+              {/* Widget 1: Total Members (Tapable -> Opens Members Directory) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('players');
+                  setSearchQuery('');
+                }}
+                style={{
+                  background: 'linear-gradient(145deg, rgba(30, 24, 34, 0.95) 0%, rgba(18, 14, 20, 0.95) 100%)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '18px',
+                  padding: '15px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'transform 0.1s, border-color 0.2s',
+                  position: 'relative'
+                }}
+                title="Tap to view Member Directory"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Members
+                  </span>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(225, 29, 72, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Users size={15} color="#f43f5e" />
+                  </div>
+                </div>
+                <div style={{ marginTop: '10px' }}>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+                    {players.length}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#34d399', fontWeight: 600, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>{players.filter(p => p.kycStatus === 'verified').length} Verified</span>
+                    <ChevronRight size={12} color="#94a3b8" />
+                  </div>
+                </div>
+              </button>
 
-      {/* TAB 1: EXECUTIVE DASHBOARD & TIMELINE */}
-      {activeTab === 'dashboard' && (
-        <>
-          {/* Top KPI Cards */}
-          <div className="m-stats-grid">
-            <div className="m-stat-card" style={{ borderColor: 'rgba(255, 255, 255, 0.25)' }}>
-              <span className="m-stat-label">Total Players</span>
-              <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {players.length}
-              </span>
-              <span className="m-stat-sub">{players.filter(p => p.kycStatus === 'verified').length} KYC Verified</span>
+              {/* Widget 2: Today's Check-ins (Tapable -> Opens Attendance) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('attendance');
+                  setSearchQuery('');
+                }}
+                style={{
+                  background: 'linear-gradient(145deg, rgba(30, 24, 34, 0.95) 0%, rgba(18, 14, 20, 0.95) 100%)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '18px',
+                  padding: '15px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'transform 0.1s, border-color 0.2s',
+                  position: 'relative'
+                }}
+                title="Tap to view Today's Attendance Log"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Check-ins
+                  </span>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CheckCircle2 size={15} color="#34d399" />
+                  </div>
+                </div>
+                <div style={{ marginTop: '10px' }}>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+                    {todayCheckIns.length}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 500, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>{approvedTodayCount} Cleared</span>
+                    <ChevronRight size={12} color="#94a3b8" />
+                  </div>
+                </div>
+              </button>
+
+              {/* Widget 3: Chip Orders (Tapable -> Opens Chip Orders Drawer) */}
+              <button
+                type="button"
+                onClick={() => setIsChipsDrawerOpen(true)}
+                style={{
+                  background: 'linear-gradient(145deg, rgba(30, 24, 34, 0.95) 0%, rgba(18, 14, 20, 0.95) 100%)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '18px',
+                  padding: '15px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'transform 0.1s, border-color 0.2s',
+                  position: 'relative'
+                }}
+                title="Tap to view Table Chip Orders"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Chip Orders
+                  </span>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Coins size={15} color="#fbbf24" />
+                  </div>
+                </div>
+                <div style={{ marginTop: '10px' }}>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+                    {chipRequests.length}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: pendingChipOrdersCount > 0 ? '#fb7185' : '#fbbf24', fontWeight: 600, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>{pendingChipOrdersCount > 0 ? `${pendingChipOrdersCount} Pending` : `₹${formatINR(totalChipVolume)}`}</span>
+                    <ChevronRight size={12} color="#94a3b8" />
+                  </div>
+                </div>
+              </button>
+
+              {/* Widget 4: Tournaments (Tapable -> Opens Tournaments Drawer) */}
+              <button
+                type="button"
+                onClick={() => setIsTournamentsDrawerOpen(true)}
+                style={{
+                  background: 'linear-gradient(145deg, rgba(30, 24, 34, 0.95) 0%, rgba(18, 14, 20, 0.95) 100%)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '18px',
+                  padding: '15px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'transform 0.1s, border-color 0.2s',
+                  position: 'relative'
+                }}
+                title="Tap to view Active Tournaments"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Tournaments
+                  </span>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Sparkles size={15} color="#c084fc" />
+                  </div>
+                </div>
+                <div style={{ marginTop: '10px' }}>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+                    {tournaments.length}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#c084fc', fontWeight: 500, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>{entries.length} Registered</span>
+                    <ChevronRight size={12} color="#94a3b8" />
+                  </div>
+                </div>
+              </button>
             </div>
 
-            <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.4)' }}>
-              <span className="m-stat-label">Today's Check-ins</span>
-              <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {todayCheckIns.length}
+            {/* Apple iOS Quick Action Tiles */}
+            <div>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
+                Quick Actions
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                {/* 1. Record Expense */}
+                <button
+                  type="button"
+                  onClick={() => setIsAddExpenseOpen(true)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '16px',
+                    padding: '14px 8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    transition: 'transform 0.1s'
+                  }}
+                >
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #f43f5e 0%, #be123c 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(244, 63, 94, 0.35)'
+                  }}>
+                    <Plus size={20} color="#ffffff" />
+                  </div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#ffffff', textAlign: 'center' }}>
+                    New Expense
+                  </span>
+                </button>
+
+                {/* 2. Verify KYC */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('players');
+                    setSearchQuery('');
+                  }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '16px',
+                    padding: '14px 8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    transition: 'transform 0.1s'
+                  }}
+                >
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.35)'
+                  }}>
+                    <ShieldCheck size={20} color="#ffffff" />
+                  </div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#ffffff', textAlign: 'center' }}>
+                    Verify KYC
+                  </span>
+                </button>
+
+                {/* 3. Members Directory */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('players');
+                    setSearchQuery('');
+                  }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '16px',
+                    padding: '14px 8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    transition: 'transform 0.1s'
+                  }}
+                >
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)'
+                  }}>
+                    <Users size={20} color="#ffffff" />
+                  </div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#ffffff', textAlign: 'center' }}>
+                    Members
+                  </span>
+                </button>
+
+                {/* 4. Attendance */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('attendance');
+                    setSearchQuery('');
+                  }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '16px',
+                    padding: '14px 8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    transition: 'transform 0.1s'
+                  }}
+                >
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)'
+                  }}>
+                    <CheckCircle2 size={20} color="#ffffff" />
+                  </div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#ffffff', textAlign: 'center' }}>
+                    Attendance
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Apple Inset Group: Live Club Activity Timeline */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '20px',
+              padding: '16px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <History size={17} color="#f43f5e" />
+                  <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#ffffff' }}>
+                    Live Activity Timeline
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('audit')}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#f43f5e',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px'
+                  }}
+                >
+                  See All <ChevronRight size={14} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {auditLogs.slice(0, 4).map(log => (
+                  <div
+                    key={log.id}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>
+                        {log.action}
+                      </span>
+                      <span style={{
+                        fontSize: '0.66rem',
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: '6px',
+                        background: log.portal === 'Admin' ? 'rgba(225, 29, 72, 0.2)' : 'rgba(100, 116, 139, 0.2)',
+                        color: log.portal === 'Admin' ? '#fda4af' : '#cbd5e1',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}>
+                        {log.portal}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.35 }}>
+                      {log.details}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+                      <span>By: {log.user}</span>
+                      <span>{formatShortDateTime(log.timestamp)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── TAB 2: MEMBERS DIRECTORY ─────────────────────────────── */}
+        {activeTab === 'players' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Search Input Bar */}
+            <div style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '14px', pointerEvents: 'none' }} />
+              <input
+                type="text"
+                placeholder="Search member name, phone or ID..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '11px 14px 11px 38px',
+                  borderRadius: '14px',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#ffffff',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8' }}>
+                Showing {filteredPlayers.length} of {players.length} members
               </span>
-              <span className="m-stat-sub">{approvedTodayCount} Inside Club</span>
+            </div>
+
+            {/* Players Inset Group */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {filteredPlayers.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPlayer(p);
+                    setPlayerDrawerTab('info');
+                    setKycAction(null);
+                    setIsPlayerModalOpen(true);
+                  }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.07)',
+                    borderRadius: '16px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, rgba(225, 29, 72, 0.3) 0%, rgba(225, 29, 72, 0.1) 100%)',
+                      border: '1px solid rgba(225, 29, 72, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: '1rem',
+                      color: '#f43f5e',
+                      flexShrink: 0
+                    }}>
+                      {p.fullName.charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.fullName}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '2px' }}>
+                        {p.id} • {p.phone}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <KYCBadge status={p.kycStatus} />
+                    <ChevronRight size={16} color="#64748b" />
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
+        )}
 
-          <div className="m-stats-grid">
-            <div className="m-stat-card" style={{ borderColor: 'var(--border-red)' }}>
-              <span className="m-stat-label">Table Chip Orders</span>
-              <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {chipRequests.length}
-              </span>
-              <span className="m-stat-sub">{pendingChipOrdersCount} Pending · ₹{formatINR(totalChipVolume)}</span>
-            </div>
-
-            <div className="m-stat-card" style={{ borderColor: 'rgba(245, 158, 11, 0.4)' }}>
-              <span className="m-stat-label">Active Events</span>
-              <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {tournaments.length}
-              </span>
-              <span className="m-stat-sub">Tournaments & Games</span>
-            </div>
-          </div>
-
-          {/* Quick Admin Actions */}
-          <div>
-            <p className="staff-section-title">Quick Actions</p>
-            <div className="staff-quick-actions" style={{ marginTop: '8px' }}>
-              <button type="button" className="staff-quick-btn expense" onClick={() => setIsAddExpenseOpen(true)}>
-                <div className="staff-quick-icon"><Plus size={20} /></div>
-                Add Expense
-              </button>
-              <button type="button" className="staff-quick-btn kyc" onClick={() => setActiveTab('players')}>
-                <div className="staff-quick-icon"><ShieldCheck size={20} /></div>
-                Verify KYC
-              </button>
-              <button type="button" className="staff-quick-btn entry" onClick={() => setActiveTab('players')}>
-                <div className="staff-quick-icon"><Users size={20} /></div>
-                Players
-              </button>
-              <button type="button" className="staff-quick-btn records" onClick={() => setActiveTab('attendance')}>
-                <div className="staff-quick-icon"><CheckCircle2 size={20} /></div>
-                Attendance
-              </button>
-            </div>
-          </div>
-
-          {/* Activity Monitoring: Live Timeline */}
-          <div className="m-card">
-            <div className="m-card-header">
-              <span className="m-card-title">
-                <History size={16} color="#ffffff" />
-                Live Club Activity Timeline
-              </span>
-              <button className="m-btn m-btn-ghost m-btn-sm" style={{ width: 'auto' }} onClick={() => setActiveTab('audit')}>
-                Full Audit Log
-              </button>
+        {/* ── TAB 3: ATTENDANCE & ARRIVALS ─────────────────────────── */}
+        {activeTab === 'attendance' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '14px', pointerEvents: 'none' }} />
+              <input
+                type="text"
+                placeholder="Search check-in records..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '11px 14px 11px 38px',
+                  borderRadius: '14px',
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#ffffff',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {auditLogs.slice(0, 5).map(log => (
-                <div key={log.id} className="m-list-card">
-                  <div className="m-list-row">
-                    <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>{log.action}</span>
-                    <span
-                      style={{
-                        fontSize: '0.68rem',
-                        fontWeight: 700,
-                        padding: '2px 6px',
-                        borderRadius: '999px',
-                        background: 'rgba(139, 0, 0, 0.35)',
-                        color: '#ffffff',
-                        border: '1px solid rgba(139, 0, 0, 0.6)',
-                      }}
-                    >
+              {filteredCheckIns.map(c => (
+                <div
+                  key={c.id}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.07)',
+                    borderRadius: '16px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ffffff' }}>
+                      {c.playerName}
+                    </span>
+                    <EntryBadge status={c.verificationStatus} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.76rem', color: '#94a3b8' }}>
+                    <span>{formatDateOnly(c.checkInDate)} at {formatTimeOnly(c.checkInTime)}</span>
+                    <span style={{ fontFamily: 'monospace', color: '#cbd5e1' }}>{c.id}</span>
+                  </div>
+                  {c.verifiedBy && (
+                    <div style={{ fontSize: '0.72rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                      <CheckCircle2 size={13} /> Verified by {c.verifiedBy}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 4: OPERATING EXPENSES & TREASURY ─────────────────── */}
+        {activeTab === 'finance' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Total Expense Hero Card */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(225, 29, 72, 0.25) 0%, rgba(136, 19, 55, 0.15) 100%)',
+              border: '1px solid rgba(225, 29, 72, 0.4)',
+              borderRadius: '20px',
+              padding: '18px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#fda4af', textTransform: 'uppercase' }}>
+                  Total Recorded Expenses
+                </span>
+                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginTop: '4px' }}>
+                  {formatCurrency(totalExpensesAmount)}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddExpenseOpen(true)}
+                style={{
+                  padding: '9px 16px',
+                  borderRadius: '12px',
+                  background: '#f43f5e',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(244, 63, 94, 0.4)'
+                }}
+              >
+                <Plus size={15} /> Add Expense
+              </button>
+            </div>
+
+            {/* Expenses List */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '20px',
+              padding: '16px'
+            }}>
+              <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#ffffff', marginBottom: '12px' }}>
+                Expense Log ({expenses.length})
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {expenses.map(exp => (
+                  <div
+                    key={exp.id}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>
+                        {exp.category}
+                      </span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fca5a5' }}>
+                        -{formatCurrency(exp.amount)}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                      {exp.description}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+                      <span>Paid to: {exp.paidTo}</span>
+                      <span>{formatDateOnly(exp.date)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 5: STAFF ACCESS MANAGER ─────────────────────────── */}
+        {activeTab === 'staff' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <StaffManager />
+          </div>
+        )}
+
+        {/* ── TAB 6: AUDIT TRAIL ──────────────────────────────────── */}
+        {activeTab === 'audit' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#ffffff', padding: '0 4px' }}>
+              Chronological Audit Trail ({auditLogs.length})
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {auditLogs.map(log => (
+                <div
+                  key={log.id}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: '14px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ffffff' }}>
+                      {log.action}
+                    </span>
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: '6px',
+                      background: 'rgba(225, 29, 72, 0.15)',
+                      color: '#fda4af'
+                    }}>
                       {log.portal}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{log.details}</div>
-                  <div className="m-list-row" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
-                    <span>By: {log.user}</span>
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                    {log.details}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b' }}>
+                    <span>User: {log.user}</span>
                     <span>{formatShortDateTime(log.timestamp)}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </>
-      )}
+        )}
 
-      {/* TAB 2: STAFF ACCOUNTS */}
-      {activeTab === 'staff' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <StaffManager />
-        </div>
-      )}
+      </main>
 
-      {/* TAB 3: PLAYERS DIRECTORY & OVERRIDE */}
-      {activeTab === 'players' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div className="m-card">
-            <h3 className="m-card-title">
-              <Users size={18} color="#e11d48" />
-              Member Directory ({players.length})
-            </h3>
-            <p className="m-card-subtitle">Tap any player to inspect credentials or override KYC</p>
-          </div>
-
-          {players.map(p => (
+      {/* ── Apple Style Floating Bottom Tab Bar ────────────────────── */}
+      <nav style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 30,
+        height: '62px',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        backgroundColor: 'rgba(18, 14, 20, 0.92)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        boxSizing: 'content-box'
+      }}>
+        {[
+          { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+          { id: 'players', label: 'Members', icon: Users },
+          { id: 'attendance', label: 'Attendance', icon: CheckCircle2 },
+          { id: 'finance', label: 'Expenses', icon: Receipt },
+        ].map(item => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
             <button
-              key={p.id}
+              key={item.id}
               type="button"
-              className="m-list-card m-list-button"
-              onClick={() => {
-                setSelectedPlayer(p);
-                setKycAction(null);
-                setIsPlayerModalOpen(true);
+              onClick={() => setActiveTab(item.id as any)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                color: isActive ? '#f43f5e' : '#94a3b8',
+                cursor: 'pointer',
+                padding: '6px 12px',
+                transition: 'all 0.15s ease'
               }}
             >
-              <div className="m-list-row">
-                <span style={{ fontWeight: 800, fontSize: '0.92rem' }}>{p.fullName}</span>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  <TierBadge tier={p.membershipTier} />
-                  <KYCBadge status={p.kycStatus} />
-                </div>
-              </div>
-              <div className="m-list-row" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                <span>{p.id} • {p.phone}</span>
-                <span>{p.totalVisits} Visits</span>
-              </div>
+              <Icon size={20} color={isActive ? '#f43f5e' : '#94a3b8'} />
+              <span style={{ fontSize: '0.68rem', fontWeight: isActive ? 700 : 500 }}>
+                {item.label}
+              </span>
             </button>
-          ))}
-        </div>
-      )}
+          );
+        })}
 
-      {/* TAB 3: ATTENDANCE RECORDS */}
-      {activeTab === 'attendance' && (
+        <button
+          type="button"
+          onClick={() => setIsMoreOpen(true)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '4px',
+            color: activeTab === 'staff' || activeTab === 'audit' ? '#f43f5e' : '#94a3b8',
+            cursor: 'pointer',
+            padding: '6px 12px'
+          }}
+        >
+          <MoreHorizontal size={20} color={activeTab === 'staff' || activeTab === 'audit' ? '#f43f5e' : '#94a3b8'} />
+          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>
+            Tools
+          </span>
+        </button>
+      </nav>
+
+      {/* ── DRAWER 1: Table Chip Orders (Live Software Data) ────────── */}
+      <MobileBottomDrawer
+        isOpen={isChipsDrawerOpen}
+        onClose={() => setIsChipsDrawerOpen(false)}
+        title="Table Chip Orders"
+        subtitle={`${chipRequests.length} total orders · ${pendingChipOrdersCount} awaiting cashier delivery`}
+      >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div className="m-card">
-            <h3 className="m-card-title">
-              <CheckCircle2 size={18} color="#e11d48" />
-              Attendance Records ({checkIns.length})
-            </h3>
-            <p className="m-card-subtitle">Log of check-ins and entrance approvals</p>
-          </div>
-
-          {checkIns.map(c => (
-            <div key={c.id} className="m-list-card">
-              <div className="m-list-row">
-                <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>{c.playerName}</span>
-                <EntryBadge status={c.verificationStatus} />
-              </div>
-              <div className="m-list-row" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                <span>{formatDateOnly(c.checkInDate)} at {formatTimeOnly(c.checkInTime)}</span>
-                <span style={{ color: 'var(--gold-light)' }}>{c.tablePreference}</span>
-              </div>
-              {c.verifiedBy && (
-                <div className="staff-inline-status">
-                  <CheckCircle2 size={14} /> Clearance verified by {c.verifiedBy}
-                </div>
-              )}
+          {chipRequests.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: '0.86rem' }}>
+              No chip orders recorded yet.
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* TAB 4: OPERATING EXPENSES */}
-      {activeTab === 'finance' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="m-card" style={{ border: '1.5px solid rgba(225, 29, 72, 0.4)' }}>
-            <div className="m-card-header">
-              <div>
-                <span className="m-stat-label">Total Recorded Expenses</span>
-                <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fca5a5', fontFamily: 'var(--font-mono)' }}>
-                  {formatCurrency(totalExpensesAmount)}
-                </div>
-              </div>
-              <button
-                className="m-btn m-btn-primary m-btn-sm"
-                style={{ width: 'auto' }}
-                onClick={() => setIsAddExpenseOpen(true)}
+          ) : (
+            chipRequests.map(req => (
+              <div
+                key={req.id}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: req.status === 'pending' ? '1px solid rgba(244, 63, 94, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '14px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}
               >
-                <Plus size={14} /> Add Expense
-              </button>
-            </div>
-          </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.92rem', color: '#ffffff' }}>
+                    {req.playerName}
+                  </span>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    background: req.status === 'delivered' ? 'rgba(16, 185, 129, 0.16)' : 'rgba(244, 63, 94, 0.2)',
+                    color: req.status === 'delivered' ? '#34d399' : '#fda4af',
+                    border: req.status === 'delivered' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(244, 63, 94, 0.4)'
+                  }}>
+                    {req.status.toUpperCase()}
+                  </span>
+                </div>
 
-          {/* Expenses List */}
-          <div className="m-card">
-            <h4 className="m-card-title">
-              <Receipt size={16} color="#e11d48" />
-              Club Operating Expenses ({expenses.length})
-            </h4>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                  <span style={{ color: '#94a3b8' }}>Table & Seat:</span>
+                  <span style={{ fontWeight: 600, color: '#ffffff' }}>{req.tableNumber} • {req.seatNumber}</span>
+                </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {expenses.map(exp => (
-                <div key={exp.id} className="m-list-card">
-                  <div className="m-list-row">
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{exp.category}</span>
-                    <span className="tabular-num" style={{ fontWeight: 800, color: '#fca5a5' }}>
-                      -{formatCurrency(exp.amount)}
-                    </span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.84rem' }}>
+                  <span style={{ color: '#94a3b8' }}>Order Amount:</span>
+                  <span style={{ fontWeight: 800, color: '#fbbf24' }}>{formatCurrency(req.amount)} ({req.chipsQuantity.toLocaleString()} Chips)</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748b', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '6px' }}>
+                  <span>Requested: {formatTimeOnly(req.requestedAt)}</span>
+                  <span>Payment: {req.paymentMethod}</span>
+                </div>
+
+                {req.status === 'pending' && (
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      className="m-btn m-btn-emerald m-btn-sm"
+                      style={{ flex: 1 }}
+                      onClick={() => fulfillChipRequest(req.id)}
+                    >
+                      <CheckCircle size={14} /> Fulfill & Deliver
+                    </button>
+                    <button
+                      type="button"
+                      className="m-btn m-btn-secondary m-btn-sm"
+                      onClick={() => cancelChipRequest(req.id)}
+                    >
+                      Cancel
+                    </button>
                   </div>
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>{exp.description}</div>
-                  <div className="m-list-row" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
-                    <span>Paid to: {exp.paidTo}</span>
-                    <span>{formatDateOnly(exp.date)}</span>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </MobileBottomDrawer>
+
+      {/* ── DRAWER 2: Active Tournaments (Live Software Data) ──────── */}
+      <MobileBottomDrawer
+        isOpen={isTournamentsDrawerOpen}
+        onClose={() => setIsTournamentsDrawerOpen(false)}
+        title="Tournament Schedule"
+        subtitle={`${tournaments.length} tournament events · ${entries.length} total players registered`}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {tournaments.map(trn => {
+            const trnEntries = entries.filter(e => e.tournamentId === trn.id);
+            return (
+              <div
+                key={trn.id}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '14px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff' }}>
+                    {trn.name}
+                  </span>
+                  <span style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    background: 'rgba(168, 85, 247, 0.2)',
+                    color: '#c084fc',
+                    border: '1px solid rgba(168, 85, 247, 0.4)'
+                  }}>
+                    {trn.status}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.78rem' }}>
+                  <div>
+                    <span style={{ color: '#94a3b8' }}>Buy-in:</span>
+                    <div style={{ fontWeight: 700, color: '#ffffff' }}>
+                      {formatCurrency(trn.buyInFee)} + {formatCurrency(trn.clubRake)} (Fee)
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#94a3b8' }}>Guaranteed Pool:</span>
+                    <div style={{ fontWeight: 800, color: '#fbbf24' }}>
+                      {formatCurrency(trn.guaranteedPrizePool)} GTD
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#94a3b8' }}>Starting Chips:</span>
+                    <div style={{ fontWeight: 600, color: '#cbd5e1' }}>
+                      {trn.startingChips.toLocaleString()} Chips
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#94a3b8' }}>Enrolled:</span>
+                    <div style={{ fontWeight: 700, color: '#34d399' }}>
+                      {trnEntries.length} Players
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* TAB 5: AUDIT LOGS */}
-      {activeTab === 'audit' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div className="m-card">
-            <h3 className="m-card-title">
-              <History size={18} color="#e11d48" />
-              Team Activity Audit Trail ({auditLogs.length})
-            </h3>
-            <p className="m-card-subtitle">Chronological actions across all 4 portals</p>
-          </div>
-
-          {auditLogs.map(log => (
-            <div key={log.id} className="m-list-card">
-              <div className="m-list-row">
-                <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>{log.action}</span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)' }}>{log.portal}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#64748b', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '6px' }}>
+                  <Calendar size={12} />
+                  <span>Start: {formatDateOnly(trn.startTime)} at {formatTimeOnly(trn.startTime)} ({trn.blindLevelsMinutes}m Blinds)</span>
+                </div>
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{log.details}</div>
-              <div className="m-list-row" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
-                <span>User: {log.user}</span>
-                <span>{formatShortDateTime(log.timestamp)}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-      )}
+      </MobileBottomDrawer>
 
-      {/* Player KYC Inspection & Override Drawer */}
+      {/* ── DRAWER 3: Player Inspection & Financial Ledger ──────────── */}
       {selectedPlayer && (
         <MobileBottomDrawer
           isOpen={isPlayerModalOpen}
           onClose={() => setIsPlayerModalOpen(false)}
-          title={`Member: ${selectedPlayer.fullName}`}
-          subtitle={`ID: ${selectedPlayer.id}`}
+          title={selectedPlayer.fullName}
+          subtitle={`Member ID: ${selectedPlayer.id}`}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Phone</span>
-              <span>{selectedPlayer.phone}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Drawer Tabs (Details vs Financial Ledger) */}
+            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
+              <button
+                type="button"
+                className={`btn btn-sm ${playerDrawerTab === 'info' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setPlayerDrawerTab('info')}
+                style={{ flex: 1 }}
+              >
+                Member Details & KYC
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${playerDrawerTab === 'ledger' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setPlayerDrawerTab('ledger')}
+                style={{ flex: 1 }}
+              >
+                Financial Ledger
+              </button>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Govt ID</span>
-              <span>{selectedPlayer.kyc.govtIdType}: {maskGovtId(selectedPlayer.kyc.govtIdNumber)}</span>
-            </div>
+            {playerDrawerTab === 'info' ? (
+              <>
+                <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '14px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
+                    <span style={{ color: '#94a3b8' }}>Contact Phone</span>
+                    <span style={{ fontWeight: 600, color: '#ffffff' }}>{selectedPlayer.phone}</span>
+                  </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>DOB</span>
-              <span>{formatDateOnly(selectedPlayer.kyc.dateOfBirth)}</span>
-            </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
+                    <span style={{ color: '#94a3b8' }}>1. Aadhaar Card</span>
+                    <span style={{ fontWeight: 600, color: '#ffffff', fontFamily: 'monospace' }}>
+                      {selectedPlayer.kyc.aadhaarNumber ? maskGovtId(selectedPlayer.kyc.aadhaarNumber) : (selectedPlayer.kyc.govtIdNumber || 'UIDAI Verified')}
+                    </span>
+                  </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Admin Member Management:</span>
-              
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  type="button"
-                  className="m-btn m-btn-secondary m-btn-sm"
-                  style={{ flex: 1 }}
-                  onClick={() => {
-                    const newTier = window.prompt(`Update Tier for ${selectedPlayer.fullName} (Bronze, Silver, Gold, Diamond):`, selectedPlayer.membershipTier);
-                    if (newTier) {
-                      updatePlayer(selectedPlayer.id, { membershipTier: newTier as any });
-                      setSelectedPlayer({ ...selectedPlayer, membershipTier: newTier as any });
-                    }
-                  }}
-                >
-                  <Edit3 size={14} /> Edit Tier / Details
-                </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
+                    <span style={{ color: '#94a3b8' }}>2. PAN Card</span>
+                    <span style={{ fontWeight: 700, color: '#fb7185', fontFamily: 'monospace' }}>
+                      {selectedPlayer.kyc.panNumber || (selectedPlayer.kyc.govtIdNumber ? maskGovtId(selectedPlayer.kyc.govtIdNumber) : 'PAN Verified')}
+                    </span>
+                  </div>
 
-                <button
-                  type="button"
-                  className="m-btn m-btn-danger m-btn-sm"
-                  style={{ width: 'auto' }}
-                  onClick={() => {
-                    if (window.confirm(`Are you sure you want to delete member ${selectedPlayer.fullName} (${selectedPlayer.id})?`)) {
-                      deletePlayer(selectedPlayer.id);
-                      setIsPlayerModalOpen(false);
-                      setSelectedPlayer(null);
-                    }
-                  }}
-                >
-                  <Trash2 size={14} /> Delete
-                </button>
-              </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
+                    <span style={{ color: '#94a3b8' }}>Membership Tier</span>
+                    <TierBadge tier={selectedPlayer.membershipTier} />
+                  </div>
 
-              {kycAction ? (
-                <div className="staff-confirm-panel" style={{ marginTop: '8px' }}>
-                  <strong>{kycAction === 'verified' ? 'Verify this member?' : 'Reject this member’s KYC?'}</strong>
-                  <p>This change is recorded in the audit log.</p>
-                  <div>
-                    <button
-                      type="button"
-                      className={`m-btn m-btn-sm ${kycAction === 'verified' ? 'm-btn-emerald' : 'm-btn-danger'}`}
-                      onClick={() => {
-                        reviewKYC(selectedPlayer.id, kycAction, kycAction === 'rejected' ? 'Admin override' : undefined);
-                        setKycAction(null);
-                        setIsPlayerModalOpen(false);
-                      }}
-                    >
-                      Confirm {kycAction === 'verified' ? 'verification' : 'rejection'}
-                    </button>
-                    <button type="button" className="m-btn m-btn-secondary m-btn-sm" onClick={() => setKycAction(null)}>Cancel</button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
+                    <span style={{ color: '#94a3b8' }}>KYC Status</span>
+                    <KYCBadge status={selectedPlayer.kycStatus} />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
+                    <span style={{ color: '#94a3b8' }}>Total Club Visits</span>
+                    <span style={{ fontWeight: 700, color: '#34d399' }}>{selectedPlayer.totalVisits} Visits</span>
                   </div>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                  <button type="button" className="m-btn m-btn-emerald m-btn-sm" style={{ flex: 1 }} onClick={() => setKycAction('verified')}>
-                    <Check size={14} /> Mark Verified
-                  </button>
-                  <button type="button" className="m-btn m-btn-danger m-btn-sm" style={{ flex: 1 }} onClick={() => setKycAction('rejected')}>
-                    <XCircle size={14} /> Mark Rejected
-                  </button>
+
+                {/* Admin Actions */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '12px' }}>
+                  <span style={{ fontSize: '0.74rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>
+                    Admin Controls
+                  </span>
+
+                  {kycAction ? (
+                    <div style={{ background: 'rgba(225, 29, 72, 0.12)', border: '1px solid rgba(225, 29, 72, 0.3)', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <strong style={{ fontSize: '0.84rem', color: '#ffffff' }}>
+                        {kycAction === 'verified' ? 'Verify this member?' : 'Reject this member’s KYC?'}
+                      </strong>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className={`m-btn m-btn-sm ${kycAction === 'verified' ? 'm-btn-emerald' : 'm-btn-danger'}`}
+                          style={{ flex: 1 }}
+                          onClick={() => {
+                            reviewKYC(selectedPlayer.id, kycAction, kycAction === 'rejected' ? 'Admin override' : undefined);
+                            setKycAction(null);
+                            setIsPlayerModalOpen(false);
+                          }}
+                        >
+                          Confirm {kycAction === 'verified' ? 'verification' : 'rejection'}
+                        </button>
+                        <button type="button" className="m-btn m-btn-secondary m-btn-sm" onClick={() => setKycAction(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="m-btn m-btn-emerald m-btn-sm"
+                        style={{ flex: 1 }}
+                        onClick={() => setKycAction('verified')}
+                        disabled={selectedPlayer.kycStatus === 'verified'}
+                      >
+                        <Check size={14} /> Mark Verified
+                      </button>
+                      <button
+                        type="button"
+                        className="m-btn m-btn-danger m-btn-sm"
+                        style={{ flex: 1 }}
+                        onClick={() => setKycAction('rejected')}
+                      >
+                        <XCircle size={14} /> Reject KYC
+                      </button>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      className="m-btn m-btn-secondary m-btn-sm"
+                      style={{ flex: 1 }}
+                      onClick={() => {
+                        const newTier = window.prompt(`Update Tier for ${selectedPlayer.fullName} (Standard, Silver, Gold, VIP):`, selectedPlayer.membershipTier);
+                        if (newTier) {
+                          updatePlayer(selectedPlayer.id, { membershipTier: newTier as any });
+                          setSelectedPlayer({ ...selectedPlayer, membershipTier: newTier as any });
+                        }
+                      }}
+                    >
+                      <Edit3 size={14} /> Change Tier
+                    </button>
+                    <button
+                      type="button"
+                      className="m-btn m-btn-danger m-btn-sm"
+                      style={{ width: 'auto' }}
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete member ${selectedPlayer.fullName} (${selectedPlayer.id})?`)) {
+                          deletePlayer(selectedPlayer.id);
+                          setIsPlayerModalOpen(false);
+                          setSelectedPlayer(null);
+                        }
+                      }}
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <PlayerLedger player={selectedPlayer} />
+            )}
           </div>
         </MobileBottomDrawer>
       )}
 
-      {/* Add Expense Drawer */}
+      {/* ── DRAWER 4: Add Expense Drawer ───────────────────────────── */}
       <MobileBottomDrawer
         isOpen={isAddExpenseOpen}
         onClose={() => setIsAddExpenseOpen(false)}
         title="Record Operating Expense"
-        subtitle="Staff wages, rent, table equipment, F&B"
+        subtitle="Staff wages, rent, table supplies, refreshments"
       >
-        <form onSubmit={handleExpenseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <form onSubmit={handleExpenseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div className="m-form-group">
             <label className="m-form-label">Category</label>
             <select
@@ -558,85 +1478,112 @@ export const MobileAdminPortal: React.FC = () => {
         </form>
       </MobileBottomDrawer>
 
+      {/* ── DRAWER 5: More Tools Drawer ────────────────────────────── */}
       <MobileBottomDrawer
         isOpen={isMoreOpen}
         onClose={() => {
           setIsMoreOpen(false);
           setResetConfirm(false);
         }}
-        title="Admin tools"
-        subtitle="Staff access, audit history and demo controls"
+        title="Admin Management Tools"
+        subtitle="Staff accounts, audit trail and database controls"
       >
-        <div className="staff-more-menu">
-          <button type="button" onClick={() => { setActiveTab('staff'); setIsMoreOpen(false); }}>
-            <ShieldCheck size={19} />
-            <span><strong>Staff accounts</strong><small>Create, suspend or remove access</small></span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('staff'); setIsMoreOpen(false); }}
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '14px',
+              padding: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              color: '#ffffff',
+              cursor: 'pointer',
+              textAlign: 'left'
+            }}
+          >
+            <ShieldCheck size={20} color="#f43f5e" />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Staff Accounts</div>
+              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Create, suspend or modify staff logins</div>
+            </div>
           </button>
-          <button type="button" onClick={() => { setActiveTab('audit'); setIsMoreOpen(false); }}>
-            <History size={19} />
-            <span><strong>Audit log</strong><small>Review activity across every desk</small></span>
+
+          <button
+            type="button"
+            onClick={() => { setActiveTab('audit'); setIsMoreOpen(false); }}
+            style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '14px',
+              padding: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              color: '#ffffff',
+              cursor: 'pointer',
+              textAlign: 'left'
+            }}
+          >
+            <History size={20} color="#38bdf8" />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Full Audit Trail</div>
+              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Review activity across all club stations</div>
+            </div>
           </button>
-          <div className="staff-reset-tool">
-            <span><RotateCcw size={18} /><strong>Reset demo data</strong></span>
+
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            borderRadius: '14px',
+            padding: '14px',
+            marginTop: '8px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171', fontWeight: 700, fontSize: '0.88rem' }}>
+              <RotateCcw size={16} /> Reset Demo Data
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '4px 0 10px' }}>
+              Restores initial seed members and tournament records.
+            </div>
+
             {!resetConfirm ? (
-              <button type="button" className="m-btn m-btn-secondary m-btn-sm" onClick={() => setResetConfirm(true)}>Review reset</button>
+              <button
+                type="button"
+                className="m-btn m-btn-secondary m-btn-sm"
+                onClick={() => setResetConfirm(true)}
+              >
+                Reset Controls
+              </button>
             ) : (
-              <div className="staff-reset-confirm">
-                <p>This restores all demo records and cannot be undone.</p>
-                <div>
-                  <button type="button" className="m-btn m-btn-danger m-btn-sm" onClick={() => { resetToDemoData(); setResetConfirm(false); setIsMoreOpen(false); }}>Confirm reset</button>
-                  <button type="button" className="m-btn m-btn-secondary m-btn-sm" onClick={() => setResetConfirm(false)}>Cancel</button>
-                </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="m-btn m-btn-danger m-btn-sm"
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    resetToDemoData();
+                    setResetConfirm(false);
+                    setIsMoreOpen(false);
+                  }}
+                >
+                  Confirm Reset
+                </button>
+                <button
+                  type="button"
+                  className="m-btn m-btn-secondary m-btn-sm"
+                  onClick={() => setResetConfirm(false)}
+                >
+                  Cancel
+                </button>
               </div>
             )}
           </div>
         </div>
       </MobileBottomDrawer>
 
-      {/* Bottom Navigation */}
-      <nav className="mobile-bottom-nav" aria-label="Admin portal sections">
-        <button
-          className={`nav-tab-item admin-color ${activeTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          <LayoutDashboard size={20} />
-          <span className="nav-tab-label">Dashboard</span>
-        </button>
-
-        <button
-          className={`nav-tab-item admin-color ${activeTab === 'players' ? 'active' : ''}`}
-          onClick={() => setActiveTab('players')}
-        >
-          <Users size={20} />
-          <span className="nav-tab-label">Players</span>
-        </button>
-
-        <button
-          className={`nav-tab-item admin-color ${activeTab === 'attendance' ? 'active' : ''}`}
-          onClick={() => setActiveTab('attendance')}
-        >
-          <CheckCircle2 size={20} />
-          <span className="nav-tab-label">Attendance</span>
-        </button>
-
-        <button
-          className={`nav-tab-item admin-color ${activeTab === 'finance' ? 'active' : ''}`}
-          onClick={() => setActiveTab('finance')}
-        >
-          <Receipt size={20} />
-          <span className="nav-tab-label">Expenses</span>
-        </button>
-
-        <button
-          className={`nav-tab-item admin-color ${activeTab === 'staff' || activeTab === 'audit' ? 'active' : ''}`}
-          onClick={() => setIsMoreOpen(true)}
-        >
-          <MoreHorizontal size={20} />
-          <span className="nav-tab-label">More</span>
-        </button>
-      </nav>
-
-      </div>{/* end staff-scroll-area */}
     </div>
   );
 };

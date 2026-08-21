@@ -18,6 +18,7 @@ import {
   Trash2,
   AlertTriangle,
   LogOut,
+  FileText,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction } from '../../types';
@@ -27,6 +28,7 @@ import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { Modal } from '../common/Modal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { Pagination } from '../common/Pagination';
+import { InvoiceRepositoryView } from './InvoiceRepositoryView';
 import confetti from 'canvas-confetti';
 
 export const MobileCashPortal: React.FC = () => {
@@ -48,7 +50,7 @@ export const MobileCashPortal: React.FC = () => {
     deleteExpense,
   } = useClub();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'expenses'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'invoices' | 'ledger' | 'expenses'>('dashboard');
   const [ledgerPage, setLedgerPage] = useState(1);
   const [expensePage, setExpensePage] = useState(1);
   const pageSize = 10;
@@ -308,15 +310,15 @@ export const MobileCashPortal: React.FC = () => {
               <div className="staff-quick-actions" style={{ marginTop: '8px' }}>
                 <button type="button" className="staff-quick-btn cash-in" onClick={() => setIsCashInOpen(true)}>
                   <div className="staff-quick-icon"><ArrowDownLeft size={20} /></div>
-                  Cash Received
+                  Cash In
                 </button>
                 <button type="button" className="staff-quick-btn cash-out" onClick={() => setIsCashOutOpen(true)}>
                   <div className="staff-quick-icon"><ArrowUpRight size={20} /></div>
-                  Cash Paid Out
+                  Cash Out
                 </button>
-                <button type="button" className="staff-quick-btn expense" onClick={() => setIsExpenseOpen(true)}>
-                  <div className="staff-quick-icon"><Receipt size={20} /></div>
-                  Record Expense
+                <button type="button" className="staff-quick-btn kyc" onClick={() => setActiveTab('invoices')}>
+                  <div className="staff-quick-icon"><FileText size={20} /></div>
+                  Tax Invoices
                 </button>
                 <button type="button" className="staff-quick-btn records" onClick={() => setActiveTab('ledger')}>
                   <div className="staff-quick-icon"><History size={20} /></div>
@@ -528,6 +530,11 @@ export const MobileCashPortal: React.FC = () => {
               itemLabel="expenses"
             />
           </div>
+        )}
+
+        {/* TAB: TAX INVOICES REPOSITORY */}
+        {activeTab === 'invoices' && (
+          <InvoiceRepositoryView />
         )}
       </div>
 
@@ -927,6 +934,14 @@ export const MobileCashPortal: React.FC = () => {
         >
           <LayoutDashboard size={20} />
           <span className="nav-tab-label">Dashboard</span>
+        </button>
+
+        <button
+          className={`nav-tab-item cashier-color ${activeTab === 'invoices' ? 'active' : ''}`}
+          onClick={() => setActiveTab('invoices')}
+        >
+          <FileText size={20} />
+          <span className="nav-tab-label">Invoices</span>
         </button>
 
         <button

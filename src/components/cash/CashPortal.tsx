@@ -16,6 +16,7 @@ import {
   Edit3,
   Trash2,
   AlertTriangle,
+  FileText,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction } from '../../types';
@@ -27,9 +28,10 @@ import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSecti
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { Pagination } from '../common/Pagination';
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
+import { InvoiceRepositoryView } from './InvoiceRepositoryView';
 import confetti from 'canvas-confetti';
 
-type CashPortalTab = 'overview' | 'ledger' | 'expenses';
+type CashPortalTab = 'overview' | 'invoices' | 'ledger' | 'expenses';
 
 export const CashPortal: React.FC = () => {
   const {
@@ -250,6 +252,7 @@ export const CashPortal: React.FC = () => {
 
   const sections: DesktopSectionNavItem<CashPortalTab>[] = [
     { id: 'overview', label: 'Treasury & Payments', icon: <Wallet size={16} /> },
+    { id: 'invoices', label: 'Tax Invoices Hub', icon: <FileText size={16} /> },
     { id: 'ledger', label: `Master Ledger (${cashTransactions.length})`, icon: <DollarSign size={16} /> },
     { id: 'expenses', label: `Expenses (${expenses.length})`, icon: <Receipt size={16} /> },
   ];
@@ -264,6 +267,8 @@ export const CashPortal: React.FC = () => {
             label:
               activeTab === 'overview'
                 ? 'Cash Desk Overview'
+                : activeTab === 'invoices'
+                ? 'Central Tax Invoices Hub'
                 : activeTab === 'ledger'
                 ? 'Master Cash Ledger'
                 : 'Operating Expenses',
@@ -558,6 +563,11 @@ export const CashPortal: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* TAB: CENTRAL TAX INVOICE REPOSITORY */}
+      {activeTab === 'invoices' && (
+        <InvoiceRepositoryView />
       )}
 
       {/* TAB 2: MASTER CASH LEDGER */}
