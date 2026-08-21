@@ -337,24 +337,8 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
 
         {step === 3 && (
           <div className="m-card mobile-form-card" role="group" aria-labelledby="mobile-step-three-title">
-            <h2 id="mobile-step-three-title">Choose today&apos;s game</h2>
-            <p className="mobile-form-intro">You can change this with the floor team after check-in.</p>
-
-            <div className="m-form-group">
-              <label className="m-form-label" htmlFor="mobile-table-preference">Preferred table</label>
-              <select
-                id="mobile-table-preference"
-                className="m-select"
-                value={formData.tablePreference}
-                onChange={(event) => setFormData({ ...formData, tablePreference: event.target.value })}
-              >
-                <option value="NLH Cash Game (₹100/₹200)">No-Limit Holdem (₹100/₹200)</option>
-                <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500)</option>
-                <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
-                <option value="Re Straddle High Roller Championship">Re Straddle High Roller Championship</option>
-                <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (₹250/₹500)</option>
-              </select>
-            </div>
+            <h2 id="mobile-step-three-title">Declaration & Membership Consent</h2>
+            <p className="mobile-form-intro">Review your club membership declaration before submitting.</p>
 
             <label className={`mobile-consent-card ${errors.agreedToRules ? 'has-error' : ''}`}>
               <input
@@ -372,7 +356,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
 
             <div className="mobile-privacy-note">
               <FileText size={17} />
-              <span>Submitting creates your digital pass and checks you in for today.</span>
+              <span>Submitting creates your digital pass and registers your club membership.</span>
             </div>
           </div>
         )}

@@ -556,28 +556,12 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           </div>
         )}
 
-        {/* STEP 3: PREFERENCES & EMERGENCY CONTACT */}
+        {/* STEP 3: EMERGENCY CONTACT */}
         {currentStep === 3 && (
           <div style={{ marginTop: '20px' }}>
             <h4 style={{ fontSize: '0.9rem', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <HeartHandshake size={16} color="#e11d48" /> 3. Table Preferences & Emergency Contact
+              <HeartHandshake size={16} color="#e11d48" /> 3. Emergency Contact Details
             </h4>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="kyc-table-pref">Today&apos;s Game / Table Preference</label>
-              <select
-                id="kyc-table-pref"
-                className="form-select"
-                value={formData.tablePreference}
-                onChange={e => setFormData({ ...formData, tablePreference: e.target.value })}
-              >
-                <option value="NLH Cash Game (₹250/₹500)">NLH Cash Game (₹250/₹500 Blinds)</option>
-                <option value="PLO High Stakes (₹500/₹1000)">PLO High Stakes (₹500/₹1000)</option>
-                <option value="Re Straddle High Roller Championship">Re Straddle High Roller Championship (Tournament)</option>
-                <option value="Weekend Bounty Special">Weekend Bounty Special (Tournament)</option>
-                <option value="VIP High Stakes Lounge">VIP High Stakes Private Lounge</option>
-              </select>
-            </div>
 
             <div className="form-grid-2">
               <div className="form-group">
@@ -638,12 +622,12 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                   </div>
                 </div>
                 <div>
-                  <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Table Preference:</span>
-                  <div style={{ fontWeight: 700, color: '#ffffff' }}>{formData.tablePreference}</div>
-                </div>
-                <div>
                   <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Email:</span>
                   <div style={{ color: '#cbd5e1' }}>{formData.email}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Emergency Contact:</span>
+                  <div style={{ color: '#cbd5e1' }}>{formData.emergencyContactName || '—'}</div>
                 </div>
               </div>
             </div>

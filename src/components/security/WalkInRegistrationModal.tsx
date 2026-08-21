@@ -200,20 +200,6 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
           </div>
         </div>
 
-        <div className="form-group">
-          <label className="form-label">Table / Game Preference</label>
-          <select
-            className="form-select"
-            value={tablePreference}
-            onChange={e => setTablePreference(e.target.value)}
-          >
-            <option value="NLH Cash Game (₹250/₹500)">NLH Cash Game (₹250/₹500)</option>
-            <option value="PLO-5 High Stakes (₹500/₹1000)">PLO-5 High Stakes (₹500/₹1000)</option>
-            <option value="Re Straddle High Roller Championship">Re Straddle High Roller Championship</option>
-            <option value="Open Seating / Reception Float">Open Seating / Reception Float</option>
-          </select>
-        </div>
-
         {/* Auto-verify switch */}
         <div
           style={{
