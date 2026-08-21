@@ -3,11 +3,14 @@ import { History, Search, Trash2, AlertTriangle } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatDateTime } from '../../utils/formatters';
 import { Modal } from '../common/Modal';
+import { Pagination } from '../common/Pagination';
 
 export const AdminAuditLogsView: React.FC = () => {
   const { auditLogs, deleteAuditLog, clearAuditLogs } = useClub();
   const [search, setSearch] = useState('');
   const [portalFilter, setPortalFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
 
@@ -22,6 +25,8 @@ export const AdminAuditLogsView: React.FC = () => {
     if (portalFilter !== 'all' && log.portal !== portalFilter) return false;
     return true;
   });
+
+  const paginatedLogs = filteredLogs.slice((page - 1) * pageSize, page * pageSize);
 
   const getPortalBadgeColor = (portal: string) => {
     switch (portal) {
@@ -41,6 +46,7 @@ export const AdminAuditLogsView: React.FC = () => {
   const handleConfirmClear = () => {
     clearAuditLogs();
     setIsClearModalOpen(false);
+    setPage(1);
   };
 
   const handleConfirmDeleteSingle = () => {
@@ -77,7 +83,10 @@ export const AdminAuditLogsView: React.FC = () => {
             className="form-select"
             style={{ width: 'auto', fontSize: '0.82rem', fontWeight: 600, minHeight: '38px', padding: '8px 36px 8px 14px' }}
             value={portalFilter}
-            onChange={e => setPortalFilter(e.target.value)}
+            onChange={e => {
+              setPortalFilter(e.target.value);
+              setPage(1);
+            }}
           >
             <option value="all">All Portals ({auditLogs.length})</option>
             <option value="Player">Player Portal</option>
@@ -94,7 +103,10 @@ export const AdminAuditLogsView: React.FC = () => {
               style={{ paddingLeft: '36px', width: '210px', fontSize: '0.84rem', minHeight: '38px' }}
               placeholder="Search logs, staff..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
         </div>
@@ -114,40 +126,58 @@ export const AdminAuditLogsView: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredLogs.map(log => (
-              <tr key={log.id}>
-                <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
-                  {log.id}
-                </td>
-                <td>
-                  <span className={`badge ${getPortalBadgeColor(log.portal)}`}>
-                    {log.portal}
-                  </span>
-                </td>
-                <td style={{ fontWeight: 600 }}>{log.user}</td>
-                <td style={{ fontWeight: 700, color: 'var(--text-main)' }}>{log.action}</td>
-                <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '320px' }}>
-                  {log.details}
-                </td>
-                <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                  {formatDateTime(log.timestamp)}
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    style={{ color: '#ef4444', padding: '3px 6px' }}
-                    title="Delete Log"
-                    onClick={() => setSelectedLogId(log.id)}
-                  >
-                    <Trash2 size={12} />
-                  </button>
+            {paginatedLogs.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                  No audit logs found matching your filters.
                 </td>
               </tr>
-            ))}
+            ) : (
+              paginatedLogs.map(log => (
+                <tr key={log.id}>
+                  <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
+                    {log.id}
+                  </td>
+                  <td>
+                    <span className={`badge ${getPortalBadgeColor(log.portal)}`}>
+                      {log.portal}
+                    </span>
+                  </td>
+                  <td style={{ fontWeight: 600 }}>{log.user}</td>
+                  <td style={{ fontWeight: 700, color: 'var(--text-main)' }}>{log.action}</td>
+                  <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '320px' }}>
+                    {log.details}
+                  </td>
+                  <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+                    {formatDateTime(log.timestamp)}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      style={{ color: '#ef4444', padding: '3px 6px' }}
+                      title="Delete Log"
+                      onClick={() => setSelectedLogId(log.id)}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      <Pagination
+        currentPage={page}
+        totalItems={filteredLogs.length}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        itemLabel="logs"
+      />
 
       {/* Clear All Logs Modal */}
       <Modal

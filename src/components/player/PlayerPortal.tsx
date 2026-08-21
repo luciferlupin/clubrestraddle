@@ -26,6 +26,8 @@ import { formatClubLabel, formatCurrency, formatDateTime, formatINR } from '../.
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
 import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, AnimatedSuitsRow } from '../common/PokerGraphics';
+import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
+import { Pagination } from '../common/Pagination';
 
 type PlayerTab = 'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history';
 
@@ -100,6 +102,52 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
 
   return (
     <div className="desktop-portal desktop-player-portal">
+      {/* Breadcrumb navigation bar */}
+      <AppBreadcrumbs
+        items={[
+          { label: 'Club Re Straddle', onClick: () => { if (currentPlayer) setActiveTab('pass'); else setEntryView('welcome'); } },
+          { label: 'Player Lounge', onClick: () => { if (currentPlayer) setActiveTab('pass'); else setEntryView('welcome'); } },
+          {
+            label: currentPlayer
+              ? showKYCForm
+                ? 'Member Registration'
+                : activeTab === 'pass'
+                ? 'Member Dashboard'
+                : activeTab === 'chips'
+                ? 'Buy Chips'
+                : activeTab === 'tournaments'
+                ? 'Tournaments & Events'
+                : activeTab === 'billing'
+                ? 'Receipts & Billing'
+                : activeTab === 'profile'
+                ? 'Member Profile'
+                : 'Visit History'
+              : entryView === 'lookup'
+              ? 'Find My Pass'
+              : entryView === 'register'
+              ? 'KYC Registration'
+              : 'Welcome',
+          },
+        ]}
+        activeRole="player"
+        onBack={
+          showKYCForm
+            ? () => { setShowKYCForm(false); setEntryView('welcome'); }
+            : entryView !== 'welcome'
+            ? () => setEntryView('welcome')
+            : activeTab !== 'pass' && currentPlayer
+            ? () => setActiveTab('pass')
+            : undefined
+        }
+        backLabel={
+          showKYCForm
+            ? 'Back to Dashboard'
+            : entryView !== 'welcome'
+            ? 'Back to Welcome'
+            : 'Back to Overview'
+        }
+      />
+
       {/* Portal header — hide on hero welcome to avoid double branding */}
       {(currentPlayer || (!currentPlayer && entryView !== 'welcome')) && (
       <DesktopPortalHeader

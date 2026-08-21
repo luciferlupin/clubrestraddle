@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CalendarDays, CheckCircle2, Clock3, History, MapPin, ShieldCheck } from 'lucide-react';
 import { DailyCheckIn, Player } from '../../types';
 import { formatDateOnly, formatTimeOnly } from '../../utils/formatters';
 import { EntryBadge } from '../common/Badge';
+import { Pagination } from '../common/Pagination';
 
 interface MobilePlayerVisitsProps {
   player: Player;
@@ -10,8 +11,12 @@ interface MobilePlayerVisitsProps {
 }
 
 export const MobilePlayerVisits: React.FC<MobilePlayerVisitsProps> = ({ player, checkIns }) => {
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+
   const approvedVisits = checkIns.filter((checkIn) => checkIn.verificationStatus === 'approved').length;
   const latestVisit = checkIns[0];
+  const paginatedCheckIns = checkIns.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <section className="player-subscreen" aria-labelledby="player-visits-title">
@@ -44,7 +49,7 @@ export const MobilePlayerVisits: React.FC<MobilePlayerVisitsProps> = ({ player, 
           <span className="mobile-flow-eyebrow">Recent activity</span>
           <h2>Check-in history</h2>
         </div>
-        <span>{checkIns.length} shown</span>
+        <span>{checkIns.length} recorded</span>
       </div>
 
       {checkIns.length === 0 ? (
@@ -54,32 +59,42 @@ export const MobilePlayerVisits: React.FC<MobilePlayerVisitsProps> = ({ player, 
           <p>Your check-in history will appear here after your first visit.</p>
         </div>
       ) : (
-        <div className="player-visit-timeline">
-          {checkIns.map((checkIn) => (
-            <article key={checkIn.id} className="player-visit-card">
-              <span className={`player-visit-marker ${checkIn.verificationStatus}`} aria-hidden="true">
-                <CheckCircle2 size={16} />
-              </span>
-              <div className="player-visit-content">
-                <div className="player-visit-topline">
-                  <div>
-                    <strong>{formatDateOnly(checkIn.checkInDate)}</strong>
-                    <span><Clock3 size={14} /> {formatTimeOnly(checkIn.checkInTime)}</span>
+        <>
+          <div className="player-visit-timeline">
+            {paginatedCheckIns.map((checkIn) => (
+              <article key={checkIn.id} className="player-visit-card">
+                <span className={`player-visit-marker ${checkIn.verificationStatus}`} aria-hidden="true">
+                  <CheckCircle2 size={16} />
+                </span>
+                <div className="player-visit-content">
+                  <div className="player-visit-topline">
+                    <div>
+                      <strong>{formatDateOnly(checkIn.checkInDate)}</strong>
+                      <span><Clock3 size={14} /> {formatTimeOnly(checkIn.checkInTime)}</span>
+                    </div>
+                    <EntryBadge status={checkIn.verificationStatus} />
                   </div>
-                  <EntryBadge status={checkIn.verificationStatus} />
+                  <div className="player-visit-location">
+                    <MapPin size={15} />
+                    <span>{checkIn.tablePreference || 'General club floor'}</span>
+                  </div>
+                  <div className="player-visit-footer">
+                    <span>{checkIn.verifiedBy ? `Verified by ${checkIn.verifiedBy}` : 'Awaiting security review'}</span>
+                    <code>{checkIn.id}</code>
+                  </div>
                 </div>
-                <div className="player-visit-location">
-                  <MapPin size={15} />
-                  <span>{checkIn.tablePreference || 'General club floor'}</span>
-                </div>
-                <div className="player-visit-footer">
-                  <span>{checkIn.verifiedBy ? `Verified by ${checkIn.verifiedBy}` : 'Awaiting security review'}</span>
-                  <code>{checkIn.id}</code>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+
+          <Pagination
+            currentPage={page}
+            totalItems={checkIns.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            itemLabel="visits"
+          />
+        </>
       )}
     </section>
   );

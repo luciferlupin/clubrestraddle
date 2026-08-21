@@ -15,6 +15,7 @@ import { SecurityQueue } from './SecurityQueue';
 import { QRScannerModal } from './QRScannerModal';
 import { StatCard } from '../common/StatCard';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
+import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 
 export const SecurityPortal: React.FC = () => {
   const { staffName, players, todayCheckIns } = useClub();
@@ -55,6 +56,17 @@ export const SecurityPortal: React.FC = () => {
 
   return (
     <div className="desktop-portal desktop-security-portal">
+      {/* Contextual Breadcrumbs */}
+      <AppBreadcrumbs
+        items={[
+          { label: 'Club Re Straddle' },
+          { label: 'Staff Operations' },
+          { label: 'Security Entrance' },
+          { label: selectedPlayer ? `Clearance: ${selectedPlayer.fullName}` : 'Inspection Queue' },
+        ]}
+        activeRole="security"
+      />
+
       <DesktopPortalHeader
         icon={<ShieldCheck size={24} />}
         eyebrow="Security desk"
@@ -99,27 +111,26 @@ export const SecurityPortal: React.FC = () => {
           icon={<XCircle size={20} color="#e11d48" />}
           helper="Failed age or ID checks"
         />
-        <StatCard
-          label="Total Registered Players"
-          value={players.length}
-          icon={<Users size={20} color="#ffffff" />}
-          helper="KYC Database"
-        />
       </div>
 
-      {/* Verification Card for Selected Player */}
-      {selectedPlayer && (
-        <SecurityVerificationCard
-          player={selectedPlayer}
-          checkIn={selectedPlayerCheckIn}
-        />
-      )}
+      {/* Main Verification Interface: 2-Column Split */}
+      <div className="security-layout-grid">
+        {/* Left Column: Focused Player Verification Card */}
+        <div className="security-col-main">
+          <SecurityVerificationCard
+            player={selectedPlayer}
+            checkIn={selectedPlayerCheckIn}
+          />
+        </div>
 
-      {/* Live Entrance Queue */}
-      <SecurityQueue
-        selectedPlayerId={selectedPlayer?.id || null}
-        onSelectPlayer={handleSelect}
-      />
+        {/* Right Column: Live Arrival Queue */}
+        <div className="security-col-queue">
+          <SecurityQueue
+            onSelectPlayer={handleSelect}
+            selectedPlayerId={selectedPlayer?.id}
+          />
+        </div>
+      </div>
     </div>
   );
 };

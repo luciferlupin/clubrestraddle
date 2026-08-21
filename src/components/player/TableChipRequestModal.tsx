@@ -9,6 +9,9 @@ import {
   Smartphone,
   Banknote,
   Building,
+  ArrowLeft,
+  ArrowRight,
+  MapPin,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { PaymentMethod } from '../../types';
@@ -23,6 +26,7 @@ interface TableChipRequestModalProps {
 export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ isOpen, onClose }) => {
   const { currentPlayer, requestBuyChips, chipRequests } = useClub();
 
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedAmount, setSelectedAmount] = useState<number>(25000);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isCustom, setIsCustom] = useState(false);
@@ -37,14 +41,29 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
 
   const quickAmounts = [5000, 10000, 25000, 50000, 100000];
 
+  const finalAmount = isCustom ? Number(customAmount) : selectedAmount;
+
   // Active requests for this specific player
   const playerActiveOrders = chipRequests.filter(
     r => r.playerId === currentPlayer.id && (r.status === 'pending' || r.status === 'delivered')
   ).slice(0, 5);
 
+  const handleNextFromStep1 = () => {
+    setFormError(null);
+    if (!finalAmount || finalAmount <= 0) {
+      setFormError('Please select or enter a valid chip amount.');
+      return;
+    }
+    setStep(2);
+  };
+
+  const handleNextFromStep2 = () => {
+    setFormError(null);
+    setStep(3);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalAmount = isCustom ? Number(customAmount) : selectedAmount;
     setFormError(null);
 
     if (!finalAmount || finalAmount <= 0) {
@@ -102,7 +121,7 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
         aria-labelledby="chip-request-title"
         style={{
           width: '100%',
-          maxWidth: '560px',
+          maxWidth: '580px',
           maxHeight: '90vh',
           overflowY: 'auto',
           border: '1.5px solid #e11d48',
@@ -114,7 +133,7 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div
               style={{
@@ -136,7 +155,7 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
                 Request Chips at Table
               </h3>
               <p style={{ fontSize: '0.76rem', color: '#94a3b8', margin: 0 }}>
-                Cashier delivery · no in-app charge
+                Step {step} of 3 · Real-time cashier table dispatch
               </p>
             </div>
           </div>
@@ -150,6 +169,38 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
             <X size={20} />
           </button>
         </div>
+
+        {/* Stepper Progress Bar */}
+        {!successOrder && (
+          <div className="wizard-step-tracker" style={{ marginBottom: '16px', padding: '8px 12px' }}>
+            <button
+              type="button"
+              className={`wizard-step-item ${step === 1 ? 'active' : 'complete'}`}
+              onClick={() => setStep(1)}
+            >
+              <span className="wizard-step-badge">1</span>
+              <span className="wizard-step-title">Amount</span>
+            </button>
+            <div className={`wizard-step-connector ${step > 1 ? 'complete' : ''}`} />
+            <button
+              type="button"
+              className={`wizard-step-item ${step === 2 ? 'active' : step > 2 ? 'complete' : ''}`}
+              onClick={() => { if (finalAmount > 0) setStep(2); }}
+            >
+              <span className="wizard-step-badge">2</span>
+              <span className="wizard-step-title">Table/Seat</span>
+            </button>
+            <div className={`wizard-step-connector ${step > 2 ? 'complete' : ''}`} />
+            <button
+              type="button"
+              className={`wizard-step-item ${step === 3 ? 'active' : ''}`}
+              onClick={() => { if (finalAmount > 0) setStep(3); }}
+            >
+              <span className="wizard-step-badge">3</span>
+              <span className="wizard-step-title">Payment & Submit</span>
+            </button>
+          </div>
+        )}
 
         {successOrder ? (
           <div style={{ textAlign: 'center', padding: '16px 0' }}>
@@ -212,7 +263,10 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
               <button
                 className="btn btn-secondary"
                 style={{ flex: 1 }}
-                onClick={() => setSuccessOrder(null)}
+                onClick={() => {
+                  setSuccessOrder(null);
+                  setStep(1);
+                }}
               >
                 Order More Chips
               </button>
@@ -232,7 +286,8 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
                 <Info size={16} aria-hidden="true" /> {formError}
               </div>
             )}
-            {/* Player Info Summary */}
+
+            {/* Player Info Pill */}
             <div
               style={{
                 background: 'rgba(0,0,0,0.3)',
@@ -246,147 +301,228 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
               }}
             >
               <div>
-                <span style={{ color: '#94a3b8' }}>Player: </span>
+                <span style={{ color: '#94a3b8' }}>Member: </span>
                 <strong style={{ color: '#ffffff' }}>{currentPlayer.fullName}</strong>
               </div>
               <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
-                {currentPlayer.membershipTier} Member
+                {currentPlayer.membershipTier} Tier
               </span>
             </div>
 
-            {/* Chip Amount Selection */}
-            <div>
-              <label className="form-label" htmlFor="chip-custom-amount" style={{ fontSize: '0.82rem', marginBottom: '8px' }}>
-                Select Chip Amount (₹)
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
-                {quickAmounts.map(amt => (
+            {/* STEP 1: CHIP AMOUNT SELECTION */}
+            {step === 1 && (
+              <div>
+                <label className="form-label" htmlFor="chip-custom-amount" style={{ fontSize: '0.86rem', marginBottom: '10px', color: '#ffffff', fontWeight: 700 }}>
+                  1. Select Chip Order Amount (₹)
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
+                  {quickAmounts.map(amt => (
+                    <button
+                      key={amt}
+                      type="button"
+                      className={`btn ${!isCustom && selectedAmount === amt ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ padding: '12px 8px', fontSize: '0.9rem', fontWeight: 800 }}
+                      onClick={() => {
+                        setSelectedAmount(amt);
+                        setIsCustom(false);
+                      }}
+                    >
+                      ₹{formatINR(amt)}
+                    </button>
+                  ))}
                   <button
-                    key={amt}
                     type="button"
-                    className={`btn ${!isCustom && selectedAmount === amt ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ padding: '10px 8px', fontSize: '0.86rem', fontWeight: 800 }}
-                    onClick={() => {
-                      setSelectedAmount(amt);
-                      setIsCustom(false);
+                    className={`btn ${isCustom ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '12px 8px', fontSize: '0.84rem', fontWeight: 700 }}
+                    onClick={() => setIsCustom(true)}
+                  >
+                    Custom Amount
+                  </button>
+                </div>
+
+                {isCustom && (
+                  <div style={{ marginTop: '10px' }}>
+                    <input
+                      id="chip-custom-amount"
+                      type="number"
+                      className="form-input"
+                      placeholder="Enter amount in ₹ (e.g. 75000)"
+                      value={customAmount}
+                      onChange={e => setCustomAmount(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* STEP 2: TABLE & SEAT LOCATION */}
+            {step === 2 && (
+              <div>
+                <label className="form-label" style={{ fontSize: '0.86rem', marginBottom: '10px', color: '#ffffff', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={16} color="#e11d48" /> 2. Table & Seat Position
+                </label>
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="chip-table-number">Table / Game *</label>
+                    <select
+                      id="chip-table-number"
+                      className="form-input"
+                      value={tableNumber}
+                      onChange={e => setTableNumber(e.target.value)}
+                    >
+                      <option value="Table 1 (NLH 250/500)">Table 1 (NLH 250/500)</option>
+                      <option value="Table 2 (PLO 500/1000)">Table 2 (PLO 500/1000)</option>
+                      <option value="Table 3 (VIP High Roller)">Table 3 (VIP High Roller)</option>
+                      <option value="Table 4 (Tournament Area)">Table 4 (Tournament Area)</option>
+                      <option value="Table 5 (Cash Game Floor)">Table 5 (Cash Game Floor)</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="chip-seat-number">Seat Number *</label>
+                    <select
+                      id="chip-seat-number"
+                      className="form-input"
+                      value={seatNumber}
+                      onChange={e => setSeatNumber(e.target.value)}
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(seat => (
+                        <option key={seat} value={`Seat ${seat}`}>
+                          Seat {seat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: PAYMENT & REVIEW */}
+            {step === 3 && (
+              <div>
+                <div
+                  style={{
+                    background: 'rgba(0,0,0,0.35)',
+                    border: '1px solid rgba(225, 29, 72, 0.3)',
+                    borderRadius: '10px',
+                    padding: '12px',
+                    marginBottom: '14px',
+                    fontSize: '0.84rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <span style={{ color: '#94a3b8' }}>Chips Amount: </span>
+                    <strong style={{ color: '#ffffff' }}>₹{formatINR(finalAmount)}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#94a3b8' }}>Destination: </span>
+                    <strong style={{ color: '#ffffff' }}>{tableNumber}, {seatNumber}</strong>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <div className="form-label" id="chip-payment-label" style={{ fontWeight: 700, color: '#ffffff' }}>
+                    Mark Settlement Method *
+                  </div>
+                  <div
+                    className="player-settlement-note"
+                    style={{
+                      background: 'rgba(0,0,0,0.4)',
+                      border: '1px solid rgba(225, 29, 72, 0.25)',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontSize: '0.74rem',
+                      color: '#cbd5e1',
+                      marginBottom: '10px',
                     }}
                   >
-                    ₹{formatINR(amt)}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className={`btn ${isCustom ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ padding: '10px 8px', fontSize: '0.82rem', fontWeight: 700 }}
-                  onClick={() => setIsCustom(true)}
-                >
-                  Custom Amount
-                </button>
-              </div>
+                    <Info size={16} aria-hidden="true" />
+                    <span>Pay cashier or floor runner directly at table upon delivery.</span>
+                  </div>
 
-              {isCustom && (
-                <div style={{ marginTop: '8px' }}>
-                  <input
-                    id="chip-custom-amount"
-                    type="number"
-                    className="form-input"
-                    placeholder="Enter amount in ₹ (e.g. 75000)"
-                    value={customAmount}
-                    onChange={e => setCustomAmount(e.target.value)}
-                    autoFocus
-                  />
+                  <div role="group" aria-labelledby="chip-payment-label" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                    {[
+                      { mode: 'Cash' as PaymentMethod, label: 'Cash at Table / Counter', icon: <Banknote size={16} /> },
+                      { mode: 'UPI/Digital' as PaymentMethod, label: 'UPI / Club QR Scan', icon: <Smartphone size={16} /> },
+                      { mode: 'Bank Transfer' as PaymentMethod, label: 'Bank IMPS / NEFT', icon: <Building size={16} /> },
+                      { mode: 'Credit/Debit Card' as PaymentMethod, label: 'Club POS Card Machine', icon: <CreditCard size={16} /> },
+                    ].map(item => (
+                      <button
+                        key={item.mode}
+                        type="button"
+                        className={`btn ${paymentMethod === item.mode ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '8px 10px', fontSize: '0.78rem', justifyContent: 'flex-start', gap: '8px' }}
+                        onClick={() => setPaymentMethod(item.mode)}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
-
-            {/* Table & Seat Location */}
-            <div className="form-grid-2">
-              <div className="form-group">
-                <label className="form-label" htmlFor="chip-table-number">Table Number / Game *</label>
-                <select
-                  id="chip-table-number"
-                  className="form-input"
-                  value={tableNumber}
-                  onChange={e => setTableNumber(e.target.value)}
-                >
-                  <option value="Table 1 (NLH 250/500)">Table 1 (NLH 250/500)</option>
-                  <option value="Table 2 (PLO 500/1000)">Table 2 (PLO 500/1000)</option>
-                  <option value="Table 3 (VIP High Roller)">Table 3 (VIP High Roller)</option>
-                  <option value="Table 4 (Tournament Area)">Table 4 (Tournament Area)</option>
-                  <option value="Table 5 (Cash Game Floor)">Table 5 (Cash Game Floor)</option>
-                </select>
               </div>
+            )}
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="chip-seat-number">Seat Number *</label>
-                <select
-                  id="chip-seat-number"
-                  className="form-input"
-                  value={seatNumber}
-                  onChange={e => setSeatNumber(e.target.value)}
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(seat => (
-                    <option key={seat} value={`Seat ${seat}`}>
-                      Seat {seat}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Payment Settlement Mode */}
-            <div className="form-group">
-              <div className="form-label" id="chip-payment-label">Mark Payment Mode / Settlement Type *</div>
-              <div
-                className="player-settlement-note"
-                style={{
-                  background: 'rgba(0,0,0,0.4)',
-                  border: '1px solid rgba(225, 29, 72, 0.25)',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  fontSize: '0.74rem',
-                  color: '#cbd5e1',
-                  marginBottom: '8px',
-                }}
-              >
-                <Info size={17} aria-hidden="true" />
-                <span><strong>Physical settlement:</strong> No payment is charged inside this software. Pay directly at the cashier desk or table by cash, UPI, or card. This only records your preferred payment type on the receipt.</span>
-              </div>
-
-              <div role="group" aria-labelledby="chip-payment-label" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                {[
-                  { mode: 'Cash' as PaymentMethod, label: 'Cash at Table / Desk', icon: <Banknote size={16} /> },
-                  { mode: 'UPI/Digital' as PaymentMethod, label: 'UPI / Club QR Scan', icon: <Smartphone size={16} /> },
-                  { mode: 'Bank Transfer' as PaymentMethod, label: 'Bank IMPS / NEFT', icon: <Building size={16} /> },
-                  { mode: 'Credit/Debit Card' as PaymentMethod, label: 'Club POS Card Machine', icon: <CreditCard size={16} /> },
-                ].map(item => (
+            {/* Stepper Navigation Actions */}
+            <div className="wizard-nav-actions">
+              <div>
+                {step > 1 ? (
                   <button
-                    key={item.mode}
                     type="button"
-                    className={`btn ${paymentMethod === item.mode ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ padding: '8px 10px', fontSize: '0.78rem', justifyContent: 'flex-start', gap: '8px' }}
-                    onClick={() => setPaymentMethod(item.mode)}
+                    className="wizard-prev-btn"
+                    onClick={() => setStep((step - 1) as 1 | 2 | 3)}
                   >
-                    {item.icon}
-                    <span>{item.label}</span>
+                    <ArrowLeft size={16} /> Previous Step
                   </button>
-                ))}
+                ) : (
+                  <button
+                    type="button"
+                    className="wizard-prev-btn"
+                    onClick={onClose}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+
+              <div>
+                {step === 1 ? (
+                  <button
+                    type="button"
+                    className="wizard-next-btn"
+                    onClick={handleNextFromStep1}
+                  >
+                    <span>Next: Table & Seat</span>
+                    <ArrowRight size={16} />
+                  </button>
+                ) : step === 2 ? (
+                  <button
+                    type="button"
+                    className="wizard-next-btn"
+                    onClick={handleNextFromStep2}
+                  >
+                    <span>Next: Payment & Review</span>
+                    <ArrowRight size={16} />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="wizard-next-btn"
+                    disabled={submitting}
+                  >
+                    <Coins size={18} />
+                    <span>{submitting ? 'Dispatching...' : `Submit Order (₹${formatINR(finalAmount)})`}</span>
+                  </button>
+                )}
               </div>
             </div>
-
-            <button
-              type="submit"
-              className="btn btn-primary btn-lg player-chip-submit"
-              disabled={submitting}
-              style={{ marginTop: '6px', justifyContent: 'center' }}
-            >
-              <Coins size={18} />
-              <span>{submitting ? 'Sending to Cashier...' : `Submit Request: ₹${formatINR(isCustom ? Number(customAmount) || 0 : selectedAmount)} Chips (${paymentMethod})`}</span>
-            </button>
           </form>
         )}
 
-        {/* Player's Active & Previous Orders Section */}
+        {/* Player's Active Orders Section */}
         {playerActiveOrders.length > 0 && !successOrder && (
           <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
             <h4 style={{ fontSize: '0.84rem', fontWeight: 800, color: '#ffffff', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>

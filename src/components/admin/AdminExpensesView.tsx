@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
-import { Receipt, Plus, Edit3, Trash2, AlertTriangle } from 'lucide-react';
+import { Receipt, Plus, Edit3, Trash2, AlertTriangle, Search } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Expense, ExpenseCategory, PaymentMethod } from '../../types';
 import { formatCurrency, formatDateOnly, getTodayDateString } from '../../utils/formatters';
 import { Modal } from '../common/Modal';
+import { Pagination } from '../common/Pagination';
 
 export const AdminExpensesView: React.FC = () => {
   const { expenses, totalExpensesAmount, addExpense, updateExpense, deleteExpense } = useClub();
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -31,6 +37,20 @@ export const AdminExpensesView: React.FC = () => {
     date: getTodayDateString(),
     receiptNumber: '',
   });
+
+  const filteredExpenses = expenses.filter(exp => {
+    const matchesSearch =
+      exp.description.toLowerCase().includes(search.toLowerCase()) ||
+      exp.paidTo.toLowerCase().includes(search.toLowerCase()) ||
+      (exp.receiptNumber && exp.receiptNumber.toLowerCase().includes(search.toLowerCase())) ||
+      exp.category.toLowerCase().includes(search.toLowerCase());
+
+    if (!matchesSearch) return false;
+    if (categoryFilter !== 'all' && exp.category !== categoryFilter) return false;
+    return true;
+  });
+
+  const paginatedExpenses = filteredExpenses.slice((page - 1) * pageSize, page * pageSize);
 
   const handleOpenEdit = (exp: Expense) => {
     setSelectedExpense(exp);
@@ -101,18 +121,20 @@ export const AdminExpensesView: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
         <div>
-          <h3 className="page-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h3 className="page-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Receipt size={20} color="#e11d48" />
-            Club Operating Expenses Management ({expenses.length})
+            Club Operating Expenses Management ({filteredExpenses.length})
           </h3>
-          <p className="page-subtitle" style={{ fontSize: '0.84rem', color: '#475569', marginTop: '3px', fontWeight: 500 }}>
+          <p className="page-subtitle" style={{ fontSize: '0.84rem', color: '#94a3b8', marginTop: '3px', fontWeight: 500 }}>
             Record, edit, and audit dealer payroll, rent, utilities, card/chip supplies, and refreshment costs.
           </p>
         </div>
 
-        <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-          <Plus size={16} /> Record New Expense
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+            <Plus size={16} /> Record New Expense
+          </button>
+        </div>
       </div>
 
       {/* Expense Total Card */}
@@ -124,6 +146,8 @@ export const AdminExpensesView: React.FC = () => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
         }}
       >
         <div>
@@ -140,8 +164,53 @@ export const AdminExpensesView: React.FC = () => {
         </div>
       </div>
 
-      {/* Expenses Table */}
+      {/* Expenses Table with Filters */}
       <div className="card">
+        <div className="card-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h4 style={{ fontSize: '0.92rem', fontWeight: 750, color: '#ffffff', margin: 0 }}>
+              Expense Ledger Records
+            </h4>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <select
+              className="form-select"
+              style={{ width: 'auto', fontSize: '0.82rem', padding: '6px 30px 6px 12px' }}
+              value={categoryFilter}
+              onChange={e => {
+                setCategoryFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="all">All Categories</option>
+              <option value="Dealer & Staff Wages">Dealer & Staff Wages</option>
+              <option value="Rent & Utilities">Rent & Utilities</option>
+              <option value="Cards, Chips & Tables">Cards, Chips & Tables</option>
+              <option value="Refreshments & F&B">Refreshments & F&B</option>
+              <option value="Security & Surveillance">Security & Surveillance</option>
+              <option value="Licensing & Compliance">Licensing & Compliance</option>
+              <option value="Maintenance & Repairs">Maintenance & Repairs</option>
+              <option value="Miscellaneous">Miscellaneous</option>
+            </select>
+
+            <div style={{ position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '9px', color: '#94a3b8' }} />
+              <input
+                type="text"
+                className="form-input"
+                style={{ paddingLeft: '32px', width: '200px', fontSize: '0.82rem' }}
+                placeholder="Search description, vendor..."
+                value={search}
+                onChange={e => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="table-container">
           <table className="custom-table">
             <thead>
@@ -158,52 +227,70 @@ export const AdminExpensesView: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {expenses.map(exp => (
-                <tr key={exp.id}>
-                  <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
-                    {exp.receiptNumber || exp.id}
-                  </td>
-                  <td style={{ fontWeight: 600 }}>{exp.category}</td>
-                  <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '240px' }}>
-                    {exp.description}
-                  </td>
-                  <td>{exp.paidTo}</td>
-                  <td className="tabular-num" style={{ fontWeight: 800, color: '#f87171' }}>
-                    {formatCurrency(exp.amount)}
-                  </td>
-                  <td>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{exp.paymentMethod}</span>
-                  </td>
-                  <td>{formatDateOnly(exp.date)}</td>
-                  <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{exp.recordedBy}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', gap: '6px' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => handleOpenEdit(exp)}
-                        title="Edit Expense"
-                      >
-                        <Edit3 size={12} />
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-sm"
-                        onClick={() => {
-                          setSelectedExpense(exp);
-                          setIsDeleteModalOpen(true);
-                        }}
-                        title="Delete Expense"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
+              {paginatedExpenses.length === 0 ? (
+                <tr>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                    No expense vouchers found.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                paginatedExpenses.map(exp => (
+                  <tr key={exp.id}>
+                    <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
+                      {exp.receiptNumber || exp.id}
+                    </td>
+                    <td style={{ fontWeight: 600 }}>{exp.category}</td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '240px' }}>
+                      {exp.description}
+                    </td>
+                    <td>{exp.paidTo}</td>
+                    <td className="tabular-num" style={{ fontWeight: 800, color: '#f87171' }}>
+                      {formatCurrency(exp.amount)}
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{exp.paymentMethod}</span>
+                    </td>
+                    <td>{formatDateOnly(exp.date)}</td>
+                    <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{exp.recordedBy}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => handleOpenEdit(exp)}
+                          title="Edit Expense"
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          onClick={() => {
+                            setSelectedExpense(exp);
+                            setIsDeleteModalOpen(true);
+                          }}
+                          title="Delete Expense"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        <Pagination
+          currentPage={page}
+          totalItems={filteredExpenses.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          itemLabel="expenses"
+        />
       </div>
 
       {/* Add Expense Modal */}

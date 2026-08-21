@@ -24,6 +24,7 @@ import { StaffManager } from './StaffManager';
 import { ChipOrderManager } from '../cashier/ChipOrderManager';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
+import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 
 type AdminTab = 'dashboard' | 'chip-orders' | 'staff' | 'players' | 'attendance' | 'tournaments' | 'expenses' | 'audit';
 
@@ -48,8 +49,44 @@ export const AdminPortal: React.FC = () => {
     { id: 'audit', label: 'Audit log', icon: <History size={16} /> },
   ];
 
+  const getActiveTabLabel = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return 'Overview Dashboard';
+      case 'chip-orders':
+        return 'Table Chip Orders';
+      case 'staff':
+        return 'Staff Accounts';
+      case 'players':
+        return 'Member Directory';
+      case 'attendance':
+        return 'Attendance Logs';
+      case 'tournaments':
+        return 'Tournament Management';
+      case 'expenses':
+        return 'Operating Expenses';
+      case 'audit':
+        return 'Audit Logs';
+      default:
+        return 'Admin Center';
+    }
+  };
+
   return (
     <div className="desktop-portal desktop-admin-portal">
+      {/* Contextual Breadcrumbs */}
+      <AppBreadcrumbs
+        items={[
+          { label: 'Club Re Straddle', onClick: () => setActiveTab('dashboard') },
+          { label: 'Management', onClick: () => setActiveTab('dashboard') },
+          { label: 'Admin Command', onClick: () => setActiveTab('dashboard') },
+          { label: getActiveTabLabel() },
+        ]}
+        activeRole="admin"
+        onBack={activeTab !== 'dashboard' ? () => setActiveTab('dashboard') : undefined}
+        backLabel="Back to Dashboard"
+      />
+
       <DesktopPortalHeader
         icon={<ShieldCheck size={24} />}
         eyebrow="Admin center"

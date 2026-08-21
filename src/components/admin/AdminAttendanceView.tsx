@@ -5,11 +5,14 @@ import { DailyCheckIn } from '../../types';
 import { formatDateOnly, formatTimeOnly, getTodayDateString } from '../../utils/formatters';
 import { EntryBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
+import { Pagination } from '../common/Pagination';
 
 export const AdminAttendanceView: React.FC = () => {
   const { checkIns, players, performDailyCheckIn, updateCheckIn, deleteCheckIn } = useClub();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -76,6 +79,8 @@ export const AdminAttendanceView: React.FC = () => {
     return true;
   });
 
+  const paginatedCheckIns = filteredCheckIns.slice((page - 1) * pageSize, page * pageSize);
+
   return (
     <div className="card">
       <div className="card-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
@@ -98,7 +103,10 @@ export const AdminAttendanceView: React.FC = () => {
             className="form-select"
             style={{ width: 'auto', fontSize: '0.82rem', fontWeight: 600, minHeight: '38px', padding: '8px 36px 8px 14px' }}
             value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
+            onChange={e => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
           >
             <option value="all">All Verification Statuses</option>
             <option value="approved">Approved Entries</option>
@@ -114,7 +122,10 @@ export const AdminAttendanceView: React.FC = () => {
               style={{ paddingLeft: '36px', width: '210px', fontSize: '0.84rem', minHeight: '38px' }}
               placeholder="Search player, phone..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
         </div>
@@ -136,69 +147,87 @@ export const AdminAttendanceView: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredCheckIns.map(c => (
-              <tr key={c.id}>
-                <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
-                  {c.id}
-                </td>
-                <td style={{ fontWeight: 700 }}>{c.playerName}</td>
-                <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{c.playerPhone}</td>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Calendar size={13} color="#94a3b8" />
-                    <span>{formatDateOnly(c.checkInDate)}</span>
-                  </div>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Clock size={13} color="#94a3b8" />
-                    <span className="tabular-num">{formatTimeOnly(c.checkInTime)}</span>
-                  </div>
-                </td>
-                <td style={{ fontSize: '0.82rem', color: 'var(--gold-light)' }}>
-                  {c.tablePreference || 'General Floor'}
-                </td>
-                <td>
-                  <EntryBadge status={c.verificationStatus} />
-                  {c.rejectionReason && (
-                    <div style={{ fontSize: '0.72rem', color: '#f87171', marginTop: '2px' }}>
-                      {c.rejectionReason}
-                    </div>
-                  )}
-                </td>
-                <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  {c.verifiedBy || (c.verificationStatus === 'pending' ? 'Pending' : '—')}
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <div style={{ display: 'inline-flex', gap: '6px' }}>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      style={{ padding: '3px 6px' }}
-                      title="Edit Check-in"
-                      onClick={() => handleOpenEdit(c)}
-                    >
-                      <Edit3 size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      style={{ padding: '3px 6px' }}
-                      title="Delete Check-in"
-                      onClick={() => {
-                        setSelectedCheckIn(c);
-                        setIsDeleteModalOpen(true);
-                      }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
+            {paginatedCheckIns.length === 0 ? (
+              <tr>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                  No check-in records found.
                 </td>
               </tr>
-            ))}
+            ) : (
+              paginatedCheckIns.map(c => (
+                <tr key={c.id}>
+                  <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
+                    {c.id}
+                  </td>
+                  <td style={{ fontWeight: 700 }}>{c.playerName}</td>
+                  <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{c.playerPhone}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={13} color="#94a3b8" />
+                      <span>{formatDateOnly(c.checkInDate)}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Clock size={13} color="#94a3b8" />
+                      <span className="tabular-num">{formatTimeOnly(c.checkInTime)}</span>
+                    </div>
+                  </td>
+                  <td style={{ fontSize: '0.82rem', color: 'var(--gold-light)' }}>
+                    {c.tablePreference || 'General Floor'}
+                  </td>
+                  <td>
+                    <EntryBadge status={c.verificationStatus} />
+                    {c.rejectionReason && (
+                      <div style={{ fontSize: '0.72rem', color: '#f87171', marginTop: '2px' }}>
+                        {c.rejectionReason}
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    {c.verifiedBy || (c.verificationStatus === 'pending' ? 'Pending' : '—')}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', gap: '6px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '3px 6px' }}
+                        title="Edit Check-in"
+                        onClick={() => handleOpenEdit(c)}
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        style={{ padding: '3px 6px' }}
+                        title="Delete Check-in"
+                        onClick={() => {
+                          setSelectedCheckIn(c);
+                          setIsDeleteModalOpen(true);
+                        }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      <Pagination
+        currentPage={page}
+        totalItems={filteredCheckIns.length}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        itemLabel="check-ins"
+      />
 
       {/* Manual Check-in Modal */}
       <Modal

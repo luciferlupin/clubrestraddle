@@ -27,6 +27,8 @@ import { Modal } from '../common/Modal';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { Pagination } from '../common/Pagination';
+import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 import confetti from 'canvas-confetti';
 
 type CashPortalTab = 'overview' | 'ledger' | 'expenses';
@@ -50,6 +52,11 @@ export const CashPortal: React.FC = () => {
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<CashPortalTab>('overview');
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [ledgerPageSize, setLedgerPageSize] = useState(15);
+  const [expensePage, setExpensePage] = useState(1);
+  const [expensePageSize, setExpensePageSize] = useState(15);
+
   const [isCashInModalOpen, setIsCashInModalOpen] = useState(false);
   const [isCashOutModalOpen, setIsCashOutModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -251,6 +258,24 @@ export const CashPortal: React.FC = () => {
 
   return (
     <div className="desktop-portal desktop-cash-portal">
+      <AppBreadcrumbs
+        items={[
+          { label: 'Club Re Straddle', onClick: () => setActiveTab('overview') },
+          { label: 'Staff Operations', onClick: () => setActiveTab('overview') },
+          {
+            label:
+              activeTab === 'overview'
+                ? 'Cash Desk Overview'
+                : activeTab === 'ledger'
+                ? 'Master Cash Ledger'
+                : 'Operating Expenses',
+          },
+        ]}
+        activeRole="cash"
+        onBack={activeTab !== 'overview' ? () => setActiveTab('overview') : undefined}
+        backLabel="Back to Overview"
+      />
+
       <DesktopPortalHeader
         icon={<DollarSign size={24} color="#fbbf24" />}
         eyebrow="Exclusive Cash Desk"
@@ -609,7 +634,7 @@ export const CashPortal: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredTransactions.map(txn => (
+                {filteredTransactions.slice((ledgerPage - 1) * ledgerPageSize, ledgerPage * ledgerPageSize).map(txn => (
                   <tr key={txn.id}>
                     <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
                       {txn.id}
@@ -665,6 +690,15 @@ export const CashPortal: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={ledgerPage}
+            totalItems={filteredTransactions.length}
+            pageSize={ledgerPageSize}
+            onPageChange={setLedgerPage}
+            onPageSizeChange={setLedgerPageSize}
+            itemLabel="transactions"
+          />
         </div>
       )}
 
@@ -699,7 +733,7 @@ export const CashPortal: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {expenses.map(exp => (
+                {expenses.slice((expensePage - 1) * expensePageSize, expensePage * expensePageSize).map(exp => (
                   <tr key={exp.id}>
                     <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
                       {exp.id}
@@ -742,6 +776,15 @@ export const CashPortal: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={expensePage}
+            totalItems={expenses.length}
+            pageSize={expensePageSize}
+            onPageChange={setExpensePage}
+            onPageSizeChange={setExpensePageSize}
+            itemLabel="expenses"
+          />
         </div>
       )}
 

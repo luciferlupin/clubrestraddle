@@ -25,6 +25,7 @@ import { CashFlowBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { Modal } from '../common/Modal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { Pagination } from '../common/Pagination';
 import confetti from 'canvas-confetti';
 
 export const MobileCashPortal: React.FC = () => {
@@ -46,6 +47,9 @@ export const MobileCashPortal: React.FC = () => {
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'expenses'>('dashboard');
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [expensePage, setExpensePage] = useState(1);
+  const pageSize = 10;
 
   // Drawers & Modals State
   const [isCashInOpen, setIsCashInOpen] = useState(false);
@@ -402,7 +406,7 @@ export const MobileCashPortal: React.FC = () => {
             </div>
 
             {/* List */}
-            {filteredTransactions.map(txn => (
+            {filteredTransactions.slice((ledgerPage - 1) * pageSize, ledgerPage * pageSize).map(txn => (
               <div key={txn.id} className="m-list-card">
                 <div className="m-list-row">
                   <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>{txn.category}</span>
@@ -436,6 +440,14 @@ export const MobileCashPortal: React.FC = () => {
                 </div>
               </div>
             ))}
+
+            <Pagination
+              currentPage={ledgerPage}
+              totalItems={filteredTransactions.length}
+              pageSize={pageSize}
+              onPageChange={setLedgerPage}
+              itemLabel="records"
+            />
           </div>
         )}
 
@@ -457,7 +469,7 @@ export const MobileCashPortal: React.FC = () => {
               </div>
             </div>
 
-            {expenses.map(exp => (
+            {expenses.slice((expensePage - 1) * pageSize, expensePage * pageSize).map(exp => (
               <div key={exp.id} className="m-list-card">
                 <div className="m-list-row">
                   <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>{exp.category}</span>
@@ -496,6 +508,14 @@ export const MobileCashPortal: React.FC = () => {
                 </div>
               </div>
             ))}
+
+            <Pagination
+              currentPage={expensePage}
+              totalItems={expenses.length}
+              pageSize={pageSize}
+              onPageChange={setExpensePage}
+              itemLabel="expenses"
+            />
           </div>
         )}
       </div>

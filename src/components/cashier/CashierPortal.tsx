@@ -16,6 +16,7 @@ import { BillingHistory } from './BillingHistory';
 import { ChipOrderManager } from './ChipOrderManager';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
+import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 
 type CashierTab = 'chip-orders' | 'tournaments' | 'register' | 'billing';
 
@@ -36,8 +37,49 @@ export const CashierPortal: React.FC = () => {
     { id: 'billing', label: 'Billing records', icon: <Receipt size={16} /> },
   ];
 
+  const getActiveTabLabel = () => {
+    switch (activeTab) {
+      case 'chip-orders':
+        return 'Chip Order Dispatch';
+      case 'tournaments':
+        return 'Tournaments & Fixtures';
+      case 'register':
+        return 'Tournament Entry & Billing';
+      case 'billing':
+        return 'Billing Records';
+      default:
+        return 'Overview';
+    }
+  };
+
   return (
     <div className="desktop-portal desktop-cashier-portal">
+      {/* Contextual Breadcrumb Navigation Bar */}
+      <AppBreadcrumbs
+        items={[
+          { label: 'Club Re Straddle', onClick: () => setActiveTab('chip-orders') },
+          { label: 'Staff Operations', onClick: () => setActiveTab('chip-orders') },
+          { label: 'Cashier Desk', onClick: () => setActiveTab('chip-orders') },
+          { label: getActiveTabLabel() },
+        ]}
+        activeRole="cashier"
+        onBack={
+          activeTab === 'register' && selectedTournamentForReg
+            ? () => {
+                setSelectedTournamentForReg(undefined);
+                setActiveTab('tournaments');
+              }
+            : activeTab !== 'chip-orders'
+            ? () => setActiveTab('chip-orders')
+            : undefined
+        }
+        backLabel={
+          activeTab === 'register' && selectedTournamentForReg
+            ? 'Back to Tournaments'
+            : 'Back to Chip Orders'
+        }
+      />
+
       <DesktopPortalHeader
         icon={<DollarSign size={24} />}
         eyebrow="Cashier desk"
@@ -63,7 +105,10 @@ export const CashierPortal: React.FC = () => {
       {activeTab === 'register' && (
         <PlayerTournamentEntry
           initialTournamentId={selectedTournamentForReg}
-          onDone={() => setSelectedTournamentForReg(undefined)}
+          onDone={() => {
+            setSelectedTournamentForReg(undefined);
+            setActiveTab('tournaments');
+          }}
         />
       )}
 

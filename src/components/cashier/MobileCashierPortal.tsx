@@ -13,6 +13,7 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  ArrowLeft,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentStatus, PaymentMethod, CashCategory, ExpenseCategory } from '../../types';
@@ -298,6 +299,22 @@ export const MobileCashierPortal: React.FC = () => {
 
       {/* ── Scrollable content ─────────────────────────────── */}
       <div className="staff-scroll-area">
+
+      {activeTab !== 'dashboard' && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', background: 'rgba(225, 29, 72, 0.12)', padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <ArrowLeft size={14} /> Back to Dashboard
+          </button>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fda4af', textTransform: 'capitalize' }}>
+            {activeTab === 'chips' ? 'Chip Dispatch' : activeTab === 'players' ? 'Tournament Entry' : activeTab === 'tournaments' ? 'Events' : activeTab === 'records' ? 'Vouchers' : 'Cash Desk'}
+          </span>
+        </div>
+      )}
 
       {/* TAB 1: MAIN CASHIER DASHBOARD */}
       {activeTab === 'dashboard' && (

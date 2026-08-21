@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Trophy, Plus, Users, Calendar, Edit3, Trash2, AlertTriangle } from 'lucide-react';
+import { Trophy, Plus, Users, Calendar, Edit3, Trash2, AlertTriangle, Search } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Tournament, TournamentStatus } from '../../types';
 import { formatClubLabel, formatCurrency, formatDateTime } from '../../utils/formatters';
 import { TournamentStatusBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
+import { Pagination } from '../common/Pagination';
 
 interface TournamentManagerProps {
   onRegisterPlayer: (tournamentId: string) => void;
@@ -12,6 +13,11 @@ interface TournamentManagerProps {
 
 export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegisterPlayer }) => {
   const { tournaments, entries, createTournament, updateTournament, deleteTournament, updateTournamentStatus } = useClub();
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(6);
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -40,6 +46,18 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
     startTime: new Date().toISOString().slice(0, 16),
     status: 'Registering' as TournamentStatus,
   }));
+
+  const filteredTournaments = tournaments.filter(t => {
+    const matchesSearch =
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.id.toLowerCase().includes(search.toLowerCase());
+
+    if (!matchesSearch) return false;
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    return true;
+  });
+
+  const paginatedTournaments = filteredTournaments.slice((page - 1) * pageSize, page * pageSize);
 
   const handleOpenEdit = (trn: Tournament) => {
     setSelectedTournament(trn);
@@ -122,21 +140,55 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
         <div>
-          <h3 className="page-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h3 className="page-title" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Trophy size={20} color="#e11d48" />
-            Club Tournaments & Events ({tournaments.length})
+            Club Tournaments & Events ({filteredTournaments.length})
           </h3>
-          <p className="page-subtitle" style={{ fontSize: '0.84rem', color: '#475569', marginTop: '3px', fontWeight: 500 }}>
+          <p className="page-subtitle" style={{ fontSize: '0.84rem', color: '#94a3b8', marginTop: '3px', fontWeight: 500 }}>
             Create, edit, manage, and register players for all poker events.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-          <Plus size={16} /> Create Tournament
-        </button>
+
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <select
+            className="form-select"
+            style={{ width: 'auto', fontSize: '0.82rem', padding: '6px 30px 6px 12px' }}
+            value={statusFilter}
+            onChange={e => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="all">All Statuses</option>
+            <option value="Registering">Registering</option>
+            <option value="Upcoming">Upcoming</option>
+            <option value="Running">Running</option>
+            <option value="Completed">Completed</option>
+          </select>
+
+          <div style={{ position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '9px', color: '#94a3b8' }} />
+            <input
+              type="text"
+              className="form-input"
+              style={{ paddingLeft: '32px', width: '200px', fontSize: '0.82rem' }}
+              placeholder="Search event name..."
+              value={search}
+              onChange={e => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+
+          <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+            <Plus size={16} /> Create Tournament
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
-        {tournaments.map(trn => {
+        {paginatedTournaments.map(trn => {
           const trnEntries = getEntriesForTournament(trn.id);
           const totalPrizePoolCalculated = trnEntries.length * trn.buyInFee;
           const effectivePrizePool = Math.max(trn.guaranteedPrizePool, totalPrizePoolCalculated);
@@ -238,6 +290,17 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
           );
         })}
       </div>
+
+      {/* Pagination Controls */}
+      <Pagination
+        currentPage={page}
+        totalItems={filteredTournaments.length}
+        pageSize={pageSize}
+        pageSizeOptions={[6, 12, 24]}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        itemLabel="events"
+      />
 
       {/* Create Tournament Modal */}
       <Modal

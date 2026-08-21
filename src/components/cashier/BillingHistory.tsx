@@ -5,10 +5,13 @@ import { TournamentEntry } from '../../types';
 import { formatClubLabel, formatCurrency, formatDateTime } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { Modal } from '../common/Modal';
+import { Pagination } from '../common/Pagination';
 
 export const BillingHistory: React.FC = () => {
   const { entries, players, tournaments, updateTournamentEntry, deleteTournamentEntry } = useClub();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<TournamentEntry | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -27,6 +30,8 @@ export const BillingHistory: React.FC = () => {
       e.receiptNumber.toLowerCase().includes(search.toLowerCase()) ||
       e.paymentReference.toLowerCase().includes(search.toLowerCase())
   );
+
+  const paginatedEntries = filteredEntries.slice((page - 1) * pageSize, page * pageSize);
 
   const handleOpenEdit = (entry: TournamentEntry) => {
     setSelectedEntry(entry);
@@ -121,7 +126,10 @@ export const BillingHistory: React.FC = () => {
               style={{ paddingLeft: '32px', width: '220px', fontSize: '0.8rem' }}
               placeholder="Search player, receipt..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
         </div>
@@ -133,94 +141,106 @@ export const BillingHistory: React.FC = () => {
           <p style={{ fontSize: '0.9rem' }}>No billing records found matching your filter.</p>
         </div>
       ) : (
-        <div className="table-container">
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Receipt #</th>
-                <th>Player</th>
-                <th>Tournament</th>
-                <th>Buy-in + Rake</th>
-                <th>Payment Method</th>
-                <th>Payment Ref</th>
-                <th>Table / Seat</th>
-                <th>Cashier</th>
-                <th>Date & Time</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEntries.map(entry => {
-                const totalPaid = entry.buyInAmount + entry.rakeAmount;
-                return (
-                  <tr key={entry.id}>
-                    <td className="tabular-num" style={{ fontWeight: 700, color: 'var(--gold-light)' }}>
-                      {entry.receiptNumber}
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{entry.playerName}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{entry.playerId}</div>
-                    </td>
-                    <td style={{ maxWidth: '180px', fontSize: '0.82rem' }}>
-                      {formatClubLabel(entry.tournamentName)}
-                    </td>
-                    <td className="tabular-num" style={{ fontWeight: 800, color: '#ffffff' }}>
-                      {formatCurrency(totalPaid)}
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{entry.paymentMethod}</span>
-                    </td>
-                    <td className="tabular-num" style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                      {entry.paymentReference}
-                    </td>
-                    <td>
-                      <span className="badge badge-default">
-                        {entry.tableNumber || 'TBD'} • {entry.seatNumber || 'TBD'}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      {entry.cashierName}
-                    </td>
-                    <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                      {formatDateTime(entry.registeredAt)}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: '3px 8px' }}
-                          onClick={() => handleViewReceipt(entry)}
-                          title="View Official Tax Invoice"
-                        >
-                          <FileText size={13} />
-                        </button>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: '3px 6px' }}
-                          onClick={() => handleOpenEdit(entry)}
-                          title="Edit Seating / Entry"
-                        >
-                          <Edit3 size={13} />
-                        </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          style={{ padding: '3px 6px' }}
-                          onClick={() => {
-                            setSelectedEntry(entry);
-                            setIsDeleteModalOpen(true);
-                          }}
-                          title="Unregister / Delete Entry"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="table-container">
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>Receipt #</th>
+                  <th>Player</th>
+                  <th>Tournament</th>
+                  <th>Buy-in + Rake</th>
+                  <th>Payment Method</th>
+                  <th>Payment Ref</th>
+                  <th>Table / Seat</th>
+                  <th>Cashier</th>
+                  <th>Date & Time</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedEntries.map(entry => {
+                  const totalPaid = entry.buyInAmount + entry.rakeAmount;
+                  return (
+                    <tr key={entry.id}>
+                      <td className="tabular-num" style={{ fontWeight: 700, color: 'var(--gold-light)' }}>
+                        {entry.receiptNumber}
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{entry.playerName}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{entry.playerId}</div>
+                      </td>
+                      <td style={{ maxWidth: '180px', fontSize: '0.82rem' }}>
+                        {formatClubLabel(entry.tournamentName)}
+                      </td>
+                      <td className="tabular-num" style={{ fontWeight: 800, color: '#ffffff' }}>
+                        {formatCurrency(totalPaid)}
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{entry.paymentMethod}</span>
+                      </td>
+                      <td className="tabular-num" style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                        {entry.paymentReference}
+                      </td>
+                      <td>
+                        <span className="badge badge-default">
+                          {entry.tableNumber || 'TBD'} • {entry.seatNumber || 'TBD'}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        {entry.cashierName}
+                      </td>
+                      <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+                        {formatDateTime(entry.registeredAt)}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px' }}>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '3px 8px' }}
+                            onClick={() => handleViewReceipt(entry)}
+                            title="View Official Tax Invoice"
+                          >
+                            <FileText size={13} />
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '3px 6px' }}
+                            onClick={() => handleOpenEdit(entry)}
+                            title="Edit Seating / Entry"
+                          >
+                            <Edit3 size={13} />
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            style={{ padding: '3px 6px' }}
+                            onClick={() => {
+                              setSelectedEntry(entry);
+                              setIsDeleteModalOpen(true);
+                            }}
+                            title="Unregister / Delete Entry"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          <Pagination
+            currentPage={page}
+            totalItems={filteredEntries.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            itemLabel="receipts"
+          />
+        </>
       )}
 
       {/* Edit Entry Modal */}

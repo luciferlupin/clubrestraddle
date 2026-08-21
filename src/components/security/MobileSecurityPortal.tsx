@@ -9,6 +9,7 @@ import {
   QrCode,
   History,
   ChevronRight,
+  ArrowLeft,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
@@ -171,6 +172,22 @@ export const MobileSecurityPortal: React.FC = () => {
         >
           <CheckCircle2 size={18} />
           <span>{verificationSuccessToast}</span>
+        </div>
+      )}
+
+      {activeNav !== 'scan' && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', background: 'rgba(16, 185, 129, 0.12)', padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}
+            onClick={() => setActiveNav('scan')}
+          >
+            <ArrowLeft size={14} /> Back to Scanner
+          </button>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#34d399', textTransform: 'capitalize' }}>
+            {activeNav === 'queue' ? 'Live Queue' : 'Door History'}
+          </span>
         </div>
       )}
 

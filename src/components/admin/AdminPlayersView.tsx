@@ -5,6 +5,7 @@ import { Player, KYCStatus, MembershipTier } from '../../types';
 import { formatDateOnly, formatDateTime, maskGovtId } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
+import { Pagination } from '../common/Pagination';
 
 export const AdminPlayersView: React.FC = () => {
   const { players, reviewKYC, updatePlayer, deletePlayer, checkIns } = useClub();
@@ -13,6 +14,10 @@ export const AdminPlayersView: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Edit form state
   const [editFullName, setEditFullName] = useState('');
@@ -29,6 +34,8 @@ export const AdminPlayersView: React.FC = () => {
       p.id.toLowerCase().includes(search.toLowerCase()) ||
       p.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  const paginatedPlayers = filteredPlayers.slice((page - 1) * pageSize, page * pageSize);
 
   const handleInspect = (player: Player) => {
     setSelectedPlayer(player);
@@ -83,7 +90,7 @@ export const AdminPlayersView: React.FC = () => {
         <div>
           <h3 className="card-title">
             <Users size={18} color="#e11d48" />
-            Registered Players & KYC Registry ({players.length})
+            Registered Players & KYC Registry ({filteredPlayers.length})
           </h3>
           <p className="card-subtitle">
             Master directory of all club members, identity credentials, and membership status.
@@ -98,7 +105,10 @@ export const AdminPlayersView: React.FC = () => {
             style={{ paddingLeft: '32px', width: '240px', fontSize: '0.8rem' }}
             placeholder="Search member, phone, ID..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
       </div>
@@ -114,75 +124,93 @@ export const AdminPlayersView: React.FC = () => {
               <th>KYC Status</th>
               <th>Visits</th>
               <th>Registration Date</th>
-              <th>Actions</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredPlayers.map(p => (
-              <tr key={p.id}>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    {p.kyc.photoUrl ? (
-                      <img
-                        src={p.kyc.photoUrl}
-                        alt=""
-                        style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          background: 'var(--bg-surface-elevated)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 700,
-                          color: 'var(--gold-light)',
-                        }}
-                      >
-                        {p.fullName.charAt(0)}
-                      </div>
-                    )}
-                    <div>
-                      <div style={{ fontWeight: 700 }}>{p.fullName}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{p.id}</div>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <TierBadge tier={p.membershipTier} />
-                </td>
-                <td style={{ fontSize: '0.82rem' }}>{p.phone}</td>
-                <td style={{ fontSize: '0.8rem' }}>
-                  <span>{p.kyc.govtIdType}: </span>
-                  <span className="tabular-num">{maskGovtId(p.kyc.govtIdNumber)}</span>
-                </td>
-                <td>
-                  <KYCBadge status={p.kycStatus} />
-                </td>
-                <td className="tabular-num" style={{ fontWeight: 700 }}>
-                  {p.totalVisits}
-                </td>
-                <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                  {formatDateOnly(p.registeredAt)}
-                </td>
-                <td>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button className="btn btn-secondary btn-sm" onClick={() => handleInspect(p)} title="Inspect Member Profile">
-                      <Eye size={13} />
-                    </button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => handleOpenEdit(p)} title="Edit Member Profile">
-                      <Edit3 size={13} />
-                    </button>
-                  </div>
+            {paginatedPlayers.length === 0 ? (
+              <tr>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                  No members found matching your search.
                 </td>
               </tr>
-            ))}
+            ) : (
+              paginatedPlayers.map(p => (
+                <tr key={p.id}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {p.kyc.photoUrl ? (
+                        <img
+                          src={p.kyc.photoUrl}
+                          alt=""
+                          style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: 'var(--bg-surface-elevated)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 700,
+                            color: 'var(--gold-light)',
+                          }}
+                        >
+                          {p.fullName.charAt(0)}
+                        </div>
+                      )}
+                      <div>
+                        <div style={{ fontWeight: 700 }}>{p.fullName}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{p.id}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <TierBadge tier={p.membershipTier} />
+                  </td>
+                  <td style={{ fontSize: '0.82rem' }}>{p.phone}</td>
+                  <td style={{ fontSize: '0.8rem' }}>
+                    <span>{p.kyc.govtIdType}: </span>
+                    <span className="tabular-num">{maskGovtId(p.kyc.govtIdNumber)}</span>
+                  </td>
+                  <td>
+                    <KYCBadge status={p.kycStatus} />
+                  </td>
+                  <td className="tabular-num" style={{ fontWeight: 700 }}>
+                    {p.totalVisits}
+                  </td>
+                  <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+                    {formatDateOnly(p.registeredAt)}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'inline-flex', gap: '6px' }}>
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleInspect(p)} title="Inspect Member Profile">
+                        <Eye size={13} />
+                      </button>
+                      <button className="btn btn-secondary btn-sm" onClick={() => handleOpenEdit(p)} title="Edit Member Profile">
+                        <Edit3 size={13} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      <Pagination
+        currentPage={page}
+        totalItems={filteredPlayers.length}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        itemLabel="members"
+      />
 
       {/* Player Detail Inspection Modal */}
       {selectedPlayer && (

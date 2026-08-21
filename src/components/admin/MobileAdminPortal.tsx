@@ -14,6 +14,7 @@ import {
   MoreHorizontal,
   Edit3,
   Trash2,
+  ArrowLeft,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR } from '../../utils/formatters';
@@ -108,6 +109,22 @@ export const MobileAdminPortal: React.FC = () => {
 
       {/* ── Scrollable content ─────────────────────────────── */}
       <div className="staff-scroll-area">
+
+      {activeTab !== 'dashboard' && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', background: 'rgba(225, 29, 72, 0.12)', padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <ArrowLeft size={14} /> Back to Dashboard
+          </button>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fda4af', textTransform: 'capitalize' }}>
+            {activeTab === 'players' ? 'Member Directory' : activeTab === 'attendance' ? 'Attendance' : activeTab === 'finance' ? 'Treasury & Expenses' : activeTab === 'staff' ? 'Staff Accounts' : 'Audit Logs'}
+          </span>
+        </div>
+      )}
 
       {/* TAB 1: EXECUTIVE DASHBOARD & TIMELINE */}
       {activeTab === 'dashboard' && (
