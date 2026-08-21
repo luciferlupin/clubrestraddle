@@ -10,6 +10,7 @@ import {
   History,
   ChevronRight,
   ArrowLeft,
+  LogOut,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
@@ -35,6 +36,7 @@ const calculateAge = (dobString: string): number => {
 export const MobileSecurityPortal: React.FC = () => {
   const {
     staffName,
+    logoutStaff,
     players,
     todayCheckIns,
     approvePlayerEntry,
@@ -123,29 +125,30 @@ export const MobileSecurityPortal: React.FC = () => {
   };
 
   return (
-    <div className="staff-mobile-portal">
+    <div className="staff-mobile-portal security-mobile-theme">
 
       {/* ── Station Banner ─────────────────────────────────── */}
       <div className="staff-station-banner">
         <div className="staff-banner-left">
-          <span className="staff-banner-role">♣ Door Security</span>
+          <span className="staff-banner-role">♠ Security & Reception</span>
           <span className="staff-banner-name">{staffName}</span>
         </div>
         <div className="staff-banner-right">
           {pendingCheckIns.length > 0 && (
-            <span style={{
-              background: 'rgba(225,29,72,0.18)',
-              border: '1px solid rgba(225,29,72,0.5)',
-              borderRadius: '999px',
-              padding: '3px 8px',
-              fontSize: '0.68rem',
-              fontWeight: 800,
-              color: '#fca5a5',
-            }}>
+            <span className="staff-pending-pill">
               {pendingCheckIns.length} waiting
             </span>
           )}
-          <span className="staff-live-dot security">On Post</span>
+          <span className="staff-live-dot security">Guard</span>
+          <button
+            type="button"
+            className="staff-header-signout"
+            onClick={logoutStaff}
+            aria-label="Sign out of staff portal"
+            title="Sign out"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </div>
 

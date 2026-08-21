@@ -97,8 +97,8 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-base);
-  color: var(--text-canvas);
+  background-color: #070204;
+  color: #ffffff;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -112,8 +112,8 @@ body {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   background-image: 
-    radial-gradient(circle at 50% 0%, #ffffff 0%, #f1f5f9 100%),
-    radial-gradient(ellipse 90% 40% at 50% -10%, rgba(225, 29, 72, 0.08), transparent 70%);
+    radial-gradient(ellipse 100% 65% at 50% -10%, rgba(225, 29, 72, 0.22), transparent 75%),
+    radial-gradient(circle at 50% 100%, rgba(18, 5, 10, 0.95), #060204 100%);
   background-attachment: fixed;
 }
 
@@ -3975,38 +3975,39 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .m-stat-card {
-  background: linear-gradient(155deg, #13070b 0%, #090204 100%);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-  padding: 14px 12px;
+  background: linear-gradient(150deg, #18070d 0%, #0d0306 100%);
+  border: 1px solid rgba(225, 29, 72, 0.38);
+  border-radius: 16px;
+  padding: 14px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  min-width: 0;
 }
 
 .m-stat-label {
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 750;
   color: #cbd5e1;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
 .m-stat-val {
-  font-size: 1.32rem;
+  font-size: 1.35rem;
   font-weight: 800;
   font-family: var(--font-number);
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
+  line-height: 1.15;
   color: #ffffff;
 }
 
 .m-stat-sub {
   font-size: 0.68rem;
   color: #fb7185;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4763,13 +4764,18 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   box-sizing: border-box;
 }
 
+/* Hide duplicate portal guard session bar on mobile phone layout */
+.is-mobile-device .staff-session-bar {
+  display: none !important;
+}
+
 /* ── Scrollable content zone — clears fixed bottom nav ───────── */
 .staff-scroll-area {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 16px);
+  padding: 14px 14px calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 32px) !important;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -4780,44 +4786,88 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 13px 16px;
-  background: linear-gradient(135deg, rgba(15,5,9,0.98) 0%, rgba(25,8,14,0.95) 100%);
-  border-bottom: 1px solid rgba(225,29,72,0.3);
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(145deg, rgba(22, 7, 13, 0.98) 0%, rgba(12, 3, 6, 0.98) 100%);
+  border-bottom: 1.5px solid rgba(225, 29, 72, 0.4);
   position: sticky;
   top: 0;
-  z-index: 10;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  z-index: 20;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
 }
 
 .staff-banner-left {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
+  min-width: 0;
 }
 
 .staff-banner-role {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0.65;
-  color: #ffffff;
+  color: #fda4af;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .staff-banner-name {
-  font-size: 1.0rem;
+  font-size: 0.96rem;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.01em;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .staff-banner-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.staff-pending-pill {
+  background: rgba(225, 29, 72, 0.22);
+  border: 1px solid rgba(225, 29, 72, 0.6);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #fecdd3;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 8px rgba(225, 29, 72, 0.35);
+  white-space: nowrap;
+}
+
+.staff-header-signout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fda4af;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.staff-header-signout:hover,
+.staff-header-signout:active {
+  background: rgba(225, 29, 72, 0.28);
+  border-color: #f43f5e;
+  color: #ffffff;
+  transform: scale(0.94);
 }
 
 .staff-live-dot {
@@ -4825,7 +4875,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   align-items: center;
   gap: 5px;
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 750;
   color: #ffffff;
   padding: 4px 9px;
   border-radius: 999px;
@@ -4907,12 +4957,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
 
 /* ── Section title divider ───────────────────────────────────── */
 .staff-section-title {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.4);
-  padding: 2px 0 0;
+  color: #fda4af;
+  padding: 4px 0 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -4921,7 +4971,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   content: '';
   flex: 1;
   height: 1px;
-  background: rgba(255,255,255,0.08);
+  background: rgba(225, 29, 72, 0.25);
 }
 
 /* ── Quick action grid ───────────────────────────────────────── */
@@ -4929,6 +4979,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  width: 100%;
 }
 
 .staff-quick-btn {
@@ -4936,48 +4987,54 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 16px 12px 14px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  gap: 8px;
+  padding: 15px 12px 13px;
+  background: linear-gradient(150deg, #18070d 0%, #0d0306 100%);
+  border: 1px solid rgba(225, 29, 72, 0.35);
   border-radius: 16px;
   color: #ffffff;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  min-height: 82px;
+  min-height: 88px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.staff-quick-btn:active { transform: scale(0.94); }
+.staff-quick-btn:active {
+  transform: scale(0.95);
+  background: #110408;
+}
 
 .staff-quick-btn:hover {
-  background: rgba(255,255,255,0.07);
-  border-color: rgba(255,255,255,0.15);
+  background: linear-gradient(150deg, #220a13 0%, #130509 100%);
+  border-color: rgba(244, 63, 94, 0.6);
+  box-shadow: 0 6px 20px rgba(225, 29, 72, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .staff-quick-icon {
-  width: 40px; height: 40px;
-  border-radius: 12px;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 /* Cashier quick btn colours */
-.staff-quick-btn.cash-in  .staff-quick-icon { background: rgba(16,185,129,0.18); color: #34d399; }
-.staff-quick-btn.cash-out .staff-quick-icon { background: rgba(239,68,68,0.15);  color: #fca5a5; }
-.staff-quick-btn.entry    .staff-quick-icon { background: rgba(245,158,11,0.15); color: #fbbf24; }
-.staff-quick-btn.tourney  .staff-quick-icon { background: rgba(99,102,241,0.15); color: #a5b4fc; }
-.staff-quick-btn.expense  .staff-quick-icon { background: rgba(239,68,68,0.15);  color: #fca5a5; }
-.staff-quick-btn.kyc      .staff-quick-icon { background: rgba(139,92,246,0.15); color: #c4b5fd; }
-.staff-quick-btn.chips    .staff-quick-icon { background: rgba(245,158,11,0.15); color: #fbbf24; }
-.staff-quick-btn.records  .staff-quick-icon { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+.staff-quick-btn.cash-in  .staff-quick-icon { background: rgba(16,185,129,0.22); color: #34d399; border: 1px solid rgba(16,185,129,0.4); }
+.staff-quick-btn.cash-out .staff-quick-icon { background: rgba(239,68,68,0.22);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
+.staff-quick-btn.entry    .staff-quick-icon { background: rgba(245,158,11,0.22); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
+.staff-quick-btn.tourney  .staff-quick-icon { background: rgba(99,102,241,0.22); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.4); }
+.staff-quick-btn.expense  .staff-quick-icon { background: rgba(239,68,68,0.22);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
+.staff-quick-btn.kyc      .staff-quick-icon { background: rgba(139,92,246,0.22); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.4); }
+.staff-quick-btn.chips    .staff-quick-icon { background: rgba(245,158,11,0.22); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
+.staff-quick-btn.records  .staff-quick-icon { background: rgba(56,189,248,0.22); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.4); }
 
 /* ── KPI stat grid (2-up) ─────────────────────────────────────── */
-/* Already have m-stats-grid; add role-coloured border helpers */
 .stat-cashier { border-color: rgba(245,158,11,0.4) !important; }
 .stat-security { border-color: rgba(16,185,129,0.4) !important; }
 .stat-admin   { border-color: rgba(139,92,246,0.4) !important; }

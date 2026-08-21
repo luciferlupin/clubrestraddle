@@ -17,6 +17,7 @@ import {
   Edit3,
   Trash2,
   AlertTriangle,
+  LogOut,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction } from '../../types';
@@ -31,6 +32,7 @@ import confetti from 'canvas-confetti';
 export const MobileCashPortal: React.FC = () => {
   const {
     staffName,
+    logoutStaff,
     cashTransactions,
     currentCashBalance,
     totalCashInAmount,
@@ -237,15 +239,24 @@ export const MobileCashPortal: React.FC = () => {
   });
 
   return (
-    <div className="staff-mobile-portal">
+    <div className="staff-mobile-portal cash-mobile-theme">
       {/* ── Station Banner ─────────────────────────────────── */}
       <div className="staff-station-banner">
         <div className="staff-banner-left">
-          <span className="staff-banner-role">💰 Cash & Vault Desk</span>
+          <span className="staff-banner-role">♣ Cash & Treasury Desk</span>
           <span className="staff-banner-name">{staffName}</span>
         </div>
         <div className="staff-banner-right">
           <span className="staff-live-dot cashier">Live Vault</span>
+          <button
+            type="button"
+            className="staff-header-signout"
+            onClick={logoutStaff}
+            aria-label="Sign out of staff portal"
+            title="Sign out"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </div>
 

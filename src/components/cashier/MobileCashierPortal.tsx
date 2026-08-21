@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ArrowLeft,
+  LogOut,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentStatus, PaymentMethod, CashCategory, ExpenseCategory } from '../../types';
@@ -28,6 +29,7 @@ const DEFAULT_TOURNAMENT_START = new Date(Date.now() + 4 * 3600 * 1000).toISOStr
 export const MobileCashierPortal: React.FC = () => {
   const {
     staffName,
+    logoutStaff,
     tournaments,
     entries,
     players,
@@ -271,7 +273,7 @@ export const MobileCashierPortal: React.FC = () => {
   const selectedTournamentObj = tournaments.find(t => t.id === entryFormData.tournamentId);
 
   return (
-    <div className="staff-mobile-portal">
+    <div className="staff-mobile-portal cashier-mobile-theme">
 
       {/* ── Station Banner ─────────────────────────────────── */}
       <div className="staff-station-banner">
@@ -281,19 +283,20 @@ export const MobileCashierPortal: React.FC = () => {
         </div>
         <div className="staff-banner-right">
           {pendingChipOrdersCount > 0 && (
-            <span style={{
-              background: 'rgba(225,29,72,0.18)',
-              border: '1px solid rgba(225,29,72,0.5)',
-              borderRadius: '999px',
-              padding: '3px 8px',
-              fontSize: '0.68rem',
-              fontWeight: 800,
-              color: '#fca5a5',
-            }}>
-              {pendingChipOrdersCount} chip orders
+            <span className="staff-pending-pill">
+              {pendingChipOrdersCount} chips
             </span>
           )}
           <span className="staff-live-dot cashier">On Duty</span>
+          <button
+            type="button"
+            className="staff-header-signout"
+            onClick={logoutStaff}
+            aria-label="Sign out of staff portal"
+            title="Sign out"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </div>
 

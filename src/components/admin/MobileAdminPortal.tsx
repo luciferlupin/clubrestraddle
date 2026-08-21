@@ -15,6 +15,7 @@ import {
   Edit3,
   Trash2,
   ArrowLeft,
+  LogOut,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR } from '../../utils/formatters';
@@ -26,6 +27,7 @@ import { StaffManager } from './StaffManager';
 export const MobileAdminPortal: React.FC = () => {
   const {
     staffName,
+    logoutStaff,
     players,
     tournaments,
     todayCheckIns,
@@ -81,29 +83,30 @@ export const MobileAdminPortal: React.FC = () => {
   };
 
   return (
-    <div className="staff-mobile-portal">
+    <div className="staff-mobile-portal admin-mobile-theme">
 
       {/* ── Station Banner ─────────────────────────────────── */}
       <div className="staff-station-banner">
         <div className="staff-banner-left">
-          <span className="staff-banner-role">♥ Admin Command Centre</span>
+          <span className="staff-banner-role">♥ Admin Command</span>
           <span className="staff-banner-name">{staffName}</span>
         </div>
         <div className="staff-banner-right">
           {pendingChipOrdersCount > 0 && (
-            <span style={{
-              background: 'rgba(225,29,72,0.18)',
-              border: '1px solid rgba(225,29,72,0.5)',
-              borderRadius: '999px',
-              padding: '3px 8px',
-              fontSize: '0.68rem',
-              fontWeight: 800,
-              color: '#fca5a5',
-            }}>
-              {pendingChipOrdersCount} chip orders
+            <span className="staff-pending-pill">
+              {pendingChipOrdersCount} chips
             </span>
           )}
-          <span className="staff-live-dot admin">Command</span>
+          <span className="staff-live-dot admin">Live</span>
+          <button
+            type="button"
+            className="staff-header-signout"
+            onClick={logoutStaff}
+            aria-label="Sign out of staff portal"
+            title="Sign out"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </div>
 
