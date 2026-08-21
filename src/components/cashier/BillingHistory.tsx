@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Receipt, Search, FileText, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentEntry } from '../../types';
-import { formatClubLabel, formatCurrency, formatDateTime } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatDateTime, formatDateOnly, formatTimeOnly } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
@@ -71,7 +71,7 @@ export const BillingHistory: React.FC = () => {
     const invoiceData: ClubInvoiceData = {
       invoiceNumber: entry.receiptNumber,
       invoiceDate: entry.registeredAt,
-      category: 'Tournament Entry & Rake',
+      category: 'Tournament Entry & Service Charge',
       playerId: entry.playerId,
       playerName: entry.playerName,
       playerPhone: entry.playerPhone || playerObj?.phone,
@@ -80,6 +80,9 @@ export const BillingHistory: React.FC = () => {
       govtIdNumber: playerObj?.kyc.govtIdNumber,
       membershipTier: playerObj?.membershipTier,
       tableLocation: `${entry.tableNumber || 'Assigned'} • ${entry.seatNumber || 'Assigned'}`,
+      eventName: `${formatClubLabel(entry.tournamentName)}`,
+      eventDate: `Texas • ${formatDateOnly(entry.registeredAt)} • ${formatTimeOnly(entry.registeredAt)}`,
+      eventDetails: `Texas • MTC • Table ${entry.tableNumber || 'Assigned'} • Seat ${entry.seatNumber || 'Assigned'}`,
       items: [
         {
           description: `${formatClubLabel(entry.tournamentName)} - Player Buy-in Stack`,
@@ -88,13 +91,13 @@ export const BillingHistory: React.FC = () => {
           amount: entry.buyInAmount,
         },
         {
-          description: 'House Operating Rake & Registration Fee',
-          details: 'Club tournament organization & dealer rake fee',
+          description: 'Club Service Charges & Tournament Organization',
+          details: 'Club tournament organization & dealer service fee',
           amount: entry.rakeAmount,
         },
       ],
       subtotal: entry.buyInAmount,
-      rakeOrFee: entry.rakeAmount,
+      serviceCharge: entry.rakeAmount,
       totalAmount: entry.buyInAmount + entry.rakeAmount,
       paymentMethod: entry.paymentMethod,
       paymentReference: entry.paymentReference,
@@ -110,11 +113,9 @@ export const BillingHistory: React.FC = () => {
         <div>
           <h3 className="card-title">
             <Receipt size={18} color="#e11d48" />
-            Billing & Tournament Entry Records ({filteredEntries.length})
+            Official Settlement Receipts & Invoices ({filteredEntries.length})
           </h3>
-          <p className="card-subtitle">
-            All generated tournament tickets, seating positions, billing receipts, and cashier records.
-          </p>
+          <p className="card-subtitle">Complete ledger of tournament buy-ins, service charges, and cashier invoices.</p>
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -149,7 +150,7 @@ export const BillingHistory: React.FC = () => {
                   <th>Receipt #</th>
                   <th>Player</th>
                   <th>Tournament</th>
-                  <th>Buy-in + Rake</th>
+                  <th>Buy-in + Service Charge</th>
                   <th>Payment Method</th>
                   <th>Payment Ref</th>
                   <th>Table / Seat</th>

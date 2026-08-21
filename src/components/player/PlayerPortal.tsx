@@ -22,7 +22,7 @@ import { CheckInHistory } from './CheckInHistory';
 import { PlayerProfile } from './PlayerProfile';
 import { TableChipRequestModal } from './TableChipRequestModal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
-import { formatClubLabel, formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatDateTime, formatDateOnly, formatTimeOnly, formatINR } from '../../utils/formatters';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
 import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, AnimatedSuitsRow } from '../common/PokerGraphics';
@@ -576,7 +576,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', background: '#0e0407', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div>
-                          <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase' }}>Buy-In + Rake</span>
+                          <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase' }}>Buy-In + Service Charge</span>
                           <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>
                             {formatCurrency(t.buyInFee)} + {formatCurrency(t.clubRake)}
                           </div>
@@ -630,7 +630,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
                         <tr>
                           <th>Receipt #</th>
                           <th>Tournament</th>
-                          <th>Buy-In & Rake</th>
+                          <th>Buy-In & Service Charge</th>
                           <th>Seating</th>
                           <th>Payment Method</th>
                           <th>Date</th>
@@ -644,7 +644,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
                           const invoiceData: ClubInvoiceData = {
                             invoiceNumber: entry.receiptNumber,
                             invoiceDate: entry.registeredAt,
-                            category: 'Tournament Entry & Rake',
+                            category: 'Tournament Entry & Service Charge',
                             playerId: currentPlayer.id,
                             playerName: currentPlayer.fullName,
                             playerPhone: currentPlayer.phone,
@@ -653,6 +653,9 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
                             govtIdNumber: currentPlayer.kyc.govtIdNumber,
                             membershipTier: currentPlayer.membershipTier,
                             tableLocation: `${entry.tableNumber || 'Table 1'} • ${entry.seatNumber || 'Seat 1'}`,
+                            eventName: `${formatClubLabel(entry.tournamentName)}`,
+                            eventDate: `Texas • ${formatDateOnly(entry.registeredAt)} • ${formatTimeOnly(entry.registeredAt)}`,
+                            eventDetails: `Texas • MTC • Table ${entry.tableNumber || 'Table 1'} • Seat ${entry.seatNumber || '1'}`,
                             items: [
                               {
                                 description: `${formatClubLabel(entry.tournamentName)} - Tournament Buy-in Stack`,
@@ -661,13 +664,13 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
                                 amount: entry.buyInAmount,
                               },
                               {
-                                description: 'House Operating Rake & Registration Fee',
-                                details: 'Club tournament organization & dealer rake',
+                                description: 'Club Service Charges & Tournament Organization',
+                                details: 'Club tournament organization & dealer service fee',
                                 amount: entry.rakeAmount,
                               },
                             ],
                             subtotal: entry.buyInAmount,
-                            rakeOrFee: entry.rakeAmount,
+                            serviceCharge: entry.rakeAmount,
                             totalAmount: entry.buyInAmount + entry.rakeAmount,
                             paymentMethod: entry.paymentMethod,
                             paymentReference: entry.paymentReference,

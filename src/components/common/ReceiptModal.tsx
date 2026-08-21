@@ -85,7 +85,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
             <span>{formatCurrency(entry.buyInAmount)}</span>
           </div>
           <div className="receipt-row">
-            <span>House Rake & Entry Fee:</span>
+            <span>Club Service Charge:</span>
             <span>{formatCurrency(entry.rakeAmount)}</span>
           </div>
           <div className="receipt-row">

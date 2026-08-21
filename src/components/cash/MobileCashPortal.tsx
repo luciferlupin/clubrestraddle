@@ -551,7 +551,7 @@ export const MobileCashPortal: React.FC = () => {
               <option value="Cash Game Buy-in">Cash Game Buy-in</option>
               <option value="Chip Purchase">Chip Purchase</option>
               <option value="Float Deposit">Float Deposit</option>
-              <option value="Table Rake">Table Rake</option>
+              <option value="Table Rake">Table Service Charge</option>
               <option value="Membership Fee">Membership Fee</option>
             </select>
           </div>

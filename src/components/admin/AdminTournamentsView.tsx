@@ -146,11 +146,11 @@ export const AdminTournamentsView: React.FC = () => {
 
         <div className="stat-card">
           <div className="stat-info">
-            <span className="stat-label">House Rake Earned</span>
+            <span className="stat-label">Service Charges Earned</span>
             <span className="stat-value" style={{ color: '#ffffff' }}>
               {formatCurrency(totalRakeEarned)}
             </span>
-            <span className="stat-helper">Club fee revenue</span>
+            <span className="stat-helper">Club service fee revenue</span>
           </div>
           <div className="stat-icon-wrapper">
             <Award size={22} color="#ffffff" />
@@ -166,7 +166,7 @@ export const AdminTournamentsView: React.FC = () => {
               <Trophy size={18} color="#e11d48" />
               Tournament Records & Prize Structures ({tournaments.length})
             </h3>
-            <p className="card-subtitle">Complete schedule of tournaments, rake fees, and player entries.</p>
+            <p className="card-subtitle">Complete schedule of tournaments, service charges, and player entries.</p>
           </div>
           <button className="btn btn-primary btn-sm" onClick={() => setIsCreateModalOpen(true)}>
             <Plus size={14} /> Create Tournament
@@ -179,7 +179,7 @@ export const AdminTournamentsView: React.FC = () => {
               <tr>
                 <th>ID</th>
                 <th>Tournament Name</th>
-                <th>Buy-in + Rake</th>
+                <th>Buy-in + Service Charge</th>
                 <th>Starting Chips</th>
                 <th>Guaranteed Pool</th>
                 <th>Entries / Seats</th>
@@ -206,7 +206,7 @@ export const AdminTournamentsView: React.FC = () => {
                     </td>
                     <td>
                       <span className="badge badge-default">
-                        {trnEntries.length} / {trn.maxSeats} Players
+                        {trnEntries.length} Players
                       </span>
                     </td>
                     <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
@@ -282,7 +282,7 @@ export const AdminTournamentsView: React.FC = () => {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Club Entry Rake (₹) *</label>
+              <label className="form-label">Service Charge (₹) *</label>
               <input
                 type="number"
                 className="form-input"
@@ -318,16 +318,7 @@ export const AdminTournamentsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="form-grid-3">
-            <div className="form-group">
-              <label className="form-label">Max Seats</label>
-              <input
-                type="number"
-                className="form-input"
-                value={formData.maxSeats}
-                onChange={e => setFormData({ ...formData, maxSeats: Number(e.target.value) })}
-              />
-            </div>
+          <div className="form-grid-2">
             <div className="form-group">
               <label className="form-label">Blind Levels (Mins)</label>
               <input
@@ -404,7 +395,7 @@ export const AdminTournamentsView: React.FC = () => {
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Club Entry Rake (₹) *</label>
+                <label className="form-label">Service Charge (₹) *</label>
                 <input
                   type="number"
                   className="form-input"
@@ -439,16 +430,7 @@ export const AdminTournamentsView: React.FC = () => {
               </div>
             </div>
 
-            <div className="form-grid-3">
-              <div className="form-group">
-                <label className="form-label">Max Seats</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={editFormData.maxSeats}
-                  onChange={e => setEditFormData({ ...editFormData, maxSeats: Number(e.target.value) })}
-                />
-              </div>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Blind Levels (Mins)</label>
                 <input

@@ -6,12 +6,14 @@ import { formatDateOnly, formatDateTime, maskGovtId } from '../../utils/formatte
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
+import { PlayerLedger } from '../player/PlayerLedger';
 
 export const AdminPlayersView: React.FC = () => {
   const { players, reviewKYC, updatePlayer, deletePlayer, checkIns } = useClub();
   const [search, setSearch] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [inspectTab, setInspectTab] = useState<'details' | 'ledger'>('details');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
@@ -249,36 +251,61 @@ export const AdminPlayersView: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
-              <div className="form-grid-2" style={{ rowGap: '10px' }}>
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Phone</span>
-                  <div style={{ fontWeight: 600 }}>{selectedPlayer.phone}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>DOB</span>
-                  <div style={{ fontWeight: 600 }}>{formatDateOnly(selectedPlayer.kyc.dateOfBirth)}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Govt ID</span>
-                  <div style={{ fontWeight: 600 }}>{selectedPlayer.kyc.govtIdType}: {selectedPlayer.kyc.govtIdNumber}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Emergency Contact</span>
-                  <div style={{ fontWeight: 600 }}>{selectedPlayer.kyc.emergencyContactName || 'N/A'} ({selectedPlayer.kyc.emergencyContactPhone || 'N/A'})</div>
-                </div>
-              </div>
-              <div style={{ marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Residential Address</span>
-                <div style={{ fontSize: '0.84rem' }}>{selectedPlayer.kyc.address || '—'}</div>
-              </div>
-              {selectedPlayer.notes && (
-                <div style={{ marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--gold-light)', textTransform: 'uppercase' }}>Staff Notes</span>
-                  <div style={{ fontSize: '0.84rem', color: '#cbd5e1' }}>{selectedPlayer.notes}</div>
-                </div>
-              )}
+            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
+              <button
+                type="button"
+                className={`btn btn-sm ${inspectTab === 'details' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setInspectTab('details')}
+              >
+                Member Details & KYC
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${inspectTab === 'ledger' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setInspectTab('ledger')}
+              >
+                Financial Ledger & Invoices
+              </button>
             </div>
+
+            {inspectTab === 'details' ? (
+              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                <div className="form-grid-2" style={{ rowGap: '10px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Phone</span>
+                    <div style={{ fontWeight: 600 }}>{selectedPlayer.phone}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Member ID</span>
+                    <div style={{ fontWeight: 600 }}>{selectedPlayer.id}</div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Aadhaar Card</span>
+                    <div style={{ fontWeight: 600, color: '#ffffff', fontFamily: 'monospace' }}>
+                      {selectedPlayer.kyc.aadhaarNumber ? maskGovtId(selectedPlayer.kyc.aadhaarNumber) : (selectedPlayer.kyc.govtIdNumber || 'UIDAI Verified')}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>PAN Card</span>
+                    <div style={{ fontWeight: 600, color: '#fb7185', fontFamily: 'monospace' }}>
+                      {selectedPlayer.kyc.panNumber || (selectedPlayer.kyc.govtIdNumber ? maskGovtId(selectedPlayer.kyc.govtIdNumber) : 'PAN Verified')}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Residential Address</span>
+                  <div style={{ fontSize: '0.84rem' }}>{selectedPlayer.kyc.address || '—'}</div>
+                </div>
+                {selectedPlayer.notes && (
+                  <div style={{ marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--gold-light)', textTransform: 'uppercase' }}>Staff Notes</span>
+                    <div style={{ fontSize: '0.84rem', color: '#cbd5e1' }}>{selectedPlayer.notes}</div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <PlayerLedger player={selectedPlayer} />
+            )}
 
             {/* Admin KYC Override Action */}
             <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

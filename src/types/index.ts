@@ -62,8 +62,10 @@ export interface PlayerKYC {
   fullName: string;
   phone: string;
   email: string;
-  dateOfBirth: string;
-  govtIdType: GovtIdType;
+  dateOfBirth?: string;
+  aadhaarNumber?: string;
+  panNumber?: string;
+  govtIdType?: GovtIdType | string;
   govtIdNumber: string;
   address: string;
   emergencyContactName: string;

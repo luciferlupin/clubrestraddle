@@ -1,9 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Camera,
   Search,
   CheckCircle2,
   ChevronRight,
+  Upload,
+  RefreshCw,
+  Sparkles,
+  Zap,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { useClub } from '../../context/ClubContext';
@@ -11,19 +15,6 @@ import { Player, DailyCheckIn } from '../../types';
 import { formatTimeOnly, maskGovtId } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import confetti from 'canvas-confetti';
-
-const SCANNER_AGE_REFERENCE = new Date();
-
-const calculateAge = (dobString: string): number => {
-  if (!dobString) return 0;
-  const dob = new Date(dobString);
-  let age = SCANNER_AGE_REFERENCE.getFullYear() - dob.getFullYear();
-  const birthdayPending =
-    SCANNER_AGE_REFERENCE.getMonth() < dob.getMonth() ||
-    (SCANNER_AGE_REFERENCE.getMonth() === dob.getMonth() && SCANNER_AGE_REFERENCE.getDate() < dob.getDate());
-  if (birthdayPending) age -= 1;
-  return Math.max(0, age);
-};
 
 interface QRScannerModalProps {
   isOpen: boolean;
@@ -36,20 +27,163 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   onClose,
   onSelectPlayer,
 }) => {
-  const { players, todayCheckIns, approvePlayerEntry, performDailyCheckIn } = useClub();
+  const { players, todayCheckIns, approvePlayerEntry, performDailyCheckIn, lookupMemberByPhone } = useClub();
   const [manualCode, setManualCode] = useState('');
-  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraActive, setCameraActive] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   const [scannedResult, setScannedResult] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const scanLoopRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const pendingCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'pending');
 
-  // Start / stop the camera only while the scanner is visible.
+  const processScanCode = useCallback(async (code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    setScanError(null);
+    setIsSearching(true);
+
+    try {
+      let extractedPlayerId: string | null = null;
+      let extractedScanId: string | null = null;
+
+      // 1. Try URL parsing if it looks like a URL or query string
+      if (trimmed.includes('?') || trimmed.includes('/') || trimmed.startsWith('http')) {
+        try {
+          const urlStr = trimmed.startsWith('http') ? trimmed : `https://clubrestraddle.vercel.app/${trimmed.startsWith('?') ? trimmed : `?${trimmed}`}`;
+          const urlObj = new URL(urlStr);
+          extractedPlayerId = urlObj.searchParams.get('player') || urlObj.searchParams.get('playerId');
+          extractedScanId = urlObj.searchParams.get('scan') || urlObj.searchParams.get('checkInId');
+        } catch {
+          // Fallback
+        }
+      }
+
+      // 2. Try JSON parsing
+      if (!extractedPlayerId && trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          extractedPlayerId = parsed.playerId || parsed.player || parsed.id;
+          extractedScanId = parsed.scan || parsed.checkInId;
+        } catch {
+          // Fallback
+        }
+      }
+
+      // 3. Resolve Player & Check-In in local memory
+      let foundPlayer: Player | undefined;
+      let foundCheckIn: DailyCheckIn | undefined;
+
+      const searchScanId = extractedScanId || trimmed;
+      foundCheckIn = todayCheckIns.find(
+        c => c.id.toLowerCase() === searchScanId.toLowerCase() || (searchScanId.length > 5 && trimmed.includes(c.id))
+      );
+
+      if (foundCheckIn) {
+        foundPlayer = players.find(p => p.id === foundCheckIn!.playerId);
+      }
+
+      if (!foundPlayer) {
+        const searchPlayerId = extractedPlayerId || trimmed;
+        foundPlayer = players.find(
+          p => p.id.toLowerCase() === searchPlayerId.toLowerCase() || (searchPlayerId.length > 4 && trimmed.includes(p.id))
+        );
+        if (foundPlayer) {
+          foundCheckIn = todayCheckIns.find(c => c.playerId === foundPlayer!.id);
+        }
+      }
+
+      // 4. If not found in local memory, perform async Supabase live lookup!
+      if (!foundPlayer) {
+        const lookupTarget = extractedPlayerId || extractedScanId || trimmed;
+        const livePlayer = await lookupMemberByPhone(lookupTarget);
+        if (livePlayer) {
+          foundPlayer = livePlayer;
+          foundCheckIn = todayCheckIns.find(c => c.playerId === livePlayer.id);
+        }
+      }
+
+      if (foundPlayer) {
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          try {
+            navigator.vibrate(100);
+          } catch {
+            // ignore
+          }
+        }
+        setScannedResult({ player: foundPlayer, checkIn: foundCheckIn });
+        setManualCode('');
+      } else {
+        setScanError(`No player record found for "${trimmed}". Verify the QR pass or register the walk-in player.`);
+      }
+    } catch (err) {
+      console.error('Scan processing error:', err);
+      setScanError('Failed to parse scan code. Please try manual entry or photo upload.');
+    } finally {
+      setIsSearching(false);
+    }
+  }, [players, todayCheckIns, lookupMemberByPhone]);
+
+  // Continuous frame scanner using BarcodeDetector on video element
+  useEffect(() => {
+    if (!isOpen || !cameraActive || scannedResult) {
+      if (scanLoopRef.current) {
+        cancelAnimationFrame(scanLoopRef.current);
+        scanLoopRef.current = null;
+      }
+      return;
+    }
+
+    let detector: any = null;
+    if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+      try {
+        detector = new (window as any).BarcodeDetector({ formats: ['qr_code', 'code_128', 'ean_13', 'data_matrix'] });
+      } catch (e) {
+        console.warn('BarcodeDetector initialization warning:', e);
+      }
+    }
+
+    let isScanning = true;
+    const scanFrame = async () => {
+      if (!isScanning) return;
+
+      if (detector && videoRef.current && videoRef.current.readyState >= 2) {
+        try {
+          const barcodes = await detector.detect(videoRef.current);
+          if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+            const raw = barcodes[0].rawValue;
+            isScanning = false;
+            await processScanCode(raw);
+            return;
+          }
+        } catch {
+          // Frame skip
+        }
+      }
+
+      if (isScanning) {
+        scanLoopRef.current = requestAnimationFrame(scanFrame);
+      }
+    };
+
+    scanLoopRef.current = requestAnimationFrame(scanFrame);
+
+    return () => {
+      isScanning = false;
+      if (scanLoopRef.current) {
+        cancelAnimationFrame(scanLoopRef.current);
+        scanLoopRef.current = null;
+      }
+    };
+  }, [isOpen, cameraActive, scannedResult, processScanCode]);
+
+  // Start / stop camera stream
   useEffect(() => {
     const stopCurrentStream = () => {
       streamRef.current?.getTracks().forEach(track => track.stop());
@@ -66,7 +200,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       setCameraError(null);
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
         if (cancelled) {
@@ -76,10 +210,10 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         streamRef.current = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          await videoRef.current.play();
+          await videoRef.current.play().catch(() => {});
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Camera permission was denied or no camera was found.';
+        const message = error instanceof Error ? error.message : 'Camera permission was denied or camera is unavailable.';
         setCameraError(message);
         setCameraActive(false);
       }
@@ -92,95 +226,39 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     };
   }, [isOpen, cameraActive]);
 
-  const processScanCode = (code: string) => {
-    const trimmed = code.trim();
-    if (!trimmed) return;
-    setScanError(null);
+  // Scan from photo upload
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    let extractedPlayerId: string | null = null;
-    let extractedScanId: string | null = null;
-
-    // 1. Try URL parsing if it looks like a URL or query string
-    if (trimmed.includes('?') || trimmed.includes('/') || trimmed.startsWith('http')) {
+    if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
       try {
-        const urlStr = trimmed.startsWith('http') ? trimmed : `https://dummy.club/${trimmed.startsWith('?') ? trimmed : `?${trimmed}`}`;
-        const urlObj = new URL(urlStr);
-        extractedPlayerId = urlObj.searchParams.get('player') || urlObj.searchParams.get('playerId');
-        extractedScanId = urlObj.searchParams.get('scan') || urlObj.searchParams.get('checkInId');
+        const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        img.onload = async () => {
+          try {
+            const barcodes = await detector.detect(img);
+            if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+              await processScanCode(barcodes[0].rawValue);
+            } else {
+              setScanError('No QR code detected in the uploaded image. Please try another image or manual search.');
+            }
+          } catch {
+            setScanError('Could not decode QR code from image.');
+          }
+        };
       } catch {
-        // Fallback
+        setScanError('Image barcode detection is not supported on this browser.');
       }
-    }
-
-    // 2. Try JSON parsing
-    if (!extractedPlayerId && trimmed.startsWith('{') && trimmed.endsWith('}')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        extractedPlayerId = parsed.playerId || parsed.player || parsed.id;
-        extractedScanId = parsed.scan || parsed.checkInId;
-      } catch {
-        // Fallback
-      }
-    }
-
-    // 3. Resolve Player & Check-In
-    let foundPlayer: Player | undefined;
-    let foundCheckIn: DailyCheckIn | undefined;
-
-    // Check by extracted or raw scan/check-in ID
-    const searchScanId = extractedScanId || trimmed;
-    foundCheckIn = todayCheckIns.find(
-      c => c.id.toLowerCase() === searchScanId.toLowerCase() || (searchScanId.length > 5 && trimmed.includes(c.id))
-    );
-
-    if (foundCheckIn) {
-      foundPlayer = players.find(p => p.id === foundCheckIn!.playerId);
-    }
-
-    // Check by extracted or raw player ID
-    if (!foundPlayer) {
-      const searchPlayerId = extractedPlayerId || trimmed;
-      foundPlayer = players.find(
-        p => p.id.toLowerCase() === searchPlayerId.toLowerCase() || (searchPlayerId.length > 4 && trimmed.includes(p.id))
-      );
-      if (foundPlayer) {
-        foundCheckIn = todayCheckIns.find(c => c.playerId === foundPlayer!.id);
-      }
-    }
-
-    // Check by phone number (clean non-digits)
-    if (!foundPlayer) {
-      const cleanInputDigits = trimmed.replace(/\D/g, '');
-      if (cleanInputDigits.length >= 5) {
-        foundPlayer = players.find(p => {
-          const cleanPhoneDigits = p.phone.replace(/\D/g, '');
-          return cleanPhoneDigits.includes(cleanInputDigits) || cleanInputDigits.includes(cleanPhoneDigits);
-        });
-        if (foundPlayer) {
-          foundCheckIn = todayCheckIns.find(c => c.playerId === foundPlayer!.id);
-        }
-      }
-    }
-
-    // Check by player name (fuzzy match)
-    if (!foundPlayer && trimmed.length >= 3) {
-      foundPlayer = players.find(p => p.fullName.toLowerCase().includes(trimmed.toLowerCase()));
-      if (foundPlayer) {
-        foundCheckIn = todayCheckIns.find(c => c.playerId === foundPlayer!.id);
-      }
-    }
-
-    if (foundPlayer) {
-      setScannedResult({ player: foundPlayer, checkIn: foundCheckIn });
-      setManualCode('');
     } else {
-      setScanError(`No player matched “${trimmed}”. Check the QR code or select someone from the active queue.`);
+      setScanError('Direct image decoding not available. Please type the player phone or ID.');
     }
   };
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    processScanCode(manualCode);
+    void processScanCode(manualCode);
   };
 
   const handleApproveScanned = () => {
@@ -191,17 +269,16 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     if (activeCheckIn) {
       approvePlayerEntry(activeCheckIn.id);
     } else {
-      // Auto-create daily check-in and approve entry immediately
       activeCheckIn = performDailyCheckIn(scannedResult.player.id, 'Door Scanner Clearance');
       approvePlayerEntry(activeCheckIn.id);
     }
 
     try {
       confetti({
-        particleCount: 70,
+        particleCount: 80,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#e11d48', '#ffffff', '#f43f5e', '#be123c'],
+        colors: ['#e11d48', '#ffffff', '#fb7185', '#be123c'],
       });
     } catch {
       // Fallback
@@ -211,7 +288,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       setIsVerifying(false);
       onSelectPlayer(scannedResult.player, activeCheckIn);
       onClose();
-    }, 400);
+    }, 350);
   };
 
   return (
@@ -225,11 +302,11 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         setManualCode('');
         onClose();
       }}
-      title="Door Scanner & QR Verification"
-      subtitle="Scan player digital pass QR or select from the door queue"
+      title="Entrance QR Scanner & Verification"
+      subtitle="Scan digital member pass QR or select from arrival queue"
       size="md"
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         {/* Scanned Verification Card Highlight */}
         {scannedResult ? (
           <div
@@ -245,8 +322,8 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                <CheckCircle2 size={13} /> QR match identified
+              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <CheckCircle2 size={15} color="#10b981" /> QR Pass Verified
               </span>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <TierBadge tier={scannedResult.player.membershipTier} />
@@ -259,23 +336,24 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 <img
                   src={scannedResult.player.kyc.photoUrl}
                   alt={scannedResult.player.fullName}
-                  style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #ffffff' }}
+                  style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #ffffff' }}
                 />
               ) : (
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#e11d48', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.4rem' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#e11d48', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.4rem' }}>
                   {scannedResult.player.fullName.charAt(0)}
                 </div>
               )}
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
+                <div style={{ fontSize: '1.18rem', fontWeight: 800, color: '#ffffff' }}>
                   {scannedResult.player.fullName}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#cbd5e1', fontFamily: 'var(--font-mono)' }}>
                   ID: {scannedResult.player.id} • {scannedResult.player.phone}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>
-                  Age: <strong style={{ color: calculateAge(scannedResult.player.kyc.dateOfBirth) >= 21 ? '#ffffff' : '#ef4444' }}>{calculateAge(scannedResult.player.kyc.dateOfBirth)} yrs</strong> • {scannedResult.player.kyc.govtIdType} ({maskGovtId(scannedResult.player.kyc.govtIdNumber)})
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '3px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <span>Aadhaar: <strong style={{ color: '#ffffff' }}>{scannedResult.player.kyc.aadhaarNumber ? maskGovtId(scannedResult.player.kyc.aadhaarNumber) : 'UIDAI Verified'}</strong></span>
+                  <span>PAN: <strong style={{ color: '#fb7185' }}>{scannedResult.player.kyc.panNumber || 'PAN Verified'}</strong></span>
                 </div>
               </div>
             </div>
@@ -315,36 +393,54 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
           </div>
         ) : (
           <>
-            {/* Live Camera Scanner Toggle */}
+            {/* Live Camera Scanner Box */}
             <div
               style={{
                 background: '#120508',
                 border: '1.5px solid rgba(225, 29, 72, 0.45)',
                 borderRadius: '16px',
-                padding: '16px',
+                padding: '14px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 textAlign: 'center',
-                gap: '12px',
+                gap: '10px',
               }}
             >
               {cameraActive ? (
-                <div style={{ width: '100%', position: 'relative', overflow: 'hidden', borderRadius: '12px', background: '#000000', maxHeight: '220px' }}>
-                  <video ref={videoRef} playsInline autoPlay muted style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
-                  {/* Viewfinder Target */}
+                <div style={{ width: '100%', position: 'relative', overflow: 'hidden', borderRadius: '12px', background: '#000000', height: '220px' }}>
+                  <video ref={videoRef} playsInline autoPlay muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  
+                  {/* Viewfinder Reticle with animated scanning line */}
                   <div
                     style={{
                       position: 'absolute',
-                      inset: '20px',
-                      border: '2px dashed #f43f5e',
-                      borderRadius: '12px',
+                      inset: '24px',
+                      border: '2px solid rgba(244, 63, 94, 0.85)',
+                      borderRadius: '16px',
                       pointerEvents: 'none',
-                      boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.4)',
+                      boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)',
                     }}
                   />
-                  <div style={{ position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', color: '#fff' }}>
-                    Align QR code in center
+                  
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '10px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'rgba(0,0,0,0.75)',
+                      padding: '5px 12px',
+                      borderRadius: '20px',
+                      fontSize: '0.72rem',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Zap size={12} color="#fb7185" />
+                    <span>Point at Player Door Pass QR</span>
                   </div>
                 </div>
               ) : (
@@ -361,7 +457,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                     color: '#ffffff',
                   }}
                 >
-                  <Camera size={32} />
+                  <Camera size={30} />
                 </div>
               )}
 
@@ -369,43 +465,77 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 <span role="alert" style={{ fontSize: '0.75rem', color: '#fb7185' }}>{cameraError}</span>
               )}
 
-              <button
-                className={`btn ${cameraActive ? 'btn-secondary' : 'btn-primary'}`}
-                onClick={() => {
-                  setCameraError(null);
-                  setCameraActive(current => !current);
-                }}
-                style={{ width: '100%' }}
-              >
-                <Camera size={16} />
-                <span>{cameraActive ? 'Stop Live Camera' : 'Start Live Camera Scanner'}</span>
-              </button>
+              <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                <button
+                  type="button"
+                  className={`btn ${cameraActive ? 'btn-secondary' : 'btn-primary'}`}
+                  onClick={() => {
+                    setCameraError(null);
+                    setCameraActive(curr => !curr);
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  <Camera size={16} />
+                  <span>{cameraActive ? 'Pause Camera' : 'Start Camera Scanner'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Scan from QR image file"
+                  style={{ width: 'auto', padding: '0 14px' }}
+                >
+                  <Upload size={16} />
+                  <span>Upload QR</span>
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                />
+              </div>
             </div>
 
-            {/* Quick Scanner Barcode / ID Input */}
+            {/* Quick Search & Barcode Input */}
             <form onSubmit={handleManualSubmit} style={{ display: 'flex', gap: '8px' }}>
               <input
                 aria-label="Player QR code, ID or phone"
                 type="text"
                 className="form-input"
-                placeholder="Paste scanned QR payload, Player ID, or Phone..."
+                placeholder="Scan, paste QR link, Player ID (PLR-1001), or Phone..."
                 value={manualCode}
                 onChange={e => setManualCode(e.target.value)}
                 style={{ flex: 1 }}
               />
-              <button type="submit" className="btn btn-secondary" style={{ width: 'auto' }}>
-                <Search size={16} />
-                <span>Verify</span>
+              <button type="submit" className="btn btn-primary" disabled={isSearching} style={{ width: 'auto' }}>
+                {isSearching ? <RefreshCw size={16} className="spin-icon" /> : <Search size={16} />}
+                <span>{isSearching ? 'Checking...' : 'Lookup'}</span>
               </button>
             </form>
 
-            {scanError && <div className="staff-inline-error" role="alert">{scanError}</div>}
+            {scanError && (
+              <div
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  color: '#fca5a5',
+                  fontSize: '0.8rem',
+                }}
+              >
+                {scanError}
+              </div>
+            )}
 
             {/* Quick 1-Tap Queue Selector */}
             {pendingCheckIns.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Awaiting Door Clearance Queue ({pendingCheckIns.length})
+                  Awaiting Door Clearance ({pendingCheckIns.length})
                 </span>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>

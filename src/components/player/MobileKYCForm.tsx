@@ -4,13 +4,14 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
+  CreditCard,
   FileText,
   Lock,
   ShieldCheck,
   UserRound,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { GovtIdType, Player, DailyCheckIn } from '../../types';
+import { Player, DailyCheckIn } from '../../types';
 import confetti from 'canvas-confetti';
 
 interface MobileKYCFormProps {
@@ -22,7 +23,7 @@ type RegistrationStep = 1 | 2 | 3;
 
 const stepDetails = [
   { number: 1, label: 'About you', icon: UserRound },
-  { number: 2, label: 'Verify ID', icon: BadgeCheck },
+  { number: 2, label: 'Verify IDs', icon: BadgeCheck },
   { number: 3, label: 'Ready to play', icon: Check },
 ] as const;
 
@@ -34,9 +35,8 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     fullName: '',
     phone: '',
     email: '',
-    dateOfBirth: '',
-    govtIdType: 'Aadhaar Card' as GovtIdType,
-    govtIdNumber: '',
+    aadhaarNumber: '',
+    panNumber: '',
     address: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
@@ -54,27 +54,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
   ];
 
-  const maxBirthDate = new Date();
-  maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 21);
-  const maxBirthDateString = maxBirthDate.toISOString().split('T')[0];
-
-  const getIdPlaceholder = () => {
-    switch (formData.govtIdType) {
-      case 'Aadhaar Card':
-        return '12-digit Aadhaar number';
-      case 'PAN Card':
-        return 'ABCDE1234F';
-      case 'Passport':
-        return 'A1234567';
-      case 'Driving License':
-        return 'DL-1420110012345';
-      case 'Voter ID':
-        return 'Enter Voter ID number';
-      default:
-        return 'Enter ID number';
-    }
-  };
-
   const getValidationErrors = (targetStep?: RegistrationStep) => {
     const nextErrors: Record<string, string> = {};
 
@@ -82,20 +61,26 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
       if (!formData.fullName.trim()) nextErrors.fullName = 'Enter your name as it appears on your ID.';
       if (!formData.phone.trim()) nextErrors.phone = 'Enter your mobile number.';
       if (!formData.email.trim() || !formData.email.includes('@')) nextErrors.email = 'Enter a valid email address.';
-
-      if (!formData.dateOfBirth) {
-        nextErrors.dateOfBirth = 'Select your date of birth.';
-      } else if (formData.dateOfBirth > maxBirthDateString) {
-        nextErrors.dateOfBirth = 'Club entry is available to players aged 21 and above.';
-      }
     }
 
     if (!targetStep || targetStep === 2) {
-      if (!formData.govtIdNumber.trim()) nextErrors.govtIdNumber = 'Enter your government ID number.';
+      const cleanAadhaar = formData.aadhaarNumber.replace(/\D/g, '');
+      if (!cleanAadhaar) {
+        nextErrors.aadhaarNumber = 'Aadhaar Card number is required.';
+      } else if (cleanAadhaar.length !== 12) {
+        nextErrors.aadhaarNumber = 'Aadhaar number must be exactly 12 digits.';
+      }
+
+      const cleanPan = formData.panNumber.trim().toUpperCase();
+      if (!cleanPan) {
+        nextErrors.panNumber = 'PAN Card number is required.';
+      } else if (cleanPan.length !== 10) {
+        nextErrors.panNumber = 'PAN must be exactly 10 alphanumeric characters.';
+      }
     }
 
     if (!targetStep || targetStep === 3) {
-      if (!formData.agreedToRules) nextErrors.agreedToRules = 'Please confirm the age and house-rules declaration.';
+      if (!formData.agreedToRules) nextErrors.agreedToRules = 'Please confirm the genuine declaration & house-rules.';
     }
 
     return nextErrors;
@@ -122,9 +107,9 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      if (validationErrors.fullName || validationErrors.phone || validationErrors.email || validationErrors.dateOfBirth) {
+      if (validationErrors.fullName || validationErrors.phone || validationErrors.email) {
         setStep(1);
-      } else if (validationErrors.govtIdNumber) {
+      } else if (validationErrors.aadhaarNumber || validationErrors.panNumber) {
         setStep(2);
       }
       return;
@@ -132,14 +117,18 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
 
     setSubmitting(true);
     setTimeout(() => {
+      const cleanPan = formData.panNumber.trim().toUpperCase();
+      const cleanAadhaar = formData.aadhaarNumber.trim();
+
       const result = registerNewPlayer(
         {
           fullName: formData.fullName,
           phone: formData.phone,
           email: formData.email,
-          dateOfBirth: formData.dateOfBirth,
-          govtIdType: formData.govtIdType,
-          govtIdNumber: formData.govtIdNumber,
+          aadhaarNumber: cleanAadhaar,
+          panNumber: cleanPan,
+          govtIdType: 'Aadhaar & PAN Card',
+          govtIdNumber: `PAN: ${cleanPan} | Aadhaar: ${cleanAadhaar}`,
           address: formData.address || 'Delhi NCR, India',
           emergencyContactName: formData.emergencyContactName,
           emergencyContactPhone: formData.emergencyContactPhone,
@@ -157,7 +146,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
           colors: ['#e11d48', '#ffffff', '#f43f5e', '#be123c'],
         });
       } catch {
-        // Registration still succeeds when the celebration effect is unavailable.
+        // Fallback
       }
 
       setSubmitting(false);
@@ -174,57 +163,75 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
         <div>
           <span className="mobile-flow-eyebrow">New member check-in</span>
           <h1 id="mobile-kyc-title">Create your player pass</h1>
-          <p>Three quick steps. Usually takes under two minutes.</p>
+          <p>Quick KYC with Aadhaar & PAN verification.</p>
         </div>
       </div>
 
-      <ol className="mobile-stepper" aria-label={`Registration progress: step ${step} of 3`}>
-        {stepDetails.map(({ number, label, icon: StepIcon }) => (
-          <li key={number} className={number === step ? 'active' : number < step ? 'complete' : ''}>
-            <span className="mobile-step-dot" aria-hidden="true">
-              {number < step ? <Check size={14} /> : <StepIcon size={14} />}
-            </span>
-            <span>{label}</span>
-          </li>
-        ))}
-      </ol>
+      <nav className="mobile-stepper" aria-label="Registration progress">
+        {stepDetails.map((detail) => {
+          const isComplete = detail.number < step;
+          const isCurrent = detail.number === step;
+          const Icon = detail.icon;
 
-      <form className="mobile-kyc-form" onSubmit={handleSubmit} noValidate>
+          return (
+            <button
+              key={detail.number}
+              type="button"
+              className={`mobile-step-pill ${isCurrent ? 'active' : ''} ${isComplete ? 'completed' : ''}`}
+              aria-current={isCurrent ? 'step' : undefined}
+              onClick={() => {
+                if (detail.number < step) goToStep(detail.number);
+              }}
+              disabled={detail.number > step}
+            >
+              <span className="mobile-step-icon">
+                {isComplete ? <Check size={13} aria-hidden="true" /> : <Icon size={13} aria-hidden="true" />}
+              </span>
+              <span>{detail.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <form onSubmit={handleSubmit} noValidate>
         {step === 1 && (
           <div className="m-card mobile-form-card" role="group" aria-labelledby="mobile-step-one-title">
-            <h2 id="mobile-step-one-title">Tell us about yourself</h2>
-            <p className="mobile-form-intro">Use the same details shown on your government ID.</p>
+            <h2 id="mobile-step-one-title">Personal details</h2>
+            <p className="mobile-form-intro">Enter your details for your official club membership pass.</p>
 
             <div className="m-form-group">
-              <label className="m-form-label" htmlFor="mobile-full-name">Full legal name</label>
+              <label className="m-form-label" htmlFor="mobile-full-name">Full name</label>
               <input
                 id="mobile-full-name"
                 type="text"
                 className="m-input"
-                placeholder="Your full name"
+                placeholder="e.g. Aditya Singhal"
                 autoComplete="name"
                 value={formData.fullName}
                 aria-invalid={Boolean(errors.fullName)}
-                aria-describedby={errors.fullName ? 'mobile-full-name-error' : undefined}
+                aria-describedby={errors.fullName ? 'mobile-name-error' : undefined}
                 onChange={(event) => setFormData({ ...formData, fullName: event.target.value })}
               />
-              {errors.fullName && <span id="mobile-full-name-error" className="m-field-error" role="alert">{errors.fullName}</span>}
+              {errors.fullName && <span id="mobile-name-error" className="m-field-error" role="alert">{errors.fullName}</span>}
             </div>
 
             <div className="m-form-group">
               <label className="m-form-label" htmlFor="mobile-phone">Mobile number</label>
-              <input
-                id="mobile-phone"
-                type="tel"
-                inputMode="tel"
-                className="m-input"
-                placeholder="98765 43210"
-                autoComplete="tel"
-                value={formData.phone}
-                aria-invalid={Boolean(errors.phone)}
-                aria-describedby={errors.phone ? 'mobile-phone-error' : undefined}
-                onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
-              />
+              <div className="mobile-phone-field">
+                <span aria-hidden="true">+91</span>
+                <input
+                  id="mobile-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  className="m-input"
+                  placeholder="98765 43210"
+                  value={formData.phone}
+                  aria-invalid={Boolean(errors.phone)}
+                  aria-describedby={errors.phone ? 'mobile-phone-error' : undefined}
+                  onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+                />
+              </div>
               {errors.phone && <span id="mobile-phone-error" className="m-field-error" role="alert">{errors.phone}</span>}
             </div>
 
@@ -233,9 +240,8 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
               <input
                 id="mobile-email"
                 type="email"
-                inputMode="email"
                 className="m-input"
-                placeholder="you@example.com"
+                placeholder="name@domain.com"
                 autoComplete="email"
                 value={formData.email}
                 aria-invalid={Boolean(errors.email)}
@@ -244,66 +250,60 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
               />
               {errors.email && <span id="mobile-email-error" className="m-field-error" role="alert">{errors.email}</span>}
             </div>
-
-            <div className="m-form-group">
-              <label className="m-form-label" htmlFor="mobile-dob">Date of birth</label>
-              <input
-                id="mobile-dob"
-                type="date"
-                className="m-input"
-                max={maxBirthDateString}
-                autoComplete="bday"
-                value={formData.dateOfBirth}
-                aria-invalid={Boolean(errors.dateOfBirth)}
-                aria-describedby="mobile-dob-help"
-                onChange={(event) => setFormData({ ...formData, dateOfBirth: event.target.value })}
-              />
-              <span id="mobile-dob-help" className={errors.dateOfBirth ? 'm-field-error' : 'm-field-help'} role={errors.dateOfBirth ? 'alert' : undefined}>
-                {errors.dateOfBirth || 'Players must be 21 or older.'}
-              </span>
-            </div>
           </div>
         )}
 
         {step === 2 && (
           <div className="m-card mobile-form-card" role="group" aria-labelledby="mobile-step-two-title">
-            <h2 id="mobile-step-two-title">Verify your identity</h2>
-            <p className="mobile-form-intro">Your ID is used only for age and membership verification.</p>
+            <h2 id="mobile-step-two-title">Two ID Proofs (Aadhaar & PAN)</h2>
+            <p className="mobile-form-intro">Both government identity documents are required for membership clearance & tax compliance.</p>
 
-            <div className="m-form-group">
-              <label className="m-form-label" htmlFor="mobile-id-type">Government ID type</label>
-              <select
-                id="mobile-id-type"
-                className="m-select"
-                value={formData.govtIdType}
-                onChange={(event) => setFormData({ ...formData, govtIdType: event.target.value as GovtIdType, govtIdNumber: '' })}
-              >
-                <option value="Aadhaar Card">Aadhaar Card</option>
-                <option value="PAN Card">PAN Card</option>
-                <option value="Passport">Passport</option>
-                <option value="Driving License">Driving License</option>
-                <option value="Voter ID">Voter ID</option>
-              </select>
+            {/* Aadhaar Card Input */}
+            <div className="m-form-group" style={{ background: 'rgba(225, 29, 72, 0.08)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label className="m-form-label" htmlFor="mobile-aadhaar-number" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CreditCard size={15} color="#e11d48" /> 1. Aadhaar Card Number *
+                </label>
+                <span style={{ fontSize: '0.68rem', background: '#e11d48', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
+                  12 Digits
+                </span>
+              </div>
+              <input
+                id="mobile-aadhaar-number"
+                type="text"
+                inputMode="numeric"
+                className="m-input"
+                placeholder="e.g. 5432 8765 4321"
+                maxLength={14}
+                value={formData.aadhaarNumber}
+                aria-invalid={Boolean(errors.aadhaarNumber)}
+                onChange={(event) => setFormData({ ...formData, aadhaarNumber: event.target.value })}
+              />
+              {errors.aadhaarNumber && <span className="m-field-error" role="alert">{errors.aadhaarNumber}</span>}
             </div>
 
-            <div className="m-form-group">
-              <label className="m-form-label" htmlFor="mobile-id-number">ID number</label>
+            {/* PAN Card Input */}
+            <div className="m-form-group" style={{ background: 'rgba(225, 29, 72, 0.08)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label className="m-form-label" htmlFor="mobile-pan-number" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <BadgeCheck size={15} color="#e11d48" /> 2. PAN Card Number *
+                </label>
+                <span style={{ fontSize: '0.68rem', background: '#0f172a', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 800, border: '1px solid rgba(255,255,255,0.2)' }}>
+                  10 Chars
+                </span>
+              </div>
               <input
-                id="mobile-id-number"
+                id="mobile-pan-number"
                 type="text"
                 className="m-input"
-                placeholder={getIdPlaceholder()}
-                autoCapitalize="characters"
-                value={formData.govtIdNumber}
-                aria-invalid={Boolean(errors.govtIdNumber)}
-                aria-describedby={errors.govtIdNumber ? 'mobile-id-number-error' : 'mobile-id-number-help'}
-                onChange={(event) => setFormData({ ...formData, govtIdNumber: event.target.value })}
+                placeholder="e.g. ABCDE1234F"
+                maxLength={10}
+                style={{ textTransform: 'uppercase', fontFamily: 'monospace', letterSpacing: '0.05em' }}
+                value={formData.panNumber}
+                aria-invalid={Boolean(errors.panNumber)}
+                onChange={(event) => setFormData({ ...formData, panNumber: event.target.value.toUpperCase() })}
               />
-              {errors.govtIdNumber ? (
-                <span id="mobile-id-number-error" className="m-field-error" role="alert">{errors.govtIdNumber}</span>
-              ) : (
-                <span id="mobile-id-number-help" className="m-field-help">Double-check the number before continuing.</span>
-              )}
+              {errors.panNumber && <span className="m-field-error" role="alert">{errors.panNumber}</span>}
             </div>
 
             <div className="m-form-group">
@@ -330,7 +330,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
 
             <div className="mobile-privacy-note">
               <Lock size={17} />
-              <span><strong>Your details stay private.</strong> Only authorised club staff can review KYC information.</span>
+              <span><strong>Your details stay private.</strong> Only authorised club staff can review KYC credentials.</span>
             </div>
           </div>
         )}
@@ -364,8 +364,8 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
                 onChange={(event) => setFormData({ ...formData, agreedToRules: event.target.checked })}
               />
               <span>
-                <strong>I confirm I am 21 or older.</strong>
-                The information I provided is accurate, and I agree to the club&apos;s house rules and responsible-gaming policy.
+                <strong>Genuine KYC Declaration.</strong>
+                I confirm that my Aadhaar and PAN card details are genuine and belong to me. I agree to the club&apos;s rules and responsible-gaming policy.
               </span>
             </label>
             {errors.agreedToRules && <span id="mobile-rules-error" className="m-field-error" role="alert">{errors.agreedToRules}</span>}
@@ -378,20 +378,34 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
         )}
 
         <div className="mobile-form-actions">
-          {step > 1 && (
-            <button type="button" className="m-btn m-btn-secondary" onClick={() => goToStep((step - 1) as RegistrationStep)}>
+          {step > 1 ? (
+            <button
+              type="button"
+              className="m-btn m-btn-secondary"
+              onClick={() => goToStep((step - 1) as RegistrationStep)}
+              disabled={submitting}
+            >
               <ArrowLeft size={18} /> Back
             </button>
+          ) : (
+            <span />
           )}
 
           {step < 3 ? (
-            <button type="button" className="m-btn m-btn-primary" onClick={handleNext}>
-              Continue <ArrowRight size={18} />
+            <button
+              type="button"
+              className="m-btn m-btn-primary"
+              onClick={handleNext}
+            >
+              Next step <ArrowRight size={18} />
             </button>
           ) : (
-            <button type="submit" className="m-btn m-btn-primary" disabled={submitting}>
-              <ShieldCheck size={18} />
-              {submitting ? 'Creating your pass…' : 'Create pass & check in'}
+            <button
+              type="submit"
+              className="m-btn m-btn-primary"
+              disabled={submitting}
+            >
+              <ShieldCheck size={18} /> {submitting ? 'Generating pass…' : 'Create pass'}
             </button>
           )}
         </div>

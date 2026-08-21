@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Spade } from 'lucide-react';
+import { Spade, FileText } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Player, DailyCheckIn } from '../../types';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { formatDateOnly, formatTimeOnly } from '../../utils/formatters';
 import { Modal } from '../common/Modal';
 import { SuitWatermark, PassCornerPip, CardSuit } from '../common/PokerGraphics';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
 
 interface PlayerPassProps {
   player: Player;
@@ -14,6 +16,8 @@ interface PlayerPassProps {
 
 export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) => {
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [entryInvoice, setEntryInvoice] = useState<ClubInvoiceData | null>(null);
 
   const verificationUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`
@@ -183,14 +187,37 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
           </div>
 
           <p style={{ fontSize: '0.78rem', color: '#cbd5e1', margin: 0 }}>
-            The security officer will scan this QR to review your age verification, KYC credentials, and grant door entrance.
+            The security officer will scan this QR to verify Aadhaar & PAN credentials and grant door entrance.
           </p>
 
-          <button className="btn btn-primary" onClick={() => setIsQRModalOpen(false)} style={{ width: '100%' }}>
-            Done
-          </button>
+          <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+            {todayCheckIn && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                onClick={() => {
+                  setEntryInvoice(generateEntryFeeInvoice(player, todayCheckIn));
+                  setIsInvoiceOpen(true);
+                }}
+              >
+                <FileText size={15} color="#e11d48" />
+                <span>₹500 Entry Invoice</span>
+              </button>
+            )}
+            <button className="btn btn-primary" onClick={() => setIsQRModalOpen(false)} style={{ flex: 1 }}>
+              Done
+            </button>
+          </div>
         </div>
       </Modal>
+
+      {/* Tax Invoice Modal for ₹500 Door Entry */}
+      <ClubTaxInvoiceModal
+        isOpen={isInvoiceOpen}
+        onClose={() => setIsInvoiceOpen(false)}
+        invoice={entryInvoice}
+      />
     </>
   );
 };

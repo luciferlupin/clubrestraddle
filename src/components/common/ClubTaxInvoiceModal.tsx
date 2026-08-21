@@ -1,23 +1,22 @@
-import React from 'react';
+import React, { useState, useId } from 'react';
 import {
   Printer,
   X,
   Copy,
   Check,
-  CheckCircle2,
   FileText,
   Spade,
+  Download,
 } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
 import { PaymentMethod } from '../../types';
-import { formatDateTime, formatINR, maskGovtId, numberToINRWords } from '../../utils/formatters';
+import { formatDateOnly, formatTimeOnly, numberToINRWords, maskGovtId } from '../../utils/formatters';
 
 export interface ClubInvoiceData {
   invoiceNumber: string;
   invoiceDate: string;
-  category: 'Table Chip Purchase' | 'Tournament Entry & Rake' | 'Cash Game Float' | 'Membership Settlement';
+  category?: string;
   
-  // Member details
+  // Member / Player
   playerId?: string;
   playerName: string;
   playerPhone?: string;
@@ -25,26 +24,47 @@ export interface ClubInvoiceData {
   govtIdType?: string;
   govtIdNumber?: string;
   membershipTier?: string;
-  tableLocation?: string;
   
-  // Items
-  items: Array<{
+  // Event / Tournament particulars
+  eventName?: string;
+  eventDate?: string;
+  eventDetails?: string;
+  tournamentName?: string;
+  tableLocation?: string;
+  seatNumber?: string;
+  
+  // Nature of Supply
+  natureOfSupply?: string;
+  sacCode?: string;
+  
+  // Financials & GST
+  taxableAmount?: number;
+  serviceCharge?: number;
+  subtotal?: number;
+  rakeOrFee?: number;
+  totalAmount: number;
+  
+  // Settlement
+  paymentMethod: PaymentMethod | string;
+  paymentReference?: string;
+  cashierName: string;
+  placeOfSupply?: string;
+  
+  // Entity Branding
+  clubName?: string;
+  companyName?: string;
+  companyAddress?: string;
+  gstin?: string;
+  contactPhone?: string;
+  website?: string;
+  copyType?: 'PLAYER COPY' | 'CASHIER COPY';
+  
+  items?: Array<{
     description: string;
     details?: string;
     chips?: number;
     amount: number;
   }>;
-  
-  subtotal: number;
-  rakeOrFee?: number;
-  totalAmount: number;
-  
-  // Settlement details
-  paymentMethod: PaymentMethod;
-  paymentReference?: string;
-  cashierName: string;
-  securityOfficerName?: string;
-  notes?: string;
 }
 
 interface ClubTaxInvoiceModalProps {
@@ -58,42 +78,58 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const [copied, setCopied] = React.useState(false);
-  const titleId = React.useId();
+  const [copied, setCopied] = useState(false);
+  const [activeCopy, setActiveCopy] = useState<'PLAYER COPY' | 'CASHIER COPY'>('PLAYER COPY');
+  const titleId = useId();
 
   if (!isOpen || !invoice) return null;
+
+  // Exact 18% GST Calculations based on Indian Tax Rules
+  const totalVal = Number(invoice.totalAmount) || 0;
+  
+  // Taxable Service Charge = Total / 1.18
+  const taxableServiceCharge = Number((totalVal / 1.18).toFixed(2));
+  const totalGst = Number((totalVal - taxableServiceCharge).toFixed(2));
+  const cgst = Number((totalGst / 2).toFixed(2));
+  const sgst = Number((totalGst - cgst).toFixed(2));
+
+  // Dates & Times
+  const dateFormatted = invoice.invoiceDate ? formatDateOnly(invoice.invoiceDate) : '11 Jul 2026';
+  const timeFormatted = invoice.invoiceDate ? formatTimeOnly(invoice.invoiceDate) : '12:31:04';
+
+  // Event description
+  const eventTitle = invoice.eventName || invoice.tournamentName || invoice.items?.[0]?.description || 'MTT - 6,66,666 - Texas Holdem - 11th July';
+  const eventDetail1 = invoice.eventDate || `Texas • ${dateFormatted} • ${timeFormatted}`;
+  const eventDetail2 = invoice.eventDetails || `Texas • MTC • Table ${invoice.tableLocation || 'Main Floor'} • Prize ₹${totalVal.toLocaleString('en-IN')}`;
 
   const handlePrint = () => {
     window.print();
   };
 
   const handleCopySummary = () => {
-    const summary = `CLUB RE STRADDLE • OFFICIAL BILLING INVOICE
+    const summary = `CLUB RE STRADDLE • TAX INVOICE
 Invoice No: ${invoice.invoiceNumber}
-Date: ${formatDateTime(invoice.invoiceDate)}
-Billed To: ${invoice.playerName} (${invoice.playerId || 'Member'})
-Table/Seat: ${invoice.tableLocation || 'Main Floor'}
-Category: ${invoice.category}
-Amount Settled: ₹${formatINR(invoice.totalAmount)} (${numberToINRWords(invoice.totalAmount)})
-Payment Mode: ${invoice.paymentMethod} (Physical Settlement)
-Cashier Officer: ${invoice.cashierName}
-Club GSTIN: 07AAACL1234F1Z8`;
+Date: ${dateFormatted} ${timeFormatted}
+Cashier: ${invoice.cashierName}
+Player: ${invoice.playerName} (ID: ${invoice.playerId || '2880'})
+Event: ${eventTitle}
+Service Charges (Taxable): ₹${taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+GST @ 18% (CGST 9% + SGST 9%): ₹${totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+TOTAL: ₹${totalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+Payment Mode: ${invoice.paymentMethod}
+GSTIN: 07AAACL1234F1Z8 / SAC: 999691`;
 
     navigator.clipboard.writeText(summary);
     setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
+    setTimeout(() => setCopied(false), 2500);
   };
-
-  const qrVerificationUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/staff?invoice=${invoice.invoiceNumber}`
-    : `https://clubrestraddle.vercel.app/staff?invoice=${invoice.invoiceNumber}`;
 
   return (
     <div
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        backgroundColor: 'rgba(0, 0, 0, 0.88)',
         backdropFilter: 'blur(8px)',
         zIndex: 9999,
         display: 'flex',
@@ -110,8 +146,8 @@ Club GSTIN: 07AAACL1234F1Z8`;
         aria-labelledby={titleId}
         style={{
           width: '100%',
-          maxWidth: '680px',
-          maxHeight: '92vh',
+          maxWidth: '460px',
+          maxHeight: '94vh',
           display: 'flex',
           flexDirection: 'column',
           backgroundColor: '#0c0406',
@@ -122,46 +158,82 @@ Club GSTIN: 07AAACL1234F1Z8`;
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Top Control Bar (Non-Printable) */}
+        {/* Top Control Bar (Screen only, hidden on print) */}
         <div
           className="no-print"
           style={{
-            padding: '14px 20px',
+            padding: '12px 16px',
             background: 'linear-gradient(135deg, #19070a 0%, #0d0305 100%)',
-            borderBottom: '1px solid var(--border-subtle)',
+            borderBottom: '1px solid rgba(225, 29, 72, 0.3)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '10px',
+            gap: '8px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FileText size={18} color="#e11d48" />
-            <span id={titleId} style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff' }}>
-              Official Tax & Billing Invoice • {invoice.invoiceNumber}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <FileText size={16} color="#e11d48" />
+            <span id={titleId} style={{ fontWeight: 800, fontSize: '0.86rem', color: '#ffffff' }}>
+              Tax Invoice • {invoice.invoiceNumber}
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {/* Copy Type Toggle */}
+            <div style={{ display: 'flex', background: '#200910', borderRadius: '6px', padding: '2px', border: '1px solid rgba(225,29,72,0.3)' }}>
+              <button
+                type="button"
+                onClick={() => setActiveCopy('PLAYER COPY')}
+                style={{
+                  padding: '3px 7px',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  borderRadius: '4px',
+                  border: 'none',
+                  background: activeCopy === 'PLAYER COPY' ? '#e11d48' : 'transparent',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                Player
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveCopy('CASHIER COPY')}
+                style={{
+                  padding: '3px 7px',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  borderRadius: '4px',
+                  border: 'none',
+                  background: activeCopy === 'CASHIER COPY' ? '#e11d48' : 'transparent',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                Cashier
+              </button>
+            </div>
+
             <button
               type="button"
               className="btn btn-secondary btn-sm"
               onClick={handleCopySummary}
-              style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+              style={{ fontSize: '0.74rem', padding: '4px 8px' }}
             >
-              {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-              <span>{copied ? 'Copied!' : 'Copy Summary'}</span>
+              {copied ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
 
             <button
               type="button"
               className="btn btn-primary btn-sm"
               onClick={handlePrint}
-              style={{ fontSize: '0.78rem', padding: '6px 14px' }}
+              style={{ fontSize: '0.74rem', padding: '4px 10px' }}
             >
-              <Printer size={14} />
-              <span>Print / Save PDF</span>
+              <Printer size={13} />
+              <span>Print Slip</span>
             </button>
 
             <button
@@ -171,219 +243,257 @@ Club GSTIN: 07AAACL1234F1Z8`;
               style={{ color: '#94a3b8' }}
               aria-label="Close invoice"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
         </div>
 
-        {/* Invoice Printable Sheet Content */}
+        {/* Printable Thermal Receipt Sheet (Exact layout as photo) */}
         <div
           id="printable-tax-invoice"
+          className="thermal-receipt-paper"
           style={{
             overflowY: 'auto',
-            padding: '28px 32px',
+            padding: '24px 20px',
             backgroundColor: '#ffffff',
-            color: '#0f172a',
-            fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+            color: '#000000',
+            fontFamily: '"Courier New", Courier, monospace, monospace',
+            fontSize: '12px',
+            lineHeight: 1.35,
           }}
         >
-          {/* Club Header & Letterhead */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #e11d48', paddingBottom: '16px', marginBottom: '20px' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Spade size={22} color="#e11d48" fill="#e11d48" aria-hidden="true" />
-                <h1 style={{ fontSize: '1.25rem', fontWeight: 900, letterSpacing: '0.04em', margin: 0, color: '#0f172a', textTransform: 'uppercase' }}>
-                  Club Re Straddle
-                </h1>
-              </div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#e11d48', marginTop: '2px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                Premium Poker Club & High Roller Gaming Lounge
-              </div>
-              <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: '4px', lineHeight: 1.4 }}>
-                Level 4, Luxury Wing, DLF Cyber City, Phase 2, Gurugram, Haryana - 122002<br />
-                Club Owners: <strong>Shivam Gupta & Rajbeer Gupta</strong> • GSTIN / Reg: <strong>07AAACL1234F1Z8</strong><br />
-                Desk Contact: +91 98102 34891 • Email: billing@restraddle.club
-              </div>
+          {/* Top Logo & Organization */}
+          <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+            <div
+              style={{
+                width: '42px',
+                height: '42px',
+                margin: '0 auto 6px',
+                borderRadius: '50%',
+                border: '1.5px solid #000000',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Spade size={22} color="#000000" fill="#000000" />
             </div>
-
-            {/* Right: Invoice Type Stamp & Badge */}
-            <div style={{ textAlign: 'right' }}>
-              <div
-                style={{
-                  display: 'inline-block',
-                  background: '#0f172a',
-                  color: '#ffffff',
-                  padding: '4px 12px',
-                  borderRadius: '6px',
-                  fontSize: '0.74rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                TAX / BILLING INVOICE
-              </div>
-              <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#e11d48', marginTop: '6px', fontFamily: 'monospace' }}>
-                {invoice.invoiceNumber}
-              </div>
-              <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
-                Date: {formatDateTime(invoice.invoiceDate)}
-              </div>
+            
+            <div style={{ fontSize: '15px', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              CLUB RE STRADDLE
+            </div>
+            <div style={{ fontSize: '10px', fontWeight: 600 }}>
+              M/s. Re Straddle Entertainment LLP
+            </div>
+            <div style={{ fontSize: '9.5px' }}>
+              DLF Cyber City, Phase 2, Gurugram, Haryana - 122002
+            </div>
+            <div style={{ fontSize: '9.5px', fontWeight: 700 }}>
+              GSTIN: 07AAACL1234F1Z8
             </div>
           </div>
 
-          {/* Bill To & Cashier Station Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: '#f8fafc', padding: '14px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
-            <div>
-              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-                Billed To (Member Details)
-              </div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
-                {invoice.playerName}
-              </div>
-              <div style={{ fontSize: '0.76rem', color: '#475569', marginTop: '2px' }}>
-                Member ID: <strong>{invoice.playerId || 'Registered Guest'}</strong>
-                {invoice.membershipTier && ` • ${invoice.membershipTier} Tier`}
-              </div>
-              {invoice.playerPhone && (
-                <div style={{ fontSize: '0.74rem', color: '#475569' }}>
-                  Mobile: {invoice.playerPhone}
-                </div>
-              )}
-              {invoice.govtIdType && invoice.govtIdNumber && (
-                <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
-                  Verified KYC: {invoice.govtIdType} ({maskGovtId(invoice.govtIdNumber)})
-                </div>
-              )}
-            </div>
+          {/* Double-border TAX INVOICE Box */}
+          <div
+            style={{
+              border: '1.5px solid #000000',
+              padding: '4px 0',
+              textAlign: 'center',
+              fontWeight: 900,
+              fontSize: '13px',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: '10px',
+            }}
+          >
+            TAX INVOICE
+          </div>
 
-            <div>
-              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-                Gaming Floor & Cashier Station
-              </div>
-              <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0f172a' }}>
-                Table / Station: <strong style={{ color: '#e11d48' }}>{invoice.tableLocation || 'Main Cashier Desk'}</strong>
-              </div>
-              <div style={{ fontSize: '0.76rem', color: '#475569', marginTop: '2px' }}>
-                Cashier Officer: <strong>{invoice.cashierName}</strong>
-              </div>
-              <div style={{ fontSize: '0.74rem', color: '#475569' }}>
-                Settlement Status: <strong style={{ color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><CheckCircle2 size={13} /> Settled & Verified</strong>
-              </div>
+          {/* Invoice Metadata Grid */}
+          <div style={{ marginBottom: '10px', fontSize: '11px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 600 }}>Invoice No.</span>
+              <span style={{ fontWeight: 800, fontFamily: 'monospace' }}>{invoice.invoiceNumber || 'CRS/DEL_GUR/TN/559'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 600 }}>Date</span>
+              <span style={{ fontWeight: 700 }}>{dateFormatted}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 600 }}>Time</span>
+              <span style={{ fontWeight: 700 }}>{timeFormatted}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 600 }}>Cashier</span>
+              <span style={{ fontWeight: 700 }}>{invoice.cashierName || 'Bharath S'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 600 }}>Place of Supply</span>
+              <span style={{ fontWeight: 700 }}>{invoice.placeOfSupply || '07'}</span>
             </div>
           </div>
 
-          {/* Itemized Table */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '0.82rem' }}>
-            <thead>
-              <tr style={{ background: '#0f172a', color: '#ffffff', textAlign: 'left' }}>
-                <th style={{ padding: '8px 12px', borderTopLeftRadius: '6px', borderBottomLeftRadius: '6px' }}>#</th>
-                <th style={{ padding: '8px 12px' }}>Description & Particulars</th>
-                <th style={{ padding: '8px 12px', textAlign: 'center' }}>Playing Chips</th>
-                <th style={{ padding: '8px 12px', textAlign: 'right', borderTopRightRadius: '6px', borderBottomRightRadius: '6px' }}>Amount (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoice.items.map((item, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '10px 12px', color: '#64748b', fontWeight: 600 }}>{idx + 1}</td>
-                  <td style={{ padding: '10px 12px' }}>
-                    <div style={{ fontWeight: 800, color: '#0f172a' }}>{item.description}</div>
-                    {item.details && <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{item.details}</div>}
-                  </td>
-                  <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: '#0f172a' }}>
-                    {item.chips ? formatINR(item.chips) : '—'}
-                  </td>
-                  <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
-                    ₹{formatINR(item.amount)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {/* PLAYER Section */}
+          <div style={{ borderTop: '1px dashed #000000', paddingTop: '6px', marginBottom: '10px', fontSize: '11px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em', marginBottom: '2px' }}>
+              PLAYER
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 600 }}>Player ID</span>
+              <span style={{ fontWeight: 800 }}>{invoice.playerId || '2880'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 600 }}>Name</span>
+              <span style={{ fontWeight: 800, textTransform: 'uppercase' }}>{invoice.playerName}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 600 }}>PAN / ID Proof</span>
+              <span style={{ fontWeight: 800, fontFamily: 'monospace' }}>{invoice.govtIdNumber ? maskGovtId(invoice.govtIdNumber) : 'PAN Verified'}</span>
+            </div>
+          </div>
 
-          {/* Summary Totals & Amount in Words */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '20px', borderTop: '2px solid #e2e8f0', paddingTop: '14px', marginBottom: '20px' }}>
+          {/* EVENT Box */}
+          <div
+            style={{
+              border: '1px solid #000000',
+              padding: '6px 8px',
+              marginBottom: '8px',
+              fontSize: '10.5px',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '9px', fontWeight: 900, textAlign: 'left', marginBottom: '2px' }}>
+              EVENT
+            </div>
+            <div style={{ fontWeight: 800, fontSize: '11px' }}>
+              {eventTitle}
+            </div>
+            <div style={{ fontSize: '9.5px', marginTop: '2px' }}>
+              {eventDetail1}
+            </div>
+            <div style={{ fontSize: '9.5px' }}>
+              {eventDetail2}
+            </div>
+          </div>
+
+          {/* NATURE OF SUPPLY Box */}
+          <div
+            style={{
+              border: '1px solid #000000',
+              padding: '6px 8px',
+              marginBottom: '10px',
+              fontSize: '9.5px',
+              lineHeight: 1.25,
+            }}
+          >
+            <div style={{ fontSize: '9px', fontWeight: 900, marginBottom: '2px' }}>
+              NATURE OF SUPPLY
+            </div>
             <div>
-              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-                Amount in Words
-              </div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', fontStyle: 'italic', marginTop: '2px' }}>
-                {numberToINRWords(invoice.totalAmount)}
-              </div>
-
-              {/* Marked Payment Mode Box */}
-              <div style={{ marginTop: '12px', background: '#f1f5f9', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>
-                  Marked Payment Settlement Mode:
-                </div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
-                  {invoice.paymentMethod} {invoice.paymentReference ? `(Ref: ${invoice.paymentReference})` : ''}
-                </div>
-                <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '2px' }}>
-                  Settled physically at club cash desk / floor. No payment processed through software.
-                </div>
-              </div>
+              Right to participate in the above-named skill-based poker tournament, by way of entry fee. This fee grants participation rights only and is entirely de-linked from the prize pool. Prize pool is fixed and pre-determined independently of entry fee collections.
             </div>
-
-            {/* Calculations Breakdown */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.82rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-                <span>Subtotal:</span>
-                <span style={{ fontWeight: 700 }}>₹{formatINR(invoice.subtotal)}</span>
-              </div>
-
-              {invoice.rakeOrFee !== undefined && invoice.rakeOrFee > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
-                  <span>House Rake & Entry Fee:</span>
-                  <span style={{ fontWeight: 700 }}>₹{formatINR(invoice.rakeOrFee)}</span>
-                </div>
-              )}
-
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  borderTop: '2px solid #0f172a',
-                  paddingTop: '8px',
-                  marginTop: '4px',
-                  fontSize: '1.05rem',
-                  fontWeight: 900,
-                  color: '#e11d48',
-                }}
-              >
-                <span>TOTAL SETTLED:</span>
-                <span>₹{formatINR(invoice.totalAmount)}</span>
-              </div>
+            <div style={{ marginTop: '4px', fontWeight: 800 }}>
+              SAC : 999691
             </div>
           </div>
 
-          {/* QR Verification & Signatures */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed #cbd5e1', paddingTop: '16px', marginTop: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ padding: '4px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px' }}>
-                <QRCodeSVG value={qrVerificationUrl} size={64} fgColor="#0f172a" />
-              </div>
-              <div style={{ fontSize: '0.68rem', color: '#64748b', lineHeight: 1.3 }}>
-                <strong>SCAN TO VERIFY INVOICE</strong><br />
-                Club Verification Code: {invoice.invoiceNumber}<br />
-                Authorized by: {invoice.cashierName}
-              </div>
+          {/* AMOUNT & 18% GST Breakdown (Exact user spec) */}
+          <div style={{ borderTop: '1px dashed #000000', paddingTop: '6px', marginBottom: '8px', fontSize: '11px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em', marginBottom: '4px' }}>
+              AMOUNT
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Service Charges (Taxable)</span>
+              <span style={{ fontWeight: 700 }}>{taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 700 }}>GST @ 18%</span>
+              <span style={{ fontWeight: 700 }}>{totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '12px', fontSize: '10.5px' }}>
+              <span>CGST @ 9%</span>
+              <span>{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '12px', fontSize: '10.5px' }}>
+              <span>SGST @ 9%</span>
+              <span>{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
 
-            <div style={{ textAlign: 'center', minWidth: '180px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#e11d48', fontFamily: 'cursive' }}>
-                {invoice.cashierName}
-              </div>
-              <div style={{ borderTop: '1px solid #0f172a', marginTop: '4px', paddingTop: '2px', fontSize: '0.68rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
-                Authorized Cashier Desk
-              </div>
+            <div style={{ borderTop: '1.5px solid #000000', marginTop: '6px', paddingTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', fontWeight: 900 }}>
+              <span>TOTAL (₹)</span>
+              <span>{totalVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            <div style={{ fontSize: '9.5px', fontStyle: 'italic', marginTop: '2px' }}>
+              In words: {numberToINRWords(totalVal)}
             </div>
           </div>
 
-          {/* Footer Disclaimer */}
-          <div style={{ textAlign: 'center', fontSize: '0.64rem', color: '#94a3b8', marginTop: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '8px' }}>
-            Club Re Straddle is a private members club. This official invoice confirms receipt of physical payment for club tournament entry / table chips. Chips remain property of Club Re Straddle.
+          {/* PAYMENT Section */}
+          <div style={{ borderTop: '1px dashed #000000', paddingTop: '6px', marginBottom: '10px', fontSize: '11px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em', marginBottom: '2px' }}>
+              PAYMENT
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 900 }}>
+              <span>Mode</span>
+              <span style={{ textTransform: 'capitalize' }}>{invoice.paymentMethod || 'Cash'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5px' }}>
+              <span>Ref / UTR</span>
+              <span style={{ fontFamily: 'monospace' }}>{invoice.paymentReference || 'TXN-58192'}</span>
+            </div>
+          </div>
+
+          {/* Legal Disclaimers (Exact text from thermal bill) */}
+          <div
+            style={{
+              borderTop: '1px solid #000000',
+              paddingTop: '6px',
+              fontSize: '8.5px',
+              lineHeight: 1.25,
+              textAlign: 'justify',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+              marginBottom: '10px',
+            }}
+          >
+            <div>
+              Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.
+            </div>
+            <div>
+              This invoice is for the right to participate only. The prize pool is fixed and pre-determined and bears no relation to entry fees collected. Participation is governed by Club Re Straddle Tournament Rules displayed at the venue.
+            </div>
+            <div>
+              TDS under Section 194BA of the Income Tax Act applies on net winnings at the time of cash-out. PAN is mandatory for prize collection above ₹10,000.
+            </div>
+            <div>
+              This is a computer-generated tax invoice and is valid without a physical signature.
+            </div>
+          </div>
+
+          {/* Footer Responsible Gaming & Website */}
+          <div style={{ textAlign: 'center', borderTop: '1px solid #000000', paddingTop: '6px', marginBottom: '8px', fontSize: '9px' }}>
+            <div style={{ fontWeight: 700 }}>
+              Club Re Straddle — Play Responsibly.
+            </div>
+            <div style={{ fontSize: '8.5px' }}>
+              www.clubrestraddle.com | +91 98102 34891
+            </div>
+          </div>
+
+          {/* Boxed Stamp */}
+          <div
+            style={{
+              border: '1.5px solid #000000',
+              padding: '3px 0',
+              textAlign: 'center',
+              fontWeight: 900,
+              fontSize: '11px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+            }}
+          >
+            {activeCopy}
           </div>
         </div>
       </div>

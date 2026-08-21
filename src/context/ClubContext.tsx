@@ -240,78 +240,82 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [currentStaffUser, activeRole]);
 
-  // Hydrate from Supabase if connected
+  // Hydrate from Supabase & Subscribe to Realtime Changes
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
     const client = supabase;
 
     const fetchSupabaseData = async () => {
       try {
-        const { data: staffData } = await client.from('staff_users').select('*');
-        if (staffData && staffData.length > 0) {
+        const { data: staffData, error: staffErr } = await client.from('staff_users').select('*');
+        if (!staffErr && staffData && staffData.length > 0) {
           const mappedStaff: StaffUser[] = staffData.map((s: any) => ({
             id: s.id,
-            fullName: s.full_name,
+            fullName: s.full_name || 'Staff Member',
             email: s.email,
             password: s.password || s.password_hash || '12345',
-            role: s.role,
+            role: s.role || 'cashier',
             status: s.status || 'active',
-            createdAt: s.created_at,
+            createdAt: s.created_at || new Date().toISOString(),
             createdBy: s.created_by,
             lastLoginAt: s.last_login_at,
           }));
           setStaffUsers(mappedStaff);
         }
 
-        const { data: playersData } = await client.from('players').select('*');
-        if (playersData && playersData.length > 0) {
-          const mappedPlayers: Player[] = playersData.map((p: any) => ({
-            id: p.id,
-            fullName: p.full_name,
-            phone: p.phone,
-            email: p.email,
-            membershipTier: p.membership_tier,
-            kycStatus: p.kyc_status,
-            registeredAt: p.created_at,
-            totalVisits: p.total_visits || 1,
-            notes: p.notes,
-            kyc: {
-              fullName: p.full_name,
-              phone: p.phone,
-              email: p.email,
-              dateOfBirth: p.date_of_birth,
-              govtIdType: p.govt_id_type,
-              govtIdNumber: p.govt_id_number,
-              address: p.address,
-              emergencyContactName: p.emergency_contact_name,
-              emergencyContactPhone: p.emergency_contact_phone,
-              photoUrl: p.photo_url,
-              agreedToRules: p.agreed_to_rules,
-              submittedAt: p.created_at,
-              verifiedAt: p.verified_at,
-              verifiedBy: p.verified_by,
-              rejectionReason: p.rejection_reason,
-            },
-          }));
-          setPlayers(mappedPlayers);
+        const { data: playersData, error: pErr } = await client.from('players').select('*').order('created_at', { ascending: false });
+        if (!pErr && playersData) {
+          if (playersData.length > 0) {
+            const mappedPlayers: Player[] = playersData.map((p: any) => ({
+              id: p.id,
+              fullName: p.full_name || 'Member Player',
+              phone: p.phone || '',
+              email: p.email || '',
+              membershipTier: p.membership_tier || 'Standard',
+              kycStatus: p.kyc_status || 'pending',
+              registeredAt: p.created_at || new Date().toISOString(),
+              totalVisits: p.total_visits || 1,
+              notes: p.notes,
+              kyc: {
+                fullName: p.full_name || 'Member Player',
+                phone: p.phone || '',
+                email: p.email || '',
+                dateOfBirth: p.date_of_birth || '1995-01-01',
+                govtIdType: p.govt_id_type || 'Aadhaar Card',
+                govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+                address: p.address || 'Delhi NCR, India',
+                emergencyContactName: p.emergency_contact_name || '',
+                emergencyContactPhone: p.emergency_contact_phone || '',
+                photoUrl: p.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+                agreedToRules: p.agreed_to_rules ?? true,
+                submittedAt: p.created_at || new Date().toISOString(),
+                verifiedAt: p.verified_at,
+                verifiedBy: p.verified_by,
+                rejectionReason: p.rejection_reason,
+              },
+            }));
+            setPlayers(mappedPlayers);
+          }
         }
 
-        const { data: checkInsData } = await client.from('daily_check_ins').select('*');
-        if (checkInsData && checkInsData.length > 0) {
-          const mappedCheckIns: DailyCheckIn[] = checkInsData.map((c: any) => ({
-            id: c.id,
-            playerId: c.player_id,
-            playerName: c.player_name,
-            playerPhone: c.player_phone,
-            checkInDate: c.check_in_date,
-            checkInTime: c.check_in_time,
-            verificationStatus: c.verification_status,
-            verifiedBy: c.verified_by,
-            verifiedAt: c.verified_at,
-            rejectionReason: c.rejection_reason,
-            tablePreference: c.table_preference,
-          }));
-          setCheckIns(mappedCheckIns);
+        const { data: checkInsData, error: chkErr } = await client.from('daily_check_ins').select('*').order('created_at', { ascending: false });
+        if (!chkErr && checkInsData) {
+          if (checkInsData.length > 0) {
+            const mappedCheckIns: DailyCheckIn[] = checkInsData.map((c: any) => ({
+              id: c.id,
+              playerId: c.player_id,
+              playerName: c.player_name || 'Member Player',
+              playerPhone: c.player_phone || '',
+              checkInDate: c.check_in_date || getTodayDateString(),
+              checkInTime: c.check_in_time || '18:00:00',
+              verificationStatus: c.verification_status || 'pending',
+              verifiedBy: c.verified_by,
+              verifiedAt: c.verified_at,
+              rejectionReason: c.rejection_reason,
+              tablePreference: c.table_preference || 'Open Seating',
+            }));
+            setCheckIns(mappedCheckIns);
+          }
         }
 
         const { data: tournamentsData } = await client.from('tournaments').select('*');
@@ -430,6 +434,164 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     fetchSupabaseData();
+
+    // ── Supabase Realtime Channel Subscriptions (Multi-Device Sync) ──
+    const realtimeChannel = client
+      .channel('club-restraddle-live-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'players' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const p = payload.new;
+            const updatedPlayer: Player = {
+              id: p.id,
+              fullName: p.full_name || 'Member Player',
+              phone: p.phone || '',
+              email: p.email || '',
+              membershipTier: p.membership_tier || 'Standard',
+              kycStatus: p.kyc_status || 'pending',
+              registeredAt: p.created_at || new Date().toISOString(),
+              totalVisits: p.total_visits || 1,
+              notes: p.notes,
+              kyc: {
+                fullName: p.full_name || 'Member Player',
+                phone: p.phone || '',
+                email: p.email || '',
+                dateOfBirth: p.date_of_birth || '1995-01-01',
+                govtIdType: p.govt_id_type || 'Aadhaar Card',
+                govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+                address: p.address || 'Delhi NCR, India',
+                emergencyContactName: p.emergency_contact_name || '',
+                emergencyContactPhone: p.emergency_contact_phone || '',
+                photoUrl: p.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+                agreedToRules: p.agreed_to_rules ?? true,
+                submittedAt: p.created_at || new Date().toISOString(),
+                verifiedAt: p.verified_at,
+                verifiedBy: p.verified_by,
+                rejectionReason: p.rejection_reason,
+              },
+            };
+            setPlayers(prev => {
+              const exists = prev.some(existing => existing.id === updatedPlayer.id);
+              if (exists) {
+                return prev.map(existing => (existing.id === updatedPlayer.id ? updatedPlayer : existing));
+              }
+              return [updatedPlayer, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+            setPlayers(prev => prev.filter(p => p.id !== payload.old.id));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'daily_check_ins' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const c = payload.new;
+            const updatedCheckIn: DailyCheckIn = {
+              id: c.id,
+              playerId: c.player_id,
+              playerName: c.player_name || 'Member Player',
+              playerPhone: c.player_phone || '',
+              checkInDate: c.check_in_date || getTodayDateString(),
+              checkInTime: c.check_in_time || '18:00:00',
+              verificationStatus: c.verification_status || 'pending',
+              verifiedBy: c.verified_by,
+              verifiedAt: c.verified_at,
+              rejectionReason: c.rejection_reason,
+              tablePreference: c.table_preference || 'Open Seating',
+            };
+            setCheckIns(prev => {
+              const exists = prev.some(existing => existing.id === updatedCheckIn.id);
+              if (exists) {
+                return prev.map(existing => (existing.id === updatedCheckIn.id ? updatedCheckIn : existing));
+              }
+              return [updatedCheckIn, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+            setCheckIns(prev => prev.filter(c => c.id !== payload.old.id));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'chip_requests' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const c = payload.new;
+            const updatedChip: ChipRequest = {
+              id: c.id,
+              playerId: c.player_id,
+              playerName: c.player_name,
+              playerPhone: c.player_phone,
+              amount: Number(c.amount),
+              chipsQuantity: Number(c.chips_quantity || c.amount),
+              tableNumber: c.table_number,
+              seatNumber: c.seat_number,
+              paymentMethod: c.payment_method,
+              status: c.status,
+              requestedAt: c.requested_at,
+              fulfilledBy: c.fulfilled_by,
+              fulfilledAt: c.fulfilled_at,
+              receiptNumber: c.receipt_number,
+              notes: c.notes,
+            };
+            setChipRequests(prev => {
+              const exists = prev.some(existing => existing.id === updatedChip.id);
+              if (exists) {
+                return prev.map(existing => (existing.id === updatedChip.id ? updatedChip : existing));
+              }
+              return [updatedChip, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+            setChipRequests(prev => prev.filter(c => c.id !== payload.old.id));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tournaments' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const t = payload.new;
+            const updatedTrn: Tournament = {
+              id: t.id,
+              name: t.name,
+              buyInFee: Number(t.buy_in_fee),
+              clubRake: Number(t.club_rake),
+              startingChips: Number(t.starting_chips),
+              guaranteedPrizePool: Number(t.guaranteed_prize_pool),
+              maxSeats: Number(t.max_seats),
+              blindLevelsMinutes: Number(t.blind_levels_minutes),
+              startTime: t.start_time,
+              status: t.status,
+              createdAt: t.created_at,
+              createdBy: t.created_by || 'Cashier',
+            };
+            setTournaments(prev => {
+              const exists = prev.some(x => x.id === updatedTrn.id);
+              if (exists) return prev.map(x => (x.id === updatedTrn.id ? updatedTrn : x));
+              return [updatedTrn, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+            setTournaments(prev => prev.filter(t => t.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    // Secondary 8-second polling & window focus sync fallback
+    const interval = setInterval(fetchSupabaseData, 8000);
+    const handleFocus = () => fetchSupabaseData();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      client.removeChannel(realtimeChannel);
+    };
   }, []);
 
   const setActiveRole = useCallback((role: UserRole) => {
@@ -628,16 +790,46 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const nowIso = new Date().toISOString();
     const nowTime = new Date().toTimeString().split(' ')[0];
 
+    // Guarantee a valid ISO date for PostgreSQL DATE column (YYYY-MM-DD)
+    let cleanDob = (kycData.dateOfBirth || '').trim();
+    if (!cleanDob || cleanDob.length < 8 || isNaN(new Date(cleanDob).getTime())) {
+      cleanDob = '2000-01-01';
+    } else {
+      try {
+        cleanDob = new Date(cleanDob).toISOString().split('T')[0];
+      } catch {
+        cleanDob = '2000-01-01';
+      }
+    }
+
+    const aadhaarClean = (kycData.aadhaarNumber || '').trim();
+    const panClean = (kycData.panNumber || '').trim();
+    const combinedGovtIdNumber = panClean && aadhaarClean
+      ? `PAN: ${panClean} | Aadhaar: ${aadhaarClean}`
+      : (panClean || aadhaarClean || kycData.govtIdNumber || 'KYC-PENDING').trim();
+
     const completeKYC: PlayerKYC = {
-      ...kycData,
+      fullName: (kycData.fullName || 'Member Player').trim(),
+      phone: (kycData.phone || '+91 99999 99999').trim(),
+      email: (kycData.email || 'player@club-restraddle.com').trim(),
+      dateOfBirth: cleanDob,
+      aadhaarNumber: aadhaarClean,
+      panNumber: panClean,
+      govtIdType: 'Aadhaar & PAN Card',
+      govtIdNumber: combinedGovtIdNumber,
+      address: (kycData.address || 'Delhi NCR, India').trim(),
+      emergencyContactName: (kycData.emergencyContactName || '').trim(),
+      emergencyContactPhone: (kycData.emergencyContactPhone || '').trim(),
+      photoUrl: kycData.photoUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+      agreedToRules: kycData.agreedToRules ?? true,
       submittedAt: nowIso,
     };
 
     const newPlayer: Player = {
       id: newId,
-      fullName: kycData.fullName,
-      phone: kycData.phone,
-      email: kycData.email,
+      fullName: completeKYC.fullName,
+      phone: completeKYC.phone,
+      email: completeKYC.email,
       membershipTier: 'Standard',
       kycStatus: 'pending',
       kyc: completeKYC,
@@ -648,68 +840,92 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const newCheckIn: DailyCheckIn = {
       id: generateId('CHK'),
       playerId: newId,
-      playerName: kycData.fullName,
-      playerPhone: kycData.phone,
+      playerName: completeKYC.fullName,
+      playerPhone: completeKYC.phone,
       checkInDate: today,
       checkInTime: nowTime,
       verificationStatus: 'pending',
       tablePreference: tablePreference || 'Open Seating',
     };
 
-    setPlayers(prev => [newPlayer, ...prev]);
-    setCheckIns(prev => [newCheckIn, ...prev]);
+    setPlayers(prev => [newPlayer, ...prev.filter(p => p.id !== newId)]);
+    setCheckIns(prev => [newCheckIn, ...prev.filter(c => c.id !== newCheckIn.id)]);
     setSelectedPlayerIdState(newId);
 
     // Sync to Supabase if connected
     if (isSupabaseConfigured && supabase) {
-      supabase.from('players').insert({
-        id: newPlayer.id,
-        full_name: newPlayer.fullName,
-        phone: newPlayer.phone,
-        email: newPlayer.email,
-        membership_tier: newPlayer.membershipTier,
-        kyc_status: newPlayer.kycStatus,
-        date_of_birth: completeKYC.dateOfBirth,
-        govt_id_type: completeKYC.govtIdType,
-        govt_id_number: completeKYC.govtIdNumber,
-        address: completeKYC.address,
-        emergency_contact_name: completeKYC.emergencyContactName,
-        emergency_contact_phone: completeKYC.emergencyContactPhone,
-        photo_url: completeKYC.photoUrl,
-        agreed_to_rules: completeKYC.agreedToRules,
-        total_visits: 1,
-        created_at: nowIso,
-      });
+      supabase
+        .from('players')
+        .insert({
+          id: newPlayer.id,
+          full_name: newPlayer.fullName,
+          phone: newPlayer.phone,
+          email: newPlayer.email,
+          membership_tier: newPlayer.membershipTier,
+          kyc_status: newPlayer.kycStatus,
+          date_of_birth: completeKYC.dateOfBirth,
+          govt_id_type: completeKYC.govtIdType === 'Aadhaar & PAN Card' ? 'Aadhaar Card' : (completeKYC.govtIdType || 'Aadhaar Card'),
+          govt_id_number: completeKYC.govtIdNumber,
+          address: completeKYC.address,
+          emergency_contact_name: completeKYC.emergencyContactName,
+          emergency_contact_phone: completeKYC.emergencyContactPhone,
+          photo_url: completeKYC.photoUrl,
+          agreed_to_rules: completeKYC.agreedToRules,
+          total_visits: 1,
+          created_at: nowIso,
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error('Supabase player insert error:', error.message);
+          } else {
+            console.log('Player registration synced to Supabase:', newPlayer.id);
+          }
+        });
 
-      supabase.from('daily_check_ins').insert({
-        id: newCheckIn.id,
-        player_id: newCheckIn.playerId,
-        player_name: newCheckIn.playerName,
-        player_phone: newCheckIn.playerPhone,
-        check_in_date: newCheckIn.checkInDate,
-        check_in_time: newCheckIn.checkInTime,
-        verification_status: newCheckIn.verificationStatus,
-        table_preference: newCheckIn.tablePreference,
-      });
+      supabase
+        .from('daily_check_ins')
+        .insert({
+          id: newCheckIn.id,
+          player_id: newCheckIn.playerId,
+          player_name: newCheckIn.playerName,
+          player_phone: newCheckIn.playerPhone,
+          check_in_date: newCheckIn.checkInDate,
+          check_in_time: newCheckIn.checkInTime,
+          verification_status: newCheckIn.verificationStatus,
+          table_preference: newCheckIn.tablePreference,
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.error('Supabase check-in insert error:', error.message);
+          } else {
+            console.log('Daily check-in synced to Supabase:', newCheckIn.id);
+          }
+        });
     }
 
     addAuditLog(
       'Player',
       'New Player Registration + KYC',
-      `Registered member ${kycData.fullName} (${newId}) with ${kycData.govtIdType}. Daily check-in generated.`
+      `Registered member ${completeKYC.fullName} (${newId}) with ${completeKYC.govtIdType}. Daily check-in generated.`
     );
 
     return { player: newPlayer, checkIn: newCheckIn };
   };
 
-  const lookupMemberByPhone = async (phoneOrId: string): Promise<Player | null> => {
-    const cleanQuery = phoneOrId.trim().replace(/[\s\-()]/g, '');
+  const lookupMemberByPhone = async (phoneOrIdOrScan: string): Promise<Player | null> => {
+    const cleanQuery = phoneOrIdOrScan.trim();
     if (!cleanQuery) return null;
+    const cleanDigits = cleanQuery.replace(/\D/g, '');
 
     // 1. Check local in-memory players state
     const localMatch = players.find(p => {
-      const pPhone = p.phone.replace(/[\s\-()]/g, '');
-      return pPhone.includes(cleanQuery) || p.id.toLowerCase() === cleanQuery.toLowerCase();
+      const pDigits = p.phone.replace(/\D/g, '');
+      return (
+        p.id.toLowerCase() === cleanQuery.toLowerCase() ||
+        (cleanDigits.length >= 4 && pDigits.includes(cleanDigits)) ||
+        p.fullName.toLowerCase().includes(cleanQuery.toLowerCase()) ||
+        p.email.toLowerCase() === cleanQuery.toLowerCase()
+      );
     });
 
     if (localMatch) {
@@ -717,42 +933,62 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return localMatch;
     }
 
+    // Check if query is a check-in ID in memory
+    const checkInMatch = checkIns.find(c => c.id.toLowerCase() === cleanQuery.toLowerCase());
+    if (checkInMatch) {
+      const p = players.find(x => x.id === checkInMatch.playerId);
+      if (p) {
+        setSelectedPlayerId(p.id);
+        return p;
+      }
+    }
+
     // 2. Query Supabase PostgreSQL live table if connected
     if (isSupabaseConfigured && supabase) {
       try {
+        const tenDigits = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
+        const orConditions = [
+          `id.ilike.%${cleanQuery}%`,
+          `phone.ilike.%${cleanQuery}%`,
+          `full_name.ilike.%${cleanQuery}%`,
+          `email.ilike.%${cleanQuery}%`,
+          `govt_id_number.ilike.%${cleanQuery}%`,
+        ];
+        if (tenDigits.length >= 4 && tenDigits !== cleanQuery) {
+          orConditions.push(`phone.ilike.%${tenDigits}%`);
+        }
+
         const { data, error } = await supabase
           .from('players')
           .select('*')
-          .or(`phone.ilike.%${cleanQuery}%,id.ilike.%${cleanQuery}%`)
+          .or(orConditions.join(','))
           .limit(1);
 
-        if (error) {
-          console.warn('Supabase lookup error:', error.message);
-        } else if (data && data.length > 0) {
+        if (!error && data && data.length > 0) {
           const p = data[0];
           const mappedPlayer: Player = {
             id: p.id,
-            fullName: p.full_name,
-            phone: p.phone,
-            email: p.email,
-            membershipTier: p.membership_tier,
-            kycStatus: p.kyc_status,
-            registeredAt: p.created_at,
+            fullName: p.full_name || 'Member Player',
+            phone: p.phone || '',
+            email: p.email || '',
+            membershipTier: p.membership_tier || 'Standard',
+            kycStatus: p.kyc_status || 'pending',
+            registeredAt: p.created_at || new Date().toISOString(),
             totalVisits: p.total_visits || 1,
             notes: p.notes,
             kyc: {
-              fullName: p.full_name,
-              phone: p.phone,
-              email: p.email,
-              dateOfBirth: p.date_of_birth,
-              govtIdType: p.govt_id_type,
-              govtIdNumber: p.govt_id_number,
-              address: p.address,
-              emergencyContactName: p.emergency_contact_name,
-              emergencyContactPhone: p.emergency_contact_phone,
-              photoUrl: p.photo_url,
-              agreedToRules: p.agreed_to_rules,
-              submittedAt: p.created_at,
+              fullName: p.full_name || 'Member Player',
+              phone: p.phone || '',
+              email: p.email || '',
+              dateOfBirth: p.date_of_birth || '1995-01-01',
+              govtIdType: p.govt_id_type || 'Aadhaar Card',
+              govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+              address: p.address || 'Delhi NCR, India',
+              emergencyContactName: p.emergency_contact_name || '',
+              emergencyContactPhone: p.emergency_contact_phone || '',
+              photoUrl: p.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+              agreedToRules: p.agreed_to_rules ?? true,
+              submittedAt: p.created_at || new Date().toISOString(),
               verifiedAt: p.verified_at,
               verifiedBy: p.verified_by,
               rejectionReason: p.rejection_reason,
@@ -766,8 +1002,77 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setSelectedPlayerId(mappedPlayer.id);
           return mappedPlayer;
         }
+
+        // Query daily_check_ins table as fallback
+        const { data: chkData } = await supabase
+          .from('daily_check_ins')
+          .select('*')
+          .or(`id.ilike.%${cleanQuery}%,player_id.ilike.%${cleanQuery}%,player_phone.ilike.%${cleanQuery}%`)
+          .limit(1);
+
+        if (chkData && chkData.length > 0) {
+          const chk = chkData[0];
+          const mappedCheckIn: DailyCheckIn = {
+            id: chk.id,
+            playerId: chk.player_id,
+            playerName: chk.player_name || 'Member Player',
+            playerPhone: chk.player_phone || '',
+            checkInDate: chk.check_in_date || getTodayDateString(),
+            checkInTime: chk.check_in_time || '18:00:00',
+            verificationStatus: chk.verification_status || 'pending',
+            verifiedBy: chk.verified_by,
+            verifiedAt: chk.verified_at,
+            rejectionReason: chk.rejection_reason,
+            tablePreference: chk.table_preference || 'Open Seating',
+          };
+          setCheckIns(prev => {
+            if (prev.some(c => c.id === mappedCheckIn.id)) return prev;
+            return [mappedCheckIn, ...prev];
+          });
+
+          // Fetch the player for this check-in
+          const { data: pData } = await supabase.from('players').select('*').eq('id', chk.player_id).limit(1);
+          if (pData && pData.length > 0) {
+            const p = pData[0];
+            const mappedPlayer: Player = {
+              id: p.id,
+              fullName: p.full_name || 'Member Player',
+              phone: p.phone || '',
+              email: p.email || '',
+              membershipTier: p.membership_tier || 'Standard',
+              kycStatus: p.kyc_status || 'pending',
+              registeredAt: p.created_at || new Date().toISOString(),
+              totalVisits: p.total_visits || 1,
+              notes: p.notes,
+              kyc: {
+                fullName: p.full_name || 'Member Player',
+                phone: p.phone || '',
+                email: p.email || '',
+                dateOfBirth: p.date_of_birth || '1995-01-01',
+                govtIdType: p.govt_id_type || 'Aadhaar Card',
+                govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+                address: p.address || 'Delhi NCR, India',
+                emergencyContactName: p.emergency_contact_name || '',
+                emergencyContactPhone: p.emergency_contact_phone || '',
+                photoUrl: p.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+                agreedToRules: p.agreed_to_rules ?? true,
+                submittedAt: p.created_at || new Date().toISOString(),
+                verifiedAt: p.verified_at,
+                verifiedBy: p.verified_by,
+                rejectionReason: p.rejection_reason,
+              },
+            };
+
+            setPlayers(prev => {
+              if (prev.some(existing => existing.id === mappedPlayer.id)) return prev;
+              return [mappedPlayer, ...prev];
+            });
+            setSelectedPlayerId(mappedPlayer.id);
+            return mappedPlayer;
+          }
+        }
       } catch (err) {
-        console.error('Error fetching player by phone from Supabase:', err);
+        console.error('Error fetching player by phone/ID from Supabase:', err);
       }
     }
 

@@ -14,6 +14,7 @@ import {
 import { Player } from '../../types';
 import { formatDateOnly, maskGovtId } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
+import { PlayerLedger } from './PlayerLedger';
 
 interface MobilePlayerProfileProps {
   player: Player;
@@ -36,11 +37,16 @@ export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player
         </div>
       </header>
 
-      <button type="button" className="player-profile-pass-cta" onClick={onOpenPass}>
-        <span><CreditCard size={21} /></span>
-        <span><strong>Open my digital pass</strong><small>Entrance and cashier QR</small></span>
-        <ChevronRight size={20} />
-      </button>
+      <div style={{ display: 'flex', gap: '8px', margin: '14px 0' }}>
+        <button type="button" className="player-profile-pass-cta" style={{ flex: 1, margin: 0 }} onClick={onOpenPass}>
+          <span><CreditCard size={20} /></span>
+          <span><strong>Digital Pass</strong><small>Door & Cashier QR</small></span>
+        </button>
+      </div>
+
+      <div style={{ margin: '16px 0' }}>
+        <PlayerLedger player={player} />
+      </div>
 
       <section className="player-profile-section" aria-labelledby="player-contact-title">
         <div className="player-profile-section-heading">
@@ -66,12 +72,16 @@ export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player
         </div>
         <dl className="player-profile-list">
           <div>
-            <dt><CalendarDays size={17} /> Date of birth</dt>
-            <dd>{formatDateOnly(player.kyc.dateOfBirth)}</dd>
+            <dt><IdCard size={17} /> 1. Aadhaar Card</dt>
+            <dd style={{ fontFamily: 'monospace' }}>
+              {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
+            </dd>
           </div>
           <div>
-            <dt><IdCard size={17} /> {player.kyc.govtIdType}</dt>
-            <dd>{maskGovtId(player.kyc.govtIdNumber)}</dd>
+            <dt><CreditCard size={17} /> 2. PAN Card</dt>
+            <dd style={{ fontFamily: 'monospace', color: '#fb7185' }}>
+              {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
+            </dd>
           </div>
           <div>
             <dt><BadgeCheck size={17} /> KYC status</dt>

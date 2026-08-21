@@ -639,7 +639,7 @@ export const MobileCashierPortal: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Players Enrolled:</span>
-                    <span>{trnEntries.length} / {trn.maxSeats} Seats</span>
+                    <span style={{ fontWeight: 700, color: '#6ee7b7' }}>{trnEntries.length} Players</span>
                   </div>
                 </div>
 
@@ -1050,15 +1050,9 @@ export const MobileCashierPortal: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <div className="m-form-group">
-              <label className="m-form-label" htmlFor="tournament-seats">Maximum Seats</label>
-              <input id="tournament-seats" type="number" className="m-input" min="2" value={trnFormData.maxSeats} onChange={e => setTrnFormData({ ...trnFormData, maxSeats: Number(e.target.value) })} />
-            </div>
-            <div className="m-form-group">
-              <label className="m-form-label" htmlFor="tournament-blinds">Blind Level (min)</label>
-              <input id="tournament-blinds" type="number" className="m-input" min="1" value={trnFormData.blindLevelsMinutes} onChange={e => setTrnFormData({ ...trnFormData, blindLevelsMinutes: Number(e.target.value) })} />
-            </div>
+          <div className="m-form-group">
+            <label className="m-form-label" htmlFor="tournament-blinds">Blind Level (min)</label>
+            <input id="tournament-blinds" type="number" className="m-input" min="1" value={trnFormData.blindLevelsMinutes} onChange={e => setTrnFormData({ ...trnFormData, blindLevelsMinutes: Number(e.target.value) })} />
           </div>
 
           <div className="m-form-group">

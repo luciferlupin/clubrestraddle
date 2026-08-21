@@ -127,7 +127,7 @@ export const CashManagement: React.FC = () => {
             <span className="stat-value" style={{ color: '#ffffff' }}>
               +{formatCurrency(totalCashInAmount)}
             </span>
-            <span className="stat-helper">Buy-ins, Rake, Float Deposits</span>
+            <span className="stat-helper">Buy-ins, Service Charges, Float Deposits</span>
           </div>
           <div className="stat-icon-wrapper">
             <ArrowDownLeft size={22} color="#ffffff" />
@@ -280,7 +280,7 @@ export const CashManagement: React.FC = () => {
               <option value="Cash Game Buy-in">Cash Game Buy-in</option>
               <option value="Chip Purchase">Chip Purchase</option>
               <option value="Float Deposit">Vault Float Opening / Deposit</option>
-              <option value="Table Rake">Table Rake Collection</option>
+              <option value="Table Rake">Table Service Charge Collection</option>
               <option value="Membership Fee">Membership Fee</option>
             </select>
           </div>

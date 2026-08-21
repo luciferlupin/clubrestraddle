@@ -7,12 +7,15 @@ import {
   Users,
   Lock,
   QrCode,
+  UserPlus,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import { SecurityVerificationCard } from './SecurityVerificationCard';
 import { SecurityQueue } from './SecurityQueue';
 import { QRScannerModal } from './QRScannerModal';
+import { WalkInRegistrationModal } from './WalkInRegistrationModal';
+import { ClubQRModal } from '../common/ClubQRModal';
 import { StatCard } from '../common/StatCard';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
@@ -20,6 +23,8 @@ import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 export const SecurityPortal: React.FC = () => {
   const { staffName, players, todayCheckIns } = useClub();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isWalkInOpen, setIsWalkInOpen] = useState(false);
+  const [isQRStandeeOpen, setIsQRStandeeOpen] = useState(false);
 
   // Prefer a scanned/deep-linked player, then the first pending arrival.
   const [selectedPlayer, setSelectedPlayer] = useState<Player>(() => {
@@ -74,13 +79,29 @@ export const SecurityPortal: React.FC = () => {
         subtitle={<>Officer <strong>{staffName}</strong> · Entrance scanner 1</>}
         notice={<><Lock size={14} aria-hidden="true" /> Verification and KYC access only</>}
         actions={
-          <button
-            className="btn btn-primary"
-            onClick={() => setIsScannerOpen(true)}
-          >
-            <QrCode size={17} />
-            <span>Scan player pass</span>
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setIsScannerOpen(true)}
+            >
+              <QrCode size={17} />
+              <span>Scan player pass</span>
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setIsWalkInOpen(true)}
+            >
+              <UserPlus size={17} color="#fb7185" />
+              <span>Register walk-in</span>
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setIsQRStandeeOpen(true)}
+            >
+              <QrCode size={17} color="#38bdf8" />
+              <span>Front desk QR standee</span>
+            </button>
+          </div>
         }
       />
 
@@ -89,6 +110,22 @@ export const SecurityPortal: React.FC = () => {
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onSelectPlayer={handleSelect}
+      />
+
+      {/* Walk-in Player Quick Registration Modal */}
+      <WalkInRegistrationModal
+        isOpen={isWalkInOpen}
+        onClose={() => setIsWalkInOpen(false)}
+        onSuccess={(player) => {
+          handleSelect(player);
+        }}
+      />
+
+      {/* Front Desk Registration QR Standee */}
+      <ClubQRModal
+        isOpen={isQRStandeeOpen}
+        onClose={() => setIsQRStandeeOpen(false)}
+        onOpenNewPlayerForm={() => setIsWalkInOpen(true)}
       />
 
       {/* Security Stat KPIs */}

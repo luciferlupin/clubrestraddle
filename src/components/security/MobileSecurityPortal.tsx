@@ -11,6 +11,8 @@ import {
   ChevronRight,
   ArrowLeft,
   LogOut,
+  UserPlus,
+  Sparkles,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
@@ -18,20 +20,9 @@ import { formatDateOnly, formatTimeOnly, maskGovtId } from '../../utils/formatte
 import { KYCBadge, EntryBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { QRScannerModal } from './QRScannerModal';
+import { WalkInRegistrationModal } from './WalkInRegistrationModal';
+import { ClubQRModal } from '../common/ClubQRModal';
 import confetti from 'canvas-confetti';
-
-const AGE_REFERENCE_DATE = new Date();
-
-const calculateAge = (dobString: string): number => {
-  if (!dobString) return 0;
-  const dob = new Date(dobString);
-  let age = AGE_REFERENCE_DATE.getFullYear() - dob.getFullYear();
-  const birthdayPending =
-    AGE_REFERENCE_DATE.getMonth() < dob.getMonth() ||
-    (AGE_REFERENCE_DATE.getMonth() === dob.getMonth() && AGE_REFERENCE_DATE.getDate() < dob.getDate());
-  if (birthdayPending) age -= 1;
-  return Math.max(0, age);
-};
 
 export const MobileSecurityPortal: React.FC = () => {
   const {
@@ -62,6 +53,8 @@ export const MobileSecurityPortal: React.FC = () => {
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
   const [verificationSuccessToast, setVerificationSuccessToast] = useState<string | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isWalkInOpen, setIsWalkInOpen] = useState(false);
+  const [isQRStandeeOpen, setIsQRStandeeOpen] = useState(false);
   const [pendingApproval, setPendingApproval] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
 
   const pendingCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'pending');
@@ -211,15 +204,38 @@ export const MobileSecurityPortal: React.FC = () => {
               </span>
             </div>
 
-            {/* Quick QR Scanner Launch Button */}
-            <button
-              className="m-btn m-btn-primary"
-              onClick={() => setIsScannerOpen(true)}
-              style={{ marginTop: '2px' }}
-            >
-              <QrCode size={18} />
-              <span>Open Camera QR Scanner</span>
-            </button>
+            {/* Quick Action Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', marginTop: '4px' }}>
+              <button
+                className="m-btn m-btn-primary"
+                onClick={() => setIsScannerOpen(true)}
+              >
+                <QrCode size={18} />
+                <span>Open Camera QR Scanner</span>
+              </button>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="m-btn m-btn-secondary"
+                  onClick={() => setIsWalkInOpen(true)}
+                  style={{ fontSize: '0.82rem', padding: '10px 8px', justifyContent: 'center' }}
+                >
+                  <UserPlus size={16} color="#fb7185" />
+                  <span>Register Walk-in</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="m-btn m-btn-secondary"
+                  onClick={() => setIsQRStandeeOpen(true)}
+                  style={{ fontSize: '0.82rem', padding: '10px 8px', justifyContent: 'center' }}
+                >
+                  <QrCode size={16} color="#38bdf8" />
+                  <span>Entrance Standee</span>
+                </button>
+              </div>
+            </div>
 
             {/* Big Touch Search Bar */}
             <div style={{ position: 'relative', marginTop: '2px' }}>
@@ -312,8 +328,6 @@ export const MobileSecurityPortal: React.FC = () => {
             if (!playerToInspect) return null;
 
             const checkIn = todayCheckIns.find(c => c.playerId === playerToInspect.id);
-            const playerAge = calculateAge(playerToInspect.kyc.dateOfBirth);
-            const legalAge = playerAge >= 21;
 
             return (
               <div className="m-card" style={{ border: '1.5px solid var(--border-red)' }}>
@@ -377,13 +391,13 @@ export const MobileSecurityPortal: React.FC = () => {
                         fontWeight: 800,
                         padding: '2px 8px',
                         borderRadius: '999px',
-                        background: legalAge ? 'rgba(139, 0, 0, 0.35)' : 'rgba(102, 0, 0, 0.6)',
-                        color: '#ffffff',
-                        border: '1px solid rgba(139, 0, 0, 0.7)',
+                        background: playerToInspect.kycStatus === 'verified' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(225, 29, 72, 0.2)',
+                        color: playerToInspect.kycStatus === 'verified' ? '#6ee7b7' : '#fb7185',
+                        border: `1px solid ${playerToInspect.kycStatus === 'verified' ? '#10b981' : '#e11d48'}`,
                       }}
                     >
-                      {legalAge ? <CheckCircle2 size={13} /> : <ShieldAlert size={13} />}
-                      {legalAge ? `Age ${playerAge} · 21+ verified` : `Age ${playerAge} · Under 21`}
+                      {playerToInspect.kycStatus === 'verified' ? <CheckCircle2 size={13} /> : <ShieldAlert size={13} />}
+                      {playerToInspect.kycStatus === 'verified' ? 'KYC Verified' : 'KYC Pending Clearance'}
                     </div>
                   </div>
                 </div>
@@ -391,19 +405,21 @@ export const MobileSecurityPortal: React.FC = () => {
                 {/* KYC Info Details Box */}
                 <div style={{ background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Govt ID:</span>
-                    <span style={{ fontWeight: 700 }}>
-                      {playerToInspect.kyc.govtIdType}: {maskGovtId(playerToInspect.kyc.govtIdNumber)}
+                    <span style={{ color: 'var(--text-muted)' }}>1. Aadhaar Card:</span>
+                    <span style={{ fontWeight: 700, color: '#ffffff', fontFamily: 'monospace' }}>
+                      {playerToInspect.kyc.aadhaarNumber ? maskGovtId(playerToInspect.kyc.aadhaarNumber) : (playerToInspect.kyc.govtIdNumber || 'UIDAI Verified')}
                     </span>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Date of Birth:</span>
-                    <span>{formatDateOnly(playerToInspect.kyc.dateOfBirth)}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>2. PAN Card:</span>
+                    <span style={{ fontWeight: 700, color: '#fb7185', fontFamily: 'monospace' }}>
+                      {playerToInspect.kyc.panNumber || (playerToInspect.kyc.govtIdNumber ? maskGovtId(playerToInspect.kyc.govtIdNumber) : 'PAN Verified')}
+                    </span>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Today's Check-in:</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Today&apos;s Check-in:</span>
                     <span style={{ color: checkIn ? '#fbbf24' : '#f87171', fontWeight: 700 }}>
                       {checkIn ? `Checked-in (${formatTimeOnly(checkIn.checkInTime)})` : 'Not checked-in today'}
                     </span>
@@ -454,7 +470,7 @@ export const MobileSecurityPortal: React.FC = () => {
                     className="m-btn m-btn-emerald"
                     style={{ flex: 2 }}
                     onClick={() => setPendingApproval({ player: playerToInspect, checkIn })}
-                    disabled={checkIn?.verificationStatus === 'approved' || !legalAge}
+                    disabled={checkIn?.verificationStatus === 'approved'}
                   >
                     <CheckCircle2 size={20} />
                     <span>{checkIn?.verificationStatus === 'approved' ? 'Already Approved' : 'Approve Entry'}</span>
@@ -600,6 +616,25 @@ export const MobileSecurityPortal: React.FC = () => {
           setSelectedPlayer(player);
           setActiveNav('scan');
         }}
+      />
+
+      {/* Walk-in Player Desk Quick Registration Modal */}
+      <WalkInRegistrationModal
+        isOpen={isWalkInOpen}
+        onClose={() => setIsWalkInOpen(false)}
+        onSuccess={(player) => {
+          setSelectedPlayer(player);
+          setActiveNav('scan');
+          setVerificationSuccessToast(`Walk-in registered & entry granted for ${player.fullName}!`);
+          setTimeout(() => setVerificationSuccessToast(null), 3500);
+        }}
+      />
+
+      {/* Front Desk Registration QR Standee */}
+      <ClubQRModal
+        isOpen={isQRStandeeOpen}
+        onClose={() => setIsQRStandeeOpen(false)}
+        onOpenNewPlayerForm={() => setIsWalkInOpen(true)}
       />
 
       {/* Bottom Navigation */}

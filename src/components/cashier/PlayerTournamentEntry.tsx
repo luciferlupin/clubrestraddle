@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DollarSign, Receipt, ArrowRight, ArrowLeft, Users, Trophy, CreditCard } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { PaymentMethod } from '../../types';
-import { formatClubLabel, formatCurrency, generateId } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, generateId, formatDateOnly, formatTimeOnly } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import confetti from 'canvas-confetti';
 
@@ -61,7 +61,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
     const invoiceData: ClubInvoiceData = {
       invoiceNumber: entry.receiptNumber,
       invoiceDate: entry.registeredAt,
-      category: 'Tournament Entry & Rake',
+      category: 'Tournament Entry & Service Charge',
       playerId: selectedPlayer?.id,
       playerName: entry.playerName,
       playerPhone: selectedPlayer?.phone,
@@ -70,6 +70,9 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       govtIdNumber: selectedPlayer?.kyc.govtIdNumber,
       membershipTier: selectedPlayer?.membershipTier,
       tableLocation: `${entry.tableNumber} • ${entry.seatNumber}`,
+      eventName: `${formatClubLabel(entry.tournamentName)}`,
+      eventDate: `Texas • ${formatDateOnly(entry.registeredAt)} • ${formatTimeOnly(entry.registeredAt)}`,
+      eventDetails: `Texas • MTC • Table ${entry.tableNumber} • Seat ${entry.seatNumber}`,
       items: [
         {
           description: `${formatClubLabel(entry.tournamentName)} - Tournament Buy-in Stack`,
@@ -78,13 +81,13 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
           amount: entry.buyInAmount,
         },
         {
-          description: 'House Operating Rake & Registration Fee',
-          details: 'Club tournament organization & dealer rake',
+          description: 'Club Service Charges & Tournament Organization',
+          details: 'Club tournament organization & dealer service fee',
           amount: entry.rakeAmount,
         },
       ],
       subtotal: entry.buyInAmount,
-      rakeOrFee: entry.rakeAmount,
+      serviceCharge: entry.rakeAmount,
       totalAmount: entry.buyInAmount + entry.rakeAmount,
       paymentMethod: entry.paymentMethod,
       paymentReference: entry.paymentReference,
@@ -218,7 +221,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
                   <span className="tabular-num">{formatCurrency(selectedTournament.buyInFee)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>House Rake & Entry Fee:</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Club Service Charge:</span>
                   <span className="tabular-num">{formatCurrency(selectedTournament.clubRake)}</span>
                 </div>
                 <div

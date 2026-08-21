@@ -231,7 +231,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
 
                 <div className="form-grid-2" style={{ gap: '10px', marginBottom: '12px', background: 'rgba(0,0,0,0.2)', padding: '10px', borderRadius: '8px' }}>
                   <div>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Buy-in / Rake:</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Buy-in / Service Charge:</span>
                     <div style={{ fontWeight: 800, color: 'var(--gold-light)', fontSize: '0.9rem' }}>
                       {formatCurrency(trn.buyInFee)} + {formatCurrency(trn.clubRake)}
                     </div>
@@ -250,8 +250,8 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
                   </div>
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Registered:</span>
-                    <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>
-                      {trnEntries.length} / {trn.maxSeats} Seats
+                    <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#6ee7b7' }}>
+                      {trnEntries.length} Players
                     </div>
                   </div>
                 </div>
@@ -338,7 +338,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
               />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="new-tournament-rake">Club Entry Rake (₹) *</label>
+              <label className="form-label" htmlFor="new-tournament-rake">Service Charge (₹) *</label>
               <input
                 id="new-tournament-rake"
                 type="number"
@@ -377,17 +377,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
             </div>
           </div>
 
-          <div className="form-grid-3">
-            <div className="form-group">
-              <label className="form-label" htmlFor="new-tournament-seats">Max Seats</label>
-              <input
-                id="new-tournament-seats"
-                type="number"
-                className="form-input"
-                value={formData.maxSeats}
-                onChange={e => setFormData({ ...formData, maxSeats: Number(e.target.value) })}
-              />
-            </div>
+          <div className="form-grid-2">
             <div className="form-group">
               <label className="form-label" htmlFor="new-tournament-blinds">Blind Levels (Mins)</label>
               <input
@@ -467,7 +457,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Club Entry Rake (₹) *</label>
+                <label className="form-label">Service Charge (₹) *</label>
                 <input
                   type="number"
                   className="form-input"
@@ -502,16 +492,7 @@ export const TournamentManager: React.FC<TournamentManagerProps> = ({ onRegister
               </div>
             </div>
 
-            <div className="form-grid-3">
-              <div className="form-group">
-                <label className="form-label">Max Seats</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={editFormData.maxSeats}
-                  onChange={e => setEditFormData({ ...editFormData, maxSeats: Number(e.target.value) })}
-                />
-              </div>
+            <div className="form-grid-2">
               <div className="form-group">
                 <label className="form-label">Blind Levels (Mins)</label>
                 <input

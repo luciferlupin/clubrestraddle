@@ -12,6 +12,9 @@ import { Player, DailyCheckIn } from '../../types';
 import { formatDateOnly, formatDateTime, formatTimeOnly, maskGovtId } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
+import { FileText } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const SESSION_TODAY = new Date();
@@ -25,22 +28,12 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
   player,
   checkIn,
 }) => {
-  const { approvePlayerEntry, rejectPlayerEntry, reviewKYC } = useClub();
+  const { approvePlayerEntry, rejectPlayerEntry, reviewKYC, staffName } = useClub();
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [entryInvoice, setEntryInvoice] = useState<ClubInvoiceData | null>(null);
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
-
-  // Calculate age from DOB
-  const calculateAge = (dobString: string): number => {
-    if (!dobString) return 0;
-    const dob = new Date(dobString);
-    const diff = SESSION_TODAY.getTime() - dob.getTime();
-    const ageDate = new Date(diff);
-    return Math.abs(ageDate.getUTCFullYear() - 1970);
-  };
-
-  const age = calculateAge(player.kyc.dateOfBirth);
-  const isOfLegalAge = age >= 21;
 
   const handleApprove = () => {
     if (checkIn) {
@@ -85,7 +78,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             Security Verification Desk
           </h3>
           <p className="card-subtitle">
-            Verify identity, KYC credentials, age (21+), and daily check-in status.
+            Verify member identity, Aadhaar & PAN Card KYC credentials, and daily arrival clearance.
           </p>
         </div>
 
@@ -98,7 +91,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
 
       {/* Main Verification Details */}
       <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '20px', marginBottom: '20px' }}>
-        {/* Photo with Age Clearance Stamp */}
+        {/* Photo with Verification Clearance Stamp */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
           {player.kyc.photoUrl ? (
             <img
@@ -135,14 +128,14 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             style={{
               fontSize: '0.72rem',
               fontWeight: 800,
-              padding: '2px 8px',
+              padding: '3px 10px',
               borderRadius: '999px',
-              background: isOfLegalAge ? 'rgba(139, 0, 0, 0.35)' : 'rgba(102, 0, 0, 0.6)',
-              color: '#ffffff',
-              border: `1px solid ${isOfLegalAge ? 'rgba(255, 255, 255, 0.4)' : 'rgba(139, 0, 0, 0.9)'}`,
+              background: player.kycStatus === 'verified' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(225, 29, 72, 0.2)',
+              color: player.kycStatus === 'verified' ? '#6ee7b7' : '#fb7185',
+              border: `1px solid ${player.kycStatus === 'verified' ? '#10b981' : '#e11d48'}`,
             }}
           >
-            {isOfLegalAge ? `AGE: ${age} (21+ OK)` : `AGE: ${age} (UNDERAGE!)`}
+            {player.kycStatus === 'verified' ? 'KYC VERIFIED' : 'KYC PENDING'}
           </div>
         </div>
 
@@ -170,37 +163,37 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
           >
             <div>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Govt ID Type & Number
+                1. Aadhaar Card (UIDAI)
               </span>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f8fafc', marginTop: '2px' }}>
-                {player.kyc.govtIdType}: {maskGovtId(player.kyc.govtIdNumber)}
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#ffffff', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
+                {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
               </div>
             </div>
 
             <div>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Date of Birth
+                2. PAN Card (IT Dept)
               </span>
-              <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#f8fafc', marginTop: '2px' }}>
-                {formatDateOnly(player.kyc.dateOfBirth)}
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fb7185', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
+                {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
               </div>
             </div>
 
             <div>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Registration Status
+                Registration Date
               </span>
               <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#ffffff', marginTop: '2px' }}>
-                ✓ Completed ({formatDateOnly(player.registeredAt)})
+                ✓ {formatDateOnly(player.registeredAt)}
               </div>
             </div>
 
             <div>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Emergency Contact
+                City / Address
               </span>
               <div style={{ fontWeight: 600, fontSize: '0.82rem', color: '#cbd5e1', marginTop: '2px' }}>
-                {player.kyc.emergencyContactName || 'N/A'} ({player.kyc.emergencyContactPhone || 'N/A'})
+                {player.kyc.address || 'Delhi NCR, India'}
               </div>
             </div>
           </div>
@@ -268,6 +261,20 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
+          {checkIn && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => {
+                setEntryInvoice(generateEntryFeeInvoice(player, checkIn, staffName));
+                setIsInvoiceOpen(true);
+              }}
+              title="Print official ₹500 Door Entry Tax Invoice"
+            >
+              <FileText size={15} color="#e11d48" /> ₹500 Entry Invoice
+            </button>
+          )}
+
           <button
             className="btn btn-danger"
             onClick={() => setIsRejectModalOpen(true)}
@@ -279,7 +286,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
           <button
             className="btn btn-emerald btn-lg"
             onClick={() => setIsApproveModalOpen(true)}
-            disabled={checkIn?.verificationStatus === 'approved' || !isOfLegalAge}
+            disabled={checkIn?.verificationStatus === 'approved'}
           >
             <CheckCircle size={18} />
             {checkIn?.verificationStatus === 'approved' ? 'Entry Already Approved' : 'Approve Entry Access'}
@@ -291,7 +298,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         isOpen={isApproveModalOpen}
         onClose={() => setIsApproveModalOpen(false)}
         title="Approve player entry?"
-        subtitle={`Confirm identity and 21+ clearance for ${player.fullName}`}
+        subtitle={`Confirm Aadhaar & PAN KYC clearance for ${player.fullName}`}
         size="sm"
         footer={
           <>
@@ -307,7 +314,8 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         <div className="security-confirm-summary">
           <div><span>Member</span><strong>{player.fullName}</strong></div>
           <div><span>Member ID</span><strong>{player.id}</strong></div>
-          <div><span>Age check</span><strong>{age} years · 21+ cleared</strong></div>
+          <div><span>Aadhaar</span><strong>{player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : 'UIDAI Verified'}</strong></div>
+          <div><span>PAN Card</span><strong style={{ color: '#fb7185' }}>{player.kyc.panNumber || 'PAN Verified'}</strong></div>
           <div><span>KYC status</span><strong>{player.kycStatus}</strong></div>
         </div>
       </Modal>
@@ -369,6 +377,13 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
           </div>
         </form>
       </Modal>
+
+      {/* Tax Invoice Modal for ₹500 Door Entry */}
+      <ClubTaxInvoiceModal
+        isOpen={isInvoiceOpen}
+        onClose={() => setIsInvoiceOpen(false)}
+        invoice={entryInvoice}
+      />
     </div>
   );
 };
