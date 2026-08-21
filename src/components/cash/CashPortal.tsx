@@ -13,15 +13,13 @@ import {
   Calendar,
   Lock,
   Coins,
-  FileSpreadsheet,
-  CheckCircle2,
   Edit3,
   Trash2,
   AlertTriangle,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction } from '../../types';
-import { formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
+import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { CashFlowBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';

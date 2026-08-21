@@ -3,12 +3,9 @@ import {
   LayoutDashboard,
   Users,
   Trophy,
-  Wallet,
   Receipt,
   Plus,
   Minus,
-  ArrowDownLeft,
-  ArrowUpRight,
   Coins,
   Check,
   CheckCircle2,
@@ -18,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentStatus, PaymentMethod, CashCategory, ExpenseCategory } from '../../types';
-import { formatClubLabel, formatCurrency, formatShortDateTime, formatINR } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatINR } from '../../utils/formatters';
 import { TournamentStatusBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
@@ -33,10 +30,6 @@ export const MobileCashierPortal: React.FC = () => {
     tournaments,
     entries,
     players,
-    cashTransactions,
-    currentCashBalance,
-    totalCashInAmount,
-    totalCashOutAmount,
     chipRequests,
     pendingChipOrdersCount,
     fulfillChipRequest,

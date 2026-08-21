@@ -13,7 +13,6 @@ import {
   PaymentMethod,
   KYCStatus,
   StaffUser,
-  StaffRole,
   ChipRequest,
 } from '../types';
 import {
@@ -704,12 +703,12 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const lookupMemberByPhone = async (phoneOrId: string): Promise<Player | null> => {
-    const cleanQuery = phoneOrId.trim().replace(/[\s\-\(\)]/g, '');
+    const cleanQuery = phoneOrId.trim().replace(/[\s\-()]/g, '');
     if (!cleanQuery) return null;
 
     // 1. Check local in-memory players state
     const localMatch = players.find(p => {
-      const pPhone = p.phone.replace(/[\s\-\(\)]/g, '');
+      const pPhone = p.phone.replace(/[\s\-()]/g, '');
       return pPhone.includes(cleanQuery) || p.id.toLowerCase() === cleanQuery.toLowerCase();
     });
 
@@ -727,7 +726,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .or(`phone.ilike.%${cleanQuery}%,id.ilike.%${cleanQuery}%`)
           .limit(1);
 
-        if (!error && data && data.length > 0) {
+        if (error) {
+          console.warn('Supabase lookup error:', error.message);
+        } else if (data && data.length > 0) {
           const p = data[0];
           const mappedPlayer: Player = {
             id: p.id,
@@ -839,7 +840,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw new Error(`Player with ID ${playerId} not found.`);
     }
 
-    const nowIso = new Date().toISOString();
     const nowTime = new Date().toTimeString().split(' ')[0];
 
     const newCheckIn: DailyCheckIn = {
