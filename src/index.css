@@ -1318,7 +1318,8 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   background: rgba(6, 2, 4, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  z-index: 100;
+  /* Always sit above fixed mobile portal navigation (z-index: 100). */
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
