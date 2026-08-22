@@ -57,9 +57,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQR }) => {
       <div className="header-inner">
         {/* Brand Logo */}
         <div className="logo-brand">
-          <div className="logo-icon-wrap">
-            <span style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>♠</span>
-          </div>
+          <img
+            src="/logo-transparent.png"
+            alt="Club Re Straddle Logo"
+            className="brand-logo-img"
+          />
           <div>
             <div className="logo-title">CLUB RE STRADDLE</div>
             <div className="logo-subtitle">Poker Lounge & Club OS</div>

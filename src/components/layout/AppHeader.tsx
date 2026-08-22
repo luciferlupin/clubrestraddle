@@ -60,9 +60,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
           onClick={() => setActiveRole('player')}
           aria-label="Open the player portal"
         >
-          <span className="brand-icon" aria-hidden="true">
-            <QuadSuits size={34} />
-          </span>
+          <img
+            src="/logo-transparent.png"
+            alt="Club Re Straddle Logo"
+            className="brand-logo-img"
+          />
           <div>
             <div className="brand-title">CLUB RE STRADDLE</div>
             <div className="brand-sub">

@@ -59,9 +59,12 @@ export const LaptopHeader: React.FC<LaptopHeaderProps> = ({
   return (
     <header className="laptop-header">
       <div className="laptop-header-inner">
-        {/* Brand Logo */}
         <div className="brand-wrap">
-          <div className="brand-icon">♠</div>
+          <img
+            src="/logo-transparent.png"
+            alt="Club Re Straddle Logo"
+            className="brand-logo-img"
+          />
           <div>
             <div className="brand-title">CLUB RE STRADDLE</div>
             <div className="brand-sub">Poker Lounge & Club OS</div>

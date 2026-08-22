@@ -43,7 +43,12 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
       <div className="receipt-paper" id="printable-receipt">
         <div className="receipt-header">
           <div style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.04em', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <Spade size={18} fill="currentColor" aria-hidden="true" /> CLUB RE STRADDLE POKER LOUNGE
+            <img
+              src="/logo.png"
+              alt="Club Re Straddle Logo"
+              style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+            />
+            CLUB RE STRADDLE POKER LOUNGE
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
             OFFICIAL TOURNAMENT ENTRY & PAYMENT VOUCHER

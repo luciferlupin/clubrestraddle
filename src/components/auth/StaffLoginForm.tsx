@@ -151,6 +151,17 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
           </button>
         </div>
 
+        <div style={{ textAlign: 'center', margin: '4px auto 16px' }}>
+          <img
+            src="/logo-transparent.png"
+            alt="Club Re Straddle Logo"
+            style={{ width: '76px', height: '76px', objectFit: 'contain', margin: '0 auto 6px', display: 'block', filter: 'drop-shadow(0 0 14px rgba(234, 179, 8, 0.35))' }}
+          />
+          <div style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.12em', color: '#f59e0b', textTransform: 'uppercase' }}>
+            Club Re Straddle
+          </div>
+        </div>
+
         <div className="staff-login-heading">
           <span className="staff-login-icon" aria-hidden="true"><PortalIcon size={25} /></span>
           <div>

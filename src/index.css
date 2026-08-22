@@ -228,6 +228,31 @@ textarea:focus-visible,
   text-align: left;
 }
 
+.brand-logo-img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(234, 179, 8, 0.45));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
+  flex-shrink: 0;
+}
+
+.brand-wrap:hover .brand-logo-img {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 16px rgba(234, 179, 8, 0.75));
+}
+
+.logo-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-brand .brand-logo-img {
+  width: 40px;
+  height: 40px;
+}
+
 .brand-icon {
   width: 40px;
   height: 40px;
@@ -1801,6 +1826,14 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   padding: 0;
   text-align: left;
   cursor: pointer;
+}
+
+.mobile-brand-logo-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(234, 179, 8, 0.4));
+  flex-shrink: 0;
 }
 
 .mobile-logo-badge {

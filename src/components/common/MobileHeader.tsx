@@ -39,9 +39,11 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
         onClick={isPlayerMode ? () => setActiveRole('player') : onOpenRoleSwitcher}
         aria-label={isPlayerMode ? 'Club Re Straddle member portal' : 'Open staff desk switcher'}
       >
-        <div className="mobile-logo-badge" style={{ background: 'transparent', border: 'none' }}>
-          <QuadSuits size={38} />
-        </div>
+        <img
+          src="/logo-transparent.png"
+          alt="Club Re Straddle Logo"
+          className="mobile-brand-logo-img"
+        />
         <div className="mobile-logo-text">
           <span className="mobile-logo-title">CLUB RE STRADDLE</span>
           <span className="mobile-portal-pill" style={{ color: portalInfo.color, display: 'flex', alignItems: 'center', gap: '4px' }}>

@@ -107,7 +107,7 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
   };
 
   const handleCopySummary = () => {
-    const summary = `CLUB SHOWDOWN • OFFICIAL RECEIPT & INVOICE
+    const summary = `CLUB RE STRADDLE • OFFICIAL RECEIPT & INVOICE
 Invoice No: ${invoice.invoiceNumber}
 Date: ${dateFormatted} ${timeFormatted}
 Cashier: ${invoice.cashierName}
@@ -264,32 +264,29 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
         >
           {/* Top Logo & Organization */}
           <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-            <div
+            <img
+              src="/logo.png"
+              alt="Club Re Straddle Logo"
               style={{
-                width: '42px',
-                height: '42px',
+                width: '46px',
+                height: '46px',
+                objectFit: 'contain',
                 margin: '0 auto 6px',
-                borderRadius: '50%',
-                border: '1.5px solid #000000',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: 'block',
               }}
-            >
-              <Spade size={22} color="#000000" fill="#000000" />
-            </div>
+            />
             
             <div style={{ fontSize: '15px', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              CLUB SHOWDOWN
+              CLUB RE STRADDLE
             </div>
             <div style={{ fontSize: '10.5px', fontWeight: 700 }}>
-              Club Showdown Lounge & Entertainment
+              Club Re Straddle Poker Lounge & Entertainment
             </div>
             <div style={{ fontSize: '9.5px', fontWeight: 600 }}>
               JB Complex, Sector 104, Noida, Uttar Pradesh - 201304
             </div>
             <div style={{ fontSize: '9.5px' }}>
-              Tel: +91 98213 85001 • support@clubshowdown.com
+              Tel: +91 98213 85001 • support@restraddle.club
             </div>
           </div>
 
@@ -461,7 +458,7 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
               Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.
             </div>
             <div>
-              This invoice is for the right to participate only. The prize pool is fixed and pre-determined and bears no relation to entry fees collected. Participation is governed by Club Showdown Rules displayed at the venue.
+              This invoice is for the right to participate only. The prize pool is fixed and pre-determined and bears no relation to entry fees collected. Participation is governed by Club Re Straddle Rules displayed at the venue.
             </div>
             <div>
               TDS under Section 194BA of the Income Tax Act applies on net winnings at the time of cash-out. PAN is mandatory for prize collection above ₹10,000.
@@ -474,7 +471,7 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
           {/* Footer Responsible Gaming & Website */}
           <div style={{ textAlign: 'center', borderTop: '1px solid #000000', paddingTop: '6px', marginBottom: '8px', fontSize: '9px' }}>
             <div style={{ fontWeight: 700 }}>
-              Club Showdown — Play Responsibly.
+              Club Re Straddle — Play Responsibly.
             </div>
             <div style={{ fontSize: '8.5px' }}>
               JB Complex, Sector 104, Noida | +91 98213 85001

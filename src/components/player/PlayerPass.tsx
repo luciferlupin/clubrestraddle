@@ -35,7 +35,11 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
 
         <div className="pass-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Spade size={22} color="#ffffff" fill="currentColor" aria-hidden="true" />
+            <img
+              src="/logo-transparent.png"
+              alt="Club Re Straddle Logo"
+              style={{ width: '32px', height: '32px', objectFit: 'contain' }}
+            />
             <div>
               <div style={{ fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.08em', color: '#ffffff' }}>
                 CLUB RE STRADDLE
