@@ -16,6 +16,10 @@ import {
   Check,
   X,
   Zap,
+  ZoomIn,
+  CreditCard,
+  BadgeCheck,
+  FileText,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
@@ -63,6 +67,7 @@ export const MobileSecurityPortal: React.FC = () => {
   const [isQRStandeeOpen, setIsQRStandeeOpen] = useState(false);
   const [isKYCInspectOpen, setIsKYCInspectOpen] = useState(false);
   const [pendingApproval, setPendingApproval] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
 
   const pendingCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'pending');
   const approvedCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'approved');
@@ -508,11 +513,11 @@ export const MobileSecurityPortal: React.FC = () => {
                     gap: '14px',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
                     <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <ShieldCheck size={14} color="#10b981" /> Member Clearance Card
+                      <ShieldCheck size={15} color="#10b981" /> Member Clearance Card
                     </span>
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
                       <TierBadge tier={playerToInspect.membershipTier} />
                       <KYCBadge status={playerToInspect.kycStatus} />
                       {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
@@ -525,19 +530,20 @@ export const MobileSecurityPortal: React.FC = () => {
                         src={playerToInspect.kyc.photoUrl}
                         alt={playerToInspect.fullName}
                         style={{
-                          width: '68px',
-                          height: '68px',
+                          width: '64px',
+                          height: '64px',
                           borderRadius: '50%',
                           objectFit: 'cover',
                           border: `2.5px solid ${checkIn?.verificationStatus === 'approved' ? '#10b981' : '#e11d48'}`,
                           boxShadow: '0 0 15px rgba(0,0,0,0.8)',
+                          flexShrink: 0,
                         }}
                       />
                     ) : (
                       <div
                         style={{
-                          width: '68px',
-                          height: '68px',
+                          width: '64px',
+                          height: '64px',
                           borderRadius: '50%',
                           background: 'linear-gradient(135deg, #e11d48 0%, #881337 100%)',
                           display: 'flex',
@@ -547,6 +553,7 @@ export const MobileSecurityPortal: React.FC = () => {
                           fontWeight: 900,
                           color: '#ffffff',
                           border: '2.5px solid #ffffff',
+                          flexShrink: 0,
                         }}
                       >
                         {playerToInspect.fullName.charAt(0)}
@@ -554,44 +561,100 @@ export const MobileSecurityPortal: React.FC = () => {
                     )}
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.2 }}>
+                      <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {playerToInspect.fullName}
                       </div>
-                      <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: '#cbd5e1', marginTop: '2px' }}>
+                      <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: '#cbd5e1', marginTop: '3px' }}>
                         {playerToInspect.id} • {playerToInspect.phone}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '3px' }}>
                         {playerToInspect.totalVisits} Club Visits · {playerToInspect.membershipTier} Tier
                       </div>
                     </div>
                   </div>
 
-                  {/* KYC & Today's Check-in Summary */}
+                  {/* KYC & Verification Details Summary */}
                   <div
                     style={{
                       background: '#100407',
-                      border: '1px solid rgba(225, 29, 72, 0.3)',
+                      border: '1px solid rgba(225, 29, 72, 0.35)',
                       borderRadius: '12px',
-                      padding: '12px',
+                      padding: '12px 14px',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '8px',
+                      gap: '9px',
                       fontSize: '0.8rem',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1' }}>
-                      <span style={{ color: '#94a3b8' }}>Aadhaar UIDAI:</span>
-                      <strong style={{ color: '#ffffff', fontFamily: 'monospace' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#cbd5e1' }}>
+                      <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <CreditCard size={13} color="#e11d48" /> Aadhaar UIDAI:
+                      </span>
+                      <strong style={{ color: '#ffffff', fontFamily: 'monospace', letterSpacing: '0.04em' }}>
                         {playerToInspect.kyc.aadhaarNumber ? maskGovtId(playerToInspect.kyc.aadhaarNumber) : (playerToInspect.kyc.govtIdNumber || 'Verified')}
                       </strong>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1' }}>
-                      <span style={{ color: '#94a3b8' }}>Income Tax PAN:</span>
-                      <strong style={{ color: '#fb7185', fontFamily: 'monospace' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#cbd5e1' }}>
+                      <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <BadgeCheck size={13} color="#fb7185" /> Income Tax PAN:
+                      </span>
+                      <strong style={{ color: '#fb7185', fontFamily: 'monospace', letterSpacing: '0.04em' }}>
                         {playerToInspect.kyc.panNumber || 'PAN Verified'}
                       </strong>
                     </div>
+
+                    {/* Attached Photo Previews */}
+                    {(playerToInspect.kyc.aadhaarPhotoUrl || playerToInspect.kyc.panPhotoUrl) && (
+                      <div style={{ display: 'flex', gap: '8px', paddingTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                        {playerToInspect.kyc.aadhaarPhotoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setViewingDoc({ title: `${playerToInspect.fullName} - Aadhaar Card Photo`, url: playerToInspect.kyc.aadhaarPhotoUrl! })}
+                            style={{
+                              flex: 1,
+                              background: 'rgba(225, 29, 72, 0.12)',
+                              border: '1px solid rgba(225, 29, 72, 0.35)',
+                              borderRadius: '8px',
+                              padding: '6px 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '5px',
+                              color: '#ffffff',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Eye size={12} color="#fb7185" /> Aadhaar Photo
+                          </button>
+                        )}
+                        {playerToInspect.kyc.panPhotoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setViewingDoc({ title: `${playerToInspect.fullName} - PAN Card Photo`, url: playerToInspect.kyc.panPhotoUrl! })}
+                            style={{
+                              flex: 1,
+                              background: 'rgba(56, 189, 248, 0.12)',
+                              border: '1px solid rgba(56, 189, 248, 0.35)',
+                              borderRadius: '8px',
+                              padding: '6px 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '5px',
+                              color: '#ffffff',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Eye size={12} color="#38bdf8" /> PAN Photo
+                          </button>
+                        )}
+                      </div>
+                    )}
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '6px' }}>
                       <span style={{ color: '#94a3b8' }}>Today's Arrival:</span>
@@ -599,13 +662,6 @@ export const MobileSecurityPortal: React.FC = () => {
                         {checkIn ? `Checked In (${formatTimeOnly(checkIn.checkInTime)})` : 'Walk-in (Not Checked In)'}
                       </strong>
                     </div>
-
-                    {checkIn?.tablePreference && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1' }}>
-                        <span style={{ color: '#94a3b8' }}>Table Preference:</span>
-                        <strong style={{ color: '#ffffff' }}>{checkIn.tablePreference}</strong>
-                      </div>
-                    )}
                   </div>
 
                   {/* 1-Hand Action Bar */}
@@ -669,6 +725,7 @@ export const MobileSecurityPortal: React.FC = () => {
                           gap: '6px',
                           cursor: 'pointer',
                           flex: 1,
+                          minHeight: '46px',
                         }}
                         disabled={checkIn?.verificationStatus === 'rejected'}
                       >
@@ -700,7 +757,8 @@ export const MobileSecurityPortal: React.FC = () => {
                           justifyContent: 'center',
                           gap: '8px',
                           cursor: 'pointer',
-                          flex: 2,
+                          flex: 1.5,
+                          minHeight: '46px',
                           boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)',
                         }}
                       >
@@ -721,7 +779,7 @@ export const MobileSecurityPortal: React.FC = () => {
                       background: 'transparent',
                       border: 'none',
                       color: '#94a3b8',
-                      fontSize: '0.76rem',
+                      fontSize: '0.78rem',
                       fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
@@ -731,7 +789,7 @@ export const MobileSecurityPortal: React.FC = () => {
                       padding: '4px',
                     }}
                   >
-                    <Eye size={13} /> View full KYC credentials & emergency contacts
+                    <Eye size={14} color="#e11d48" /> View full KYC credentials & emergency contacts
                   </button>
                 </div>
               );
@@ -1058,44 +1116,143 @@ export const MobileSecurityPortal: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ background: '#120508', padding: '14px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ background: '#120508', padding: '14px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '9px', fontSize: '0.82rem', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#94a3b8' }}>Phone:</span>
                 <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedPlayer.phone}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#94a3b8' }}>Date of Birth:</span>
                 <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedPlayer.kyc.dateOfBirth}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#94a3b8' }}>Aadhaar Card:</span>
                 <span style={{ color: '#ffffff', fontWeight: 700, fontFamily: 'monospace' }}>
                   {selectedPlayer.kyc.aadhaarNumber ? maskGovtId(selectedPlayer.kyc.aadhaarNumber) : (selectedPlayer.kyc.govtIdNumber || 'Verified')}
                 </span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#94a3b8' }}>PAN Card:</span>
                 <span style={{ color: '#fb7185', fontWeight: 700, fontFamily: 'monospace' }}>{selectedPlayer.kyc.panNumber || 'PAN Verified'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <span style={{ color: '#94a3b8' }}>Address:</span>
-                <span style={{ color: '#ffffff', textAlign: 'right' }}>{selectedPlayer.kyc.address || 'Delhi NCR'}</span>
+                <span style={{ color: '#ffffff', textAlign: 'right', maxWidth: '60%' }}>{selectedPlayer.kyc.address || 'Delhi NCR'}</span>
               </div>
               {selectedPlayer.kyc.emergencyContactPhone && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: '#94a3b8' }}>Emergency Contact:</span>
-                  <span style={{ color: '#ffffff' }}>{selectedPlayer.kyc.emergencyContactName} ({selectedPlayer.kyc.emergencyContactPhone})</span>
+                  <a href={`tel:${selectedPlayer.kyc.emergencyContactPhone}`} style={{ color: '#38bdf8', fontWeight: 700, textDecoration: 'none' }}>
+                    {selectedPlayer.kyc.emergencyContactName} ({selectedPlayer.kyc.emergencyContactPhone})
+                  </a>
                 </div>
               )}
             </div>
 
+            {/* Original Document Photos Section */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Attached Government Identity Photos
+              </span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                {/* Aadhaar Photo Card */}
+                <div
+                  style={{
+                    background: '#140508',
+                    border: '1px solid rgba(225, 29, 72, 0.35)',
+                    borderRadius: '10px',
+                    padding: '8px',
+                    textAlign: 'center',
+                    cursor: selectedPlayer.kyc.aadhaarPhotoUrl ? 'pointer' : 'default',
+                  }}
+                  onClick={() => {
+                    if (selectedPlayer.kyc.aadhaarPhotoUrl) {
+                      setViewingDoc({ title: `${selectedPlayer.fullName} - Aadhaar Card`, url: selectedPlayer.kyc.aadhaarPhotoUrl });
+                    }
+                  }}
+                >
+                  {selectedPlayer.kyc.aadhaarPhotoUrl ? (
+                    <div style={{ position: 'relative', width: '100%', height: '80px', borderRadius: '6px', overflow: 'hidden', marginBottom: '6px' }}>
+                      <img src={selectedPlayer.kyc.aadhaarPhotoUrl} alt="Aadhaar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ZoomIn size={16} color="#ffffff" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ height: '80px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.72rem', marginBottom: '6px' }}>
+                      No Photo
+                    </div>
+                  )}
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ffffff' }}>Aadhaar Card</span>
+                </div>
+
+                {/* PAN Photo Card */}
+                <div
+                  style={{
+                    background: '#140508',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    borderRadius: '10px',
+                    padding: '8px',
+                    textAlign: 'center',
+                    cursor: selectedPlayer.kyc.panPhotoUrl ? 'pointer' : 'default',
+                  }}
+                  onClick={() => {
+                    if (selectedPlayer.kyc.panPhotoUrl) {
+                      setViewingDoc({ title: `${selectedPlayer.fullName} - PAN Card`, url: selectedPlayer.kyc.panPhotoUrl });
+                    }
+                  }}
+                >
+                  {selectedPlayer.kyc.panPhotoUrl ? (
+                    <div style={{ position: 'relative', width: '100%', height: '80px', borderRadius: '6px', overflow: 'hidden', marginBottom: '6px' }}>
+                      <img src={selectedPlayer.kyc.panPhotoUrl} alt="PAN" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ZoomIn size={16} color="#ffffff" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ height: '80px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.72rem', marginBottom: '6px' }}>
+                      No Photo
+                    </div>
+                  )}
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ffffff' }}>PAN Card</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Direct Approval Actions inside Drawer */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+              <button
+                type="button"
+                className="btn btn-danger"
+                style={{ flex: 1, padding: '12px', fontSize: '0.85rem' }}
+                onClick={() => {
+                  setIsKYCInspectOpen(false);
+                  setIsRejectOpen(true);
+                }}
+              >
+                <XCircle size={16} /> Deny Entry
+              </button>
+              <button
+                type="button"
+                className="btn btn-emerald"
+                style={{ flex: 1.5, padding: '12px', fontSize: '0.88rem', fontWeight: 900 }}
+                onClick={() => {
+                  const chk = todayCheckIns.find(c => c.playerId === selectedPlayer.id);
+                  handleApprove(selectedPlayer, chk);
+                  setIsKYCInspectOpen(false);
+                }}
+              >
+                <CheckCircle2 size={17} /> Approve Clearance
+              </button>
+            </div>
+
             <button
               type="button"
-              className="btn btn-secondary"
+              className="btn btn-secondary btn-sm"
               onClick={() => setIsKYCInspectOpen(false)}
               style={{ width: '100%' }}
             >
-              Close Profile
+              Close Drawer
             </button>
           </div>
         )}
@@ -1185,6 +1342,125 @@ export const MobileSecurityPortal: React.FC = () => {
           <span className="nav-tab-label">Approved ({approvedCheckIns.length})</span>
         </button>
       </nav>
+
+      {/* High-Resolution Document Zoom Lightbox Modal */}
+      {viewingDoc && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            background: 'rgba(0, 0, 0, 0.95)',
+            backdropFilter: 'blur(12px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            boxSizing: 'border-box',
+          }}
+          onClick={() => setViewingDoc(null)}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: '640px',
+              width: '100%',
+              background: '#15060b',
+              border: '1.5px solid #e11d48',
+              borderRadius: '20px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.9), 0 0 35px rgba(225,29,72,0.4)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '14px 18px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'rgba(0,0,0,0.5)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={18} color="#10b981" />
+                <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#ffffff' }}>
+                  {viewingDoc.title}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingDoc(null)}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div
+              style={{
+                padding: '16px',
+                background: '#090204',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                maxHeight: '70vh',
+                overflow: 'auto',
+              }}
+            >
+              <img
+                src={viewingDoc.url}
+                alt={viewingDoc.title}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '65vh',
+                  objectFit: 'contain',
+                  borderRadius: '10px',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.8)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                padding: '12px 18px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: 'rgba(0,0,0,0.5)',
+              }}
+            >
+              <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Check size={14} /> Official Verified KYC Document
+              </span>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setViewingDoc(null)}
+              >
+                Close Viewer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

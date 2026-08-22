@@ -170,7 +170,7 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
         </div>
 
         {/* Two ID Proofs Grid (Aadhaar + PAN) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <CreditCard size={14} color="#f43f5e" /> 1. Aadhaar Number *
