@@ -13,7 +13,7 @@ interface DailyCheckInCardProps {
 
 export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) => {
   const { hasPlayerCheckedInToday, performDailyCheckIn } = useClub();
-  const [tablePref, setTablePref] = useState('NLH Cash Game (₹250/₹500)');
+  const [tablePref, setTablePref] = useState('Table 1 (Main Lounge)');
   const [checkingIn, setCheckingIn] = useState(false);
 
   const todayCheckIn = hasPlayerCheckedInToday(player.id);
@@ -91,16 +91,6 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MapPin size={16} color="#cbd5e1" />
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Table Preference:</span>
-              </div>
-              <span style={{ fontWeight: 600, color: '#ffffff' }}>
-                {todayCheckIn.tablePreference || 'General Seating'}
-              </span>
-            </div>
-
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px', marginTop: '10px' }}>
               {todayCheckIn.verificationStatus === 'approved' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff', fontSize: '0.86rem' }}>
@@ -162,23 +152,6 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
             Welcome back, <strong>{player.fullName}</strong>! Since your KYC registration is on file, simply submit your daily check-in to enter the club floor today.
           </p>
-
-          <div className="form-group" style={{ marginBottom: '4px' }}>
-            <label className="form-label" htmlFor="daily-table-preference">Select Preferred Game / Table Today:</label>
-            <select
-              id="daily-table-preference"
-              className="form-select"
-              value={tablePref}
-              onChange={e => setTablePref(e.target.value)}
-            >
-              <option value="NLH Cash Game (₹100/₹200)">No-Limit Holdem (₹100/₹200 Cash)</option>
-              <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500 Cash)</option>
-              <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
-              <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (PLO ₹250/₹500)</option>
-              <option value="Re Straddle High Roller Championship">Re Straddle High Roller Championship</option>
-              <option value="Midnight Bounty Knockout Series">Midnight Bounty Knockout Series</option>
-            </select>
-          </div>
 
           <button
             className="btn btn-emerald btn-lg"

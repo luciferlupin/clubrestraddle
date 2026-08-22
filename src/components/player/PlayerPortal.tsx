@@ -28,6 +28,9 @@ import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSecti
 import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, AnimatedSuitsRow } from '../common/PokerGraphics';
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 import { Pagination } from '../common/Pagination';
+import { OtpVerificationModal } from '../common/OtpVerificationModal';
+import { sendOtp } from '../../utils/otpService';
+import { Player } from '../../types';
 
 type PlayerTab = 'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history';
 
@@ -50,6 +53,8 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
     chipRequests,
     hasPlayerCheckedInToday,
     lookupMemberByPhone,
+    findMemberByPhone,
+    setSelectedPlayerId,
   } = useClub();
   const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially || !currentPlayer);
   const [entryView, setEntryView] = useState<'welcome' | 'lookup' | 'register'>(
@@ -61,6 +66,8 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [activeTab, setActiveTab] = useState<PlayerTab>('pass');
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
 
   const playerCheckIns = currentPlayer
     ? checkIns.filter(c => c.playerId === currentPlayer.id)
@@ -79,15 +86,26 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
     if (!cleanPhone) return;
 
     setIsLookingUp(true);
-    const matched = await lookupMemberByPhone(cleanPhone);
+    const matched = await findMemberByPhone(cleanPhone);
     setIsLookingUp(false);
 
     if (matched) {
+      setPendingPlayer(matched);
+      sendOtp(matched.phone || cleanPhone, 'login');
+      setIsOtpModalOpen(true);
+    } else {
+      setLookupError('No registered member found with this mobile number. Register below or try again.');
+    }
+  };
+
+  const handleOtpSuccess = () => {
+    if (pendingPlayer) {
+      setSelectedPlayerId(pendingPlayer.id);
       setShowKYCForm(false);
       setEntryView('welcome');
       setLookupPhone('');
-    } else {
-      setLookupError('No registered member found with this mobile number. Register below or try again.');
+      setIsOtpModalOpen(false);
+      setPendingPlayer(null);
     }
   };
 
@@ -186,10 +204,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
               )}
             </button>
           )}
-
-          <button className="btn btn-secondary btn-sm" onClick={onOpenQR} title="Entrance QR Standee">
-            <QrCode size={16} color="#ffffff" /> Standee QR
-          </button>
           </>
         }
       />
@@ -295,16 +309,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
                   <ChevronRight size={22} aria-hidden="true" />
                 </button>
               </div>
-
-              {/* QR shortcut */}
-              <button
-                type="button"
-                className="mobile-entrance-qr"
-                onClick={onOpenQR}
-                style={{ marginTop: '20px', maxWidth: '400px', width: '100%' }}
-              >
-                <QrCode size={18} /> Open the entrance registration QR
-              </button>
             </div>
           </div>
 
@@ -752,6 +756,18 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
         invoice={selectedInvoice}
         isOpen={!!selectedInvoice}
         onClose={() => setSelectedInvoice(null)}
+      />
+
+      {/* Member Login OTP Verification Modal */}
+      <OtpVerificationModal
+        isOpen={isOtpModalOpen}
+        phone={pendingPlayer?.phone || lookupPhone}
+        purpose="login"
+        onSuccess={handleOtpSuccess}
+        onClose={() => {
+          setIsOtpModalOpen(false);
+          setPendingPlayer(null);
+        }}
       />
     </div>
   );

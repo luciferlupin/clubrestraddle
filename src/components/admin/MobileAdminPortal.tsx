@@ -1208,7 +1208,7 @@ export const MobileAdminPortal: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.78rem' }}>
                   <div>
-                    <span style={{ color: '#94a3b8' }}>Buy-in:</span>
+                    <span style={{ color: '#94a3b8' }}>Entry Charge:</span>
                     <div style={{ fontWeight: 700, color: '#ffffff' }}>
                       {formatCurrency(trn.buyInFee)} + {formatCurrency(trn.clubRake)} (Fee)
                     </div>

@@ -94,10 +94,52 @@ export const generateId = (prefix: string): string => {
   return `${prefix}-${randomNum}`;
 };
 
+export const generateSequentialPlayerId = (existingPlayers: { id: string }[] = []): string => {
+  let maxSeq = 1000;
+  for (const p of existingPlayers) {
+    // Extract trailing number from IDs like MEM-1001, MEM-2026-881, PLR-1002
+    const match = p.id.match(/\d+$/);
+    if (match) {
+      const num = parseInt(match[0], 10);
+      if (!isNaN(num) && num > maxSeq) {
+        maxSeq = num;
+      }
+    }
+  }
+  return `MEM-${maxSeq + 1}`;
+};
+
+export const generateSequentialCheckInId = (existingCheckIns: { id: string }[] = []): string => {
+  let maxSeq = 1000;
+  for (const c of existingCheckIns) {
+    const match = c.id.match(/\d+$/);
+    if (match) {
+      const num = parseInt(match[0], 10);
+      if (!isNaN(num) && num > maxSeq) {
+        maxSeq = num;
+      }
+    }
+  }
+  return `CHK-${maxSeq + 1}`;
+};
+
+export const generateSequentialChipId = (existingRequests: { id: string }[] = []): string => {
+  let maxSeq = 1000;
+  for (const r of existingRequests) {
+    const match = r.id.match(/\d+$/);
+    if (match) {
+      const num = parseInt(match[0], 10);
+      if (!isNaN(num) && num > maxSeq) {
+        maxSeq = num;
+      }
+    }
+  }
+  return `CHP-${maxSeq + 1}`;
+};
+
 export const generateReceiptNumber = (): string => {
   const timestamp = Date.now().toString().slice(-6);
-  const random = Math.floor(100 + Math.random() * 900);
-  return `REC-${timestamp}-${random}`;
+  return `REC-${timestamp}`;
 };
 
 export const maskGovtId = (idNumber: string): string => {

@@ -180,7 +180,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
             </div>
             {todayCheckIn && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
-                <span>Game Preference:</span>
+                <span>Table / Seating:</span>
                 <strong style={{ color: '#ffffff' }}>{todayCheckIn.tablePreference}</strong>
               </div>
             )}

@@ -44,7 +44,7 @@ export const CheckInHistory: React.FC<CheckInHistoryProps> = ({ checkIns }) => {
                   <th>Check-in Ref</th>
                   <th>Date</th>
                   <th>Time</th>
-                  <th>Table / Game Preference</th>
+                  <th>Table / Seating Preference</th>
                   <th>Security Clearance</th>
                   <th>Verified By</th>
                 </tr>

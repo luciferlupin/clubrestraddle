@@ -30,7 +30,7 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
   const [selectedAmount, setSelectedAmount] = useState<number>(25000);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isCustom, setIsCustom] = useState(false);
-  const [tableNumber, setTableNumber] = useState('Table 1 (NLH 250/500)');
+  const [tableNumber, setTableNumber] = useState('Table 1 (Main Lounge)');
   const [seatNumber, setSeatNumber] = useState('Seat 1');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI/Digital');
   const [submitting, setSubmitting] = useState(false);
@@ -364,18 +364,18 @@ export const TableChipRequestModal: React.FC<TableChipRequestModalProps> = ({ is
                 </label>
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label className="form-label" htmlFor="chip-table-number">Table / Game *</label>
+                    <label className="form-label" htmlFor="chip-table-number">Table Location *</label>
                     <select
                       id="chip-table-number"
                       className="form-input"
                       value={tableNumber}
                       onChange={e => setTableNumber(e.target.value)}
                     >
-                      <option value="Table 1 (NLH 250/500)">Table 1 (NLH 250/500)</option>
-                      <option value="Table 2 (PLO 500/1000)">Table 2 (PLO 500/1000)</option>
-                      <option value="Table 3 (VIP High Roller)">Table 3 (VIP High Roller)</option>
-                      <option value="Table 4 (Tournament Area)">Table 4 (Tournament Area)</option>
-                      <option value="Table 5 (Cash Game Floor)">Table 5 (Cash Game Floor)</option>
+                      <option value="Table 1 (Main Lounge)">Table 1 (Main Lounge)</option>
+                      <option value="Table 2 (Executive Lounge)">Table 2 (Executive Lounge)</option>
+                      <option value="Table 3 (VIP Area)">Table 3 (VIP Area)</option>
+                      <option value="Table 4 (Private Suite)">Table 4 (Private Suite)</option>
+                      <option value="Table 5 (General Seating)">Table 5 (General Seating)</option>
                     </select>
                   </div>
 

@@ -58,7 +58,10 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
           </li>
           <li>
             <span><Check size={18} /></span>
-            <div><strong>Enjoy your game</strong><p>You checked in at {formatTimeOnly(checkIn.checkInTime)} for {checkIn.tablePreference}.</p></div>
+            <div>
+              <strong>Enjoy your visit</strong>
+              <p>You checked in at {formatTimeOnly(checkIn.checkInTime)} for {checkIn.tablePreference}.</p>
+            </div>
           </li>
         </ol>
       </section>

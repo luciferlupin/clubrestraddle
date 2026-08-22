@@ -22,6 +22,8 @@ import { MobilePlayerVisits } from './MobilePlayerVisits';
 import { MobileRegistrationSuccess } from './MobileRegistrationSuccess';
 import { TableChipRequestModal } from './TableChipRequestModal';
 import { CardDeckFan, CardSuit, AnimatedSuitsRow } from '../common/PokerGraphics';
+import { OtpVerificationModal } from '../common/OtpVerificationModal';
+import { sendOtp } from '../../utils/otpService';
 
 interface MobilePlayerPortalProps {
   onOpenQR: () => void;
@@ -44,6 +46,8 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
     hasPlayerCheckedInToday,
     performDailyCheckIn,
     lookupMemberByPhone,
+    findMemberByPhone,
+    setSelectedPlayerId,
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<PlayerTab>(
@@ -55,10 +59,12 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [isChipModalOpen, setIsChipModalOpen] = useState(false);
   const [isPassOpen, setIsPassOpen] = useState(false);
-  const [tablePreference, setTablePreference] = useState('NLH Cash Game (₹250/₹500)');
+  const [tablePreference, setTablePreference] = useState('Table 1 (Main Lounge)');
   const [checkingIn, setCheckingIn] = useState(false);
   const [registrationSuccessData, setRegistrationSuccessData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
   const [isCheckInSuccessOpen, setIsCheckInSuccessOpen] = useState(false);
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
 
   const todayCheckIn = currentPlayer ? hasPlayerCheckedInToday(currentPlayer.id) : undefined;
   const playerCheckIns = currentPlayer
@@ -78,15 +84,26 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
     }
 
     setIsLookingUp(true);
-    const matched = await lookupMemberByPhone(cleanPhone);
+    const matched = await findMemberByPhone(cleanPhone);
     setIsLookingUp(false);
 
     if (matched) {
+      setPendingPlayer(matched);
+      sendOtp(matched.phone || cleanPhone, 'login');
+      setIsOtpModalOpen(true);
+    } else {
+      setLookupError('We could not find a pass for that number. Check the digits or create a new member pass.');
+    }
+  };
+
+  const handleOtpSuccess = () => {
+    if (pendingPlayer) {
+      setSelectedPlayerId(pendingPlayer.id);
       setActiveTab('home');
       setEntryView('choice');
       setLookupPhone('');
-    } else {
-      setLookupError('We could not find a pass for that number. Check the digits or create a new member pass.');
+      setIsOtpModalOpen(false);
+      setPendingPlayer(null);
     }
   };
 
@@ -178,10 +195,6 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                   <ChevronRight size={21} aria-hidden="true" />
                 </button>
               </div>
-
-              <button type="button" className="mobile-entrance-qr" onClick={onOpenQR}>
-                <QrCode size={18} /> Open the entrance registration QR
-              </button>
             </>
           ) : entryView === 'lookup' && !currentPlayer ? (
             <section className="mobile-lookup-flow" aria-labelledby="member-lookup-title">
@@ -316,6 +329,18 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
       )}
 
       <TableChipRequestModal isOpen={isChipModalOpen} onClose={() => setIsChipModalOpen(false)} />
+
+      {/* Member Login OTP Verification Modal */}
+      <OtpVerificationModal
+        isOpen={isOtpModalOpen}
+        phone={pendingPlayer?.phone || lookupPhone}
+        purpose="login"
+        onSuccess={handleOtpSuccess}
+        onClose={() => {
+          setIsOtpModalOpen(false);
+          setPendingPlayer(null);
+        }}
+      />
     </div>
   );
 };

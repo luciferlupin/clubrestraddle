@@ -28,6 +28,9 @@ import {
 } from '../data/seedData';
 import {
   generateId,
+  generateSequentialPlayerId,
+  generateSequentialCheckInId,
+  generateSequentialChipId,
   generateReceiptNumber,
   getTodayDateString,
 } from '../utils/formatters';
@@ -104,6 +107,7 @@ interface ClubContextType {
   updatePlayerKYC: (playerId: string, updatedKYC: Partial<PlayerKYC>) => void;
   hasPlayerCheckedInToday: (playerId: string) => DailyCheckIn | undefined;
   lookupMemberByPhone: (phoneOrId: string) => Promise<Player | null>;
+  findMemberByPhone: (phoneOrId: string) => Promise<Player | null>;
   requestBuyChips: (params: { playerId: string; amount: number; tableNumber: string; seatNumber: string; paymentMethod: PaymentMethod; notes?: string }) => ChipRequest;
 
   // Cashier & Tournament CRUD Actions
@@ -163,18 +167,18 @@ interface ClubContextType {
 }
 
 const STORAGE_KEYS = {
-  STAFF_USERS: 'clubshowdown_staff_users_v4',
-  CURRENT_STAFF: 'clubshowdown_current_staff_v4',
-  PLAYERS: 'clubshowdown_players_v4',
-  CHECK_INS: 'clubshowdown_checkins_v4',
-  TOURNAMENTS: 'clubshowdown_tournaments_v4',
-  ENTRIES: 'clubshowdown_entries_v4',
-  CASH_TXNS: 'clubshowdown_cash_txns_v4',
-  EXPENSES: 'clubshowdown_expenses_v4',
-  AUDIT_LOGS: 'clubshowdown_audit_logs_v4',
-  CHIP_REQUESTS: 'clubshowdown_chip_requests_v4',
-  ACTIVE_ROLE: 'clubshowdown_active_role_v4',
-  SELECTED_PLAYER: 'clubshowdown_selected_player_v4',
+  STAFF_USERS: 'clubshowdown_staff_users_v5',
+  CURRENT_STAFF: 'clubshowdown_current_staff_v5',
+  PLAYERS: 'clubshowdown_players_v5',
+  CHECK_INS: 'clubshowdown_checkins_v5',
+  TOURNAMENTS: 'clubshowdown_tournaments_v5',
+  ENTRIES: 'clubshowdown_entries_v5',
+  CASH_TXNS: 'clubshowdown_cash_txns_v5',
+  EXPENSES: 'clubshowdown_expenses_v5',
+  AUDIT_LOGS: 'clubshowdown_audit_logs_v5',
+  CHIP_REQUESTS: 'clubshowdown_chip_requests_v5',
+  ACTIVE_ROLE: 'clubshowdown_active_role_v5',
+  SELECTED_PLAYER: 'clubshowdown_selected_player_v5',
 };
 
 const ClubContext = createContext<ClubContextType | undefined>(undefined);
@@ -509,23 +513,31 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      const { data: tournamentsData } = await client.from('tournaments').select('*');
-      if (tournamentsData && tournamentsData.length > 0) {
-        const mappedTournaments: Tournament[] = tournamentsData.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          buyInFee: Number(t.buy_in_fee),
-          clubRake: Number(t.club_rake),
-          startingChips: Number(t.starting_chips),
-          guaranteedPrizePool: Number(t.guaranteed_prize_pool),
-          maxSeats: Number(t.max_seats),
-          blindLevelsMinutes: Number(t.blind_levels_minutes),
-          startTime: t.start_time,
-          status: t.status,
-          createdAt: t.created_at,
-          createdBy: t.created_by || 'Cashier',
-        }));
-        setTournaments(mappedTournaments);
+      const { data: tournamentsData, error: trnErr } = await client.from('tournaments').select('*').order('created_at', { ascending: false });
+      if (!trnErr && tournamentsData) {
+        if (tournamentsData.length > 0) {
+          const mappedTournaments: Tournament[] = tournamentsData.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            buyInFee: Number(t.buy_in_fee),
+            clubRake: Number(t.club_rake),
+            startingChips: Number(t.starting_chips),
+            guaranteedPrizePool: Number(t.guaranteed_prize_pool),
+            maxSeats: Number(t.max_seats),
+            blindLevelsMinutes: Number(t.blind_levels_minutes),
+            startTime: t.start_time,
+            status: t.status,
+            createdAt: t.created_at,
+            createdBy: t.created_by || 'Cashier',
+          }));
+          setTournaments(mappedTournaments);
+          saveToStorage(STORAGE_KEYS.TOURNAMENTS, mappedTournaments);
+        } else {
+          const saved = loadFromStorage<Tournament[]>(STORAGE_KEYS.TOURNAMENTS, []);
+          if (saved.length === 0) {
+            setTournaments([]);
+          }
+        }
       }
 
       const { data: entriesData } = await client.from('tournament_entries').select('*');
@@ -1205,7 +1217,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // PLAYER ACTIONS
   const registerNewPlayer = (kycData: Omit<PlayerKYC, 'submittedAt'>, tablePreference?: string) => {
-    const newId = generateId('PLR');
+    const newId = generateSequentialPlayerId(players);
     const nowIso = new Date().toISOString();
     const nowTime = new Date().toTimeString().split(' ')[0];
 
@@ -1234,6 +1246,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       dateOfBirth: cleanDob,
       aadhaarNumber: aadhaarClean,
       panNumber: panClean,
+      aadhaarPhotoUrl: kycData.aadhaarPhotoUrl,
+      panPhotoUrl: kycData.panPhotoUrl,
       govtIdType: 'Aadhaar & PAN Card',
       govtIdNumber: combinedGovtIdNumber,
       address: (kycData.address || 'Delhi NCR, India').trim(),
@@ -1257,7 +1271,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const newCheckIn: DailyCheckIn = {
-      id: generateId('CHK'),
+      id: generateSequentialCheckInId(checkIns),
       playerId: newId,
       playerName: completeKYC.fullName,
       playerPhone: completeKYC.phone,
@@ -1498,6 +1512,95 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return null;
   };
 
+  const findMemberByPhone = async (phoneOrIdOrScan: string): Promise<Player | null> => {
+    const cleanQuery = phoneOrIdOrScan.trim();
+    if (!cleanQuery) return null;
+    const cleanDigits = cleanQuery.replace(/\D/g, '');
+
+    // 1. Check local in-memory players
+    const localMatch = players.find(p => {
+      const pDigits = p.phone.replace(/\D/g, '');
+      return (
+        p.id.toLowerCase() === cleanQuery.toLowerCase() ||
+        (cleanDigits.length >= 4 && pDigits.includes(cleanDigits)) ||
+        p.fullName.toLowerCase().includes(cleanQuery.toLowerCase()) ||
+        p.email.toLowerCase() === cleanQuery.toLowerCase()
+      );
+    });
+
+    if (localMatch) return localMatch;
+
+    // Check check-in match
+    const checkInMatch = checkIns.find(c => c.id.toLowerCase() === cleanQuery.toLowerCase());
+    if (checkInMatch) {
+      const p = players.find(x => x.id === checkInMatch.playerId);
+      if (p) return p;
+    }
+
+    // 2. Query Supabase
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const tenDigits = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
+        const orConditions = [
+          `id.ilike.%${cleanQuery}%`,
+          `phone.ilike.%${cleanQuery}%`,
+          `full_name.ilike.%${cleanQuery}%`,
+          `email.ilike.%${cleanQuery}%`,
+        ];
+        if (tenDigits.length >= 4 && tenDigits !== cleanQuery) {
+          orConditions.push(`phone.ilike.%${tenDigits}%`);
+        }
+
+        const { data, error } = await supabase
+          .from('players')
+          .select('*')
+          .or(orConditions.join(','))
+          .limit(1);
+
+        if (!error && data && data.length > 0) {
+          const p = data[0];
+          const mappedPlayer: Player = {
+            id: p.id,
+            fullName: p.full_name || 'Member Player',
+            phone: p.phone || '',
+            email: p.email || '',
+            membershipTier: p.membership_tier || 'Standard',
+            kycStatus: p.kyc_status || 'pending',
+            registeredAt: p.created_at || new Date().toISOString(),
+            totalVisits: p.total_visits || 1,
+            notes: p.notes,
+            kyc: {
+              fullName: p.full_name || 'Member Player',
+              phone: p.phone || '',
+              email: p.email || '',
+              dateOfBirth: p.date_of_birth || '1995-01-01',
+              aadhaarNumber: p.aadhaar_number,
+              panNumber: p.pan_number,
+              aadhaarPhotoUrl: p.aadhaar_photo_url,
+              panPhotoUrl: p.pan_photo_url,
+              govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
+              govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+              address: p.address || 'Delhi NCR, India',
+              emergencyContactName: p.emergency_contact_name || '',
+              emergencyContactPhone: p.emergency_contact_phone || '',
+              photoUrl: p.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+              agreedToRules: p.agreed_to_rules ?? true,
+              submittedAt: p.created_at || new Date().toISOString(),
+              verifiedAt: p.verified_at,
+              verifiedBy: p.verified_by,
+              rejectionReason: p.rejection_reason,
+            },
+          };
+          return mappedPlayer;
+        }
+      } catch (err) {
+        console.error('Error in findMemberByPhone Supabase lookup:', err);
+      }
+    }
+
+    return null;
+  };
+
   const requestBuyChips = (params: {
     playerId: string;
     amount: number;
@@ -1508,7 +1611,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }): ChipRequest => {
     const player = players.find(p => p.id === params.playerId);
     const nowIso = new Date().toISOString();
-    const newId = generateId('CHP');
+    const newId = generateSequentialChipId(chipRequests);
 
     const newRequest: ChipRequest = {
       id: newId,
@@ -1612,14 +1715,14 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const nowTime = new Date().toTimeString().split(' ')[0];
 
     const newCheckIn: DailyCheckIn = {
-      id: generateId('CHK'),
+      id: generateSequentialCheckInId(checkIns),
       playerId: player.id,
       playerName: player.fullName,
       playerPhone: player.phone,
       checkInDate: today,
       checkInTime: nowTime,
       verificationStatus: 'pending',
-      tablePreference: tablePreference || 'Cash / Tournament Table',
+      tablePreference: tablePreference || 'Open Seating',
     };
 
     setCheckIns(prev => {
@@ -1774,37 +1877,54 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // CASHIER ACTIONS
   const createTournament = (tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'createdBy'>): Tournament => {
+    let formattedStartTime: string;
+    try {
+      formattedStartTime = tournamentData.startTime
+        ? new Date(tournamentData.startTime).toISOString()
+        : new Date().toISOString();
+    } catch {
+      formattedStartTime = new Date().toISOString();
+    }
+
     const newTournament: Tournament = {
       ...tournamentData,
+      startTime: formattedStartTime,
       id: generateId('TRN'),
       createdAt: new Date().toISOString(),
       createdBy: currentStaffUser ? currentStaffUser.fullName : staffName,
     };
 
     setTournaments(prev => {
-      const next = [newTournament, ...prev];
+      const next = [newTournament, ...prev.filter(t => t.id !== newTournament.id)];
       broadcastUpdate('TOURNAMENTS_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.TOURNAMENTS, next);
       return next;
     });
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('tournaments').insert({
+      supabase.from('tournaments').upsert({
         id: newTournament.id,
         name: newTournament.name,
-        buy_in_fee: newTournament.buyInFee,
-        club_rake: newTournament.clubRake,
-        starting_chips: newTournament.startingChips,
-        guaranteed_prize_pool: newTournament.guaranteedPrizePool,
-        max_seats: newTournament.maxSeats,
-        blind_levels_minutes: newTournament.blindLevelsMinutes,
+        buy_in_fee: Number(newTournament.buyInFee),
+        club_rake: Number(newTournament.clubRake),
+        starting_chips: Number(newTournament.startingChips),
+        guaranteed_prize_pool: Number(newTournament.guaranteedPrizePool),
+        max_seats: Number(newTournament.maxSeats),
+        blind_levels_minutes: Number(newTournament.blindLevelsMinutes),
         start_time: newTournament.startTime,
-        status: newTournament.status,
+        status: newTournament.status || 'Registering',
         created_by: newTournament.createdBy,
         created_at: newTournament.createdAt,
+      }).then(({ error }) => {
+        if (error) {
+          console.error('Supabase tournament insert error:', error.message);
+        } else {
+          console.log('Tournament successfully saved to Supabase:', newTournament.id);
+        }
       });
     }
 
-    addAuditLog('Cashier', 'Tournament Created', `Created tournament "${newTournament.name}" (Buy-in: ₹${newTournament.buyInFee} + ₹${newTournament.clubRake}).`);
+    addAuditLog('Cashier', 'Tournament Created', `Created tournament "${newTournament.name}" (Entry Charge: ₹${newTournament.buyInFee} + ₹${newTournament.clubRake}).`);
     return newTournament;
   };
 
@@ -1812,21 +1932,30 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setTournaments(prev => {
       const next = prev.map(t => (t.id === tournamentId ? { ...t, ...updates } : t));
       broadcastUpdate('TOURNAMENTS_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.TOURNAMENTS, next);
       return next;
     });
 
     if (isSupabaseConfigured && supabase) {
       const dbUpdates: any = {};
       if (updates.name !== undefined) dbUpdates.name = updates.name;
-      if (updates.buyInFee !== undefined) dbUpdates.buy_in_fee = updates.buyInFee;
-      if (updates.clubRake !== undefined) dbUpdates.club_rake = updates.clubRake;
-      if (updates.startingChips !== undefined) dbUpdates.starting_chips = updates.startingChips;
-      if (updates.guaranteedPrizePool !== undefined) dbUpdates.guaranteed_prize_pool = updates.guaranteedPrizePool;
-      if (updates.maxSeats !== undefined) dbUpdates.max_seats = updates.maxSeats;
-      if (updates.blindLevelsMinutes !== undefined) dbUpdates.blind_levels_minutes = updates.blindLevelsMinutes;
-      if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime;
+      if (updates.buyInFee !== undefined) dbUpdates.buy_in_fee = Number(updates.buyInFee);
+      if (updates.clubRake !== undefined) dbUpdates.club_rake = Number(updates.clubRake);
+      if (updates.startingChips !== undefined) dbUpdates.starting_chips = Number(updates.startingChips);
+      if (updates.guaranteedPrizePool !== undefined) dbUpdates.guaranteed_prize_pool = Number(updates.guaranteedPrizePool);
+      if (updates.maxSeats !== undefined) dbUpdates.max_seats = Number(updates.maxSeats);
+      if (updates.blindLevelsMinutes !== undefined) dbUpdates.blind_levels_minutes = Number(updates.blindLevelsMinutes);
+      if (updates.startTime !== undefined) {
+        try {
+          dbUpdates.start_time = new Date(updates.startTime).toISOString();
+        } catch {
+          dbUpdates.start_time = updates.startTime;
+        }
+      }
       if (updates.status !== undefined) dbUpdates.status = updates.status;
-      supabase.from('tournaments').update(dbUpdates).eq('id', tournamentId);
+      supabase.from('tournaments').update(dbUpdates).eq('id', tournamentId).then(({ error }) => {
+        if (error) console.error('Supabase tournament update error:', error.message);
+      });
     }
 
     addAuditLog('Cashier', 'Tournament Updated', `Updated tournament details for ${tournamentId}.`);
@@ -1834,14 +1963,31 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteTournament = (tournamentId: string) => {
     const trn = tournaments.find(t => t.id === tournamentId);
+    
+    // 1. Remove from local state and storage immediately
     setTournaments(prev => {
       const next = prev.filter(t => t.id !== tournamentId);
       broadcastUpdate('TOURNAMENTS_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.TOURNAMENTS, next);
       return next;
     });
 
+    // 2. Remove associated entries from local state
+    setEntries(prev => {
+      const next = prev.filter(e => e.tournamentId !== tournamentId);
+      broadcastUpdate('ENTRIES_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.ENTRIES, next);
+      return next;
+    });
+
+    // 3. Delete from Supabase: child entries first, then tournament
     if (isSupabaseConfigured && supabase) {
-      supabase.from('tournaments').delete().eq('id', tournamentId);
+      const client = supabase;
+      client.from('tournament_entries').delete().eq('tournament_id', tournamentId).then(() => {
+        client.from('tournaments').delete().eq('id', tournamentId).then(({ error }) => {
+          if (error) console.error('Supabase tournament delete error:', error.message);
+        });
+      });
     }
 
     addAuditLog('Cashier', 'Tournament Deleted', `Deleted tournament: ${trn ? trn.name : tournamentId}.`);
@@ -2824,6 +2970,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updatePlayerKYC,
         hasPlayerCheckedInToday,
         lookupMemberByPhone,
+        findMemberByPhone,
         requestBuyChips,
         createTournament,
         updateTournament,

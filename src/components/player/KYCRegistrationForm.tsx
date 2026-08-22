@@ -20,6 +20,9 @@ import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import { formatTimeOnly, formatDateOnly, maskGovtId } from '../../utils/formatters';
 import confetti from 'canvas-confetti';
+import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
+import { OtpVerificationModal } from '../common/OtpVerificationModal';
+import { sendOtp } from '../../utils/otpService';
 
 interface KYCRegistrationFormProps {
   onSuccess: () => void;
@@ -31,6 +34,9 @@ type FormWizardStep = 1 | 2 | 3 | 4;
 export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSuccess, onCancel }) => {
   const { registerNewPlayer } = useClub();
   const [currentStep, setCurrentStep] = useState<FormWizardStep>(1);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [verifiedPhone, setVerifiedPhone] = useState('');
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -38,12 +44,14 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     email: '',
     aadhaarNumber: '',
     panNumber: '',
+    aadhaarPhotoUrl: '',
+    panPhotoUrl: '',
     address: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
     photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
     agreedToRules: false,
-    tablePreference: 'NLH Cash Game (₹250/₹500)',
+    tablePreference: 'Table 1 (Main Lounge)',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,19 +74,24 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
   const handleAutofill = () => {
     const randomDigits = Math.floor(1000 + Math.random() * 9000);
+    const autoPhone = `+91 98${Math.floor(10 + Math.random() * 89)} ${randomDigits}`;
     setFormData({
       fullName: 'Aditya Singhal',
-      phone: `+91 98${Math.floor(10 + Math.random() * 89)} ${randomDigits}`,
+      phone: autoPhone,
       email: `aditya.singhal.${randomDigits}@gmail.com`,
       aadhaarNumber: `5432 8765 ${randomDigits}`,
       panNumber: `ABCPS${randomDigits}R`,
+      aadhaarPhotoUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+      panPhotoUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
       address: 'Sector 104, Noida, Uttar Pradesh - 201304',
       emergencyContactName: 'Pooja Singhal',
       emergencyContactPhone: '+91 98112 34567',
       photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
       agreedToRules: true,
-      tablePreference: 'Re Straddle High Roller Championship',
+      tablePreference: 'Table 1 (Main Lounge)',
     });
+    setIsPhoneVerified(true);
+    setVerifiedPhone(autoPhone);
     setErrors({});
   };
 
@@ -118,9 +131,27 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
   const handleNextStep = () => {
     if (!validateStep(currentStep)) return;
+
+    // Check if phone needs OTP verification before proceeding to Step 2
+    if (currentStep === 1) {
+      const phoneChangedOrUnverified = !isPhoneVerified || verifiedPhone !== formData.phone;
+      if (phoneChangedOrUnverified) {
+        sendOtp(formData.phone, 'registration');
+        setIsOtpModalOpen(true);
+        return;
+      }
+    }
+
     if (currentStep < 4) {
       setCurrentStep((currentStep + 1) as FormWizardStep);
     }
+  };
+
+  const handleOtpSuccess = () => {
+    setIsPhoneVerified(true);
+    setVerifiedPhone(formData.phone);
+    setIsOtpModalOpen(false);
+    setCurrentStep(2);
   };
 
   const handlePrevStep = () => {
@@ -146,6 +177,8 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           email: formData.email,
           aadhaarNumber: cleanAadhaar,
           panNumber: cleanPan,
+          aadhaarPhotoUrl: formData.aadhaarPhotoUrl || undefined,
+          panPhotoUrl: formData.panPhotoUrl || undefined,
           govtIdType: 'Aadhaar & PAN Card',
           govtIdNumber: `PAN: ${cleanPan} | Aadhaar: ${cleanAadhaar}`,
           address: formData.address,
@@ -403,14 +436,46 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="kyc-phone">Primary Mobile Number *</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="form-label" htmlFor="kyc-phone" style={{ margin: 0 }}>Primary Mobile Number *</label>
+                  {isPhoneVerified && verifiedPhone === formData.phone ? (
+                    <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '6px' }}>
+                      <Check size={12} /> OTP Verified
+                    </span>
+                  ) : formData.phone.trim().length >= 10 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sendOtp(formData.phone, 'registration');
+                        setIsOtpModalOpen(true);
+                      }}
+                      style={{
+                        background: 'rgba(225, 29, 72, 0.15)',
+                        border: '1px solid rgba(225, 29, 72, 0.4)',
+                        color: '#fb7185',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        borderRadius: '6px',
+                        padding: '2px 8px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Send OTP
+                    </button>
+                  ) : null}
+                </div>
                 <input
                   id="kyc-phone"
                   type="tel"
                   className="form-input"
                   placeholder="+91 98765 43210"
                   value={formData.phone}
-                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={e => {
+                    setFormData({ ...formData, phone: e.target.value });
+                    if (isPhoneVerified && e.target.value !== verifiedPhone) {
+                      setIsPhoneVerified(false);
+                    }
+                  }}
                 />
                 {errors.phone && <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>{errors.phone}</span>}
               </div>
@@ -487,6 +552,15 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                   Government UIDAI 12-digit identification number
                 </span>
                 {errors.aadhaarNumber && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '2px', display: 'block' }}>{errors.aadhaarNumber}</span>}
+
+                {/* Aadhaar Document Photo Upload */}
+                <DocumentPhotoUpload
+                  id="kyc-aadhaar-doc-upload"
+                  label="Aadhaar Card"
+                  subLabel="Front/document photo of Aadhaar Card. Auto-compressed (<100 KB)."
+                  value={formData.aadhaarPhotoUrl}
+                  onChange={(url) => setFormData({ ...formData, aadhaarPhotoUrl: url || '' })}
+                />
               </div>
 
               {/* PAN Card Field */}
@@ -521,6 +595,15 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                   Income Tax Permanent Account Number (for tax invoice & TDS)
                 </span>
                 {errors.panNumber && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '2px', display: 'block' }}>{errors.panNumber}</span>}
+
+                {/* PAN Document Photo Upload */}
+                <DocumentPhotoUpload
+                  id="kyc-pan-doc-upload"
+                  label="PAN Card"
+                  subLabel="Photo of PAN Card. Auto-compressed (<100 KB) for instant review."
+                  value={formData.panPhotoUrl}
+                  onChange={(url) => setFormData({ ...formData, panPhotoUrl: url || '' })}
+                />
               </div>
             </div>
 
@@ -630,6 +713,31 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                   <div style={{ color: '#cbd5e1' }}>{formData.emergencyContactName || '—'}</div>
                 </div>
               </div>
+
+              {(formData.aadhaarPhotoUrl || formData.panPhotoUrl) && (
+                <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                  {formData.aadhaarPhotoUrl && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <img
+                        src={formData.aadhaarPhotoUrl}
+                        alt="Aadhaar Card"
+                        style={{ width: '48px', height: '34px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(225,29,72,0.5)' }}
+                      />
+                      <span style={{ fontSize: '0.74rem', color: '#6ee7b7' }}>✓ Aadhaar Photo Attached</span>
+                    </div>
+                  )}
+                  {formData.panPhotoUrl && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <img
+                        src={formData.panPhotoUrl}
+                        alt="PAN Card"
+                        style={{ width: '48px', height: '34px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(225,29,72,0.5)' }}
+                      />
+                      <span style={{ fontSize: '0.74rem', color: '#6ee7b7' }}>✓ PAN Photo Attached</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Rules Checkbox */}
@@ -684,6 +792,15 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           )}
         </div>
       </form>
+
+      {/* OTP Mobile Verification Modal for Registration */}
+      <OtpVerificationModal
+        isOpen={isOtpModalOpen}
+        phone={formData.phone}
+        purpose="registration"
+        onSuccess={handleOtpSuccess}
+        onClose={() => setIsOtpModalOpen(false)}
+      />
     </div>
   );
 };

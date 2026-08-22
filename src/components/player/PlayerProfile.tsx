@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, ShieldCheck, Mail, Phone, MapPin, CreditCard, AlertTriangle, RefreshCw, Receipt, FileText } from 'lucide-react';
+import { User, ShieldCheck, Mail, Phone, MapPin, CreditCard, AlertTriangle, RefreshCw, Receipt, FileText, Eye, ZoomIn, X, Camera } from 'lucide-react';
 import { Player } from '../../types';
 import { formatDateOnly, formatDateTime, maskGovtId } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
@@ -15,6 +15,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ player }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'ledger'>('profile');
   const [editingId, setEditingId] = useState(false);
   const [newIdNumber, setNewIdNumber] = useState(player.kyc.govtIdNumber);
+  const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
 
   const handleResubmitKYC = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,21 +151,45 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ player }) => {
 
             <div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>1. Aadhaar Card</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                <CreditCard size={14} color="#94a3b8" />
-                <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                  {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '2px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CreditCard size={14} color="#94a3b8" />
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                    {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
+                  </span>
+                </div>
+                {player.kyc.aadhaarPhotoUrl && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    onClick={() => setViewingDoc({ title: 'Aadhaar Card Photo', url: player.kyc.aadhaarPhotoUrl! })}
+                  >
+                    <Eye size={12} /> View Photo
+                  </button>
+                )}
               </div>
             </div>
 
             <div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>2. PAN Card</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                <CreditCard size={14} color="#fb7185" />
-                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#fb7185' }}>
-                  {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '2px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CreditCard size={14} color="#fb7185" />
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#fb7185' }}>
+                    {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
+                  </span>
+                </div>
+                {player.kyc.panPhotoUrl && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    onClick={() => setViewingDoc({ title: 'PAN Card Photo', url: player.kyc.panPhotoUrl! })}
+                  >
+                    <Eye size={12} /> View Photo
+                  </button>
+                )}
               </div>
             </div>
 
@@ -199,6 +224,99 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ player }) => {
         </>
       ) : (
         <PlayerLedger player={player} />
+      )}
+
+      {/* Document Photo Inspection Lightbox */}
+      {viewingDoc && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={() => setViewingDoc(null)}
+        >
+          <div
+            style={{
+              maxWidth: '600px',
+              width: '100%',
+              background: '#130508',
+              borderRadius: '16px',
+              border: '2px solid rgba(225, 29, 72, 0.5)',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                background: 'rgba(0,0,0,0.6)',
+                borderBottom: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>
+                {viewingDoc.title} ({player.fullName})
+              </span>
+              <button
+                type="button"
+                onClick={() => setViewingDoc(null)}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: '16px', display: 'flex', justifyContent: 'center', background: '#0a0204' }}>
+              <img
+                src={viewingDoc.url}
+                alt={viewingDoc.title}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '65vh',
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                padding: '10px 16px',
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setViewingDoc(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

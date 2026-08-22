@@ -6,6 +6,8 @@ import {
   CheckCircle,
   XCircle,
   Lock,
+  Eye,
+  X,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
@@ -34,6 +36,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [entryInvoice, setEntryInvoice] = useState<ClubInvoiceData | null>(null);
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
+  const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
 
   const handleApprove = () => {
     approvePlayerEntry(checkIn?.id || player.id);
@@ -206,9 +209,21 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             border: '1px solid var(--border-subtle)',
           }}
         >
-          <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            1. Aadhaar Card (UIDAI)
-          </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              1. Aadhaar Card (UIDAI)
+            </span>
+            {player.kyc.aadhaarPhotoUrl && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                onClick={() => setViewingDoc({ title: 'Aadhaar Card Photo', url: player.kyc.aadhaarPhotoUrl! })}
+              >
+                <Eye size={11} /> Photo
+              </button>
+            )}
+          </div>
           <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#ffffff', fontFamily: 'var(--font-mono)', marginTop: '4px' }}>
             {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
           </div>
@@ -223,9 +238,21 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             border: '1px solid var(--border-subtle)',
           }}
         >
-          <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            2. PAN Card (IT Dept)
-          </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              2. PAN Card (IT Dept)
+            </span>
+            {player.kyc.panPhotoUrl && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                onClick={() => setViewingDoc({ title: 'PAN Card Photo', url: player.kyc.panPhotoUrl! })}
+              >
+                <Eye size={11} /> Photo
+              </button>
+            )}
+          </div>
           <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fb7185', fontFamily: 'var(--font-mono)', marginTop: '4px' }}>
             {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
           </div>
@@ -462,6 +489,104 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         onClose={() => setIsInvoiceOpen(false)}
         invoice={entryInvoice}
       />
+
+      {/* Document Photo Inspection Lightbox */}
+      {viewingDoc && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={() => setViewingDoc(null)}
+        >
+          <div
+            style={{
+              maxWidth: '650px',
+              width: '100%',
+              background: '#130508',
+              borderRadius: '16px',
+              border: '2px solid rgba(225, 29, 72, 0.5)',
+              overflow: 'hidden',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                background: 'rgba(0,0,0,0.6)',
+                borderBottom: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>
+                {viewingDoc.title} • {player.fullName} ({player.id})
+              </span>
+              <button
+                type="button"
+                onClick={() => setViewingDoc(null)}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: '16px', display: 'flex', justifyContent: 'center', background: '#0a0204' }}>
+              <img
+                src={viewingDoc.url}
+                alt={viewingDoc.title}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '65vh',
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                padding: '10px 16px',
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '0.78rem',
+                color: '#cbd5e1',
+              }}
+            >
+              <span>Security KYC Verification Check</span>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setViewingDoc(null)}
+              >
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

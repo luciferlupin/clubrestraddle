@@ -67,7 +67,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
     : `https://clubrestraddle.vercel.app/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`;
 
   const statusTitle = !isCheckedIn
-    ? 'Ready for today’s game?'
+    ? 'Ready for today’s visit?'
     : verificationStatus === 'approved'
       ? 'You’re cleared for entry'
       : verificationStatus === 'rejected'
@@ -75,7 +75,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
         : 'Security check in progress';
 
   const statusDescription = !isCheckedIn
-    ? 'Choose your game and check in before heading to the door.'
+    ? 'Choose your table seating and check in before heading to the door.'
     : verificationStatus === 'approved'
       ? 'Show your pass at the entrance or cashier whenever asked.'
       : verificationStatus === 'rejected'
@@ -131,20 +131,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
           </button>
         ) : (
           <div className="player-checkin-form">
-            <label htmlFor="player-table-preference">Game or table</label>
-            <select
-              id="player-table-preference"
-              className="m-select"
-              value={tablePreference}
-              onChange={(event) => onTablePreferenceChange(event.target.value)}
-            >
-              <option value="NLH Cash Game (₹100/₹200)">No-Limit Holdem (₹100/₹200)</option>
-              <option value="NLH Cash Game (₹250/₹500)">No-Limit Holdem (₹250/₹500)</option>
-              <option value="High Stakes NLH (₹500/₹1000+)">High Stakes NLH (₹500/₹1000+)</option>
-              <option value="Re Straddle High Roller Championship">Re Straddle High Roller</option>
-              <option value="Pot-Limit Omaha (PLO ₹250/₹500)">Pot-Limit Omaha (₹250/₹500)</option>
-            </select>
-            <button type="button" className="m-btn m-btn-primary" onClick={onCheckIn} disabled={checkingIn}>
+            <button type="button" className="m-btn m-btn-primary" onClick={onCheckIn} disabled={checkingIn} style={{ width: '100%' }}>
               <CheckCircle2 size={19} /> {checkingIn ? 'Checking you in…' : 'Check in now'}
             </button>
           </div>

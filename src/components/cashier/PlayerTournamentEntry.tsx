@@ -178,7 +178,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
               >
                 {tournaments.map(t => (
                   <option key={t.id} value={t.id}>
-                    {formatClubLabel(t.name)} — Buy-in: {formatCurrency(t.buyInFee)} + {formatCurrency(t.clubRake)} ({t.status})
+                    {formatClubLabel(t.name)} — Entry Charge: {formatCurrency(t.buyInFee)} + {formatCurrency(t.clubRake)} ({t.status})
                   </option>
                 ))}
               </select>
@@ -217,7 +217,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Tournament Buy-in Fee:</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Tournament Entry Charge:</span>
                   <span className="tabular-num">{formatCurrency(selectedTournament.buyInFee)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>

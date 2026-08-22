@@ -4,6 +4,7 @@ import { Modal } from '../common/Modal';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import confetti from 'canvas-confetti';
+import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 
 interface WalkInRegistrationModalProps {
   isOpen: boolean;
@@ -23,8 +24,10 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
   const [email, setEmail] = useState('');
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [panNumber, setPanNumber] = useState('');
+  const [aadhaarPhotoUrl, setAadhaarPhotoUrl] = useState('');
+  const [panPhotoUrl, setPanPhotoUrl] = useState('');
   const [address, setAddress] = useState('Delhi NCR, India');
-  const [tablePreference, setTablePreference] = useState('NLH Cash Game (₹250/₹500)');
+  const [tablePreference, setTablePreference] = useState('Table 1 (Main Lounge)');
   const [autoApprove, setAutoApprove] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -37,7 +40,7 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
     setAadhaarNumber(`5432 9876 ${randomNum}`);
     setPanNumber(`BKPPS${randomNum}R`);
     setAddress('Sector 104, Noida, Uttar Pradesh - 201304');
-    setTablePreference('NLH Cash Game (₹250/₹500)');
+    setTablePreference('Table 1 (Main Lounge)');
     setErrors({});
   };
 
@@ -77,6 +80,8 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
           email: email.trim() || `member.${Date.now().toString().slice(-4)}@club-restraddle.com`,
           aadhaarNumber: aadhaarNumber.trim(),
           panNumber: cleanPan,
+          aadhaarPhotoUrl: aadhaarPhotoUrl || undefined,
+          panPhotoUrl: panPhotoUrl || undefined,
           govtIdType: 'Aadhaar & PAN Card',
           govtIdNumber: `PAN: ${cleanPan} | Aadhaar: ${aadhaarNumber.trim()}`,
           address: address.trim() || 'Delhi NCR, India',
@@ -180,6 +185,13 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
               required
             />
             {errors.aadhaarNumber && <span style={{ color: '#f87171', fontSize: '0.75rem' }}>{errors.aadhaarNumber}</span>}
+            <DocumentPhotoUpload
+              id="walkin-aadhaar-doc"
+              label="Aadhaar Card"
+              subLabel="Auto-compressed photo"
+              value={aadhaarPhotoUrl}
+              onChange={(url) => setAadhaarPhotoUrl(url || '')}
+            />
           </div>
 
           <div className="form-group">
@@ -197,6 +209,13 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
               required
             />
             {errors.panNumber && <span style={{ color: '#f87171', fontSize: '0.75rem' }}>{errors.panNumber}</span>}
+            <DocumentPhotoUpload
+              id="walkin-pan-doc"
+              label="PAN Card"
+              subLabel="Auto-compressed photo"
+              value={panPhotoUrl}
+              onChange={(url) => setPanPhotoUrl(url || '')}
+            />
           </div>
         </div>
 

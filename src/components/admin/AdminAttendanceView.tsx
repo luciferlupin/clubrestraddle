@@ -20,7 +20,7 @@ export const AdminAttendanceView: React.FC = () => {
 
   const [createData, setCreateData] = useState({
     playerId: players[0]?.id || '',
-    tablePreference: 'Cash Game Table',
+    tablePreference: 'Table 1 (Main Lounge)',
   });
 
   const [editData, setEditData] = useState({
@@ -259,7 +259,7 @@ export const AdminAttendanceView: React.FC = () => {
             <input
               type="text"
               className="form-input"
-              placeholder="e.g. Table 2 / Deepstack Tournament"
+              placeholder="e.g. Table 1 (Main Lounge)"
               value={createData.tablePreference}
               onChange={e => setCreateData({ ...createData, tablePreference: e.target.value })}
             />

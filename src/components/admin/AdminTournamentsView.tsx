@@ -133,7 +133,7 @@ export const AdminTournamentsView: React.FC = () => {
 
         <div className="stat-card">
           <div className="stat-info">
-            <span className="stat-label">Total Buy-in Pool</span>
+            <span className="stat-label">Total Entry Charge Pool</span>
             <span className="stat-value" style={{ color: '#ffffff' }}>
               {formatCurrency(totalBuyInsCollected)}
             </span>
@@ -179,7 +179,7 @@ export const AdminTournamentsView: React.FC = () => {
               <tr>
                 <th>ID</th>
                 <th>Tournament Name</th>
-                <th>Buy-in + Service Charge</th>
+                <th>Entry Charge + Service Charge</th>
                 <th>Starting Chips</th>
                 <th>Guaranteed Pool</th>
                 <th>Entries / Seats</th>
@@ -253,7 +253,7 @@ export const AdminTournamentsView: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         title="Create New Tournament"
-        subtitle="Configure poker tournament structure and prize parameters"
+        subtitle="Configure tournament structure and prize parameters"
         size="md"
       >
         <form onSubmit={handleCreateSubmit}>
@@ -271,7 +271,7 @@ export const AdminTournamentsView: React.FC = () => {
 
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label">Buy-in Fee (₹) *</label>
+              <label className="form-label">Entry Charge (₹) *</label>
               <input
                 type="number"
                 className="form-input"
@@ -385,7 +385,7 @@ export const AdminTournamentsView: React.FC = () => {
 
             <div className="form-grid-2">
               <div className="form-group">
-                <label className="form-label">Buy-in Fee (₹) *</label>
+                <label className="form-label">Entry Charge (₹) *</label>
                 <input
                   type="number"
                   className="form-input"

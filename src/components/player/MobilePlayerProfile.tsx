@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   BadgeCheck,
   CalendarDays,
@@ -10,6 +10,8 @@ import {
   Phone,
   ShieldCheck,
   UserRoundCheck,
+  Eye,
+  X,
 } from 'lucide-react';
 import { Player } from '../../types';
 import { formatDateOnly, maskGovtId } from '../../utils/formatters';
@@ -22,6 +24,8 @@ interface MobilePlayerProfileProps {
 }
 
 export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player, onOpenPass }) => {
+  const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
+
   return (
     <section className="player-subscreen player-profile-screen" aria-labelledby="player-profile-title">
       <header className="player-profile-hero">
@@ -73,14 +77,38 @@ export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player
         <dl className="player-profile-list">
           <div>
             <dt><IdCard size={17} /> 1. Aadhaar Card</dt>
-            <dd style={{ fontFamily: 'monospace' }}>
-              {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
+            <dd style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+              <span style={{ fontFamily: 'monospace' }}>
+                {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
+              </span>
+              {player.kyc.aadhaarPhotoUrl && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  onClick={() => setViewingDoc({ title: 'Aadhaar Card Photo', url: player.kyc.aadhaarPhotoUrl! })}
+                >
+                  <Eye size={12} /> View Photo
+                </button>
+              )}
             </dd>
           </div>
           <div>
             <dt><CreditCard size={17} /> 2. PAN Card</dt>
-            <dd style={{ fontFamily: 'monospace', color: '#fb7185' }}>
-              {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
+            <dd style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+              <span style={{ fontFamily: 'monospace', color: '#fb7185' }}>
+                {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
+              </span>
+              {player.kyc.panPhotoUrl && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  onClick={() => setViewingDoc({ title: 'PAN Card Photo', url: player.kyc.panPhotoUrl! })}
+                >
+                  <Eye size={12} /> View Photo
+                </button>
+              )}
             </dd>
           </div>
           <div>
@@ -113,6 +141,99 @@ export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player
         <Lock size={17} />
         <p><strong>Your information is protected.</strong> Ask the front desk if any membership detail needs to be updated.</p>
       </div>
+
+      {/* Mobile Photo Modal */}
+      {viewingDoc && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={() => setViewingDoc(null)}
+        >
+          <div
+            style={{
+              maxWidth: '450px',
+              width: '100%',
+              background: '#130508',
+              borderRadius: '16px',
+              border: '2px solid rgba(225, 29, 72, 0.5)',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                background: 'rgba(0,0,0,0.6)',
+                borderBottom: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.88rem' }}>
+                {viewingDoc.title}
+              </span>
+              <button
+                type="button"
+                onClick={() => setViewingDoc(null)}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '28px',
+                  height: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: '12px', display: 'flex', justifyContent: 'center', background: '#0a0204' }}>
+              <img
+                src={viewingDoc.url}
+                alt={viewingDoc.title}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '60vh',
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                padding: '10px 16px',
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                type="button"
+                className="m-btn m-btn-primary"
+                style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                onClick={() => setViewingDoc(null)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

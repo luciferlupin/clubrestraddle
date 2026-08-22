@@ -65,6 +65,8 @@ export interface PlayerKYC {
   dateOfBirth?: string;
   aadhaarNumber?: string;
   panNumber?: string;
+  aadhaarPhotoUrl?: string; // Compressed photo/DataURL of Aadhaar Card
+  panPhotoUrl?: string;     // Compressed photo/DataURL of PAN Card
   govtIdType?: GovtIdType | string;
   govtIdNumber: string;
   address: string;
