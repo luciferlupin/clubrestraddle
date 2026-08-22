@@ -9,6 +9,7 @@ import {
   StaffUser,
   ChipRequest,
 } from '../types';
+import { cartoonAvatarForPlayer } from '../utils/cartoonAvatars';
 
 // Default Staff Users (Club Owners & Operating Staff)
 export const initialStaffUsers: StaffUser[] = [
@@ -68,6 +69,7 @@ export const initialStaffUsers: StaffUser[] = [
 export const initialPlayers: Player[] = [
   {
     id: 'MEM-1001',
+    memberNumber: 1,
     fullName: 'Alexander Sterling',
     phone: '+91 98102 34891',
     email: 'alex.sterling@luxury.io',
@@ -90,7 +92,7 @@ export const initialPlayers: Player[] = [
       address: 'Golf Links, New Delhi, DL',
       emergencyContactName: 'Victoria Sterling (Spouse)',
       emergencyContactPhone: '+91 98102 99221',
-      photoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      photoUrl: cartoonAvatarForPlayer('PLR-1001'),
       agreedToRules: true,
       submittedAt: '2026-08-15T14:30:00Z',
       verifiedAt: '2026-08-15T14:35:00Z',
@@ -99,6 +101,7 @@ export const initialPlayers: Player[] = [
   },
   {
     id: 'MEM-1002',
+    memberNumber: 2,
     fullName: 'Sofia Valenti',
     phone: '+91 98204 77192',
     email: 'sofia.v@valenti.design',
@@ -121,7 +124,7 @@ export const initialPlayers: Player[] = [
       address: 'Bandra West, Mumbai, MH',
       emergencyContactName: 'Marco Valenti (Brother)',
       emergencyContactPhone: '+91 98204 00119',
-      photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      photoUrl: cartoonAvatarForPlayer('PLR-1002'),
       agreedToRules: true,
       submittedAt: '2026-08-18T18:00:00Z',
       verifiedAt: '2026-08-18T18:05:00Z',
@@ -130,6 +133,7 @@ export const initialPlayers: Player[] = [
   },
   {
     id: 'MEM-1003',
+    memberNumber: 3,
     fullName: 'Liam Montgomery',
     phone: '+91 97114 91038',
     email: 'liam.mont@fintech.co',
@@ -152,7 +156,7 @@ export const initialPlayers: Player[] = [
       address: 'Indiranagar, Bengaluru, KA',
       emergencyContactName: 'Sarah Montgomery (Sister)',
       emergencyContactPhone: '+91 97114 88990',
-      photoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+      photoUrl: cartoonAvatarForPlayer('PLR-1003'),
       agreedToRules: true,
       submittedAt: new Date().toISOString(),
     },

@@ -25,8 +25,9 @@ import { ChipOrderManager } from '../cashier/ChipOrderManager';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
+import { isSupabaseConfigured } from '../../services/supabaseClient';
 
-type AdminTab = 'dashboard' | 'chip-orders' | 'staff' | 'players' | 'attendance' | 'tournaments' | 'expenses' | 'audit';
+type AdminTab = 'dashboard' | 'cash' | 'chip-orders' | 'staff' | 'players' | 'attendance' | 'tournaments' | 'expenses' | 'audit';
 
 export const AdminPortal: React.FC = () => {
   const { currentStaffUser, resetToDemoData, pendingChipOrdersCount } = useClub();
@@ -40,6 +41,7 @@ export const AdminPortal: React.FC = () => {
 
   const sections: DesktopSectionNavItem<AdminTab>[] = [
     { id: 'dashboard', label: 'Overview', icon: <LayoutDashboard size={16} /> },
+    { id: 'cash', label: 'Cash ledger', icon: <DollarSign size={16} /> },
     { id: 'chip-orders', label: 'Chip orders', icon: <Coins size={16} />, badge: pendingChipOrdersCount },
     { id: 'staff', label: 'Staff', icon: <Shield size={16} /> },
     { id: 'players', label: 'Players & KYC', icon: <Users size={16} /> },
@@ -55,6 +57,8 @@ export const AdminPortal: React.FC = () => {
         return 'Overview Dashboard';
       case 'chip-orders':
         return 'Table Chip Orders';
+      case 'cash':
+        return 'Cash Flow Ledger';
       case 'staff':
         return 'Staff Accounts';
       case 'players':
@@ -93,7 +97,7 @@ export const AdminPortal: React.FC = () => {
         title="Club operations control room"
         subtitle={<>Signed in as <strong>{currentStaffUser ? currentStaffUser.fullName : 'Super Admin'}</strong> · Full operational access</>}
         actions={
-          !resetConfirm ? (
+          isSupabaseConfigured ? undefined : !resetConfirm ? (
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => setResetConfirm(true)}
@@ -132,6 +136,8 @@ export const AdminPortal: React.FC = () => {
       )}
 
       {activeTab === 'chip-orders' && <ChipOrderManager />}
+
+      {activeTab === 'cash' && <AdminCashView />}
 
       {activeTab === 'staff' && <StaffManager />}
 

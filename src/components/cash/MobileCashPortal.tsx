@@ -543,7 +543,7 @@ export const MobileCashPortal: React.FC = () => {
         isOpen={isCashInOpen}
         onClose={() => setIsCashInOpen(false)}
         title="Record Cash Received (In)"
-        subtitle="Collect buy-in, chip purchase or float deposit"
+        subtitle="Collect entry charge, chip purchase or float deposit"
       >
         <form onSubmit={handleCashInSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="m-form-group">
@@ -554,8 +554,8 @@ export const MobileCashPortal: React.FC = () => {
               value={cashInData.category}
               onChange={e => setCashInData({ ...cashInData, category: e.target.value as CashCategory })}
             >
-              <option value="Tournament Buy-in">Tournament Buy-in</option>
-              <option value="Cash Game Buy-in">Cash Game Buy-in</option>
+              <option value="Tournament Buy-in">Tournament Entry Charge</option>
+              <option value="Cash Game Buy-in">Cash Game Entry Charge</option>
               <option value="Chip Purchase">Chip Purchase</option>
               <option value="Float Deposit">Float Deposit</option>
               <option value="Table Rake">Table Service Charge</option>
@@ -610,7 +610,7 @@ export const MobileCashPortal: React.FC = () => {
               id="m-cashin-desc"
               type="text"
               className="m-input"
-              placeholder="e.g. Table 2 Buy-in"
+              placeholder="e.g. Table 2 Entry Charge"
               value={cashInData.description}
               onChange={e => setCashInData({ ...cashInData, description: e.target.value })}
             />

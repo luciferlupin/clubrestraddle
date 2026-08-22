@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { ChipRequest, PaymentMethod } from '../../types';
-import { formatINR, formatTimeOnly } from '../../utils/formatters';
+import { formatINR, formatTimeOnly, formatPlayerNumber } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { Modal } from '../common/Modal';
 import confetti from 'canvas-confetti';
@@ -188,8 +188,7 @@ export const ChipOrderManager: React.FC = () => {
   };
 
   const handleFulfill = (requestId: string, playerName: string, amount: number) => {
-    fulfillChipRequest(requestId);
-    const updated = chipRequests.find(r => r.id === requestId);
+    const updated = fulfillChipRequest(requestId);
     if (updated) {
       openInvoiceForChip(updated);
     }
@@ -817,7 +816,7 @@ export const ChipOrderManager: React.FC = () => {
                 const isCheckedIn = todayCheckIns.some(c => c.playerId === p.id);
                 return (
                   <option key={p.id} value={p.id}>
-                    {isCheckedIn ? '🟢 [Checked-in Today] ' : ''}{p.fullName} ({p.phone}) - {p.id} ({p.membershipTier})
+                    {isCheckedIn ? '🟢 [Checked-in Today] ' : ''}{p.fullName} ({p.phone}) - Player ID {formatPlayerNumber(p)} ({p.membershipTier})
                   </option>
                 );
               })}

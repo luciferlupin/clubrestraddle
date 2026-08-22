@@ -129,7 +129,7 @@ export const InvoiceRepositoryView: React.FC = () => {
         playerId: entry.playerId,
         playerPhone: entry.playerPhone || player?.phone,
         panOrAadhaar: player?.kyc?.panNumber || player?.kyc?.aadhaarNumber || player?.kyc?.govtIdNumber,
-        description: `${entry.tournamentName} (Buy-in ₹${entry.buyInAmount.toLocaleString()} + Service Fee ₹${entry.rakeAmount.toLocaleString()})`,
+        description: `${entry.tournamentName} (Entry Charge ₹${entry.buyInAmount.toLocaleString()} + Service Charge ₹${entry.rakeAmount.toLocaleString()})`,
         taxableAmount: taxableService,
         gstAmount: gstService,
         totalAmount: total,

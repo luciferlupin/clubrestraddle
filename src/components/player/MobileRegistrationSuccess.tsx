@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Check, CheckCircle2, Clock3, QrCode, ShieldCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Player, DailyCheckIn } from '../../types';
+import { formatPlayerNumber } from '../../utils/formatters';
 import { formatTimeOnly } from '../../utils/formatters';
 
 interface MobileRegistrationSuccessProps {
@@ -39,7 +40,7 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
         <div className="registration-pass-identity">
           <div>
             <strong>{player.fullName}</strong>
-            <span>{player.id}</span>
+            <span>Player ID {formatPlayerNumber(player)}</span>
           </div>
           <span>{checkIn.tablePreference}</span>
         </div>

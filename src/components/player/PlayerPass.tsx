@@ -3,7 +3,7 @@ import { Spade, FileText } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Player, DailyCheckIn } from '../../types';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
-import { formatDateOnly, formatTimeOnly } from '../../utils/formatters';
+import { formatDateOnly, formatTimeOnly, formatPlayerNumber } from '../../utils/formatters';
 import { Modal } from '../common/Modal';
 import { SuitWatermark, PassCornerPip, CardSuit } from '../common/PokerGraphics';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
@@ -66,7 +66,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
               {player.fullName}
             </div>
             <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: '#ffffff', margin: '2px 0 6px', fontWeight: 600 }}>
-              ID: {player.id}
+              Player ID: {formatPlayerNumber(player)}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               <KYCBadge status={player.kycStatus} />
@@ -99,7 +99,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
               Door Scanner QR • Tap to Enlarge
             </span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', color: '#ffffff', fontWeight: 700 }}>
-              {player.id} • {player.phone}
+              {formatPlayerNumber(player)} • {player.phone}
             </span>
             <span style={{ fontSize: '0.7rem', color: '#cbd5e1' }}>
               {todayCheckIn ? (
@@ -163,7 +163,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
               level="H"
             />
             <span style={{ color: '#0f172a', fontSize: '0.76rem', fontWeight: 800, marginTop: '10px', letterSpacing: '0.04em' }}>
-              {player.id} • {player.fullName}
+              {formatPlayerNumber(player)} • {player.fullName}
             </span>
           </div>
 

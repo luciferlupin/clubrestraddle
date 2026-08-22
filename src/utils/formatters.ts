@@ -95,19 +95,21 @@ export const generateId = (prefix: string): string => {
 };
 
 export const generateSequentialPlayerId = (existingPlayers: { id: string }[] = []): string => {
-  let maxSeq = 1000;
+  let maxSeq = existingPlayers.length;
   for (const p of existingPlayers) {
-    // Extract trailing number from IDs like MEM-1001, MEM-2026-881, PLR-1002
-    const match = p.id.match(/\d+$/);
-    if (match) {
-      const num = parseInt(match[0], 10);
+    // Legacy IDs remain immutable; new records use the next plain number.
+    if (/^\d+$/.test(p.id)) {
+      const num = parseInt(p.id, 10);
       if (!isNaN(num) && num > maxSeq) {
         maxSeq = num;
       }
     }
   }
-  return `MEM-${maxSeq + 1}`;
+  return String(maxSeq + 1);
 };
+
+export const formatPlayerNumber = (player: { id: string; memberNumber?: number }): string =>
+  String(player.memberNumber ?? (/^\d+$/.test(player.id) ? Number(player.id) : player.id));
 
 export const generateSequentialCheckInId = (existingCheckIns: { id: string }[] = []): string => {
   let maxSeq = 1000;

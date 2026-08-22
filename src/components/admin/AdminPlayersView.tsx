@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Users, Search, ShieldCheck, CheckCircle, XCircle, Eye, Edit3, Trash2, UserCheck, Calendar, AlertTriangle } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, KYCStatus, MembershipTier } from '../../types';
-import { formatDateOnly, formatDateTime, maskGovtId, formatFullAadhaar } from '../../utils/formatters';
+import { formatDateOnly, formatDateTime, maskGovtId, formatFullAadhaar, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
@@ -166,7 +166,7 @@ export const AdminPlayersView: React.FC = () => {
                       )}
                       <div>
                         <div style={{ fontWeight: 700 }}>{p.fullName}</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{p.id}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Player ID {formatPlayerNumber(p)}</div>
                       </div>
                     </div>
                   </td>
@@ -219,7 +219,7 @@ export const AdminPlayersView: React.FC = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           title={`Member Profile: ${selectedPlayer.fullName}`}
-          subtitle={`ID: ${selectedPlayer.id} • Registered: ${formatDateOnly(selectedPlayer.registeredAt)}`}
+          subtitle={`Player ID: ${formatPlayerNumber(selectedPlayer)} • Registered: ${formatDateOnly(selectedPlayer.registeredAt)}`}
           size="md"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -276,7 +276,7 @@ export const AdminPlayersView: React.FC = () => {
                   </div>
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Member ID</span>
-                    <div style={{ fontWeight: 600 }}>{selectedPlayer.id}</div>
+                    <div style={{ fontWeight: 600 }}>{formatPlayerNumber(selectedPlayer)}</div>
                   </div>
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Aadhaar Card</span>
@@ -311,6 +311,16 @@ export const AdminPlayersView: React.FC = () => {
               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Admin Actions:</span>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    reviewKYC(selectedPlayer.id, 'pending');
+                    setIsModalOpen(false);
+                  }}
+                  disabled={selectedPlayer.kycStatus === 'pending'}
+                >
+                  <XCircle size={14} /> Mark Pending
+                </button>
+                <button
                   className="btn btn-emerald btn-sm"
                   onClick={() => {
                     reviewKYC(selectedPlayer.id, 'verified');
@@ -341,7 +351,7 @@ export const AdminPlayersView: React.FC = () => {
           isOpen={isEditOpen}
           onClose={() => setIsEditOpen(false)}
           title={`Edit Member: ${selectedPlayer.fullName}`}
-          subtitle={`Member ID: ${selectedPlayer.id}`}
+          subtitle={`Player ID: ${formatPlayerNumber(selectedPlayer)}`}
           size="md"
         >
           <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>

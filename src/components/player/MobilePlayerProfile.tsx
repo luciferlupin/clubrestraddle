@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { Player } from '../../types';
-import { formatDateOnly, maskGovtId } from '../../utils/formatters';
+import { formatDateOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { PlayerLedger } from './PlayerLedger';
 
@@ -36,7 +36,7 @@ export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player
         <div className="player-profile-copy">
           <span className="mobile-flow-eyebrow">Member profile</span>
           <h1 id="player-profile-title">{player.fullName}</h1>
-          <p>{player.id}</p>
+          <p>Player ID {formatPlayerNumber(player)}</p>
           <div><TierBadge tier={player.membershipTier} /><KYCBadge status={player.kycStatus} /></div>
         </div>
       </header>

@@ -34,6 +34,9 @@ export type CashFlowType = 'in' | 'out';
 
 export type CashCategory = 
   // Cash In
+  | 'Tournament Entry'
+  | 'Table Service Charge'
+  // Legacy stored values retained for backward-compatible reads.
   | 'Tournament Buy-in'
   | 'Cash Game Buy-in'
   | 'Chip Purchase'
@@ -82,6 +85,7 @@ export interface PlayerKYC {
 
 export interface Player {
   id: string; // e.g., 'PLR-1001'
+  memberNumber?: number; // User-facing sequential player ID: 1, 2, 3, ...
   fullName: string;
   phone: string;
   email: string;
@@ -193,4 +197,3 @@ export interface ChipRequest {
   receiptNumber?: string;
   notes?: string;
 }
-

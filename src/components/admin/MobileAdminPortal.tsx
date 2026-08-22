@@ -27,6 +27,7 @@ import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { Player, ExpenseCategory, PaymentMethod } from '../../types';
 import { StaffManager } from './StaffManager';
 import { PlayerLedger } from '../player/PlayerLedger';
+import { isSupabaseConfigured } from '../../services/supabaseClient';
 
 export const MobileAdminPortal: React.FC = () => {
   const {
@@ -1423,7 +1424,7 @@ export const MobileAdminPortal: React.FC = () => {
             </div>
           </button>
 
-          <div style={{
+          {!isSupabaseConfigured && <div style={{
             background: 'rgba(239, 68, 68, 0.08)',
             border: '1px solid rgba(239, 68, 68, 0.2)',
             borderRadius: '14px',
@@ -1468,7 +1469,7 @@ export const MobileAdminPortal: React.FC = () => {
                 </button>
               </div>
             )}
-          </div>
+          </div>}
         </div>
       </MobileBottomDrawer>
 

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ChipRequest, DailyCheckIn, Player, Tournament, TournamentEntry } from '../../types';
-import { formatClubLabel, formatCurrency, formatDateTime, formatShortDateTime, formatTimeOnly } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatDateTime, formatShortDateTime, formatTimeOnly, formatPlayerNumber } from '../../utils/formatters';
 import { EntryBadge, KYCBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { GameTypeBadge, SuitWatermark, PokerChipStack, CardSuit } from '../common/PokerGraphics';
@@ -122,7 +122,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
             <span className="player-pass-copy">
               <span className="player-pass-label"><CreditCard size={15} /> Digital member pass</span>
               <strong>{player.fullName}</strong>
-              <small>{player.id} · Checked in {formatTimeOnly(todayCheckIn?.checkInTime)}</small>
+              <small>Player ID {formatPlayerNumber(player)} · Checked in {formatTimeOnly(todayCheckIn?.checkInTime)}</small>
               <span className="player-pass-action">Tap to enlarge <ArrowRight size={15} /></span>
             </span>
             <span className="player-pass-qr" aria-hidden="true">
@@ -208,7 +208,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
                 <h3>{formatClubLabel(tournament.name)}</h3>
                 <dl>
                   <div><dt>Starts</dt><dd>{formatShortDateTime(tournament.startTime)}</dd></div>
-                  <div><dt>Buy-in</dt><dd>{formatCurrency(tournament.buyInFee + tournament.clubRake)}</dd></div>
+                  <div><dt>Entry charge</dt><dd>{formatCurrency(tournament.buyInFee + tournament.clubRake)}</dd></div>
                   <div><dt>Guaranteed</dt><dd style={{ color: '#fb7185' }}>{formatCurrency(tournament.guaranteedPrizePool)}</dd></div>
                 </dl>
               </article>
@@ -253,7 +253,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
             {player.kyc.photoUrl && <img src={player.kyc.photoUrl} alt="" />}
             <div>
               <strong>{player.fullName}</strong>
-              <span>{player.id}</span>
+              <span>Player ID {formatPlayerNumber(player)}</span>
             </div>
             <TierBadge tier={player.membershipTier} />
           </div>

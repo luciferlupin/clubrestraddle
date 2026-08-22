@@ -348,7 +348,7 @@ export const CashPortal: React.FC = () => {
                 <span className="stat-value" style={{ color: '#34d399' }}>
                   +{formatCurrency(totalCashInAmount)}
                 </span>
-                <span className="stat-helper">Buy-ins, Deposits & Fees</span>
+                <span className="stat-helper">Entry Charges, Deposits & Fees</span>
               </div>
               <div className="stat-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
                 <ArrowDownLeft size={24} />
@@ -425,7 +425,7 @@ export const CashPortal: React.FC = () => {
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399' }}>
                   <ArrowDownLeft size={20} />
                 </div>
-                <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>Receive Buy-in / Deposit</span>
+                <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>Receive Entry Charge / Deposit</span>
                 <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Cash In to drawer</span>
               </button>
 
@@ -613,8 +613,8 @@ export const CashPortal: React.FC = () => {
                 onChange={e => setFilterCategory(e.target.value)}
               >
                 <option value="all">All Categories</option>
-                <option value="Tournament Buy-in">Tournament Buy-in</option>
-                <option value="Cash Game Buy-in">Cash Game Buy-in</option>
+                <option value="Tournament Buy-in">Tournament Entry Charge</option>
+                <option value="Cash Game Buy-in">Cash Game Entry Charge</option>
                 <option value="Chip Purchase">Chip Purchase</option>
                 <option value="Tournament Prize Payout">Prize Payout</option>
                 <option value="Cash Game Cash-out">Cash-out</option>
@@ -811,8 +811,8 @@ export const CashPortal: React.FC = () => {
               value={cashInData.category}
               onChange={e => setCashInData({ ...cashInData, category: e.target.value as CashCategory })}
             >
-              <option value="Tournament Buy-in">Tournament Buy-in</option>
-              <option value="Cash Game Buy-in">Cash Game Buy-in</option>
+              <option value="Tournament Buy-in">Tournament Entry Charge</option>
+              <option value="Cash Game Buy-in">Cash Game Entry Charge</option>
               <option value="Chip Purchase">Chip Purchase</option>
               <option value="Float Deposit">Float Deposit</option>
               <option value="Table Rake">Table Service Charge</option>

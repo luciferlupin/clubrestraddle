@@ -81,7 +81,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
 
         <div style={{ marginBottom: '14px' }}>
           <div className="receipt-row">
-            <span>Tournament Buy-in:</span>
+            <span>Tournament Entry Charge:</span>
             <span>{formatCurrency(entry.buyInAmount)}</span>
           </div>
           <div className="receipt-row">

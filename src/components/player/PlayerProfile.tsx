@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, ShieldCheck, Mail, Phone, MapPin, CreditCard, AlertTriangle, RefreshCw, Receipt, FileText, Eye, ZoomIn, X, Camera } from 'lucide-react';
 import { Player } from '../../types';
-import { formatDateOnly, formatDateTime, maskGovtId } from '../../utils/formatters';
+import { formatDateOnly, formatDateTime, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { useClub } from '../../context/ClubContext';
 import { PlayerLedger } from './PlayerLedger';
@@ -129,7 +129,7 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ player }) => {
             <div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Club Member ID</span>
               <div style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--gold-light)', marginTop: '2px' }}>
-                {player.id}
+                Player ID {formatPlayerNumber(player)}
               </div>
             </div>
 

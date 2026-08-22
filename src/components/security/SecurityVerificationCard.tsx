@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatDateOnly, formatDateTime, formatTimeOnly, maskGovtId } from '../../utils/formatters';
+import { formatDateOnly, formatDateTime, formatTimeOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
@@ -183,7 +183,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
               gap: '8px',
             }}
           >
-            <span>ID: {player.id}</span>
+            <span>Player ID: {formatPlayerNumber(player)}</span>
             <span>•</span>
             <span style={{ color: '#cbd5e1' }}>{player.phone}</span>
           </div>
@@ -418,7 +418,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
       >
         <div className="security-confirm-summary">
           <div><span>Member</span><strong>{player.fullName}</strong></div>
-          <div><span>Member ID</span><strong>{player.id}</strong></div>
+          <div><span>Player ID</span><strong>{formatPlayerNumber(player)}</strong></div>
           <div><span>Aadhaar</span><strong>{player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : 'UIDAI Verified'}</strong></div>
           <div><span>PAN Card</span><strong style={{ color: '#fb7185' }}>{player.kyc.panNumber || 'PAN Verified'}</strong></div>
           <div><span>KYC status</span><strong>{player.kycStatus}</strong></div>

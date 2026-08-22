@@ -173,7 +173,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
                 <DollarSign size={18} color="#e11d48" />
                 Live Cashier Activity
               </h3>
-              <p className="card-subtitle">Recent buy-ins, payouts, and cash transactions</p>
+              <p className="card-subtitle">Recent entry charges, payouts, and cash transactions</p>
             </div>
             <button className="btn btn-ghost btn-sm" onClick={() => onNavigateTab('cash')}>
               View All

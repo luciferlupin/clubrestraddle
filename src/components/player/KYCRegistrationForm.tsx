@@ -18,10 +18,11 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatTimeOnly, formatDateOnly, maskGovtId } from '../../utils/formatters';
+import { formatTimeOnly, formatDateOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import confetti from 'canvas-confetti';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 import { OtpVerificationModal } from '../common/OtpVerificationModal';
+import { CARTOON_AVATARS } from '../../utils/cartoonAvatars';
 
 interface KYCRegistrationFormProps {
   onSuccess: () => void;
@@ -48,7 +49,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     address: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
-    photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+    photoUrl: CARTOON_AVATARS[0].url,
     agreedToRules: false,
     tablePreference: 'Table 1 (Main Lounge)',
   });
@@ -57,12 +58,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
   const [submitting, setSubmitting] = useState(false);
   const [registeredData, setRegisteredData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
 
-  const samplePhotos = [
-    { label: 'Avatar 1', url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80' },
-    { label: 'Avatar 2', url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80' },
-    { label: 'Avatar 3', url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&auto=format&fit=crop&q=80' },
-    { label: 'Avatar 4', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
-  ];
+  const samplePhotos = CARTOON_AVATARS;
 
   const steps = [
     { num: 1 as FormWizardStep, title: 'Personal Info', desc: 'Name, phone & email', icon: <User size={15} /> },
@@ -85,7 +81,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
       address: 'Sector 104, Noida, Uttar Pradesh - 201304',
       emergencyContactName: 'Pooja Singhal',
       emergencyContactPhone: '+91 98112 34567',
-      photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+      photoUrl: CARTOON_AVATARS[0].url,
       agreedToRules: true,
       tablePreference: 'Table 1 (Main Lounge)',
     });
@@ -269,7 +265,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             level="H"
           />
           <span style={{ color: '#0f172a', fontSize: '0.74rem', fontWeight: 800, marginTop: '8px', letterSpacing: '0.04em' }}>
-            DOOR CLEARANCE QR PASS • {registeredData.player.id}
+            DOOR CLEARANCE QR PASS • PLAYER ID {formatPlayerNumber(registeredData.player)}
           </span>
         </div>
 
@@ -287,7 +283,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
             <span style={{ color: '#94a3b8' }}>Member ID:</span>
-            <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{registeredData.player.id}</strong>
+            <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{formatPlayerNumber(registeredData.player)}</strong>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
             <span style={{ color: '#94a3b8' }}>Aadhaar Card:</span>

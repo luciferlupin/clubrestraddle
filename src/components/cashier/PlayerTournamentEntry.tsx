@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DollarSign, Receipt, ArrowRight, ArrowLeft, Users, Trophy, CreditCard } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { PaymentMethod } from '../../types';
-import { formatClubLabel, formatCurrency, generateId, formatDateOnly, formatTimeOnly } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, generateId, formatDateOnly, formatTimeOnly, formatPlayerNumber } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import confetti from 'canvas-confetti';
 
@@ -109,7 +109,6 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       // Fallback
     }
 
-    if (onDone) onDone();
   };
 
   return (
@@ -198,7 +197,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
                   const checkedIn = hasPlayerCheckedInToday(p.id);
                   return (
                     <option key={p.id} value={p.id}>
-                      {p.fullName} ({p.id} • {p.phone}) {checkedIn ? '— Checked in today' : ''}
+                      {p.fullName} (Player ID {formatPlayerNumber(p)} • {p.phone}) {checkedIn ? '— Checked in today' : ''}
                     </option>
                   );
                 })}
@@ -367,7 +366,10 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       <ClubTaxInvoiceModal
         invoice={generatedInvoice}
         isOpen={isInvoiceOpen}
-        onClose={() => setIsInvoiceOpen(false)}
+        onClose={() => {
+          setIsInvoiceOpen(false);
+          if (onDone) onDone();
+        }}
       />
     </div>
   );

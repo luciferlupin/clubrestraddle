@@ -44,7 +44,7 @@ CREATE INDEX idx_staff_status ON staff_users(status);
 -- 3. PLAYERS TABLE (KYC & Profile Registry)
 -- ------------------------------------------------------------------------------
 CREATE TABLE players (
-    id VARCHAR(32) PRIMARY KEY, -- e.g. 'PLR-1001'
+    id VARCHAR(32) PRIMARY KEY, -- sequential member number: '1', '2', '3', ...
     full_name VARCHAR(120) NOT NULL,
     phone VARCHAR(32) NOT NULL,
     email VARCHAR(120) NOT NULL,

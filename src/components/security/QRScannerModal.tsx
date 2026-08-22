@@ -647,7 +647,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 aria-label="Player QR code, ID or phone"
                 type="text"
                 className="form-input"
-                placeholder="Scan, paste QR link, Player ID (PLR-1001), or Phone..."
+                placeholder="Scan, paste QR link, Player ID (for example 1), or Phone..."
                 value={manualCode}
                 onChange={e => setManualCode(e.target.value)}
                 style={{ flex: 1 }}

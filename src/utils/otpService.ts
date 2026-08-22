@@ -8,6 +8,7 @@ interface ActiveOtp {
   lastSentAt: number;
   purpose: 'registration' | 'login';
   attempts: number;
+  gateway: 'Fast2SMS' | 'CustomWebhook' | 'SupabaseAuth' | 'Preview';
 }
 
 // In-memory OTP storage for validation
@@ -109,9 +110,8 @@ async function dispatchSmsGateway(phone: string, code: string, purpose: string):
     }
   }
 
-  // Fallback: Dispatched to real telecom queue
-  console.log(`[SMS Gateway Telecom Pipeline] SMS queued for dispatch to ${e164}: "${smsMessage}"`);
-  return { success: true, gateway: 'TelecomGateway' };
+  // Never claim that an SMS was delivered when no provider accepted it.
+  return { success: false, gateway: 'Preview', error: 'No SMS provider is configured.' };
 }
 
 /**
@@ -145,6 +145,8 @@ export const sendOtp = async (
   const code = (100000 + (randomArray[0] % 900000)).toString();
   const expiresAt = now + 5 * 60 * 1000; // 5 minutes validity
 
+  const dispatchResult = await dispatchSmsGateway(phone, code, purpose);
+
   otpStore.set(normalized, {
     phone,
     code,
@@ -152,14 +154,16 @@ export const sendOtp = async (
     lastSentAt: now,
     purpose,
     attempts: 0,
+    gateway: dispatchResult.success
+      ? dispatchResult.gateway as ActiveOtp['gateway']
+      : 'Preview',
   });
-
-  // Dispatch real SMS
-  await dispatchSmsGateway(phone, code, purpose);
 
   return {
     success: true,
-    message: `OTP sent via SMS to +91 ${normalized.slice(0, 5)} ${normalized.slice(5)}.`,
+    message: dispatchResult.success
+      ? `OTP sent via SMS to +91 ${normalized.slice(0, 5)} ${normalized.slice(5)}.`
+      : 'SMS is not configured in this preview. Enter 123456 to verify the phone number.',
   };
 };
 
@@ -194,6 +198,19 @@ export const verifyOtpCode = async (
 
   if (!active) {
     return { success: false, message: 'No active OTP found for this number. Please request a new OTP or use 123456.' };
+  }
+
+  if (active.gateway === 'SupabaseAuth' && supabase) {
+    const { error } = await supabase.auth.verifyOtp({
+      phone: formatE164Phone(phone),
+      token: cleanInput,
+      type: 'sms',
+    });
+    if (!error) {
+      otpStore.delete(normalized);
+      return { success: true, message: 'Phone number verified successfully via SMS.' };
+    }
+    return { success: false, message: error.message || 'Incorrect or expired SMS OTP.' };
   }
 
   // Expiration check

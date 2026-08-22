@@ -15,6 +15,7 @@ import { Player, DailyCheckIn } from '../../types';
 import confetti from 'canvas-confetti';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 import { OtpVerificationModal } from '../common/OtpVerificationModal';
+import { CARTOON_AVATARS } from '../../utils/cartoonAvatars';
 
 interface MobileKYCFormProps {
   onSuccess: (result: { player: Player; checkIn: DailyCheckIn }) => void;
@@ -48,19 +49,14 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     address: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
-    photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+    photoUrl: CARTOON_AVATARS[0].url,
     agreedToRules: false,
     tablePreference: 'Table 1 (Main Lounge)',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  const sampleAvatars = [
-    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&auto=format&fit=crop&q=80',
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-  ];
+  const sampleAvatars = CARTOON_AVATARS.map(avatar => avatar.url);
 
   const getValidationErrors = (targetStep?: RegistrationStep) => {
     const nextErrors: Record<string, string> = {};

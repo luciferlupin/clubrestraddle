@@ -76,7 +76,7 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
         id: `LED-TRN-${e.id}`,
         date: e.registeredAt,
         type: 'Tournament Entry',
-        description: `${e.tournamentName} (Buy-in ₹${e.buyInAmount.toLocaleString()} + Service Fee ₹${e.rakeAmount.toLocaleString()})`,
+        description: `${e.tournamentName} (Entry Charge ₹${e.buyInAmount.toLocaleString()} + Service Charge ₹${e.rakeAmount.toLocaleString()})`,
         paymentMethod: e.paymentMethod,
         referenceId: e.receiptNumber || e.id,
         debit: totalAmount,
@@ -187,7 +187,7 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
 
         <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '14px 16px' }}>
           <span style={{ fontSize: '0.72rem', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
-            Tournament Buy-ins
+            Tournament Entries
           </span>
           <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#fb7185', marginTop: '4px' }}>
             {formatCurrency(totalTournamentSpent)}

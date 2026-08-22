@@ -22,7 +22,7 @@ import { CheckInHistory } from './CheckInHistory';
 import { PlayerProfile } from './PlayerProfile';
 import { TableChipRequestModal } from './TableChipRequestModal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
-import { formatClubLabel, formatCurrency, formatDateTime, formatDateOnly, formatTimeOnly, formatINR } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatDateTime, formatDateOnly, formatTimeOnly, formatINR, formatPlayerNumber } from '../../utils/formatters';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSectionNav';
 import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, AnimatedSuitsRow } from '../common/PokerGraphics';
@@ -171,7 +171,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
         eyebrow={currentPlayer ? 'Player portal' : entryView === 'lookup' ? 'Existing member' : 'New registration'}
         title={currentPlayer ? `${currentPlayer.fullName}'s member portal` : entryView === 'lookup' ? 'Open your player pass' : 'Create your Club Re Straddle profile'}
         subtitle={currentPlayer ? (
-          <>Member <strong>{currentPlayer.id}</strong> · {currentPlayer.totalVisits} club visits</>
+          <>Player ID <strong>{formatPlayerNumber(currentPlayer)}</strong> · {currentPlayer.totalVisits} club visits</>
         ) : (
           <>Complete KYC once to receive your digital pass and use club services.</>
         )}
@@ -578,7 +578,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', background: '#0e0407', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div>
-                          <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase' }}>Buy-In + Service Charge</span>
+                          <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase' }}>Entry Charge + Service Charge</span>
                           <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>
                             {formatCurrency(t.buyInFee)} + {formatCurrency(t.clubRake)}
                           </div>
@@ -632,7 +632,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
                         <tr>
                           <th>Receipt #</th>
                           <th>Tournament</th>
-                          <th>Buy-In & Service Charge</th>
+                          <th>Entry Charge & Service Charge</th>
                           <th>Seating</th>
                           <th>Payment Method</th>
                           <th>Date</th>
@@ -660,7 +660,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
                             eventDetails: `Texas • MTC • Table ${entry.tableNumber || 'Table 1'} • Seat ${entry.seatNumber || '1'}`,
                             items: [
                               {
-                                description: `${formatClubLabel(entry.tournamentName)} - Tournament Buy-in Stack`,
+                                description: `${formatClubLabel(entry.tournamentName)} - Tournament Entry Stack`,
                                 details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Tournament Chips`,
                                 chips: tournamentObj?.startingChips || 50000,
                                 amount: entry.buyInAmount,
