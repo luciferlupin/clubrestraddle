@@ -2150,41 +2150,84 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // SECURITY ACTIONS
-  const approvePlayerEntry = (checkInId: string) => {
+  const approvePlayerEntry = (checkInIdOrPlayerId: string) => {
     const nowIso = new Date().toISOString();
-    let approvedPlayerName = '';
+    const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
+    const nowTime = new Date().toTimeString().split(' ')[0];
+
     let targetPlayerId = '';
+    let targetCheckInId = '';
+    let approvedPlayerName = '';
+    let isNewCheckIn = false;
+    let newlyCreatedCheckIn: DailyCheckIn | null = null;
 
     setCheckIns(prev => {
-      const next = prev.map(c => {
-        if (c.id === checkInId) {
-          approvedPlayerName = c.playerName;
-          targetPlayerId = c.playerId;
-          return {
-            ...c,
-            verificationStatus: 'approved' as const,
-            verifiedBy: currentStaffUser ? currentStaffUser.fullName : staffName,
+      const found = prev.find(
+        c => c.id === checkInIdOrPlayerId || (c.playerId === checkInIdOrPlayerId && c.checkInDate === today)
+      );
+
+      if (found) {
+        targetPlayerId = found.playerId;
+        targetCheckInId = found.id;
+        approvedPlayerName = found.playerName;
+
+        const next = prev.map(c => {
+          if (c.id === found.id) {
+            return {
+              ...c,
+              verificationStatus: 'approved' as const,
+              verifiedBy: staff,
+              verifiedAt: nowIso,
+              rejectionReason: undefined,
+            };
+          }
+          return c;
+        });
+        broadcastUpdate('CHECK_INS_UPDATED', next);
+        return next;
+      } else {
+        const player = players.find(p => p.id === checkInIdOrPlayerId);
+        if (player) {
+          targetPlayerId = player.id;
+          approvedPlayerName = player.fullName;
+          targetCheckInId = generateId('CHK');
+          isNewCheckIn = true;
+
+          newlyCreatedCheckIn = {
+            id: targetCheckInId,
+            playerId: player.id,
+            playerName: player.fullName,
+            playerPhone: player.phone,
+            checkInDate: today,
+            checkInTime: nowTime,
+            verificationStatus: 'approved',
+            verifiedBy: staff,
             verifiedAt: nowIso,
-            rejectionReason: undefined,
+            tablePreference: 'Cash / Tournament Floor',
           };
+
+          const next = [newlyCreatedCheckIn, ...prev];
+          broadcastUpdate('NEW_CHECK_IN', newlyCreatedCheckIn);
+          broadcastUpdate('CHECK_INS_UPDATED', next);
+          return next;
         }
-        return c;
-      });
-      broadcastUpdate('CHECK_INS_UPDATED', next);
-      return next;
+        return prev;
+      }
     });
 
     if (targetPlayerId) {
       setPlayers(prev => {
         const next = prev.map(p => {
-          if (p.id === targetPlayerId && p.kycStatus === 'pending') {
+          if (p.id === targetPlayerId) {
             return {
               ...p,
               kycStatus: 'verified' as const,
+              totalVisits: isNewCheckIn ? p.totalVisits + 1 : p.totalVisits,
               kyc: {
                 ...p.kyc,
                 verifiedAt: nowIso,
-                verifiedBy: currentStaffUser ? currentStaffUser.fullName : staffName,
+                verifiedBy: staff,
+                rejectionReason: undefined,
               },
             };
           }
@@ -2196,63 +2239,200 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('daily_check_ins').update({
-        verification_status: 'approved',
-        verified_by: currentStaffUser ? currentStaffUser.fullName : staffName,
-        verified_at: nowIso,
-      }).eq('id', checkInId);
+      const dbClient = supabase;
+      if (isNewCheckIn && newlyCreatedCheckIn) {
+        dbClient
+          .from('daily_check_ins')
+          .insert({
+            id: targetCheckInId,
+            player_id: targetPlayerId,
+            player_name: approvedPlayerName,
+            player_phone: players.find(p => p.id === targetPlayerId)?.phone || '',
+            check_in_date: today,
+            check_in_time: nowTime,
+            verification_status: 'approved',
+            verified_by: staff,
+            verified_at: nowIso,
+            table_preference: 'Cash / Tournament Floor',
+          })
+          .then(({ error }) => {
+            if (error) console.error('Supabase daily_check_ins insert error:', error.message);
+          });
+      } else if (targetCheckInId) {
+        dbClient
+          .from('daily_check_ins')
+          .update({
+            verification_status: 'approved',
+            verified_by: staff,
+            verified_at: nowIso,
+            rejection_reason: null,
+          })
+          .eq('id', targetCheckInId)
+          .then(({ error }) => {
+            if (error) console.error('Supabase daily_check_ins update error:', error.message);
+          });
+      }
 
       if (targetPlayerId) {
-        supabase.from('players').update({
-          kyc_status: 'verified',
-          verified_at: nowIso,
-          verified_by: currentStaffUser ? currentStaffUser.fullName : staffName,
-        }).eq('id', targetPlayerId);
+        dbClient
+          .from('players')
+          .update({
+            kyc_status: 'verified',
+            verified_at: nowIso,
+            verified_by: staff,
+            rejection_reason: null,
+          })
+          .eq('id', targetPlayerId)
+          .then(({ error }) => {
+            if (error) console.error('Supabase players update error:', error.message);
+          });
       }
     }
 
     addAuditLog(
       'Security',
       'Entry Approved',
-      `Officer approved entry for ${approvedPlayerName} (Check-in: ${checkInId}). Physical club access granted.`
+      `Officer approved entry for ${approvedPlayerName || targetPlayerId} (Pass: ${targetCheckInId || checkInIdOrPlayerId}). Physical club access granted.`
     );
   };
 
-  const rejectPlayerEntry = (checkInId: string, reason: string) => {
+  const rejectPlayerEntry = (checkInIdOrPlayerId: string, reason: string) => {
     const nowIso = new Date().toISOString();
+    const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
+    const nowTime = new Date().toTimeString().split(' ')[0];
+
+    let targetPlayerId = '';
+    let targetCheckInId = '';
     let rejectedPlayerName = '';
+    let isNewCheckIn = false;
+    let newlyCreatedCheckIn: DailyCheckIn | null = null;
 
     setCheckIns(prev => {
-      const next = prev.map(c => {
-        if (c.id === checkInId) {
-          rejectedPlayerName = c.playerName;
-          return {
-            ...c,
-            verificationStatus: 'rejected' as const,
-            verifiedBy: currentStaffUser ? currentStaffUser.fullName : staffName,
+      const found = prev.find(
+        c => c.id === checkInIdOrPlayerId || (c.playerId === checkInIdOrPlayerId && c.checkInDate === today)
+      );
+
+      if (found) {
+        targetPlayerId = found.playerId;
+        targetCheckInId = found.id;
+        rejectedPlayerName = found.playerName;
+
+        const next = prev.map(c => {
+          if (c.id === found.id) {
+            return {
+              ...c,
+              verificationStatus: 'rejected' as const,
+              verifiedBy: staff,
+              verifiedAt: nowIso,
+              rejectionReason: reason,
+            };
+          }
+          return c;
+        });
+        broadcastUpdate('CHECK_INS_UPDATED', next);
+        return next;
+      } else {
+        const player = players.find(p => p.id === checkInIdOrPlayerId);
+        if (player) {
+          targetPlayerId = player.id;
+          rejectedPlayerName = player.fullName;
+          targetCheckInId = generateId('CHK');
+          isNewCheckIn = true;
+
+          newlyCreatedCheckIn = {
+            id: targetCheckInId,
+            playerId: player.id,
+            playerName: player.fullName,
+            playerPhone: player.phone,
+            checkInDate: today,
+            checkInTime: nowTime,
+            verificationStatus: 'rejected',
+            verifiedBy: staff,
             verifiedAt: nowIso,
             rejectionReason: reason,
+            tablePreference: 'Entrance Desk',
           };
+
+          const next = [newlyCreatedCheckIn, ...prev];
+          broadcastUpdate('CHECK_INS_UPDATED', next);
+          return next;
         }
-        return c;
-      });
-      broadcastUpdate('CHECK_INS_UPDATED', next);
-      return next;
+        return prev;
+      }
     });
 
+    if (targetPlayerId) {
+      setPlayers(prev => {
+        const next = prev.map(p => {
+          if (p.id === targetPlayerId) {
+            return {
+              ...p,
+              kyc: {
+                ...p.kyc,
+                rejectionReason: reason,
+              },
+            };
+          }
+          return p;
+        });
+        broadcastUpdate('PLAYERS_UPDATED', next);
+        return next;
+      });
+    }
+
     if (isSupabaseConfigured && supabase) {
-      supabase.from('daily_check_ins').update({
-        verification_status: 'rejected',
-        verified_by: currentStaffUser ? currentStaffUser.fullName : staffName,
-        verified_at: nowIso,
-        rejection_reason: reason,
-      }).eq('id', checkInId);
+      const dbClient = supabase;
+      if (isNewCheckIn && newlyCreatedCheckIn) {
+        dbClient
+          .from('daily_check_ins')
+          .insert({
+            id: targetCheckInId,
+            player_id: targetPlayerId,
+            player_name: rejectedPlayerName,
+            player_phone: players.find(p => p.id === targetPlayerId)?.phone || '',
+            check_in_date: today,
+            check_in_time: nowTime,
+            verification_status: 'rejected',
+            verified_by: staff,
+            verified_at: nowIso,
+            rejection_reason: reason,
+            table_preference: 'Entrance Desk',
+          })
+          .then(({ error }) => {
+            if (error) console.error('Supabase daily_check_ins insert error:', error.message);
+          });
+      } else if (targetCheckInId) {
+        dbClient
+          .from('daily_check_ins')
+          .update({
+            verification_status: 'rejected',
+            verified_by: staff,
+            verified_at: nowIso,
+            rejection_reason: reason,
+          })
+          .eq('id', targetCheckInId)
+          .then(({ error }) => {
+            if (error) console.error('Supabase daily_check_ins update error:', error.message);
+          });
+      }
+
+      if (targetPlayerId) {
+        dbClient
+          .from('players')
+          .update({
+            rejection_reason: reason,
+          })
+          .eq('id', targetPlayerId)
+          .then(({ error }) => {
+            if (error) console.error('Supabase players update error:', error.message);
+          });
+      }
     }
 
     addAuditLog(
       'Security',
       'Entry Rejected',
-      `Officer rejected entry for ${rejectedPlayerName} (Check-in: ${checkInId}). Reason: ${reason}`
+      `Officer rejected entry for ${rejectedPlayerName || targetPlayerId} (Pass: ${targetCheckInId || checkInIdOrPlayerId}). Reason: ${reason}`
     );
   };
 

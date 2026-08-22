@@ -80,16 +80,7 @@ export const MobileSecurityPortal: React.FC = () => {
     : undefined;
 
   const handleApprove = (player: Player, checkIn?: DailyCheckIn) => {
-    if (checkIn) {
-      approvePlayerEntry(checkIn.id);
-    } else {
-      const newCheckIn = performDailyCheckIn(player.id, 'Door Scanner Clearance');
-      approvePlayerEntry(newCheckIn.id);
-    }
-
-    if (player.kycStatus === 'pending') {
-      reviewKYC(player.id, 'verified');
-    }
+    approvePlayerEntry(checkIn?.id || player.id);
 
     setVerificationSuccessToast(`Entry approved for ${player.fullName}`);
     setTimeout(() => setVerificationSuccessToast(null), 3000);
@@ -110,11 +101,7 @@ export const MobileSecurityPortal: React.FC = () => {
     e.preventDefault();
     if (!selectedPlayer) return;
 
-    if (selectedPlayerCheckIn) {
-      rejectPlayerEntry(selectedPlayerCheckIn.id, rejectReason);
-    } else {
-      reviewKYC(selectedPlayer.id, 'rejected', rejectReason);
-    }
+    rejectPlayerEntry(selectedPlayerCheckIn?.id || selectedPlayer.id, rejectReason.trim());
 
     setIsRejectOpen(false);
     setVerificationSuccessToast(`Entry Denied for ${selectedPlayer.fullName}`);

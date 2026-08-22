@@ -29,7 +29,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   onClose,
   onSelectPlayer,
 }) => {
-  const { players, todayCheckIns, approvePlayerEntry, performDailyCheckIn, lookupMemberByPhone } = useClub();
+  const { players, todayCheckIns, approvePlayerEntry, rejectPlayerEntry, performDailyCheckIn, lookupMemberByPhone } = useClub();
   const [manualCode, setManualCode] = useState('');
   const [cameraActive, setCameraActive] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -37,6 +37,8 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [scannedResult, setScannedResult] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -335,13 +337,8 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     if (!scannedResult) return;
     setIsVerifying(true);
 
-    let activeCheckIn = scannedResult.checkIn;
-    if (activeCheckIn) {
-      approvePlayerEntry(activeCheckIn.id);
-    } else {
-      activeCheckIn = performDailyCheckIn(scannedResult.player.id, 'Door Scanner Clearance');
-      approvePlayerEntry(activeCheckIn.id);
-    }
+    const targetId = scannedResult.checkIn?.id || scannedResult.player.id;
+    approvePlayerEntry(targetId);
 
     try {
       confetti({
@@ -356,7 +353,22 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
     setTimeout(() => {
       setIsVerifying(false);
-      onSelectPlayer(scannedResult.player, activeCheckIn);
+      onSelectPlayer(scannedResult.player, scannedResult.checkIn);
+      onClose();
+    }, 350);
+  };
+
+  const handleDenyScanned = () => {
+    if (!scannedResult) return;
+    setIsVerifying(true);
+
+    const targetId = scannedResult.checkIn?.id || scannedResult.player.id;
+    rejectPlayerEntry(targetId, rejectReason.trim());
+
+    setTimeout(() => {
+      setIsVerifying(false);
+      setIsRejecting(false);
+      onSelectPlayer(scannedResult.player, scannedResult.checkIn);
       onClose();
     }, 350);
   };
@@ -370,6 +382,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         setCameraError(null);
         setCameraActive(false);
         setManualCode('');
+        setIsRejecting(false);
         onClose();
       }}
       title="Entrance QR Scanner & Verification"
@@ -441,25 +454,73 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-              <button
-                className="btn btn-primary"
-                onClick={handleApproveScanned}
-                disabled={isVerifying}
-                style={{ flex: 1 }}
-              >
-                <CheckCircle2 size={18} />
-                <span>{isVerifying ? 'Approving Entry...' : 'Approve & Clear Entry'}</span>
-              </button>
+            {isRejecting ? (
+              <div style={{ background: 'rgba(159, 18, 57, 0.25)', border: '1.5px solid #e11d48', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fca5a5' }}>
+                  Reason for Entry Denial:
+                </label>
+                <select
+                  className="form-control"
+                  value={rejectReason}
+                  onChange={e => setRejectReason(e.target.value)}
+                  style={{ fontSize: '0.8rem', background: '#18080d' }}
+                >
+                  <option value="Govt ID details mismatch or expired identification.">Govt ID details mismatch or expired identification</option>
+                  <option value="Underage policy restriction (Strictly 21+ only).">Underage policy restriction (Strictly 21+ only)</option>
+                  <option value="Active club disciplinary suspension or policy violation.">Active club disciplinary suspension</option>
+                  <option value="Dress code or club conduct policy violation.">Dress code or club conduct policy violation</option>
+                  <option value="Failed security screening check at entrance.">Failed security screening check at entrance</option>
+                </select>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={handleDenyScanned}
+                    disabled={isVerifying}
+                    style={{ flex: 1, padding: '8px' }}
+                  >
+                    Confirm Entry Denial
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setIsRejecting(false)}
+                    style={{ padding: '8px 12px' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleApproveScanned}
+                  disabled={isVerifying}
+                  style={{ flex: 1 }}
+                >
+                  <CheckCircle2 size={18} />
+                  <span>{isVerifying ? 'Approving...' : 'Approve & Grant Entry'}</span>
+                </button>
 
-              <button
-                className="btn btn-secondary"
-                onClick={() => setScannedResult(null)}
-                style={{ width: 'auto' }}
-              >
-                Scan Another
-              </button>
-            </div>
+                <button
+                  className="btn btn-danger"
+                  onClick={() => setIsRejecting(true)}
+                  disabled={isVerifying}
+                  style={{ padding: '8px 14px' }}
+                >
+                  Deny Entry
+                </button>
+
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setScannedResult(null)}
+                  style={{ width: 'auto', padding: '8px 12px' }}
+                >
+                  Scan Another
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <>

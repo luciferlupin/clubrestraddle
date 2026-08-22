@@ -36,12 +36,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
 
   const handleApprove = () => {
-    if (checkIn) {
-      approvePlayerEntry(checkIn.id);
-    } else if (player.kycStatus === 'pending') {
-      reviewKYC(player.id, 'verified');
-    }
-
+    approvePlayerEntry(checkIn?.id || player.id);
     setIsApproveModalOpen(false);
 
     try {
@@ -60,12 +55,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
     e.preventDefault();
     if (!rejectReason.trim()) return;
 
-    if (checkIn) {
-      rejectPlayerEntry(checkIn.id, rejectReason);
-    } else {
-      reviewKYC(player.id, 'rejected', rejectReason);
-    }
-
+    rejectPlayerEntry(checkIn?.id || player.id, rejectReason.trim());
     setIsRejectModalOpen(false);
   };
 
