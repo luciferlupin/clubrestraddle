@@ -40,6 +40,26 @@ import { cartoonAvatarForPlayer } from '../utils/cartoonAvatars';
 const normalizeTablePreference = (value?: string | null): string =>
   value === 'NLH Cash Game (₹250/₹500)' ? 'General Floor' : (value || 'Open Seating');
 
+const ensureSequentialMemberNumbers = (players: Player[]): Player[] => {
+  const numberById = new Map(
+    [...players]
+      .sort((a, b) =>
+        String(a.registeredAt || '').localeCompare(String(b.registeredAt || '')) ||
+        String(a.id).localeCompare(String(b.id), undefined, { numeric: true })
+      )
+      .map((player, index) => [player.id, index + 1])
+  );
+
+  let changed = false;
+  const normalized = players.map(player => {
+    const memberNumber = numberById.get(player.id)!;
+    if (player.memberNumber === memberNumber) return player;
+    changed = true;
+    return { ...player, memberNumber };
+  });
+  return changed ? normalized : players;
+};
+
 export const playQueueChime = () => {
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -230,7 +250,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [staffName, setStaffName] = useState<string>('Staff Officer');
 
   const [players, setPlayers] = useState<Player[]>(() =>
-    loadFromStorage(STORAGE_KEYS.PLAYERS, initialPlayers)
+    ensureSequentialMemberNumbers(loadFromStorage(STORAGE_KEYS.PLAYERS, initialPlayers))
   );
   const [checkIns, setCheckIns] = useState<DailyCheckIn[]>(() =>
     loadFromStorage(STORAGE_KEYS.CHECK_INS, initialCheckIns)
@@ -267,6 +287,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => saveToStorage(STORAGE_KEYS.CHIP_REQUESTS, chipRequests), [chipRequests]);
   useEffect(() => saveToStorage(STORAGE_KEYS.ACTIVE_ROLE, activeRole), [activeRole]);
   useEffect(() => saveToStorage(STORAGE_KEYS.SELECTED_PLAYER, selectedPlayerId), [selectedPlayerId]);
+
+  // Repair stale/missing duplicate display IDs from cached or realtime records.
+  useEffect(() => {
+    setPlayers(current => ensureSequentialMemberNumbers(current));
+  }, [players]);
 
   // Adjust staff name when user logs in/out or switches role
   useEffect(() => {
@@ -751,9 +776,15 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setPlayers(prev => {
               const exists = prev.some(existing => existing.id === updatedPlayer.id);
               if (exists) {
-                return prev.map(existing => (existing.id === updatedPlayer.id ? updatedPlayer : existing));
+                return prev.map(existing => (existing.id === updatedPlayer.id
+                  ? { ...updatedPlayer, memberNumber: existing.memberNumber }
+                  : existing));
               }
-              return [updatedPlayer, ...prev];
+              const nextMemberNumber = prev.reduce(
+                (max, player) => Math.max(max, player.memberNumber || 0),
+                0
+              ) + 1;
+              return [{ ...updatedPlayer, memberNumber: nextMemberNumber }, ...prev];
             });
           } else if (payload.eventType === 'DELETE' && payload.old?.id) {
             setPlayers(prev => prev.filter(p => p.id !== payload.old.id));
@@ -1415,6 +1446,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const pDigits = p.phone.replace(/\D/g, '');
       return (
         p.id.toLowerCase() === cleanQuery.toLowerCase() ||
+        String(p.memberNumber || '') === cleanQuery ||
         (cleanDigits.length >= 4 && pDigits.includes(cleanDigits)) ||
         p.fullName.toLowerCase().includes(cleanQuery.toLowerCase()) ||
         p.email.toLowerCase() === cleanQuery.toLowerCase()
@@ -1490,7 +1522,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
           setPlayers(prev => {
             if (prev.some(existing => existing.id === mappedPlayer.id)) return prev;
-            return [mappedPlayer, ...prev];
+            const nextMemberNumber = prev.reduce(
+              (max, player) => Math.max(max, player.memberNumber || 0),
+              0
+            ) + 1;
+            return [{ ...mappedPlayer, memberNumber: nextMemberNumber }, ...prev];
           });
           setSelectedPlayerId(mappedPlayer.id);
           return mappedPlayer;
@@ -1558,7 +1594,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             setPlayers(prev => {
               if (prev.some(existing => existing.id === mappedPlayer.id)) return prev;
-              return [mappedPlayer, ...prev];
+              const nextMemberNumber = prev.reduce(
+                (max, player) => Math.max(max, player.memberNumber || 0),
+                0
+              ) + 1;
+              return [{ ...mappedPlayer, memberNumber: nextMemberNumber }, ...prev];
             });
             setSelectedPlayerId(mappedPlayer.id);
             return mappedPlayer;

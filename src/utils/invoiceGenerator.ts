@@ -1,6 +1,6 @@
 import type { ClubInvoiceData } from '../components/common/ClubTaxInvoiceModal';
 import type { Player, DailyCheckIn, Tournament, TournamentEntry, CashTransaction } from '../types';
-import { formatClubLabel, formatDateOnly, formatTimeOnly } from './formatters';
+import { formatClubLabel, formatDateOnly, formatTimeOnly, formatPlayerNumber } from './formatters';
 
 /**
  * Generates official ₹500 Door Entry & Lounge Access Tax Invoice
@@ -18,7 +18,7 @@ export const generateEntryFeeInvoice = (
     invoiceNumber: `INV-ENT-${checkIn.id.replace('CHK-', '')}`,
     invoiceDate: checkInDateTime,
     category: 'Club Door Entry & Lounge Access Fee',
-    playerId: player.id,
+    playerId: formatPlayerNumber(player),
     playerName: player.fullName,
     playerPhone: player.phone,
     playerEmail: player.email,
@@ -63,7 +63,7 @@ export const generateTournamentInvoice = (
     invoiceNumber: entry.receiptNumber || `INV-TRN-${entry.id.replace('ENT-', '')}`,
     invoiceDate: entry.registeredAt || new Date().toISOString(),
     category: 'Tournament Entry & Service Charge',
-    playerId: entry.playerId || player?.id,
+    playerId: player ? formatPlayerNumber(player) : entry.playerId,
     playerName: entry.playerName,
     playerPhone: entry.playerPhone || player?.phone,
     playerEmail: player?.email,
@@ -110,7 +110,7 @@ export const generateCashTransactionInvoice = (
     invoiceNumber: `INV-CSH-${txn.id.replace('CSH-', '')}`,
     invoiceDate: txn.timestamp || new Date().toISOString(),
     category: `${txn.category} Tax Invoice`,
-    playerId: player?.id,
+    playerId: player ? formatPlayerNumber(player) : undefined,
     playerName: txn.playerName || player?.fullName || 'Member Player',
     playerPhone: player?.phone,
     playerEmail: player?.email,

@@ -2,7 +2,8 @@ import React from 'react';
 import { Printer, CheckCircle, Spade } from 'lucide-react';
 import { Modal } from './Modal';
 import { TournamentEntry } from '../../types';
-import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { formatCurrency, formatDateTime, formatPlayerNumber } from '../../utils/formatters';
+import { useClub } from '../../context/ClubContext';
 
 interface ReceiptModalProps {
   entry: TournamentEntry | null;
@@ -11,9 +12,11 @@ interface ReceiptModalProps {
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClose }) => {
+  const { players } = useClub();
   if (!entry) return null;
 
   const totalPaid = entry.buyInAmount + entry.rakeAmount;
+  const player = players.find(candidate => candidate.id === entry.playerId);
 
   const handlePrint = () => {
     window.print();
@@ -61,7 +64,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
           </div>
           <div className="receipt-row">
             <span style={{ color: '#64748b' }}>Member ID:</span>
-            <span>{entry.playerId}</span>
+            <span>{player ? formatPlayerNumber(player) : entry.playerId}</span>
           </div>
           <div className="receipt-row">
             <span style={{ color: '#64748b' }}>Contact:</span>

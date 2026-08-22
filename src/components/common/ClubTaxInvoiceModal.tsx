@@ -111,7 +111,7 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
 Invoice No: ${invoice.invoiceNumber}
 Date: ${dateFormatted} ${timeFormatted}
 Cashier: ${invoice.cashierName}
-Player: ${invoice.playerName} (ID: ${invoice.playerId || '2880'})
+Player: ${invoice.playerName} (ID: ${invoice.playerId || 'Not assigned'})
 Venue: JB Complex, Sector 104, Noida, Uttar Pradesh - 201304
 Event / Item: ${eventTitle}
 Service Charges: ₹${taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -340,7 +340,7 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 600 }}>Player ID</span>
-              <span style={{ fontWeight: 800 }}>{invoice.playerId || '2880'}</span>
+              <span style={{ fontWeight: 800 }}>{invoice.playerId || 'Not assigned'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 600 }}>Name</span>

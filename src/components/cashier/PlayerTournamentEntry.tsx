@@ -62,7 +62,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       invoiceNumber: entry.receiptNumber,
       invoiceDate: entry.registeredAt,
       category: 'Tournament Entry & Service Charge',
-      playerId: selectedPlayer?.id,
+      playerId: selectedPlayer ? formatPlayerNumber(selectedPlayer) : undefined,
       playerName: entry.playerName,
       playerPhone: selectedPlayer?.phone,
       playerEmail: selectedPlayer?.email,

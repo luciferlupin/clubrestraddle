@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Receipt, Search, FileText, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentEntry } from '../../types';
-import { formatClubLabel, formatCurrency, formatDateTime, formatDateOnly, formatTimeOnly } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatDateTime, formatDateOnly, formatTimeOnly, formatPlayerNumber } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
@@ -72,7 +72,7 @@ export const BillingHistory: React.FC = () => {
       invoiceNumber: entry.receiptNumber,
       invoiceDate: entry.registeredAt,
       category: 'Tournament Entry & Service Charge',
-      playerId: entry.playerId,
+      playerId: playerObj ? formatPlayerNumber(playerObj) : entry.playerId,
       playerName: entry.playerName,
       playerPhone: entry.playerPhone || playerObj?.phone,
       playerEmail: playerObj?.email,
@@ -162,6 +162,7 @@ export const BillingHistory: React.FC = () => {
               <tbody>
                 {paginatedEntries.map(entry => {
                   const totalPaid = entry.buyInAmount + entry.rakeAmount;
+                  const playerObj = players.find(player => player.id === entry.playerId);
                   return (
                     <tr key={entry.id}>
                       <td className="tabular-num" style={{ fontWeight: 700, color: 'var(--gold-light)' }}>
@@ -169,7 +170,7 @@ export const BillingHistory: React.FC = () => {
                       </td>
                       <td>
                         <div style={{ fontWeight: 600 }}>{entry.playerName}</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{entry.playerId}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>Player ID {playerObj ? formatPlayerNumber(playerObj) : entry.playerId}</div>
                       </td>
                       <td style={{ maxWidth: '180px', fontSize: '0.82rem' }}>
                         {formatClubLabel(entry.tournamentName)}

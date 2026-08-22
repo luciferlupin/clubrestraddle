@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentStatus, PaymentMethod, CashCategory, ExpenseCategory } from '../../types';
-import { formatClubLabel, formatCurrency, formatINR } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatINR, formatPlayerNumber } from '../../utils/formatters';
 import { TournamentStatusBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
@@ -156,7 +156,7 @@ export const MobileCashierPortal: React.FC = () => {
       invoiceNumber: entry.receiptNumber,
       invoiceDate: entry.registeredAt,
       category: 'Tournament Entry & Service Charge',
-      playerId: playerObj?.id,
+      playerId: playerObj ? formatPlayerNumber(playerObj) : undefined,
       playerName: entry.playerName,
       playerPhone: playerObj?.phone,
       playerEmail: playerObj?.email,
@@ -780,7 +780,7 @@ export const MobileCashierPortal: React.FC = () => {
               invoiceNumber: e.receiptNumber,
               invoiceDate: e.registeredAt,
               category: 'Tournament Entry & Service Charge',
-              playerId: e.playerId,
+              playerId: playerObj ? formatPlayerNumber(playerObj) : e.playerId,
               playerName: e.playerName,
               playerPhone: e.playerPhone || playerObj?.phone,
               playerEmail: playerObj?.email,

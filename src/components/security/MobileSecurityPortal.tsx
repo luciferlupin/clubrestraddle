@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatTimeOnly, maskGovtId } from '../../utils/formatters';
+import { formatTimeOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { QRScannerModal } from './QRScannerModal';
@@ -690,7 +690,7 @@ export const MobileSecurityPortal: React.FC = () => {
                         )}
                         <div>
                           <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff' }}>{c.playerName}</div>
-                          <div style={{ fontSize: '0.74rem', color: '#94a3b8', fontFamily: 'monospace' }}>{c.playerId} • {c.playerPhone}</div>
+                          <div style={{ fontSize: '0.74rem', color: '#94a3b8', fontFamily: 'monospace' }}>{player ? `Player ID ${formatPlayerNumber(player)}` : 'Player ID unavailable'} • {c.playerPhone}</div>
                         </div>
                       </div>
                       <EntryBadge status={c.verificationStatus} />

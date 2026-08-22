@@ -21,7 +21,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR, formatFullAadhaar } from '../../utils/formatters';
+import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR, formatFullAadhaar, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { Player, ExpenseCategory, PaymentMethod } from '../../types';
@@ -1138,7 +1138,7 @@ export const MobileAdminPortal: React.FC = () => {
           isOpen={isPlayerModalOpen}
           onClose={() => setIsPlayerModalOpen(false)}
           title={selectedPlayer.fullName}
-          subtitle={`Member ID: ${selectedPlayer.id}`}
+          subtitle={`Player ID: ${formatPlayerNumber(selectedPlayer)}`}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {/* Drawer Tabs (Details vs Financial Ledger) */}

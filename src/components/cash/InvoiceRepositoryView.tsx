@@ -17,7 +17,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { formatCurrency, formatDateTime, formatDateOnly, formatTimeOnly, maskGovtId } from '../../utils/formatters';
+import { formatCurrency, formatDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { Pagination } from '../common/Pagination';
 import {
@@ -96,7 +96,7 @@ export const InvoiceRepositoryView: React.FC = () => {
         date: chkDateTime,
         category: 'Door Entry',
         playerName: chk.playerName,
-        playerId: chk.playerId,
+        playerId: formatPlayerNumber(player),
         playerPhone: chk.playerPhone,
         panOrAadhaar: player.kyc?.panNumber || player.kyc?.aadhaarNumber || player.kyc?.govtIdNumber,
         description: 'Club Door Entry & Facility Access Fee (SAC 999691)',
@@ -126,7 +126,7 @@ export const InvoiceRepositoryView: React.FC = () => {
         date: entry.registeredAt || new Date().toISOString(),
         category: 'Tournament',
         playerName: entry.playerName,
-        playerId: entry.playerId,
+        playerId: player ? formatPlayerNumber(player) : entry.playerId,
         playerPhone: entry.playerPhone || player?.phone,
         panOrAadhaar: player?.kyc?.panNumber || player?.kyc?.aadhaarNumber || player?.kyc?.govtIdNumber,
         description: `${entry.tournamentName} (Entry Charge ₹${entry.buyInAmount.toLocaleString()} + Service Charge ₹${entry.rakeAmount.toLocaleString()})`,
@@ -157,7 +157,7 @@ export const InvoiceRepositoryView: React.FC = () => {
         date: txn.timestamp || new Date().toISOString(),
         category: cat,
         playerName: txn.playerName || player?.fullName || 'Cash Desk Customer',
-        playerId: player?.id,
+        playerId: player ? formatPlayerNumber(player) : undefined,
         playerPhone: player?.phone,
         panOrAadhaar: player?.kyc?.panNumber || player?.kyc?.aadhaarNumber || player?.kyc?.govtIdNumber,
         description: `${txn.category} - ${txn.description}`,
