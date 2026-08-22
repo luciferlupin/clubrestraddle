@@ -48,6 +48,17 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
   const pendingCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'pending');
 
+  useEffect(() => {
+    if (isOpen) return;
+    setScannedResult(null);
+    setScanError(null);
+    setCameraError(null);
+    setManualCode('');
+    setIsSearching(false);
+    setIsVerifying(false);
+    setIsRejecting(false);
+  }, [isOpen]);
+
   const processScanCode = useCallback(async (code: string) => {
     const trimmed = code.trim();
     if (!trimmed) return;

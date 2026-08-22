@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Users, Search, ShieldCheck, CheckCircle, XCircle, Eye, Edit3, Trash2, UserCheck, Calendar, AlertTriangle } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, KYCStatus, MembershipTier } from '../../types';
-import { formatDateOnly, formatDateTime, maskGovtId } from '../../utils/formatters';
+import { formatDateOnly, formatDateTime, maskGovtId, formatFullAadhaar } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
@@ -122,7 +122,7 @@ export const AdminPlayersView: React.FC = () => {
               <th>Member</th>
               <th>Tier</th>
               <th>Contact Phone</th>
-              <th>Govt ID</th>
+              <th>Full Aadhaar Number</th>
               <th>KYC Status</th>
               <th>Visits</th>
               <th>Registration Date</th>
@@ -175,8 +175,7 @@ export const AdminPlayersView: React.FC = () => {
                   </td>
                   <td style={{ fontSize: '0.82rem' }}>{p.phone}</td>
                   <td style={{ fontSize: '0.8rem' }}>
-                    <span>{p.kyc.govtIdType}: </span>
-                    <span className="tabular-num">{maskGovtId(p.kyc.govtIdNumber)}</span>
+                    <span className="tabular-num">{formatFullAadhaar(p.kyc.aadhaarNumber, p.kyc.govtIdNumber)}</span>
                   </td>
                   <td>
                     <KYCBadge status={p.kycStatus} />
@@ -282,7 +281,7 @@ export const AdminPlayersView: React.FC = () => {
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Aadhaar Card</span>
                     <div style={{ fontWeight: 600, color: '#ffffff', fontFamily: 'monospace' }}>
-                      {selectedPlayer.kyc.aadhaarNumber ? maskGovtId(selectedPlayer.kyc.aadhaarNumber) : (selectedPlayer.kyc.govtIdNumber || 'UIDAI Verified')}
+                      {formatFullAadhaar(selectedPlayer.kyc.aadhaarNumber, selectedPlayer.kyc.govtIdNumber)}
                     </div>
                   </div>
                   <div>

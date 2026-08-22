@@ -5066,6 +5066,131 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
 .staff-quick-btn.chips    .staff-quick-icon { background: rgba(245,158,11,0.22); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
 .staff-quick-btn.records  .staff-quick-icon { background: rgba(56,189,248,0.22); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.4); }
 
+/* Security mobile — calm, decision-first entrance workflow */
+.security-session-strip {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 7, 9, 0.88);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+.security-session-person,
+.security-session-actions,
+.security-session-person > span:last-child,
+.security-session-person small { display: flex; align-items: center; }
+.security-session-person { min-width: 0; gap: 9px; }
+.security-session-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #2b2529, #181416);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.security-session-person > span:last-child { min-width: 0; align-items: flex-start; flex-direction: column; line-height: 1.2; }
+.security-session-person strong { max-width: 135px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff; font-size: 0.8rem; }
+.security-session-person small { gap: 5px; color: #8f8a8d; font-size: 0.64rem; white-space: nowrap; }
+.security-session-person small span { width: 6px; height: 6px; border-radius: 50%; background: #34c759; box-shadow: 0 0 7px rgba(52, 199, 89, 0.65); }
+.security-session-person small span.offline { background: #ff9f0a; box-shadow: none; }
+.security-session-actions { flex-shrink: 0; gap: 6px; }
+.security-session-actions button {
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #c7c2c5;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.security-session-actions button:first-child { border-color: rgba(255, 69, 58, 0.22); background: rgba(255, 69, 58, 0.09); color: #ff8279; }
+.security-session-actions button:disabled { opacity: 0.55; }
+
+.security-mobile-theme .staff-scroll-area {
+  gap: 14px;
+  padding: 0 14px calc(var(--bottom-nav-height) + env(safe-area-inset-bottom) + 26px) !important;
+}
+.security-dashboard-clean { display: flex; flex-direction: column; gap: 12px; padding-top: 18px; }
+.security-dashboard-intro { padding: 0 2px 4px; }
+.security-dashboard-intro > span { color: #a8a3a6; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.security-dashboard-intro h1 { margin: 4px 0 3px; color: #fff; font-size: 1.5rem; line-height: 1.15; letter-spacing: -0.035em; }
+.security-dashboard-intro p { margin: 0; color: #8f8a8d; font-size: 0.78rem; }
+
+.security-primary-action,
+.security-waiting-action,
+.security-secondary-actions button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.security-primary-action {
+  min-height: 88px;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  background: linear-gradient(145deg, #fbfbfd 0%, #e9e8ed 100%);
+  color: #171418;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32), inset 0 1px 0 #fff;
+}
+.security-primary-icon { width: 48px; height: 48px; flex: 0 0 48px; display: grid; place-items: center; border-radius: 15px; background: #171418; color: #fff; }
+.security-primary-action > span:nth-child(2),
+.security-waiting-action > span:nth-child(2),
+.security-secondary-actions button > span { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.security-primary-action strong { font-size: 0.98rem; letter-spacing: -0.015em; }
+.security-primary-action small { color: #6f6a70; font-size: 0.72rem; }
+.security-primary-action:active { transform: scale(0.985); }
+
+.security-waiting-action {
+  min-height: 68px;
+  gap: 12px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 69, 58, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 69, 58, 0.07);
+  color: #fff;
+}
+.security-waiting-count { width: 40px; height: 40px; flex: 0 0 40px; display: grid; place-items: center; border-radius: 13px; background: rgba(255, 69, 58, 0.15); color: #ff8279; font-size: 1rem; font-weight: 800; }
+.security-waiting-action strong { font-size: 0.82rem; }
+.security-waiting-action small { color: #9e969a; font-size: 0.69rem; }
+
+.security-secondary-actions { overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 18px; background: rgba(255, 255, 255, 0.035); }
+.security-secondary-actions button { min-height: 58px; gap: 12px; padding: 10px 13px; border: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.075); background: transparent; color: #fff; }
+.security-secondary-actions button:last-child { border-bottom: 0; }
+.security-secondary-actions button > svg:first-child { color: #a8a3a6; }
+.security-secondary-actions strong { font-size: 0.8rem; }
+.security-secondary-actions small { color: #8f8a8d; font-size: 0.68rem; }
+.security-secondary-actions button > svg:last-child { color: #656065; }
+
+.security-search-field { min-height: 46px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 14px; background: rgba(255, 255, 255, 0.045); color: #777176; }
+.security-search-field input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: #fff; font: inherit; font-size: 0.78rem; }
+.security-search-field input::placeholder { color: #777176; }
+.security-search-field button { display: grid; place-items: center; padding: 5px; border: 0; background: transparent; color: #8f8a8d; cursor: pointer; }
+
 /* Cashier mobile — focused, Apple-like action hierarchy */
 .cashier-session-strip {
   position: sticky;

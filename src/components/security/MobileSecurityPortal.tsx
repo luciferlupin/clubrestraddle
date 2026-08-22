@@ -15,7 +15,6 @@ import {
   Eye,
   Check,
   X,
-  Zap,
   ZoomIn,
   CreditCard,
   BadgeCheck,
@@ -128,112 +127,24 @@ export const MobileSecurityPortal: React.FC = () => {
   return (
     <div className="staff-mobile-portal security-mobile-theme" style={{ paddingBottom: '90px' }}>
 
-      {/* ── Ultra-Sleek Station Header ─────────────────────────────────── */}
-      <header
-        style={{
-          background: 'linear-gradient(180deg, #1f080e 0%, #0d0305 100%)',
-          borderBottom: '1.5px solid rgba(225, 29, 72, 0.4)',
-          padding: '14px 16px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          position: 'sticky',
-          top: 0,
-          zIndex: 40,
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #e11d48 0%, #881337 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 15px rgba(225, 29, 72, 0.5)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-            }}
-          >
-            <ShieldCheck size={20} color="#ffffff" />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#fb7185', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span>Security Checkpoint</span>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: isRealtimeConnected ? '#10b981' : '#f59e0b' }} />
-            </div>
-            <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.2 }}>
-              {staffName.split(' ')[0] || 'Officer'} <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>· Desk 1</span>
-            </div>
-          </div>
+      <header className="security-session-strip">
+        <div className="security-session-person">
+          <span className="security-session-avatar">{(staffName || 'S').charAt(0).toUpperCase()}</span>
+          <span>
+            <strong>{staffName || 'Security officer'}</strong>
+            <small><span className={isRealtimeConnected ? '' : 'offline'} /> Security on duty · Desk 1</small>
+          </span>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="security-session-actions">
           {pendingCheckIns.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setActiveNav('queue')}
-              style={{
-                background: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '20px',
-                padding: '4px 10px',
-                fontSize: '0.72rem',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                boxShadow: '0 0 12px rgba(225, 29, 72, 0.6)',
-                animation: 'pulse 2s infinite',
-                cursor: 'pointer',
-              }}
-            >
-              <Clock size={12} /> {pendingCheckIns.length} waiting
+            <button type="button" onClick={() => setActiveNav('queue')}>
+              <Clock size={13} /> {pendingCheckIns.length} waiting
             </button>
           )}
-
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            style={{
-              padding: '6px 10px',
-              fontSize: '0.72rem',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              borderRadius: '8px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-            }}
-            disabled={isSyncing}
-            onClick={handleManualSync}
-            title="Sync server queue"
-          >
-            <RefreshCw size={12} className={isSyncing ? 'spin-animation' : ''} />
-            <span>{isSyncing ? '…' : 'Sync'}</span>
+          <button type="button" onClick={handleManualSync} disabled={isSyncing} aria-label="Sync entrance queue" title="Sync entrance queue">
+            <RefreshCw size={15} className={isSyncing ? 'spin-animation' : ''} />
           </button>
-
-          <button
-            type="button"
-            style={{
-              background: 'rgba(225, 29, 72, 0.15)',
-              border: '1px solid rgba(225, 29, 72, 0.3)',
-              color: '#fb7185',
-              padding: '6px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onClick={logoutStaff}
-            title="Sign out"
-            aria-label="Sign out"
-          >
+          <button type="button" onClick={logoutStaff} aria-label="Sign out" title="Sign out">
             <LogOut size={16} />
           </button>
         </div>
@@ -269,168 +180,36 @@ export const MobileSecurityPortal: React.FC = () => {
         {/* TAB 1: DOOR SCANNER / VERIFICATION MAIN */}
         {activeNav === 'scan' && (
           <>
-            {/* Quick Scanner & Action Hero Card */}
-            <div
-              style={{
-                background: 'linear-gradient(145deg, #1a080d 0%, #0c0204 100%)',
-                border: '1.5px solid rgba(225, 29, 72, 0.5)',
-                borderRadius: '18px',
-                padding: '16px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 25px rgba(225, 29, 72, 0.2)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#fb7185', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    Scanner & Entrance Terminal
-                  </span>
-                  <h2 style={{ fontSize: '1.18rem', fontWeight: 900, color: '#ffffff', margin: '2px 0 0' }}>
-                    Fast Player Clearance
-                  </h2>
-                </div>
-                <span style={{ padding: '4px 10px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', fontSize: '0.72rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Zap size={11} /> Scanner Ready
-                </span>
+            <section className="security-dashboard-clean">
+              <div className="security-dashboard-intro">
+                <span>Entrance workspace</span>
+                <h1>Who is arriving?</h1>
+                <p>Scan the player pass, check KYC and decide entry.</p>
               </div>
 
-              {/* Main Camera QR Scan Trigger */}
-              <button
-                type="button"
-                onClick={() => setIsScannerOpen(true)}
-                style={{
-                  background: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '14px',
-                  padding: '14px 16px',
-                  fontWeight: 800,
-                  fontSize: '0.96rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px',
-                  boxShadow: '0 6px 20px rgba(225, 29, 72, 0.45)',
-                  cursor: 'pointer',
-                  width: '100%',
-                }}
-              >
-                <QrCode size={22} />
-                <span>Open Camera Pass Scanner</span>
+              <button type="button" className="security-primary-action" onClick={() => setIsScannerOpen(true)}>
+                <span className="security-primary-icon"><QrCode size={24} /></span>
+                <span><strong>Scan player pass</strong><small>Open the camera and verify instantly</small></span>
+                <ChevronRight size={19} />
               </button>
 
-              {/* Secondary Registration & Standee Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsWalkInOpen(true)}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(225, 29, 72, 0.35)',
-                    borderRadius: '12px',
-                    padding: '10px 12px',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <UserPlus size={16} color="#fb7185" />
-                  <span>Register Walk-in</span>
-                </button>
+              <button type="button" className="security-waiting-action" onClick={() => setActiveNav('queue')}>
+                <span className="security-waiting-count">{pendingCheckIns.length}</span>
+                <span><strong>{pendingCheckIns.length === 1 ? 'Player waiting' : 'Players waiting'}</strong><small>{pendingCheckIns.length ? 'Review the entrance queue next' : 'No arrivals need review'}</small></span>
+                <ChevronRight size={18} />
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => setIsQRStandeeOpen(true)}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(56, 189, 248, 0.35)',
-                    borderRadius: '12px',
-                    padding: '10px 12px',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <QrCode size={16} color="#38bdf8" />
-                  <span>Door QR Standee</span>
-                </button>
+              <div className="security-secondary-actions">
+                <button type="button" onClick={() => setIsWalkInOpen(true)}><UserPlus size={19} /><span><strong>Register walk-in</strong><small>Create a new player profile</small></span><ChevronRight size={17} /></button>
+                <button type="button" onClick={() => setIsQRStandeeOpen(true)}><QrCode size={19} /><span><strong>Show door QR</strong><small>Let players start registration</small></span><ChevronRight size={17} /></button>
               </div>
 
-              {/* Direct Search Bar */}
-              <div style={{ position: 'relative' }}>
-                <Search size={17} style={{ position: 'absolute', left: '14px', top: '14px', color: '#94a3b8' }} />
-                <input
-                  type="text"
-                  className="m-input"
-                  style={{
-                    paddingLeft: '42px',
-                    fontSize: '0.9rem',
-                    background: 'rgba(0,0,0,0.5)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    borderRadius: '12px',
-                    color: '#ffffff',
-                    width: '100%',
-                    height: '44px',
-                  }}
-                  placeholder="Search member name, phone, or ID..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch('')}
-                    style={{ position: 'absolute', right: '12px', top: '12px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-                  >
-                    <X size={18} />
-                  </button>
-                )}
-              </div>
-
-              {/* Waiting Arrivals Chip */}
-              {pendingCheckIns.length > 0 && !search && (
-                <button
-                  type="button"
-                  onClick={() => setActiveNav('queue')}
-                  style={{
-                    background: 'linear-gradient(90deg, rgba(225, 29, 72, 0.25) 0%, rgba(159, 18, 57, 0.18) 100%)',
-                    border: '1.5px solid #e11d48',
-                    borderRadius: '12px',
-                    padding: '10px 14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    width: '100%',
-                    color: '#ffffff',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Clock size={16} color="#fb7185" />
-                    <span style={{ fontSize: '0.84rem', fontWeight: 800 }}>
-                      {pendingCheckIns.length} Player{pendingCheckIns.length > 1 ? 's' : ''} Awaiting Review
-                    </span>
-                  </div>
-                  <span style={{ fontSize: '0.75rem', color: '#fb7185', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    View Queue <ChevronRight size={14} />
-                  </span>
-                </button>
-              )}
-            </div>
+              <label className="security-search-field">
+                <Search size={17} />
+                <input type="search" placeholder="Search player name, phone or ID" value={search} onChange={e => setSearch(e.target.value)} />
+                {search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={17} /></button>}
+              </label>
+            </section>
 
             {/* Search Results Dropdown List */}
             {search.trim() && (

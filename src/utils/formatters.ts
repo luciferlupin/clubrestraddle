@@ -159,6 +159,20 @@ export const maskGovtId = (idNumber: string): string => {
   return `${masked}${visible}`;
 };
 
+export const formatFullAadhaar = (aadhaarNumber?: string, govtIdNumber?: string): string => {
+  const directNumber = aadhaarNumber?.trim();
+  if (directNumber) return directNumber;
+
+  const storedId = govtIdNumber?.trim();
+  if (!storedId) return 'Not provided';
+
+  const embeddedAadhaar = storedId.match(/Aadhaar:\s*([\d\s]{12,14})/i)?.[1]?.trim();
+  if (embeddedAadhaar) return embeddedAadhaar;
+
+  const digitsOnly = storedId.replace(/\D/g, '');
+  return digitsOnly.length === 12 ? storedId : 'Not provided';
+};
+
 export const numberToINRWords = (num: number): string => {
   if (num === 0) return 'Zero Rupees Only';
   const a = [

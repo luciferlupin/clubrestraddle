@@ -21,7 +21,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR } from '../../utils/formatters';
+import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR, formatFullAadhaar } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { Player, ExpenseCategory, PaymentMethod } from '../../types';
@@ -1171,7 +1171,7 @@ export const MobileAdminPortal: React.FC = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
                     <span style={{ color: '#94a3b8' }}>1. Aadhaar Card</span>
                     <span style={{ fontWeight: 600, color: '#ffffff', fontFamily: 'monospace' }}>
-                      {selectedPlayer.kyc.aadhaarNumber ? maskGovtId(selectedPlayer.kyc.aadhaarNumber) : (selectedPlayer.kyc.govtIdNumber || 'UIDAI Verified')}
+                      {formatFullAadhaar(selectedPlayer.kyc.aadhaarNumber, selectedPlayer.kyc.govtIdNumber)}
                     </span>
                   </div>
 
