@@ -5,11 +5,13 @@ import {
   Clock,
   CheckCircle2,
   ShieldAlert,
+  Check,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import { formatTimeOnly, formatDateOnly, maskGovtId } from '../../utils/formatters';
 import { KYCBadge, EntryBadge } from '../common/Badge';
+import confetti from 'canvas-confetti';
 
 interface SecurityQueueProps {
   selectedPlayerId: string | null;
@@ -20,7 +22,7 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
   selectedPlayerId,
   onSelectPlayer,
 }) => {
-  const { players, todayCheckIns } = useClub();
+  const { players, todayCheckIns, approvePlayerEntry } = useClub();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
 
@@ -215,12 +217,34 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
                     </td>
 
                     <td>
-                      <div style={{ display: 'flex', gap: '6px' }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                        {checkIn?.verificationStatus === 'pending' && (
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: '4px 10px', fontSize: '0.75rem', gap: '4px' }}
+                            onClick={() => {
+                              approvePlayerEntry(checkIn.id);
+                              try {
+                                confetti({
+                                  particleCount: 40,
+                                  spread: 50,
+                                  origin: { y: 0.7 },
+                                  colors: ['#e11d48', '#ffffff', '#fb7185'],
+                                });
+                              } catch {}
+                            }}
+                            title="Quick Clear & Grant Entry"
+                          >
+                            <Check size={13} /> Grant Entry
+                          </button>
+                        )}
                         <button
                           className="btn btn-secondary btn-sm"
+                          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
                           onClick={() => onSelectPlayer(player, checkIn)}
                         >
-                          Inspect & Verify
+                          Inspect
                         </button>
                       </div>
                     </td>

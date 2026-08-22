@@ -81,8 +81,8 @@ const MainApp: React.FC = () => {
       } else {
         setActiveRole('admin');
       }
-    } else {
-      // 2. Player Portal Default Link: / or /player
+    } else if (pathname.startsWith('/player') || portalParam === 'player') {
+      // 2. Explicit Player Portal Link
       setActiveRole('player');
     }
 

@@ -33,6 +33,27 @@ import {
 } from '../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
+export const playQueueChime = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.45);
+  } catch {
+    // ignore audio autoplay restriction
+  }
+};
+
 interface ClubContextType {
   // Navigation & Session
   activeRole: UserRole;
@@ -41,6 +62,10 @@ interface ClubContextType {
   setSelectedPlayerId: (id: string) => void;
   staffName: string;
   setStaffName: (name: string) => void;
+
+  // Realtime & Multi-Device Sync
+  isRealtimeConnected: boolean;
+  syncNow: () => Promise<void>;
 
   // Staff Authentication & Users
   staffUsers: StaffUser[];
@@ -181,7 +206,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     loadFromStorage(STORAGE_KEYS.STAFF_USERS, initialStaffUsers)
   );
 
-  const [currentStaffUser, setCurrentStaffUser] = useState<StaffUser | null>(null);
+  const [currentStaffUser, setCurrentStaffUser] = useState<StaffUser | null>(() =>
+    loadFromStorage<StaffUser | null>(STORAGE_KEYS.CURRENT_STAFF, null)
+  );
 
   const [selectedPlayerId, setSelectedPlayerIdState] = useState<string>(() =>
     loadFromStorage(STORAGE_KEYS.SELECTED_PLAYER, '')
@@ -240,255 +267,368 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [currentStaffUser, activeRole]);
 
-  // Hydrate from Supabase & Subscribe to Realtime Changes
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState<boolean>(true);
+
+  // Cross-Tab / Multi-Window Real-time Sync via BroadcastChannel & Storage events
+  const broadcastUpdate = useCallback((type: string, payload?: any) => {
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('club_restraddle_sync');
+        bc.postMessage({ type, payload, timestamp: Date.now() });
+        bc.close();
+      }
+    } catch {
+      // Browser fallback
+    }
+  }, []);
+
   useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('club_restraddle_sync');
+        bc.onmessage = (event) => {
+          if (!event.data || !event.data.type) return;
+          const { type, payload } = event.data;
+
+          if (type === 'SYNC_ALL') {
+            setStaffUsers(loadFromStorage(STORAGE_KEYS.STAFF_USERS, initialStaffUsers));
+            setPlayers(loadFromStorage(STORAGE_KEYS.PLAYERS, initialPlayers));
+            setCheckIns(loadFromStorage(STORAGE_KEYS.CHECK_INS, initialCheckIns));
+            setTournaments(loadFromStorage(STORAGE_KEYS.TOURNAMENTS, initialTournaments));
+            setEntries(loadFromStorage(STORAGE_KEYS.ENTRIES, initialEntries));
+            setCashTransactions(loadFromStorage(STORAGE_KEYS.CASH_TXNS, initialCashTransactions));
+            setExpenses(loadFromStorage(STORAGE_KEYS.EXPENSES, initialExpenses));
+            setAuditLogs(loadFromStorage(STORAGE_KEYS.AUDIT_LOGS, initialAuditLogs));
+            setChipRequests(loadFromStorage(STORAGE_KEYS.CHIP_REQUESTS, initialChipRequests));
+          } else if (type === 'CHIP_REQUESTS_UPDATED' && payload) {
+            setChipRequests(payload);
+          } else if (type === 'NEW_CHIP_ORDER' && payload) {
+            setChipRequests(prev => {
+              const exists = prev.some(r => r.id === payload.id);
+              if (exists) return prev.map(r => (r.id === payload.id ? payload : r));
+              return [payload, ...prev];
+            });
+            playQueueChime();
+          } else if (type === 'NEW_CHECK_IN' && payload) {
+            setCheckIns(prev => {
+              const exists = prev.some(c => c.id === payload.id);
+              if (exists) return prev.map(c => (c.id === payload.id ? payload : c));
+              return [payload, ...prev];
+            });
+            playQueueChime();
+          } else if (type === 'CHECK_INS_UPDATED' && payload) {
+            setCheckIns(payload);
+          } else if (type === 'PLAYERS_UPDATED' && payload) {
+            setPlayers(payload);
+          } else if (type === 'TOURNAMENTS_UPDATED' && payload) {
+            setTournaments(payload);
+          } else if (type === 'ENTRIES_UPDATED' && payload) {
+            setEntries(payload);
+          } else if (type === 'CASH_TXNS_UPDATED' && payload) {
+            setCashTransactions(payload);
+          } else if (type === 'EXPENSES_UPDATED' && payload) {
+            setExpenses(payload);
+          } else if (type === 'STAFF_UPDATED' && payload) {
+            setStaffUsers(payload);
+          }
+        };
+      }
+    } catch {
+      // Fallback
+    }
+
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (!e.newValue) return;
+      try {
+        if (e.key === STORAGE_KEYS.CHIP_REQUESTS) {
+          const parsed = JSON.parse(e.newValue);
+          setChipRequests(parsed);
+        } else if (e.key === STORAGE_KEYS.CHECK_INS) {
+          setCheckIns(JSON.parse(e.newValue));
+        } else if (e.key === STORAGE_KEYS.PLAYERS) {
+          setPlayers(JSON.parse(e.newValue));
+        } else if (e.key === STORAGE_KEYS.TOURNAMENTS) {
+          setTournaments(JSON.parse(e.newValue));
+        } else if (e.key === STORAGE_KEYS.ENTRIES) {
+          setEntries(JSON.parse(e.newValue));
+        } else if (e.key === STORAGE_KEYS.CASH_TXNS) {
+          setCashTransactions(JSON.parse(e.newValue));
+        } else if (e.key === STORAGE_KEYS.EXPENSES) {
+          setExpenses(JSON.parse(e.newValue));
+        } else if (e.key === STORAGE_KEYS.STAFF_USERS) {
+          setStaffUsers(JSON.parse(e.newValue));
+        }
+      } catch {
+        // Storage parse fallback
+      }
+    };
+
+    window.addEventListener('storage', handleStorageEvent);
+
+    return () => {
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorageEvent);
+    };
+  }, []);
+
+  // Hydrate from Supabase & Subscribe to Realtime Changes
+  const fetchSupabaseData = useCallback(async () => {
     if (!isSupabaseConfigured || !supabase) return;
     const client = supabase;
 
-    const fetchSupabaseData = async () => {
-      try {
-        const { data: staffData, error: staffErr } = await client.from('staff_users').select('*');
-        if (!staffErr && staffData && staffData.length > 0) {
-          const mappedStaff: StaffUser[] = staffData.map((s: any) => ({
-            id: s.id,
-            fullName: s.full_name || 'Staff Member',
-            email: s.email,
-            password: s.password || s.password_hash || '12345',
-            role: s.role || 'cashier',
-            status: s.status || 'active',
-            createdAt: s.created_at || new Date().toISOString(),
-            createdBy: s.created_by,
-            lastLoginAt: s.last_login_at,
-          }));
-          setStaffUsers(mappedStaff);
-        }
+    try {
+      const { data: staffData, error: staffErr } = await client.from('staff_users').select('*');
+      if (!staffErr && staffData && staffData.length > 0) {
+        const mappedStaff: StaffUser[] = staffData.map((s: any) => ({
+          id: s.id,
+          fullName: s.full_name || 'Staff Member',
+          email: s.email,
+          password: s.password || s.password_hash || '12345',
+          role: s.role || 'cashier',
+          status: s.status || 'active',
+          createdAt: s.created_at || new Date().toISOString(),
+          createdBy: s.created_by,
+          lastLoginAt: s.last_login_at,
+        }));
+        setStaffUsers(mappedStaff);
+      }
 
-        const { data: playersData, error: pErr } = await client.from('players').select('*').order('created_at', { ascending: false });
-        if (!pErr && playersData) {
-          if (playersData.length > 0) {
-            const mappedPlayers: Player[] = playersData.map((p: any) => {
-              const idNum = p.govt_id_number || '';
-              let aadhaarParsed = '';
-              let panParsed = '';
-              const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
-              if (panMatch) panParsed = panMatch[1].toUpperCase();
-              const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
-              if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
+      const { data: playersData, error: pErr } = await client.from('players').select('*').order('created_at', { ascending: false });
+      if (!pErr && playersData) {
+        if (playersData.length > 0) {
+          const mappedPlayers: Player[] = playersData.map((p: any) => {
+            const idNum = p.govt_id_number || '';
+            let aadhaarParsed = '';
+            let panParsed = '';
+            const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
+            if (panMatch) panParsed = panMatch[1].toUpperCase();
+            const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
+            if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
 
-              if (!panParsed && /^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(idNum.trim())) {
-                panParsed = idNum.trim().toUpperCase();
-              }
-              if (!aadhaarParsed && /^\d{12}$/.test(idNum.replace(/\s/g, ''))) {
-                aadhaarParsed = idNum.trim();
-              }
+            if (!panParsed && /^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(idNum.trim())) {
+              panParsed = idNum.trim().toUpperCase();
+            }
+            if (!aadhaarParsed && /^\d{12}$/.test(idNum.replace(/\s/g, ''))) {
+              aadhaarParsed = idNum.trim();
+            }
 
-              return {
-                id: p.id,
+            return {
+              id: p.id,
+              fullName: p.full_name || 'Member Player',
+              phone: p.phone || '',
+              email: p.email || '',
+              membershipTier: p.membership_tier || 'Standard',
+              kycStatus: p.kyc_status || 'pending',
+              registeredAt: p.created_at || new Date().toISOString(),
+              totalVisits: p.total_visits || 1,
+              notes: p.notes,
+              kyc: {
                 fullName: p.full_name || 'Member Player',
                 phone: p.phone || '',
                 email: p.email || '',
-                membershipTier: p.membership_tier || 'Standard',
-                kycStatus: p.kyc_status || 'pending',
-                registeredAt: p.created_at || new Date().toISOString(),
-                totalVisits: p.total_visits || 1,
-                notes: p.notes,
-                kyc: {
-                  fullName: p.full_name || 'Member Player',
-                  phone: p.phone || '',
-                  email: p.email || '',
-                  dateOfBirth: p.date_of_birth || '1995-01-01',
-                  aadhaarNumber: aadhaarParsed,
-                  panNumber: panParsed,
-                  govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
-                  govtIdNumber: p.govt_id_number || 'KYC-PENDING',
-                  address: p.address || 'Delhi NCR, India',
-                  emergencyContactName: p.emergency_contact_name || '',
-                  emergencyContactPhone: p.emergency_contact_phone || '',
-                  photoUrl: p.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
-                  agreedToRules: p.agreed_to_rules ?? true,
-                  submittedAt: p.created_at || new Date().toISOString(),
-                  verifiedAt: p.verified_at,
-                  verifiedBy: p.verified_by,
-                  rejectionReason: p.rejection_reason,
-                },
-              };
-            });
-            setPlayers(mappedPlayers);
-          } else if (initialPlayers.length > 0) {
-            // Seed initial players if database table is empty
-            const seedRows = initialPlayers.map(ip => ({
-              id: ip.id,
-              full_name: ip.fullName,
-              phone: ip.phone,
-              email: ip.email,
-              membership_tier: ip.membershipTier,
-              kyc_status: ip.kycStatus,
-              date_of_birth: ip.kyc.dateOfBirth || '1995-01-01',
-              govt_id_type: 'Aadhaar Card',
-              govt_id_number: ip.kyc.govtIdNumber,
-              address: ip.kyc.address,
-              emergency_contact_name: ip.kyc.emergencyContactName,
-              emergency_contact_phone: ip.kyc.emergencyContactPhone,
-              photo_url: ip.kyc.photoUrl,
-              agreed_to_rules: true,
-              total_visits: ip.totalVisits,
-              created_at: ip.registeredAt,
-            }));
-            client.from('players').insert(seedRows).then(() => {
-              console.log('Seeded initial players to Supabase');
-            });
-          }
-        }
-
-        const { data: checkInsData, error: chkErr } = await client.from('daily_check_ins').select('*').order('created_at', { ascending: false });
-        if (!chkErr && checkInsData) {
-          if (checkInsData.length > 0) {
-            const mappedCheckIns: DailyCheckIn[] = checkInsData.map((c: any) => ({
-              id: c.id,
-              playerId: c.player_id,
-              playerName: c.player_name || 'Member Player',
-              playerPhone: c.player_phone || '',
-              checkInDate: c.check_in_date || getTodayDateString(),
-              checkInTime: c.check_in_time || '18:00:00',
-              verificationStatus: c.verification_status || 'pending',
-              verifiedBy: c.verified_by,
-              verifiedAt: c.verified_at,
-              rejectionReason: c.rejection_reason,
-              tablePreference: c.table_preference || 'Open Seating',
-            }));
-            setCheckIns(mappedCheckIns);
-          } else if (initialCheckIns.length > 0) {
-            // Seed initial check-ins if table is empty
-            const seedChkRows = initialCheckIns.map(ic => ({
-              id: ic.id,
-              player_id: ic.playerId,
-              player_name: ic.playerName,
-              player_phone: ic.playerPhone,
-              check_in_date: ic.checkInDate,
-              check_in_time: ic.checkInTime,
-              verification_status: ic.verificationStatus,
-              table_preference: ic.tablePreference,
-            }));
-            client.from('daily_check_ins').insert(seedChkRows).then(() => {
-              console.log('Seeded initial check-ins to Supabase');
-            });
-          }
-        }
-
-        const { data: tournamentsData } = await client.from('tournaments').select('*');
-        if (tournamentsData && tournamentsData.length > 0) {
-          const mappedTournaments: Tournament[] = tournamentsData.map((t: any) => ({
-            id: t.id,
-            name: t.name,
-            buyInFee: Number(t.buy_in_fee),
-            clubRake: Number(t.club_rake),
-            startingChips: Number(t.starting_chips),
-            guaranteedPrizePool: Number(t.guaranteed_prize_pool),
-            maxSeats: Number(t.max_seats),
-            blindLevelsMinutes: Number(t.blind_levels_minutes),
-            startTime: t.start_time,
-            status: t.status,
-            createdAt: t.created_at,
-            createdBy: t.created_by || 'Cashier',
+                dateOfBirth: p.date_of_birth || '1995-01-01',
+                aadhaarNumber: aadhaarParsed,
+                panNumber: panParsed,
+                govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
+                govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+                address: p.address || 'Delhi NCR, India',
+                emergencyContactName: p.emergency_contact_name || '',
+                emergencyContactPhone: p.emergency_contact_phone || '',
+                photoUrl: p.photo_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
+                agreedToRules: p.agreed_to_rules ?? true,
+                submittedAt: p.created_at || new Date().toISOString(),
+                verifiedAt: p.verified_at,
+                verifiedBy: p.verified_by,
+                rejectionReason: p.rejection_reason,
+              },
+            };
+          });
+          setPlayers(mappedPlayers);
+        } else if (initialPlayers.length > 0) {
+          const seedRows = initialPlayers.map(ip => ({
+            id: ip.id,
+            full_name: ip.fullName,
+            phone: ip.phone,
+            email: ip.email,
+            membership_tier: ip.membershipTier,
+            kyc_status: ip.kycStatus,
+            date_of_birth: ip.kyc.dateOfBirth || '1995-01-01',
+            govt_id_type: 'Aadhaar Card',
+            govt_id_number: ip.kyc.govtIdNumber,
+            address: ip.kyc.address,
+            emergency_contact_name: ip.kyc.emergencyContactName,
+            emergency_contact_phone: ip.kyc.emergencyContactPhone,
+            photo_url: ip.kyc.photoUrl,
+            agreed_to_rules: true,
+            total_visits: ip.totalVisits,
+            created_at: ip.registeredAt,
           }));
-          setTournaments(mappedTournaments);
+          client.from('players').insert(seedRows).then(() => {
+            console.log('Seeded initial players to Supabase');
+          });
         }
+      }
 
-        const { data: entriesData } = await client.from('tournament_entries').select('*');
-        if (entriesData && entriesData.length > 0) {
-          const mappedEntries: TournamentEntry[] = entriesData.map((e: any) => ({
-            id: e.id,
-            tournamentId: e.tournament_id,
-            tournamentName: e.tournament_name,
-            playerId: e.player_id,
-            playerName: e.player_name,
-            playerPhone: e.player_phone,
-            buyInAmount: Number(e.buy_in_amount),
-            rakeAmount: Number(e.rake_amount),
-            paymentMethod: e.payment_method,
-            paymentReference: e.payment_reference,
-            receiptNumber: e.receipt_number,
-            seatNumber: e.seat_number,
-            tableNumber: e.table_number,
-            entryStatus: e.entry_status,
-            cashierName: e.cashier_name,
-            registeredAt: e.registered_at,
-          }));
-          setEntries(mappedEntries);
-        }
-
-        const { data: cashData } = await client.from('cash_transactions').select('*').order('timestamp', { ascending: false });
-        if (cashData && cashData.length > 0) {
-          const mappedCash: CashTransaction[] = cashData.map((t: any) => ({
-            id: t.id,
-            type: t.type,
-            category: t.category,
-            amount: Number(t.amount),
-            description: t.description,
-            paymentMethod: t.payment_method,
-            referenceId: t.reference_id,
-            playerName: t.player_name,
-            cashierName: t.cashier_name,
-            timestamp: t.timestamp,
-            balanceAfter: Number(t.balance_after),
-          }));
-          setCashTransactions(mappedCash);
-        }
-
-        const { data: expensesData } = await client.from('expenses').select('*').order('date', { ascending: false });
-        if (expensesData && expensesData.length > 0) {
-          const mappedExpenses: Expense[] = expensesData.map((exp: any) => ({
-            id: exp.id,
-            category: exp.category,
-            amount: Number(exp.amount),
-            description: exp.description,
-            paidTo: exp.paid_to,
-            paymentMethod: exp.payment_method,
-            date: exp.date,
-            receiptNumber: exp.receipt_number,
-            recordedBy: exp.recorded_by,
-          }));
-          setExpenses(mappedExpenses);
-        }
-
-        const { data: auditData } = await client.from('audit_logs').select('*').order('timestamp', { ascending: false });
-        if (auditData && auditData.length > 0) {
-          const mappedLogs: AuditLog[] = auditData.map((l: any) => ({
-            id: l.id,
-            portal: l.portal,
-            user: l.user_name,
-            action: l.action,
-            details: l.details,
-            timestamp: l.timestamp,
-          }));
-          setAuditLogs(mappedLogs);
-        }
-
-        const { data: chipData } = await client.from('chip_requests').select('*').order('requested_at', { ascending: false });
-        if (chipData && chipData.length > 0) {
-          const mappedChips: ChipRequest[] = chipData.map((c: any) => ({
+      const { data: checkInsData, error: chkErr } = await client.from('daily_check_ins').select('*').order('created_at', { ascending: false });
+      if (!chkErr && checkInsData) {
+        if (checkInsData.length > 0) {
+          const mappedCheckIns: DailyCheckIn[] = checkInsData.map((c: any) => ({
             id: c.id,
             playerId: c.player_id,
-            playerName: c.player_name,
-            playerPhone: c.player_phone,
-            amount: Number(c.amount),
-            chipsQuantity: Number(c.chips_quantity || c.amount),
-            tableNumber: c.table_number,
-            seatNumber: c.seat_number,
-            paymentMethod: c.payment_method,
-            status: c.status,
-            requestedAt: c.requested_at,
-            fulfilledBy: c.fulfilled_by,
-            fulfilledAt: c.fulfilled_at,
-            receiptNumber: c.receipt_number,
-            notes: c.notes,
+            playerName: c.player_name || 'Member Player',
+            playerPhone: c.player_phone || '',
+            checkInDate: c.check_in_date || getTodayDateString(),
+            checkInTime: c.check_in_time || '18:00:00',
+            verificationStatus: c.verification_status || 'pending',
+            verifiedBy: c.verified_by,
+            verifiedAt: c.verified_at,
+            rejectionReason: c.rejection_reason,
+            tablePreference: c.table_preference || 'Open Seating',
           }));
-          setChipRequests(mappedChips);
+          setCheckIns(mappedCheckIns);
+        } else if (initialCheckIns.length > 0) {
+          const seedChkRows = initialCheckIns.map(ic => ({
+            id: ic.id,
+            player_id: ic.playerId,
+            player_name: ic.playerName,
+            player_phone: ic.playerPhone,
+            check_in_date: ic.checkInDate,
+            check_in_time: ic.checkInTime,
+            verification_status: ic.verificationStatus,
+            table_preference: ic.tablePreference,
+          }));
+          client.from('daily_check_ins').insert(seedChkRows).then(() => {
+            console.log('Seeded initial check-ins to Supabase');
+          });
         }
-      } catch (err) {
-        console.warn('Supabase fetch error, fallback to local storage:', err);
       }
-    };
+
+      const { data: tournamentsData } = await client.from('tournaments').select('*');
+      if (tournamentsData && tournamentsData.length > 0) {
+        const mappedTournaments: Tournament[] = tournamentsData.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          buyInFee: Number(t.buy_in_fee),
+          clubRake: Number(t.club_rake),
+          startingChips: Number(t.starting_chips),
+          guaranteedPrizePool: Number(t.guaranteed_prize_pool),
+          maxSeats: Number(t.max_seats),
+          blindLevelsMinutes: Number(t.blind_levels_minutes),
+          startTime: t.start_time,
+          status: t.status,
+          createdAt: t.created_at,
+          createdBy: t.created_by || 'Cashier',
+        }));
+        setTournaments(mappedTournaments);
+      }
+
+      const { data: entriesData } = await client.from('tournament_entries').select('*');
+      if (entriesData && entriesData.length > 0) {
+        const mappedEntries: TournamentEntry[] = entriesData.map((e: any) => ({
+          id: e.id,
+          tournamentId: e.tournament_id,
+          tournamentName: e.tournament_name,
+          playerId: e.player_id,
+          playerName: e.player_name,
+          playerPhone: e.player_phone,
+          buyInAmount: Number(e.buy_in_amount),
+          rakeAmount: Number(e.rake_amount),
+          paymentMethod: e.payment_method,
+          paymentReference: e.payment_reference,
+          receiptNumber: e.receipt_number,
+          seatNumber: e.seat_number,
+          tableNumber: e.table_number,
+          entryStatus: e.entry_status,
+          cashierName: e.cashier_name,
+          registeredAt: e.registered_at,
+        }));
+        setEntries(mappedEntries);
+      }
+
+      const { data: cashData } = await client.from('cash_transactions').select('*').order('timestamp', { ascending: false });
+      if (cashData && cashData.length > 0) {
+        const mappedCash: CashTransaction[] = cashData.map((t: any) => ({
+          id: t.id,
+          type: t.type,
+          category: t.category,
+          amount: Number(t.amount),
+          description: t.description,
+          paymentMethod: t.payment_method,
+          referenceId: t.reference_id,
+          playerName: t.player_name,
+          cashierName: t.cashier_name,
+          timestamp: t.timestamp,
+          balanceAfter: Number(t.balance_after),
+        }));
+        setCashTransactions(mappedCash);
+      }
+
+      const { data: expensesData } = await client.from('expenses').select('*').order('date', { ascending: false });
+      if (expensesData && expensesData.length > 0) {
+        const mappedExpenses: Expense[] = expensesData.map((exp: any) => ({
+          id: exp.id,
+          category: exp.category,
+          amount: Number(exp.amount),
+          description: exp.description,
+          paidTo: exp.paid_to,
+          paymentMethod: exp.payment_method,
+          date: exp.date,
+          receiptNumber: exp.receipt_number,
+          recordedBy: exp.recorded_by,
+        }));
+        setExpenses(mappedExpenses);
+      }
+
+      const { data: auditData } = await client.from('audit_logs').select('*').order('timestamp', { ascending: false });
+      if (auditData && auditData.length > 0) {
+        const mappedLogs: AuditLog[] = auditData.map((l: any) => ({
+          id: l.id,
+          portal: l.portal,
+          user: l.user_name,
+          action: l.action,
+          details: l.details,
+          timestamp: l.timestamp,
+        }));
+        setAuditLogs(mappedLogs);
+      }
+
+      const { data: chipData } = await client.from('chip_requests').select('*').order('requested_at', { ascending: false });
+      if (chipData && chipData.length > 0) {
+        const mappedChips: ChipRequest[] = chipData.map((c: any) => ({
+          id: c.id,
+          playerId: c.player_id,
+          playerName: c.player_name,
+          playerPhone: c.player_phone,
+          amount: Number(c.amount),
+          chipsQuantity: Number(c.chips_quantity || c.amount),
+          tableNumber: c.table_number,
+          seatNumber: c.seat_number,
+          paymentMethod: c.payment_method,
+          status: c.status,
+          requestedAt: c.requested_at,
+          fulfilledBy: c.fulfilled_by,
+          fulfilledAt: c.fulfilled_at,
+          receiptNumber: c.receipt_number,
+          notes: c.notes,
+        }));
+        setChipRequests(mappedChips);
+      }
+
+      setIsRealtimeConnected(true);
+    } catch (err) {
+      console.warn('Supabase fetch error, fallback to local storage:', err);
+    }
+  }, []);
+
+  const syncNow = useCallback(async () => {
+    await fetchSupabaseData();
+    broadcastUpdate('SYNC_ALL');
+  }, [fetchSupabaseData, broadcastUpdate]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+    const client = supabase;
 
     fetchSupabaseData();
 
@@ -612,6 +752,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               receiptNumber: c.receipt_number,
               notes: c.notes,
             };
+
+            if (payload.eventType === 'INSERT' && updatedChip.status === 'pending') {
+              playQueueChime();
+            }
+
             setChipRequests(prev => {
               const exists = prev.some(existing => existing.id === updatedChip.id);
               if (exists) {
@@ -654,10 +799,151 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           }
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tournament_entries' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const e = payload.new;
+            const updatedEntry: TournamentEntry = {
+              id: e.id,
+              tournamentId: e.tournament_id,
+              tournamentName: e.tournament_name,
+              playerId: e.player_id,
+              playerName: e.player_name,
+              playerPhone: e.player_phone,
+              buyInAmount: Number(e.buy_in_amount),
+              rakeAmount: Number(e.rake_amount),
+              paymentMethod: e.payment_method,
+              paymentReference: e.payment_reference,
+              receiptNumber: e.receipt_number,
+              seatNumber: e.seat_number,
+              tableNumber: e.table_number,
+              entryStatus: e.entry_status,
+              cashierName: e.cashier_name,
+              registeredAt: e.registered_at,
+            };
+            setEntries(prev => {
+              const exists = prev.some(x => x.id === updatedEntry.id);
+              if (exists) return prev.map(x => (x.id === updatedEntry.id ? updatedEntry : x));
+              return [updatedEntry, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+            setEntries(prev => prev.filter(e => e.id !== payload.old.id));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cash_transactions' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const t = payload.new;
+            const updatedCash: CashTransaction = {
+              id: t.id,
+              type: t.type,
+              category: t.category,
+              amount: Number(t.amount),
+              description: t.description,
+              paymentMethod: t.payment_method,
+              referenceId: t.reference_id,
+              playerName: t.player_name,
+              cashierName: t.cashier_name,
+              timestamp: t.timestamp,
+              balanceAfter: Number(t.balance_after),
+            };
+            setCashTransactions(prev => {
+              const exists = prev.some(x => x.id === updatedCash.id);
+              if (exists) return prev.map(x => (x.id === updatedCash.id ? updatedCash : x));
+              return [updatedCash, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+            setCashTransactions(prev => prev.filter(t => t.id !== payload.old.id));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'expenses' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const exp = payload.new;
+            const updatedExp: Expense = {
+              id: exp.id,
+              category: exp.category,
+              amount: Number(exp.amount),
+              description: exp.description,
+              paidTo: exp.paid_to,
+              paymentMethod: exp.payment_method,
+              date: exp.date,
+              receiptNumber: exp.receipt_number,
+              recordedBy: exp.recorded_by,
+            };
+            setExpenses(prev => {
+              const exists = prev.some(x => x.id === updatedExp.id);
+              if (exists) return prev.map(x => (x.id === updatedExp.id ? updatedExp : x));
+              return [updatedExp, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+            setExpenses(prev => prev.filter(e => e.id !== payload.old.id));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'staff_users' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const s = payload.new;
+            const updatedStaff: StaffUser = {
+              id: s.id,
+              fullName: s.full_name || 'Staff Member',
+              email: s.email,
+              password: s.password || s.password_hash || '12345',
+              role: s.role || 'cashier',
+              status: s.status || 'active',
+              createdAt: s.created_at || new Date().toISOString(),
+              createdBy: s.created_by,
+              lastLoginAt: s.last_login_at,
+            };
+            setStaffUsers(prev => {
+              const exists = prev.some(x => x.id === updatedStaff.id);
+              if (exists) return prev.map(x => (x.id === updatedStaff.id ? updatedStaff : x));
+              return [updatedStaff, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+            setStaffUsers(prev => prev.filter(s => s.id !== payload.old.id));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'audit_logs' },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT') {
+            const l = payload.new;
+            const updatedLog: AuditLog = {
+              id: l.id,
+              portal: l.portal,
+              user: l.user_name,
+              action: l.action,
+              details: l.details,
+              timestamp: l.timestamp,
+            };
+            setAuditLogs(prev => {
+              const exists = prev.some(x => x.id === updatedLog.id);
+              if (exists) return prev;
+              return [updatedLog, ...prev];
+            });
+          }
+        }
+      )
+      .subscribe((status: string) => {
+        setIsRealtimeConnected(status === 'SUBSCRIBED');
+      });
 
-    // Secondary 8-second polling & window focus sync fallback
-    const interval = setInterval(fetchSupabaseData, 8000);
+    // Secondary 6-second polling & window focus sync fallback
+    const interval = setInterval(fetchSupabaseData, 6000);
     const handleFocus = () => fetchSupabaseData();
     window.addEventListener('focus', handleFocus);
 
@@ -666,7 +952,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       window.removeEventListener('focus', handleFocus);
       client.removeChannel(realtimeChannel);
     };
-  }, []);
+  }, [fetchSupabaseData]);
 
   const setActiveRole = useCallback((role: UserRole) => {
     setActiveRoleState(role);
@@ -760,7 +1046,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
 
-    setStaffUsers(prev => prev.filter(u => u.id !== id));
+    setStaffUsers(prev => {
+      const next = prev.filter(u => u.id !== id);
+      broadcastUpdate('STAFF_UPDATED', next);
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
       supabase.from('staff_users').delete().eq('id', id);
     }
@@ -771,8 +1061,12 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const user = staffUsers.find(u => u.id === id);
     if (!user || user.role === 'admin') return;
 
-    const newStatus = user.status === 'active' ? 'suspended' : 'active';
-    setStaffUsers(prev => prev.map(u => (u.id === id ? { ...u, status: newStatus } : u)));
+    const newStatus: StaffUser['status'] = user.status === 'active' ? 'suspended' : 'active';
+    setStaffUsers(prev => {
+      const next = prev.map(u => (u.id === id ? { ...u, status: newStatus } : u));
+      broadcastUpdate('STAFF_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('staff_users').update({ status: newStatus }).eq('id', id);
@@ -782,11 +1076,20 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateStaffUser = (staffId: string, updates: Partial<StaffUser>) => {
-    setStaffUsers(prev =>
-      prev.map(u => (u.id === staffId ? { ...u, ...updates } : u))
-    );
+    setStaffUsers(prev => {
+      const next = prev.map(u => (u.id === staffId ? { ...u, ...updates } : u));
+      broadcastUpdate('STAFF_UPDATED', next);
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
-      supabase.from('staff_users').update(updates).eq('id', staffId);
+      const dbUpdates: any = {};
+      if (updates.fullName !== undefined) dbUpdates.full_name = updates.fullName;
+      if (updates.email !== undefined) dbUpdates.email = updates.email;
+      if (updates.password !== undefined) dbUpdates.password_hash = updates.password;
+      if (updates.role !== undefined) dbUpdates.role = updates.role;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.lastLoginAt !== undefined) dbUpdates.last_login_at = updates.lastLoginAt;
+      supabase.from('staff_users').update(dbUpdates).eq('id', staffId);
     }
     addAuditLog('Admin', 'Staff Account Updated', `Updated profile for staff member ${staffId}.`);
   };
@@ -1180,23 +1483,68 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       notes: params.notes,
     };
 
-    setChipRequests(prev => [newRequest, ...prev]);
+    setChipRequests(prev => {
+      const next = [newRequest, ...prev];
+      broadcastUpdate('NEW_CHIP_ORDER', newRequest);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('chip_requests').insert({
-        id: newRequest.id,
-        player_id: newRequest.playerId,
-        player_name: newRequest.playerName,
-        player_phone: newRequest.playerPhone,
-        amount: newRequest.amount,
-        chips_quantity: newRequest.chipsQuantity,
-        table_number: newRequest.tableNumber,
-        seat_number: newRequest.seatNumber,
-        payment_method: newRequest.paymentMethod,
-        status: newRequest.status,
-        requested_at: newRequest.requestedAt,
-        notes: newRequest.notes,
-      });
+      const dbClient = supabase;
+      // Ensure player row exists in database before inserting foreign key
+      if (player) {
+        dbClient.from('players').upsert({
+          id: player.id,
+          full_name: player.fullName,
+          phone: player.phone,
+          email: player.email,
+          membership_tier: player.membershipTier,
+          kyc_status: player.kycStatus,
+          created_at: player.registeredAt,
+        }, { onConflict: 'id' }).then(() => {
+          dbClient.from('chip_requests').insert({
+            id: newRequest.id,
+            player_id: newRequest.playerId,
+            player_name: newRequest.playerName,
+            player_phone: newRequest.playerPhone,
+            amount: newRequest.amount,
+            chips_quantity: newRequest.chipsQuantity,
+            table_number: newRequest.tableNumber,
+            seat_number: newRequest.seatNumber,
+            payment_method: newRequest.paymentMethod,
+            status: newRequest.status,
+            requested_at: newRequest.requestedAt,
+            notes: newRequest.notes,
+          }).then(({ error }) => {
+            if (error) {
+              console.error('Failed to save chip request to Supabase:', error.message);
+            } else {
+              console.log('Chip request successfully saved to Supabase:', newRequest.id);
+            }
+          });
+        });
+      } else {
+        dbClient.from('chip_requests').insert({
+          id: newRequest.id,
+          player_id: newRequest.playerId,
+          player_name: newRequest.playerName,
+          player_phone: newRequest.playerPhone,
+          amount: newRequest.amount,
+          chips_quantity: newRequest.chipsQuantity,
+          table_number: newRequest.tableNumber,
+          seat_number: newRequest.seatNumber,
+          payment_method: newRequest.paymentMethod,
+          status: newRequest.status,
+          requested_at: newRequest.requestedAt,
+          notes: newRequest.notes,
+        }).then(({ error }) => {
+          if (error) {
+            console.error('Failed to save chip request to Supabase:', error.message);
+          } else {
+            console.log('Chip request successfully saved to Supabase:', newRequest.id);
+          }
+        });
+      }
     }
 
     addAuditLog(
@@ -1232,21 +1580,43 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       tablePreference: tablePreference || 'Cash / Tournament Table',
     };
 
-    setCheckIns(prev => [newCheckIn, ...prev]);
-    setPlayers(prev =>
-      prev.map(p => (p.id === playerId ? { ...p, totalVisits: p.totalVisits + 1 } : p))
-    );
+    setCheckIns(prev => {
+      const next = [newCheckIn, ...prev];
+      broadcastUpdate('NEW_CHECK_IN', newCheckIn);
+      broadcastUpdate('CHECK_INS_UPDATED', next);
+      return next;
+    });
+    setPlayers(prev => {
+      const next = prev.map(p => (p.id === playerId ? { ...p, totalVisits: p.totalVisits + 1 } : p));
+      broadcastUpdate('PLAYERS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('daily_check_ins').insert({
-        id: newCheckIn.id,
-        player_id: newCheckIn.playerId,
-        player_name: newCheckIn.playerName,
-        player_phone: newCheckIn.playerPhone,
-        check_in_date: newCheckIn.checkInDate,
-        check_in_time: newCheckIn.checkInTime,
-        verification_status: newCheckIn.verificationStatus,
-        table_preference: newCheckIn.tablePreference,
+      const dbClient = supabase;
+      dbClient.from('players').upsert({
+        id: player.id,
+        full_name: player.fullName,
+        phone: player.phone,
+        email: player.email,
+        membership_tier: player.membershipTier,
+        kyc_status: player.kycStatus,
+        created_at: player.registeredAt,
+        total_visits: player.totalVisits + 1,
+      }, { onConflict: 'id' }).then(() => {
+        dbClient.from('daily_check_ins').insert({
+          id: newCheckIn.id,
+          player_id: newCheckIn.playerId,
+          player_name: newCheckIn.playerName,
+          player_phone: newCheckIn.playerPhone,
+          check_in_date: newCheckIn.checkInDate,
+          check_in_time: newCheckIn.checkInTime,
+          verification_status: newCheckIn.verificationStatus,
+          table_preference: newCheckIn.tablePreference,
+        }).then(({ error }) => {
+          if (error) console.error('Supabase daily_check_ins insert error:', error.message);
+          else console.log('Daily check-in saved to database:', newCheckIn.id);
+        });
       });
     }
 
@@ -1260,29 +1630,54 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updatePlayerKYC = (playerId: string, updatedKYC: Partial<PlayerKYC>) => {
-    setPlayers(prev =>
-      prev.map(p => {
+    const nowIso = new Date().toISOString();
+    setPlayers(prev => {
+      const next = prev.map(p => {
         if (p.id === playerId) {
           return {
             ...p,
-            kycStatus: 'pending',
+            kycStatus: 'pending' as const,
             kyc: {
               ...p.kyc,
               ...updatedKYC,
-              submittedAt: new Date().toISOString(),
+              submittedAt: nowIso,
               rejectionReason: undefined,
             },
           };
         }
         return p;
-      })
-    );
+      });
+      broadcastUpdate('PLAYERS_UPDATED', next);
+      return next;
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      const dbUpdates: any = {
+        kyc_status: 'pending',
+        rejection_reason: null,
+      };
+      if (updatedKYC.fullName) dbUpdates.full_name = updatedKYC.fullName;
+      if (updatedKYC.phone) dbUpdates.phone = updatedKYC.phone;
+      if (updatedKYC.email) dbUpdates.email = updatedKYC.email;
+      if (updatedKYC.dateOfBirth) dbUpdates.date_of_birth = updatedKYC.dateOfBirth;
+      if (updatedKYC.govtIdType) dbUpdates.govt_id_type = updatedKYC.govtIdType;
+      if (updatedKYC.govtIdNumber) dbUpdates.govt_id_number = updatedKYC.govtIdNumber;
+      if (updatedKYC.address) dbUpdates.address = updatedKYC.address;
+      if (updatedKYC.emergencyContactName) dbUpdates.emergency_contact_name = updatedKYC.emergencyContactName;
+      if (updatedKYC.emergencyContactPhone) dbUpdates.emergency_contact_phone = updatedKYC.emergencyContactPhone;
+      if (updatedKYC.photoUrl) dbUpdates.photo_url = updatedKYC.photoUrl;
+
+      supabase.from('players').update(dbUpdates).eq('id', playerId).then(({ error }) => {
+        if (error) console.error('Supabase updatePlayerKYC error:', error.message);
+      });
+    }
+
     addAuditLog('Player', 'KYC Resubmitted', `Player ${playerId} re-submitted KYC verification information.`);
   };
 
   const updatePlayer = (playerId: string, updates: Partial<Player>) => {
-    setPlayers(prev =>
-      prev.map(p => {
+    setPlayers(prev => {
+      const next = prev.map(p => {
         if (p.id === playerId) {
           const updated = { ...p, ...updates };
           if (updates.kyc) {
@@ -1291,8 +1686,10 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return updated;
         }
         return p;
-      })
-    );
+      });
+      broadcastUpdate('PLAYERS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       const p = updates;
@@ -1311,8 +1708,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deletePlayer = (playerId: string) => {
     const p = players.find(x => x.id === playerId);
-    setPlayers(prev => prev.filter(x => x.id !== playerId));
-    setCheckIns(prev => prev.filter(c => c.playerId !== playerId));
+    setPlayers(prev => {
+      const next = prev.filter(x => x.id !== playerId);
+      broadcastUpdate('PLAYERS_UPDATED', next);
+      return next;
+    });
+    setCheckIns(prev => {
+      const next = prev.filter(c => c.playerId !== playerId);
+      broadcastUpdate('CHECK_INS_UPDATED', next);
+      return next;
+    });
     if (selectedPlayerId === playerId) {
       setSelectedPlayerIdState('');
     }
@@ -1334,7 +1739,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       createdBy: currentStaffUser ? currentStaffUser.fullName : staffName,
     };
 
-    setTournaments(prev => [newTournament, ...prev]);
+    setTournaments(prev => {
+      const next = [newTournament, ...prev];
+      broadcastUpdate('TOURNAMENTS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('tournaments').insert({
@@ -1358,12 +1767,24 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateTournament = (tournamentId: string, updates: Partial<Tournament>) => {
-    setTournaments(prev =>
-      prev.map(t => (t.id === tournamentId ? { ...t, ...updates } : t))
-    );
+    setTournaments(prev => {
+      const next = prev.map(t => (t.id === tournamentId ? { ...t, ...updates } : t));
+      broadcastUpdate('TOURNAMENTS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('tournaments').update(updates).eq('id', tournamentId);
+      const dbUpdates: any = {};
+      if (updates.name !== undefined) dbUpdates.name = updates.name;
+      if (updates.buyInFee !== undefined) dbUpdates.buy_in_fee = updates.buyInFee;
+      if (updates.clubRake !== undefined) dbUpdates.club_rake = updates.clubRake;
+      if (updates.startingChips !== undefined) dbUpdates.starting_chips = updates.startingChips;
+      if (updates.guaranteedPrizePool !== undefined) dbUpdates.guaranteed_prize_pool = updates.guaranteedPrizePool;
+      if (updates.maxSeats !== undefined) dbUpdates.max_seats = updates.maxSeats;
+      if (updates.blindLevelsMinutes !== undefined) dbUpdates.blind_levels_minutes = updates.blindLevelsMinutes;
+      if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      supabase.from('tournaments').update(dbUpdates).eq('id', tournamentId);
     }
 
     addAuditLog('Cashier', 'Tournament Updated', `Updated tournament details for ${tournamentId}.`);
@@ -1371,7 +1792,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteTournament = (tournamentId: string) => {
     const trn = tournaments.find(t => t.id === tournamentId);
-    setTournaments(prev => prev.filter(t => t.id !== tournamentId));
+    setTournaments(prev => {
+      const next = prev.filter(t => t.id !== tournamentId);
+      broadcastUpdate('TOURNAMENTS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('tournaments').delete().eq('id', tournamentId);
@@ -1433,41 +1858,80 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       balanceAfter: newBalance,
     };
 
-    setEntries(prev => [newEntry, ...prev]);
-    setCashTransactions(prev => [cashTxn, ...prev]);
+    setEntries(prev => {
+      const next = [newEntry, ...prev];
+      broadcastUpdate('ENTRIES_UPDATED', next);
+      return next;
+    });
+    setCashTransactions(prev => {
+      const next = [cashTxn, ...prev];
+      broadcastUpdate('CASH_TXNS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('tournament_entries').insert({
-        id: newEntry.id,
-        tournament_id: newEntry.tournamentId,
-        tournament_name: newEntry.tournamentName,
-        player_id: newEntry.playerId,
-        player_name: newEntry.playerName,
-        player_phone: newEntry.playerPhone,
-        buy_in_amount: newEntry.buyInAmount,
-        rake_amount: newEntry.rakeAmount,
-        payment_method: newEntry.paymentMethod,
-        payment_reference: newEntry.paymentReference,
-        receipt_number: newEntry.receiptNumber,
-        seat_number: newEntry.seatNumber,
-        table_number: newEntry.tableNumber,
-        entry_status: newEntry.entryStatus,
-        cashier_name: newEntry.cashierName,
-        registered_at: newEntry.registeredAt,
-      });
+      const dbClient = supabase;
+      Promise.all([
+        dbClient.from('tournaments').upsert({
+          id: tournament.id,
+          name: tournament.name,
+          buy_in_fee: tournament.buyInFee,
+          club_rake: tournament.clubRake,
+          starting_chips: tournament.startingChips,
+          guaranteed_prize_pool: tournament.guaranteedPrizePool,
+          max_seats: tournament.maxSeats,
+          blind_levels_minutes: tournament.blindLevelsMinutes,
+          start_time: tournament.startTime,
+          status: tournament.status,
+          created_by: tournament.createdBy,
+        }, { onConflict: 'id' }),
+        dbClient.from('players').upsert({
+          id: player.id,
+          full_name: player.fullName,
+          phone: player.phone,
+          email: player.email,
+          membership_tier: player.membershipTier,
+          kyc_status: player.kycStatus,
+          created_at: player.registeredAt,
+        }, { onConflict: 'id' }),
+      ]).then(() => {
+        dbClient.from('tournament_entries').insert({
+          id: newEntry.id,
+          tournament_id: newEntry.tournamentId,
+          tournament_name: newEntry.tournamentName,
+          player_id: newEntry.playerId,
+          player_name: newEntry.playerName,
+          player_phone: newEntry.playerPhone,
+          buy_in_amount: newEntry.buyInAmount,
+          rake_amount: newEntry.rakeAmount,
+          payment_method: newEntry.paymentMethod,
+          payment_reference: newEntry.paymentReference,
+          receipt_number: newEntry.receiptNumber,
+          seat_number: newEntry.seatNumber,
+          table_number: newEntry.tableNumber,
+          entry_status: newEntry.entryStatus,
+          cashier_name: newEntry.cashierName,
+          registered_at: newEntry.registeredAt,
+        }).then(({ error }) => {
+          if (error) console.error('Supabase tournament_entries insert error:', error.message);
+          else console.log('Tournament entry saved to database:', newEntry.id);
+        });
 
-      supabase.from('cash_transactions').insert({
-        id: cashTxn.id,
-        type: cashTxn.type,
-        category: cashTxn.category,
-        amount: cashTxn.amount,
-        description: cashTxn.description,
-        payment_method: cashTxn.paymentMethod,
-        reference_id: cashTxn.referenceId,
-        player_name: cashTxn.playerName,
-        cashier_name: cashTxn.cashierName,
-        balance_after: cashTxn.balanceAfter,
-        timestamp: cashTxn.timestamp,
+        dbClient.from('cash_transactions').insert({
+          id: cashTxn.id,
+          type: cashTxn.type,
+          category: cashTxn.category,
+          amount: cashTxn.amount,
+          description: cashTxn.description,
+          payment_method: cashTxn.paymentMethod,
+          reference_id: cashTxn.referenceId,
+          player_name: cashTxn.playerName,
+          cashier_name: cashTxn.cashierName,
+          balance_after: cashTxn.balanceAfter,
+          timestamp: cashTxn.timestamp,
+        }).then(({ error }) => {
+          if (error) console.error('Supabase cash_transactions insert error:', error.message);
+        });
       });
     }
 
@@ -1505,7 +1969,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       balanceAfter: newBalance,
     };
 
-    setCashTransactions(prev => [newTxn, ...prev]);
+    setCashTransactions(prev => {
+      const next = [newTxn, ...prev];
+      broadcastUpdate('CASH_TXNS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('cash_transactions').insert({
@@ -1556,7 +2024,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       balanceAfter: newBalance,
     };
 
-    setCashTransactions(prev => [newTxn, ...prev]);
+    setCashTransactions(prev => {
+      const next = [newTxn, ...prev];
+      broadcastUpdate('CASH_TXNS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('cash_transactions').insert({
@@ -1583,9 +2055,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateTournamentStatus = (tournamentId: string, status: Tournament['status']) => {
-    setTournaments(prev =>
-      prev.map(t => (t.id === tournamentId ? { ...t, status } : t))
-    );
+    setTournaments(prev => {
+      const next = prev.map(t => (t.id === tournamentId ? { ...t, status } : t));
+      broadcastUpdate('TOURNAMENTS_UPDATED', next);
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
       supabase.from('tournaments').update({ status }).eq('id', tournamentId);
     }
@@ -1600,19 +2074,21 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
     const receiptNum = generateReceiptNumber();
 
-    setChipRequests(prev =>
-      prev.map(r =>
+    setChipRequests(prev => {
+      const next = prev.map(r =>
         r.id === requestId
           ? {
               ...r,
-              status: 'delivered',
+              status: 'delivered' as const,
               fulfilledBy: staff,
               fulfilledAt: nowIso,
               receiptNumber: receiptNum,
             }
           : r
-      )
-    );
+      );
+      broadcastUpdate('CHIP_REQUESTS_UPDATED', next);
+      return next;
+    });
 
     // Automatically record vault cash received
     addCashReceived({
@@ -1645,17 +2121,19 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!req) return;
 
     const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
-    setChipRequests(prev =>
-      prev.map(r =>
+    setChipRequests(prev => {
+      const next = prev.map(r =>
         r.id === requestId
           ? {
               ...r,
-              status: 'cancelled',
+              status: 'cancelled' as const,
               notes: reason || 'Cancelled by cashier',
             }
           : r
-      )
-    );
+      );
+      broadcastUpdate('CHIP_REQUESTS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('chip_requests').update({
@@ -1677,30 +2155,32 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let approvedPlayerName = '';
     let targetPlayerId = '';
 
-    setCheckIns(prev =>
-      prev.map(c => {
+    setCheckIns(prev => {
+      const next = prev.map(c => {
         if (c.id === checkInId) {
           approvedPlayerName = c.playerName;
           targetPlayerId = c.playerId;
           return {
             ...c,
-            verificationStatus: 'approved',
+            verificationStatus: 'approved' as const,
             verifiedBy: currentStaffUser ? currentStaffUser.fullName : staffName,
             verifiedAt: nowIso,
             rejectionReason: undefined,
           };
         }
         return c;
-      })
-    );
+      });
+      broadcastUpdate('CHECK_INS_UPDATED', next);
+      return next;
+    });
 
     if (targetPlayerId) {
-      setPlayers(prev =>
-        prev.map(p => {
+      setPlayers(prev => {
+        const next = prev.map(p => {
           if (p.id === targetPlayerId && p.kycStatus === 'pending') {
             return {
               ...p,
-              kycStatus: 'verified',
+              kycStatus: 'verified' as const,
               kyc: {
                 ...p.kyc,
                 verifiedAt: nowIso,
@@ -1709,8 +2189,10 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             };
           }
           return p;
-        })
-      );
+        });
+        broadcastUpdate('PLAYERS_UPDATED', next);
+        return next;
+      });
     }
 
     if (isSupabaseConfigured && supabase) {
@@ -1740,21 +2222,23 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const nowIso = new Date().toISOString();
     let rejectedPlayerName = '';
 
-    setCheckIns(prev =>
-      prev.map(c => {
+    setCheckIns(prev => {
+      const next = prev.map(c => {
         if (c.id === checkInId) {
           rejectedPlayerName = c.playerName;
           return {
             ...c,
-            verificationStatus: 'rejected',
+            verificationStatus: 'rejected' as const,
             verifiedBy: currentStaffUser ? currentStaffUser.fullName : staffName,
             verifiedAt: nowIso,
             rejectionReason: reason,
           };
         }
         return c;
-      })
-    );
+      });
+      broadcastUpdate('CHECK_INS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('daily_check_ins').update({
@@ -1774,8 +2258,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const reviewKYC = (playerId: string, status: KYCStatus, reason?: string) => {
     const nowIso = new Date().toISOString();
-    setPlayers(prev =>
-      prev.map(p => {
+    setPlayers(prev => {
+      const next = prev.map(p => {
         if (p.id === playerId) {
           return {
             ...p,
@@ -1789,8 +2273,10 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           };
         }
         return p;
-      })
-    );
+      });
+      broadcastUpdate('PLAYERS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('players').update({
@@ -1816,7 +2302,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       recordedBy: currentStaffUser ? currentStaffUser.fullName : staffName,
     };
 
-    setExpenses(prev => [newExpense, ...prev]);
+    setExpenses(prev => {
+      const next = [newExpense, ...prev];
+      broadcastUpdate('EXPENSES_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('expenses').insert({
@@ -1841,12 +2331,23 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateExpense = (expenseId: string, updates: Partial<Expense>) => {
-    setExpenses(prev =>
-      prev.map(e => (e.id === expenseId ? { ...e, ...updates } : e))
-    );
+    setExpenses(prev => {
+      const next = prev.map(e => (e.id === expenseId ? { ...e, ...updates } : e));
+      broadcastUpdate('EXPENSES_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('expenses').update(updates).eq('id', expenseId);
+      const dbUpdates: any = {};
+      if (updates.category !== undefined) dbUpdates.category = updates.category;
+      if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
+      if (updates.description !== undefined) dbUpdates.description = updates.description;
+      if (updates.paidTo !== undefined) dbUpdates.paid_to = updates.paidTo;
+      if (updates.paymentMethod !== undefined) dbUpdates.payment_method = updates.paymentMethod;
+      if (updates.date !== undefined) dbUpdates.date = updates.date;
+      if (updates.receiptNumber !== undefined) dbUpdates.receipt_number = updates.receiptNumber;
+      if (updates.recordedBy !== undefined) dbUpdates.recorded_by = updates.recordedBy;
+      supabase.from('expenses').update(dbUpdates).eq('id', expenseId);
     }
 
     addAuditLog('Admin', 'Expense Updated', `Updated expense record ${expenseId}.`);
@@ -1854,7 +2355,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteExpense = (expenseId: string) => {
     const exp = expenses.find(e => e.id === expenseId);
-    setExpenses(prev => prev.filter(e => e.id !== expenseId));
+    setExpenses(prev => {
+      const next = prev.filter(e => e.id !== expenseId);
+      broadcastUpdate('EXPENSES_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('expenses').delete().eq('id', expenseId);
@@ -1865,7 +2370,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteCashTransaction = (transactionId: string) => {
     const txn = cashTransactions.find(t => t.id === transactionId);
-    setCashTransactions(prev => prev.filter(t => t.id !== transactionId));
+    setCashTransactions(prev => {
+      const next = prev.filter(t => t.id !== transactionId);
+      broadcastUpdate('CASH_TXNS_UPDATED', next);
+      return next;
+    });
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('cash_transactions').delete().eq('id', transactionId);
@@ -1875,18 +2384,40 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateTournamentEntry = (entryId: string, updates: Partial<TournamentEntry>) => {
-    setEntries(prev =>
-      prev.map(e => (e.id === entryId ? { ...e, ...updates } : e))
-    );
+    setEntries(prev => {
+      const next = prev.map(e => (e.id === entryId ? { ...e, ...updates } : e));
+      broadcastUpdate('ENTRIES_UPDATED', next);
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
-      supabase.from('tournament_entries').update(updates).eq('id', entryId);
+      const dbUpdates: any = {};
+      if (updates.tournamentId !== undefined) dbUpdates.tournament_id = updates.tournamentId;
+      if (updates.tournamentName !== undefined) dbUpdates.tournament_name = updates.tournamentName;
+      if (updates.playerId !== undefined) dbUpdates.player_id = updates.playerId;
+      if (updates.playerName !== undefined) dbUpdates.player_name = updates.playerName;
+      if (updates.playerPhone !== undefined) dbUpdates.player_phone = updates.playerPhone;
+      if (updates.buyInAmount !== undefined) dbUpdates.buy_in_amount = updates.buyInAmount;
+      if (updates.rakeAmount !== undefined) dbUpdates.rake_amount = updates.rakeAmount;
+      if (updates.paymentMethod !== undefined) dbUpdates.payment_method = updates.paymentMethod;
+      if (updates.paymentReference !== undefined) dbUpdates.payment_reference = updates.paymentReference;
+      if (updates.receiptNumber !== undefined) dbUpdates.receipt_number = updates.receiptNumber;
+      if (updates.seatNumber !== undefined) dbUpdates.seat_number = updates.seatNumber;
+      if (updates.tableNumber !== undefined) dbUpdates.table_number = updates.tableNumber;
+      if (updates.entryStatus !== undefined) dbUpdates.entry_status = updates.entryStatus;
+      if (updates.cashierName !== undefined) dbUpdates.cashier_name = updates.cashierName;
+      if (updates.registeredAt !== undefined) dbUpdates.registered_at = updates.registeredAt;
+      supabase.from('tournament_entries').update(dbUpdates).eq('id', entryId);
     }
     addAuditLog('Cashier', 'Tournament Entry Updated', `Updated registration entry ${entryId}.`);
   };
 
   const deleteTournamentEntry = (entryId: string) => {
     const entry = entries.find(e => e.id === entryId);
-    setEntries(prev => prev.filter(e => e.id !== entryId));
+    setEntries(prev => {
+      const next = prev.filter(e => e.id !== entryId);
+      broadcastUpdate('ENTRIES_UPDATED', next);
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
       supabase.from('tournament_entries').delete().eq('id', entryId);
     }
@@ -1894,17 +2425,34 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateChipRequest = (requestId: string, updates: Partial<ChipRequest>) => {
-    setChipRequests(prev =>
-      prev.map(r => (r.id === requestId ? { ...r, ...updates } : r))
-    );
+    setChipRequests(prev => {
+      const next = prev.map(r => (r.id === requestId ? { ...r, ...updates } : r));
+      broadcastUpdate('CHIP_REQUESTS_UPDATED', next);
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
-      supabase.from('chip_requests').update(updates).eq('id', requestId);
+      const dbUpdates: any = {};
+      if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
+      if (updates.chipsQuantity !== undefined) dbUpdates.chips_quantity = updates.chipsQuantity;
+      if (updates.tableNumber !== undefined) dbUpdates.table_number = updates.tableNumber;
+      if (updates.seatNumber !== undefined) dbUpdates.seat_number = updates.seatNumber;
+      if (updates.paymentMethod !== undefined) dbUpdates.payment_method = updates.paymentMethod;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+      if (updates.fulfilledBy !== undefined) dbUpdates.fulfilled_by = updates.fulfilledBy;
+      if (updates.fulfilledAt !== undefined) dbUpdates.fulfilled_at = updates.fulfilledAt;
+      if (updates.receiptNumber !== undefined) dbUpdates.receipt_number = updates.receiptNumber;
+      supabase.from('chip_requests').update(dbUpdates).eq('id', requestId);
     }
     addAuditLog('Cashier', 'Chip Request Updated', `Updated chip order ${requestId}.`);
   };
 
   const deleteChipRequest = (requestId: string) => {
-    setChipRequests(prev => prev.filter(r => r.id !== requestId));
+    setChipRequests(prev => {
+      const next = prev.filter(r => r.id !== requestId);
+      broadcastUpdate('CHIP_REQUESTS_UPDATED', next);
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
       supabase.from('chip_requests').delete().eq('id', requestId);
     }
@@ -1912,28 +2460,58 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updateCashTransaction = (transactionId: string, updates: Partial<CashTransaction>) => {
-    setCashTransactions(prev =>
-      prev.map(t => (t.id === transactionId ? { ...t, ...updates } : t))
-    );
+    setCashTransactions(prev => {
+      const next = prev.map(t => (t.id === transactionId ? { ...t, ...updates } : t));
+      broadcastUpdate('CASH_TXNS_UPDATED', next);
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
-      supabase.from('cash_transactions').update(updates).eq('id', transactionId);
+      const dbUpdates: any = {};
+      if (updates.type !== undefined) dbUpdates.type = updates.type;
+      if (updates.category !== undefined) dbUpdates.category = updates.category;
+      if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
+      if (updates.description !== undefined) dbUpdates.description = updates.description;
+      if (updates.paymentMethod !== undefined) dbUpdates.payment_method = updates.paymentMethod;
+      if (updates.referenceId !== undefined) dbUpdates.reference_id = updates.referenceId;
+      if (updates.playerName !== undefined) dbUpdates.player_name = updates.playerName;
+      if (updates.cashierName !== undefined) dbUpdates.cashier_name = updates.cashierName;
+      if (updates.balanceAfter !== undefined) dbUpdates.balance_after = updates.balanceAfter;
+      if (updates.timestamp !== undefined) dbUpdates.timestamp = updates.timestamp;
+      supabase.from('cash_transactions').update(dbUpdates).eq('id', transactionId);
     }
     addAuditLog('Admin', 'Cash Transaction Updated', `Updated cash ledger entry ${transactionId}.`);
   };
 
   const updateCheckIn = (checkInId: string, updates: Partial<DailyCheckIn>) => {
-    setCheckIns(prev =>
-      prev.map(c => (c.id === checkInId ? { ...c, ...updates } : c))
-    );
+    setCheckIns(prev => {
+      const next = prev.map(c => (c.id === checkInId ? { ...c, ...updates } : c));
+      broadcastUpdate('CHECK_INS_UPDATED', next);
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
-      supabase.from('daily_check_ins').update(updates).eq('id', checkInId);
+      const dbUpdates: any = {};
+      if (updates.playerId !== undefined) dbUpdates.player_id = updates.playerId;
+      if (updates.playerName !== undefined) dbUpdates.player_name = updates.playerName;
+      if (updates.playerPhone !== undefined) dbUpdates.player_phone = updates.playerPhone;
+      if (updates.checkInDate !== undefined) dbUpdates.check_in_date = updates.checkInDate;
+      if (updates.checkInTime !== undefined) dbUpdates.check_in_time = updates.checkInTime;
+      if (updates.verificationStatus !== undefined) dbUpdates.verification_status = updates.verificationStatus;
+      if (updates.verifiedBy !== undefined) dbUpdates.verified_by = updates.verifiedBy;
+      if (updates.verifiedAt !== undefined) dbUpdates.verified_at = updates.verifiedAt;
+      if (updates.rejectionReason !== undefined) dbUpdates.rejection_reason = updates.rejectionReason;
+      if (updates.tablePreference !== undefined) dbUpdates.table_preference = updates.tablePreference;
+      supabase.from('daily_check_ins').update(dbUpdates).eq('id', checkInId);
     }
     addAuditLog('Security', 'Check-In Record Updated', `Updated check-in ${checkInId}.`);
   };
 
   const deleteCheckIn = (checkInId: string) => {
     const checkIn = checkIns.find(c => c.id === checkInId);
-    setCheckIns(prev => prev.filter(c => c.id !== checkInId));
+    setCheckIns(prev => {
+      const next = prev.filter(c => c.id !== checkInId);
+      broadcastUpdate('CHECK_INS_UPDATED', next);
+      return next;
+    });
     if (isSupabaseConfigured && supabase) {
       supabase.from('daily_check_ins').delete().eq('id', checkInId);
     }
@@ -1978,6 +2556,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     saveToStorage(STORAGE_KEYS.AUDIT_LOGS, initialAuditLogs);
     saveToStorage(STORAGE_KEYS.CHIP_REQUESTS, initialChipRequests);
     saveToStorage(STORAGE_KEYS.SELECTED_PLAYER, '');
+
+    broadcastUpdate('SYNC_ALL');
   };
 
   return (
@@ -1989,6 +2569,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSelectedPlayerId,
         staffName,
         setStaffName,
+        isRealtimeConnected,
+        syncNow,
         staffUsers,
         currentStaffUser,
         loginStaff,

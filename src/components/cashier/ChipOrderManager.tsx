@@ -12,6 +12,11 @@ import {
   Edit3,
   Trash2,
   AlertTriangle,
+  RefreshCw,
+  Radio,
+  Bell,
+  Clock,
+  UserCheck,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { ChipRequest, PaymentMethod } from '../../types';
@@ -21,8 +26,21 @@ import { Modal } from '../common/Modal';
 import confetti from 'canvas-confetti';
 
 export const ChipOrderManager: React.FC = () => {
-  const { chipRequests, fulfillChipRequest, cancelChipRequest, updateChipRequest, deleteChipRequest, requestBuyChips, staffName, players } = useClub();
-  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'delivered' | 'cancelled'>('all');
+  const {
+    chipRequests,
+    fulfillChipRequest,
+    cancelChipRequest,
+    updateChipRequest,
+    deleteChipRequest,
+    requestBuyChips,
+    staffName,
+    players,
+    todayCheckIns,
+    isRealtimeConnected,
+    syncNow,
+  } = useClub();
+
+  const [filterStatus, setFilterStatus] = useState<'pending' | 'all' | 'delivered' | 'cancelled'>('pending');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
@@ -30,6 +48,7 @@ export const ChipOrderManager: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ChipRequest | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const [createData, setCreateData] = useState({
     playerId: players[0]?.id || '',
@@ -51,7 +70,21 @@ export const ChipOrderManager: React.FC = () => {
 
   const pendingRequests = chipRequests.filter(r => r.status === 'pending');
   const deliveredRequests = chipRequests.filter(r => r.status === 'delivered');
+  const cancelledRequests = chipRequests.filter(r => r.status === 'cancelled');
   const totalDeliveredAmount = deliveredRequests.reduce((sum, r) => sum + r.amount, 0);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      await syncNow();
+      setActionSuccessMessage('Real-time queue synchronized with server & peer terminals.');
+      setTimeout(() => setActionSuccessMessage(null), 3000);
+    } catch {
+      // Sync fallback
+    } finally {
+      setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
 
   const handleOpenEdit = (req: ChipRequest) => {
     setSelectedOrder(req);
@@ -82,6 +115,8 @@ export const ChipOrderManager: React.FC = () => {
 
     setIsEditModalOpen(false);
     setSelectedOrder(null);
+    setActionSuccessMessage(`Order ${selectedOrder.id} updated successfully.`);
+    setTimeout(() => setActionSuccessMessage(null), 3500);
   };
 
   const handleDelete = () => {
@@ -89,6 +124,8 @@ export const ChipOrderManager: React.FC = () => {
     deleteChipRequest(selectedOrder.id);
     setIsDeleteModalOpen(false);
     setSelectedOrder(null);
+    setActionSuccessMessage('Chip order removed from queue.');
+    setTimeout(() => setActionSuccessMessage(null), 3500);
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -115,7 +152,7 @@ export const ChipOrderManager: React.FC = () => {
       r.playerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.tableNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.playerPhone.includes(searchQuery);
+      (r.playerPhone && r.playerPhone.includes(searchQuery));
     return matchesStatus && matchesSearch;
   });
 
@@ -181,20 +218,119 @@ export const ChipOrderManager: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Realtime Live Pulse Header Bar */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+          padding: '12px 18px',
+          background: 'linear-gradient(135deg, rgba(20, 8, 12, 0.95) 0%, rgba(10, 4, 6, 0.95) 100%)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '14px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              backgroundColor: isRealtimeConnected ? '#10b981' : '#f59e0b',
+              boxShadow: isRealtimeConnected ? '0 0 10px #10b981, 0 0 20px #10b981' : 'none',
+              animation: 'pulse 2s infinite',
+            }}
+          />
+          <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#ffffff' }}>
+            {isRealtimeConnected ? 'Live Real-time Queue Active' : 'Connecting Real-time Stream...'}
+          </span>
+          <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
+            · Subscribed to Table Requests & Cashier Dispatch
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={handleManualSync}
+            disabled={isSyncing}
+            style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+          >
+            <RefreshCw size={13} className={isSyncing ? 'spin-animation' : ''} />
+            {isSyncing ? 'Syncing...' : 'Sync Now'}
+          </button>
+        </div>
+      </div>
+
+      {/* Pending Alert Attention Banner */}
+      {pendingRequests.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: 'linear-gradient(90deg, rgba(225, 29, 72, 0.22) 0%, rgba(159, 18, 57, 0.15) 100%)',
+            border: '1.5px solid #e11d48',
+            borderRadius: '12px',
+            padding: '12px 18px',
+            animation: 'pulse 3s infinite',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: 'rgba(225, 29, 72, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+              }}
+            >
+              <Bell size={18} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff' }}>
+                {pendingRequests.length} Table Chip Request{pendingRequests.length > 1 ? 's' : ''} Awaiting Cashier Dispatch
+              </div>
+              <div style={{ fontSize: '0.76rem', color: '#fca5a5' }}>
+                Players are waiting at live tables. Fulfill orders to release high-denomination chips.
+              </div>
+            </div>
+          </div>
+          {filterStatus !== 'pending' && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setFilterStatus('pending')}
+              style={{ fontSize: '0.76rem' }}
+            >
+              View Active Queue
+            </button>
+          )}
+        </div>
+      )}
+
       {/* KPI Stats Bar */}
       <div className="grid-3" style={{ gap: '16px' }}>
         <div
           className="card stat-card"
+          onClick={() => setFilterStatus('pending')}
           style={{
             background: 'linear-gradient(145deg, #15080c 0%, #0c0406 100%)',
             border: pendingRequests.length > 0 ? '1.5px solid #e11d48' : '1px solid var(--border-subtle)',
             boxShadow: pendingRequests.length > 0 ? '0 0 20px rgba(225, 29, 72, 0.25)' : 'none',
+            cursor: 'pointer',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Pending Table Chip Orders
+                Active Queue (Pending Dispatch)
               </div>
               <div style={{ fontSize: '1.9rem', fontWeight: 900, color: '#ffffff', marginTop: '4px' }}>
                 {pendingRequests.length}
@@ -223,7 +359,8 @@ export const ChipOrderManager: React.FC = () => {
 
         <div
           className="card stat-card"
-          style={{ background: 'linear-gradient(145deg, #15080c 0%, #0c0406 100%)' }}
+          onClick={() => setFilterStatus('delivered')}
+          style={{ background: 'linear-gradient(145deg, #15080c 0%, #0c0406 100%)', cursor: 'pointer' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
@@ -285,7 +422,7 @@ export const ChipOrderManager: React.FC = () => {
             </div>
           </div>
           <div style={{ marginTop: '8px', fontSize: '0.76rem', color: '#94a3b8' }}>
-            Real-time WebSocket sync enabled with table players
+            {todayCheckIns.length} members checked into club today
           </div>
         </div>
       </div>
@@ -315,10 +452,10 @@ export const ChipOrderManager: React.FC = () => {
           <div>
             <h3 className="card-title">
               <Coins size={18} color="#e11d48" />
-              Live Table Chip Orders ({chipRequests.length})
+              Chip Order Dispatch Queue ({chipRequests.length})
             </h3>
             <p className="card-subtitle">
-              Incoming chip requests from playing tables requiring delivery and collection.
+              Incoming table chip requests synced in real-time across player and cashier portals.
             </p>
           </div>
 
@@ -341,14 +478,167 @@ export const ChipOrderManager: React.FC = () => {
           </div>
         </div>
 
+        {/* Interactive Queue Filter Tabs */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            padding: '12px 16px',
+            borderBottom: '1px solid var(--border-subtle)',
+            background: 'rgba(0, 0, 0, 0.25)',
+            flexWrap: 'wrap',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setFilterStatus('pending')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.15s ease',
+              border: filterStatus === 'pending' ? '1px solid #e11d48' : '1px solid var(--border-subtle)',
+              background: filterStatus === 'pending' ? 'linear-gradient(135deg, rgba(225, 29, 72, 0.3) 0%, rgba(159, 18, 57, 0.2) 100%)' : 'rgba(255, 255, 255, 0.03)',
+              color: filterStatus === 'pending' ? '#ffffff' : '#94a3b8',
+            }}
+          >
+            <span
+              style={{
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor: pendingRequests.length > 0 ? '#ef4444' : '#64748b',
+                animation: pendingRequests.length > 0 ? 'pulse 1.5s infinite' : 'none',
+              }}
+            />
+            Active Queue (Pending Dispatch)
+            <span
+              style={{
+                padding: '2px 6px',
+                borderRadius: '10px',
+                fontSize: '0.72rem',
+                background: filterStatus === 'pending' ? '#e11d48' : 'rgba(255,255,255,0.1)',
+                color: '#ffffff',
+                fontWeight: 800,
+              }}
+            >
+              {pendingRequests.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterStatus('all')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              border: filterStatus === 'all' ? '1px solid #e11d48' : '1px solid var(--border-subtle)',
+              background: filterStatus === 'all' ? 'linear-gradient(135deg, rgba(225, 29, 72, 0.3) 0%, rgba(159, 18, 57, 0.2) 100%)' : 'rgba(255, 255, 255, 0.03)',
+              color: filterStatus === 'all' ? '#ffffff' : '#94a3b8',
+            }}
+          >
+            All Orders
+            <span
+              style={{
+                padding: '2px 6px',
+                borderRadius: '10px',
+                fontSize: '0.72rem',
+                background: 'rgba(255,255,255,0.1)',
+                color: '#ffffff',
+              }}
+            >
+              {chipRequests.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterStatus('delivered')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              border: filterStatus === 'delivered' ? '1px solid #10b981' : '1px solid var(--border-subtle)',
+              background: filterStatus === 'delivered' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+              color: filterStatus === 'delivered' ? '#34d399' : '#94a3b8',
+            }}
+          >
+            <CheckCircle2 size={13} />
+            Delivered
+            <span
+              style={{
+                padding: '2px 6px',
+                borderRadius: '10px',
+                fontSize: '0.72rem',
+                background: 'rgba(255,255,255,0.1)',
+                color: '#ffffff',
+              }}
+            >
+              {deliveredRequests.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterStatus('cancelled')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              border: filterStatus === 'cancelled' ? '1px solid #ef4444' : '1px solid var(--border-subtle)',
+              background: filterStatus === 'cancelled' ? 'rgba(239, 68, 68, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+              color: filterStatus === 'cancelled' ? '#fca5a5' : '#94a3b8',
+            }}
+          >
+            <XCircle size={13} />
+            Cancelled
+            <span
+              style={{
+                padding: '2px 6px',
+                borderRadius: '10px',
+                fontSize: '0.72rem',
+                background: 'rgba(255,255,255,0.1)',
+                color: '#ffffff',
+              }}
+            >
+              {cancelledRequests.length}
+            </span>
+          </button>
+        </div>
+
         {/* Requests Table */}
         <div className="table-container chip-orders-table">
           {filteredRequests.length === 0 ? (
             <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
               <Coins size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
-              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#ffffff' }}>No Chip Orders Found</div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#ffffff' }}>
+                {filterStatus === 'pending' ? 'Active Queue is Clear' : 'No Chip Orders Found'}
+              </div>
               <p style={{ fontSize: '0.78rem', marginTop: '4px' }}>
-                When players request chips from their table pass, requests appear here instantly.
+                {filterStatus === 'pending'
+                  ? 'All table chip orders have been dispatched. Incoming table requests will appear here instantly.'
+                  : 'When players request chips from their table pass, requests appear here instantly.'}
               </p>
             </div>
           ) : (
@@ -375,7 +665,7 @@ export const ChipOrderManager: React.FC = () => {
                     <tr
                       key={req.id}
                       style={{
-                        background: isPending ? 'rgba(225, 29, 72, 0.06)' : undefined,
+                        background: isPending ? 'rgba(225, 29, 72, 0.07)' : undefined,
                       }}
                     >
                       <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.82rem', color: '#ffffff' }}>
@@ -446,7 +736,7 @@ export const ChipOrderManager: React.FC = () => {
                                 onClick={() => handleFulfill(req.id, req.playerName, req.amount)}
                                 style={{ padding: '5px 10px', fontSize: '0.75rem' }}
                               >
-                                <Check size={13} /> Fulfill
+                                <Check size={13} /> Fulfill & Dispatch
                               </button>
                               <button
                                 className="btn btn-secondary btn-sm"
@@ -463,8 +753,9 @@ export const ChipOrderManager: React.FC = () => {
                               className="btn btn-secondary btn-sm"
                               style={{ padding: '4px 8px', fontSize: '0.74rem' }}
                               onClick={() => openInvoiceForChip(req)}
+                              title="View Tax Invoice"
                             >
-                              <Receipt size={12} />
+                              <Receipt size={12} /> Receipt
                             </button>
                           )}
                           <button
@@ -511,14 +802,25 @@ export const ChipOrderManager: React.FC = () => {
             <select
               className="form-select"
               value={createData.playerId}
-              onChange={e => setCreateData({ ...createData, playerId: e.target.value })}
+              onChange={e => {
+                const pid = e.target.value;
+                const checkIn = todayCheckIns.find(c => c.playerId === pid);
+                setCreateData({
+                  ...createData,
+                  playerId: pid,
+                  tableNumber: checkIn?.tablePreference?.split('•')[0]?.trim() || createData.tableNumber,
+                });
+              }}
               required
             >
-              {players.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.fullName} ({p.phone}) - {p.id}
-                </option>
-              ))}
+              {players.map(p => {
+                const isCheckedIn = todayCheckIns.some(c => c.playerId === p.id);
+                return (
+                  <option key={p.id} value={p.id}>
+                    {isCheckedIn ? '🟢 [Checked-in Today] ' : ''}{p.fullName} ({p.phone}) - {p.id} ({p.membershipTier})
+                  </option>
+                );
+              })}
             </select>
           </div>
 

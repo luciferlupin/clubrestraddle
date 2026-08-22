@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ArrowLeft,
   LogOut,
+  RefreshCw,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentStatus, PaymentMethod, CashCategory, ExpenseCategory } from '../../types';
@@ -40,9 +41,13 @@ export const MobileCashierPortal: React.FC = () => {
     addCashGiven,
     addExpense,
     hasPlayerCheckedInToday,
+    isRealtimeConnected,
+    syncNow,
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash' | 'records'>('dashboard');
+  const [chipFilter, setChipFilter] = useState<'pending' | 'all' | 'delivered' | 'cancelled'>('pending');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Modals / Drawers State
   const [isCashInOpen, setIsCashInOpen] = useState(false);
@@ -661,84 +666,173 @@ export const MobileCashierPortal: React.FC = () => {
       {/* TAB 4: CHIP ORDERS & DISPATCH */}
       {activeTab === 'chips' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Live Sync Status Banner */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '10px 14px',
+              background: 'linear-gradient(135deg, rgba(20, 8, 12, 0.95) 0%, rgba(10, 4, 6, 0.95) 100%)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: '12px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: isRealtimeConnected ? '#10b981' : '#f59e0b',
+                  boxShadow: isRealtimeConnected ? '0 0 8px #10b981' : 'none',
+                }}
+              />
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#ffffff' }}>
+                {isRealtimeConnected ? 'Live Real-time Active' : 'Connecting Stream...'}
+              </span>
+            </div>
+            <button
+              className="m-btn m-btn-secondary m-btn-sm"
+              style={{ padding: '4px 10px', fontSize: '0.72rem' }}
+              disabled={isSyncing}
+              onClick={async () => {
+                setIsSyncing(true);
+                try {
+                  await syncNow();
+                } finally {
+                  setTimeout(() => setIsSyncing(false), 400);
+                }
+              }}
+            >
+              <RefreshCw size={11} className={isSyncing ? 'spin-animation' : ''} />
+              {isSyncing ? 'Syncing...' : 'Sync'}
+            </button>
+          </div>
+
+          {/* Queue Filter Segment */}
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+            <button
+              onClick={() => setChipFilter('pending')}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                borderRadius: '8px',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                border: chipFilter === 'pending' ? '1px solid #e11d48' : '1px solid var(--border-subtle)',
+                background: chipFilter === 'pending' ? 'rgba(225, 29, 72, 0.25)' : 'rgba(255,255,255,0.03)',
+                color: chipFilter === 'pending' ? '#ffffff' : '#94a3b8',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Pending ({pendingChipOrdersCount})
+            </button>
+            <button
+              onClick={() => setChipFilter('all')}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                borderRadius: '8px',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                border: chipFilter === 'all' ? '1px solid #e11d48' : '1px solid var(--border-subtle)',
+                background: chipFilter === 'all' ? 'rgba(225, 29, 72, 0.25)' : 'rgba(255,255,255,0.03)',
+                color: chipFilter === 'all' ? '#ffffff' : '#94a3b8',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              All ({chipRequests.length})
+            </button>
+            <button
+              onClick={() => setChipFilter('delivered')}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                borderRadius: '8px',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                border: chipFilter === 'delivered' ? '1px solid #10b981' : '1px solid var(--border-subtle)',
+                background: chipFilter === 'delivered' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.03)',
+                color: chipFilter === 'delivered' ? '#34d399' : '#94a3b8',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Delivered ({chipRequests.filter(r => r.status === 'delivered').length})
+            </button>
+          </div>
+
           <div className="m-card">
             <div className="m-card-header">
               <div>
                 <h3 className="m-card-title">
                   <Coins size={18} color="#e11d48" />
-                  Table Chip Requests ({chipRequests.length})
+                  Table Chip Queue
                 </h3>
                 <p className="m-card-subtitle">Real-time table chip orders dispatched to seated players</p>
               </div>
-              {pendingChipOrdersCount > 0 ? (
-                <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>
-                  <span className="badge-dot" /> {pendingChipOrdersCount} Pending
-                </span>
-              ) : (
-                <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
-                  <CheckCircle2 size={12} /> All Clear
-                </span>
-              )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {chipRequests.length === 0 ? (
-                <div style={{ fontSize: '0.82rem', color: '#94a3b8', padding: '12px 0', textAlign: 'center' }}>
-                  No table chip requests yet.
+              {chipRequests.filter(r => chipFilter === 'all' || r.status === chipFilter).length === 0 ? (
+                <div style={{ fontSize: '0.82rem', color: '#94a3b8', padding: '16px 0', textAlign: 'center' }}>
+                  {chipFilter === 'pending' ? 'Active dispatch queue is clear.' : 'No orders found.'}
                 </div>
               ) : (
-                chipRequests.map(req => (
-                  <div
-                    key={req.id}
-                    style={{
-                      background: 'rgba(0, 0, 0, 0.4)',
-                      border: req.status === 'pending' ? '1.5px solid rgba(225, 29, 72, 0.6)' : '1px solid var(--border-subtle)',
-                      borderRadius: '12px',
-                      padding: '12px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff' }}>
-                          {req.playerName}
+                chipRequests
+                  .filter(r => chipFilter === 'all' || r.status === chipFilter)
+                  .map(req => (
+                    <div
+                      key={req.id}
+                      style={{
+                        background: 'rgba(0, 0, 0, 0.4)',
+                        border: req.status === 'pending' ? '1.5px solid rgba(225, 29, 72, 0.6)' : '1px solid var(--border-subtle)',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff' }}>
+                            {req.playerName}
+                          </div>
+                          <div style={{ fontSize: '0.76rem', color: 'var(--gold-light)' }}>
+                            {req.tableNumber} • {req.seatNumber}
+                          </div>
                         </div>
-                        <div style={{ fontSize: '0.76rem', color: 'var(--gold-light)' }}>
-                          {req.tableNumber} • {req.seatNumber}
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontWeight: 900, fontSize: '1.1rem', color: '#ffffff' }}>
+                            ₹{formatINR(req.amount)}
+                          </div>
+                          <span className={`badge ${req.status === 'pending' ? 'badge-warning' : req.status === 'delivered' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.66rem' }}>
+                            {req.status === 'pending' ? 'Pending' : req.status === 'delivered' ? 'Delivered' : 'Cancelled'}
+                          </span>
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontWeight: 900, fontSize: '1.1rem', color: '#ffffff' }}>
-                          ₹{formatINR(req.amount)}
-                        </div>
-                        <span className={`badge ${req.status === 'pending' ? 'badge-warning' : req.status === 'delivered' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.66rem' }}>
-                          {req.status === 'pending' ? 'Pending' : req.status === 'delivered' ? 'Delivered' : 'Cancelled'}
-                        </span>
-                      </div>
-                    </div>
 
-                    {req.status === 'pending' && (
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                        <button
-                          className="m-btn m-btn-primary m-btn-sm"
-                          style={{ flex: 1, padding: '8px' }}
-                          onClick={() => fulfillChipRequest(req.id)}
-                        >
-                          <Check size={14} /> Fulfill & Dispatch
-                        </button>
-                        <button
-                          className="m-btn m-btn-secondary m-btn-sm"
-                          style={{ width: 'auto', padding: '8px 12px', color: '#fca5a5' }}
-                          onClick={() => cancelChipRequest(req.id, 'Cancelled on mobile')}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))
+                      {req.status === 'pending' && (
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                          <button
+                            className="m-btn m-btn-primary m-btn-sm"
+                            style={{ flex: 1, padding: '8px' }}
+                            onClick={() => fulfillChipRequest(req.id)}
+                          >
+                            <Check size={14} /> Fulfill & Dispatch
+                          </button>
+                          <button
+                            className="m-btn m-btn-secondary m-btn-sm"
+                            style={{ width: 'auto', padding: '8px 12px', color: '#fca5a5' }}
+                            onClick={() => cancelChipRequest(req.id, 'Cancelled on mobile')}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
               )}
             </div>
           </div>

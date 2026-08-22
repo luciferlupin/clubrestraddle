@@ -21,10 +21,11 @@ import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 
 export const SecurityPortal: React.FC = () => {
-  const { staffName, players, todayCheckIns } = useClub();
+  const { staffName, players, todayCheckIns, isRealtimeConnected, syncNow } = useClub();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
   const [isQRStandeeOpen, setIsQRStandeeOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Prefer a scanned/deep-linked player, then the first pending arrival.
   const [selectedPlayer, setSelectedPlayer] = useState<Player>(() => {
@@ -59,6 +60,15 @@ export const SecurityPortal: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      await syncNow();
+    } finally {
+      setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
+
   return (
     <div className="desktop-portal desktop-security-portal">
       {/* Contextual Breadcrumbs */}
@@ -79,7 +89,25 @@ export const SecurityPortal: React.FC = () => {
         subtitle={<>Officer <strong>{staffName}</strong> · Entrance scanner 1</>}
         notice={<><Lock size={14} aria-hidden="true" /> Verification and KYC access only</>}
         actions={
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              title="Synchronize check-ins with server"
+            >
+              <span
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: isRealtimeConnected ? '#10b981' : '#f59e0b',
+                  display: 'inline-block',
+                }}
+              />
+              <span>{isSyncing ? 'Syncing...' : 'Live Sync'}</span>
+            </button>
             <button
               className="btn btn-primary"
               onClick={() => setIsScannerOpen(true)}
@@ -104,6 +132,61 @@ export const SecurityPortal: React.FC = () => {
           </div>
         }
       />
+
+      {/* Realtime Entrance Attention Alert */}
+      {pendingCount > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: 'linear-gradient(90deg, rgba(225, 29, 72, 0.22) 0%, rgba(159, 18, 57, 0.15) 100%)',
+            border: '1.5px solid #e11d48',
+            borderRadius: '12px',
+            padding: '12px 18px',
+            marginBottom: '16px',
+            animation: 'pulse 3s infinite',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: 'rgba(225, 29, 72, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+              }}
+            >
+              <Clock size={18} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff' }}>
+                {pendingCount} Player{pendingCount > 1 ? 's' : ''} Awaiting Entrance Clearance
+              </div>
+              <div style={{ fontSize: '0.76rem', color: '#fca5a5' }}>
+                Arrivals checked in via mobile pass. Inspect KYC credentials and grant floor access.
+              </div>
+            </div>
+          </div>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => {
+              const pending = todayCheckIns.find(c => c.verificationStatus === 'pending');
+              if (pending) {
+                const target = players.find(p => p.id === pending.playerId);
+                if (target) handleSelect(target, pending);
+              }
+            }}
+            style={{ fontSize: '0.76rem' }}
+          >
+            Review Next Arrival
+          </button>
+        </div>
+      )}
 
       {/* QR Scanner Modal */}
       <QRScannerModal

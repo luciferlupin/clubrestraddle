@@ -13,6 +13,7 @@ import {
   LogOut,
   UserPlus,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
@@ -34,10 +35,13 @@ export const MobileSecurityPortal: React.FC = () => {
     rejectPlayerEntry,
     reviewKYC,
     performDailyCheckIn,
+    isRealtimeConnected,
+    syncNow,
   } = useClub();
 
   const [activeNav, setActiveNav] = useState<'scan' | 'queue' | 'history'>('scan');
   const [search, setSearch] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => {
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
@@ -132,6 +136,24 @@ export const MobileSecurityPortal: React.FC = () => {
               {pendingCheckIns.length} waiting
             </span>
           )}
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px', height: '26px' }}
+            disabled={isSyncing}
+            onClick={async () => {
+              setIsSyncing(true);
+              try {
+                await syncNow();
+              } finally {
+                setTimeout(() => setIsSyncing(false), 400);
+              }
+            }}
+            title="Sync check-in queue"
+          >
+            <RefreshCw size={11} className={isSyncing ? 'spin-animation' : ''} />
+            <span>{isSyncing ? '…' : 'Sync'}</span>
+          </button>
           <span className="staff-live-dot security">Guard</span>
           <button
             type="button"
