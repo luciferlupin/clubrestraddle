@@ -529,7 +529,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
               }}
             >
               <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>
-                {viewingDoc.title} • {player.fullName} ({player.id})
+                {viewingDoc.title} • {player.fullName} (Player ID {formatPlayerNumber(player)})
               </span>
               <button
                 type="button"

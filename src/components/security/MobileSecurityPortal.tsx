@@ -266,7 +266,7 @@ export const MobileSecurityPortal: React.FC = () => {
                           <KYCBadge status={p.kycStatus} />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#94a3b8' }}>
-                          <span>{p.id} • {p.phone}</span>
+                          <span>Player ID {formatPlayerNumber(p)} • {p.phone}</span>
                           {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
                         </div>
                       </button>
@@ -351,7 +351,7 @@ export const MobileSecurityPortal: React.FC = () => {
                         {playerToInspect.fullName}
                       </div>
                       <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: '#cbd5e1', marginTop: '3px' }}>
-                        {playerToInspect.id} • {playerToInspect.phone}
+                        Player ID {formatPlayerNumber(playerToInspect)} • {playerToInspect.phone}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '3px' }}>
                         {playerToInspect.totalVisits} Club Visits · {playerToInspect.membershipTier} Tier
@@ -827,7 +827,7 @@ export const MobileSecurityPortal: React.FC = () => {
               )}
               <div>
                 <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ffffff' }}>{selectedPlayer.fullName}</div>
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>ID: {selectedPlayer.id}</div>
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Player ID: {formatPlayerNumber(selectedPlayer)}</div>
                 <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
                   <TierBadge tier={selectedPlayer.membershipTier} />
                   <KYCBadge status={selectedPlayer.kycStatus} />

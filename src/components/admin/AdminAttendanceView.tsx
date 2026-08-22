@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CheckCircle2, Calendar, Clock, Search, ShieldCheck, Filter, Plus, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { DailyCheckIn } from '../../types';
-import { formatDateOnly, formatTimeOnly, getTodayDateString } from '../../utils/formatters';
+import { formatDateOnly, formatTimeOnly, getTodayDateString, formatPlayerNumber } from '../../utils/formatters';
 import { EntryBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
@@ -248,7 +248,7 @@ export const AdminAttendanceView: React.FC = () => {
             >
               {players.map(p => (
                 <option key={p.id} value={p.id}>
-                  {p.fullName} ({p.phone}) - {p.id}
+                  {p.fullName} ({p.phone}) - Player ID {formatPlayerNumber(p)}
                 </option>
               ))}
             </select>

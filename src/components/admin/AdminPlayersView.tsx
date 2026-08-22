@@ -29,13 +29,19 @@ export const AdminPlayersView: React.FC = () => {
   const [editAddress, setEditAddress] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
-  const filteredPlayers = players.filter(
-    p =>
-      p.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      p.phone.includes(search) ||
-      p.id.toLowerCase().includes(search.toLowerCase()) ||
-      p.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const exactPlayerNumberMatch = /^\d+$/.test(search.trim())
+    ? players.find(p => formatPlayerNumber(p) === search.trim())
+    : undefined;
+  const filteredPlayers = (exactPlayerNumberMatch
+    ? [exactPlayerNumberMatch]
+    : players.filter(
+        p =>
+          p.fullName.toLowerCase().includes(search.toLowerCase()) ||
+          p.phone.includes(search) ||
+          p.id.toLowerCase().includes(search.toLowerCase()) ||
+          p.email.toLowerCase().includes(search.toLowerCase())
+      ))
+    .sort((a, b) => Number(formatPlayerNumber(a)) - Number(formatPlayerNumber(b)));
 
   const paginatedPlayers = filteredPlayers.slice((page - 1) * pageSize, page * pageSize);
 
@@ -466,7 +472,7 @@ export const AdminPlayersView: React.FC = () => {
             </div>
 
             <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>
-              Are you sure you want to delete member <strong>{selectedPlayer.fullName}</strong> ({selectedPlayer.id})? All check-in history will be removed.
+              Are you sure you want to delete member <strong>{selectedPlayer.fullName}</strong> (Player ID {formatPlayerNumber(selectedPlayer)})? All check-in history will be removed.
             </p>
 
             <div style={{ display: 'flex', gap: '10px' }}>

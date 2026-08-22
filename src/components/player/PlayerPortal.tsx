@@ -28,8 +28,6 @@ import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSecti
 import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, AnimatedSuitsRow } from '../common/PokerGraphics';
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 import { Pagination } from '../common/Pagination';
-import { OtpVerificationModal } from '../common/OtpVerificationModal';
-import { Player } from '../../types';
 
 type PlayerTab = 'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history';
 
@@ -51,7 +49,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
     entries,
     chipRequests,
     hasPlayerCheckedInToday,
-    lookupMemberByPhone,
     findMemberByPhone,
     setSelectedPlayerId,
   } = useClub();
@@ -65,8 +62,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [activeTab, setActiveTab] = useState<PlayerTab>('pass');
-  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
-  const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
 
   const playerCheckIns = currentPlayer
     ? checkIns.filter(c => c.playerId === currentPlayer.id)
@@ -89,21 +84,12 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
     setIsLookingUp(false);
 
     if (matched) {
-      setPendingPlayer(matched);
-      setIsOtpModalOpen(true);
-    } else {
-      setLookupError('No registered member found with this mobile number. Register below or try again.');
-    }
-  };
-
-  const handleOtpSuccess = () => {
-    if (pendingPlayer) {
-      setSelectedPlayerId(pendingPlayer.id);
+      setSelectedPlayerId(matched.id);
       setShowKYCForm(false);
       setEntryView('welcome');
       setLookupPhone('');
-      setIsOtpModalOpen(false);
-      setPendingPlayer(null);
+    } else {
+      setLookupError('No registered member found with this mobile number. Register below or try again.');
     }
   };
 
@@ -756,17 +742,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
         onClose={() => setSelectedInvoice(null)}
       />
 
-      {/* Member Login OTP Verification Modal */}
-      <OtpVerificationModal
-        isOpen={isOtpModalOpen}
-        phone={pendingPlayer?.phone || lookupPhone}
-        purpose="login"
-        onSuccess={handleOtpSuccess}
-        onClose={() => {
-          setIsOtpModalOpen(false);
-          setPendingPlayer(null);
-        }}
-      />
     </div>
   );
 };

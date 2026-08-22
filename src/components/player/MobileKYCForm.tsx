@@ -11,7 +11,6 @@ import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import confetti from 'canvas-confetti';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
-import { OtpVerificationModal } from '../common/OtpVerificationModal';
 import { CARTOON_AVATARS } from '../../utils/cartoonAvatars';
 
 interface MobileKYCFormProps {
@@ -31,9 +30,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
   const { registerNewPlayer } = useClub();
   const formTopRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<RegistrationStep>(1);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [verifiedPhone, setVerifiedPhone] = useState('');
-  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -103,22 +99,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     setErrors(stepErrors);
     if (Object.keys(stepErrors).length > 0) return;
 
-    if (step === 1) {
-      const phoneChangedOrUnverified = !isPhoneVerified || verifiedPhone !== formData.phone;
-      if (phoneChangedOrUnverified) {
-        setIsOtpModalOpen(true);
-        return;
-      }
-    }
-
     goToStep((step + 1) as RegistrationStep);
-  };
-
-  const handleOtpSuccess = () => {
-    setIsPhoneVerified(true);
-    setVerifiedPhone(formData.phone);
-    setIsOtpModalOpen(false);
-    goToStep(2);
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -236,31 +217,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
             </div>
 
             <div className="m-form-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label className="m-form-label" htmlFor="mobile-phone" style={{ margin: 0 }}>Mobile number</label>
-                {isPhoneVerified && verifiedPhone === formData.phone ? (
-                  <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
-                    <Check size={11} /> Verified
-                  </span>
-                ) : formData.phone.trim().length >= 10 ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsOtpModalOpen(true)}
-                    style={{
-                      background: 'rgba(225, 29, 72, 0.15)',
-                      border: '1px solid rgba(225, 29, 72, 0.4)',
-                      color: '#fb7185',
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      borderRadius: '4px',
-                      padding: '2px 6px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Send OTP
-                  </button>
-                ) : null}
-              </div>
+              <label className="m-form-label" htmlFor="mobile-phone">Mobile number</label>
               <div className="mobile-phone-field">
                 <span aria-hidden="true">+91</span>
                 <input
@@ -273,12 +230,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
                   value={formData.phone}
                   aria-invalid={Boolean(errors.phone)}
                   aria-describedby={errors.phone ? 'mobile-phone-error' : undefined}
-                  onChange={(event) => {
-                    setFormData({ ...formData, phone: event.target.value });
-                    if (isPhoneVerified && event.target.value !== verifiedPhone) {
-                      setIsPhoneVerified(false);
-                    }
-                  }}
+                  onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
                 />
               </div>
               {errors.phone && <span id="mobile-phone-error" className="m-field-error" role="alert">{errors.phone}</span>}
@@ -445,14 +397,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
         </div>
       </form>
 
-      {/* Mobile Registration OTP Verification Modal */}
-      <OtpVerificationModal
-        isOpen={isOtpModalOpen}
-        phone={formData.phone}
-        purpose="registration"
-        onSuccess={handleOtpSuccess}
-        onClose={() => setIsOtpModalOpen(false)}
-      />
     </section>
   );
 };

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatTimeOnly, formatDateOnly, maskGovtId } from '../../utils/formatters';
+import { formatTimeOnly, formatDateOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, EntryBadge } from '../common/Badge';
 import confetti from 'canvas-confetti';
 
@@ -218,7 +218,7 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
                             {player.fullName}
                           </div>
                           <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                            {player.id} • {player.phone}
+                            Player ID {formatPlayerNumber(player)} • {player.phone}
                           </div>
                         </div>
                       </div>

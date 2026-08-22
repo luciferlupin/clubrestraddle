@@ -3,6 +3,7 @@ import { User, DollarSign, ShieldCheck, LayoutDashboard, Check, QrCode } from 'l
 import { useClub } from '../../context/ClubContext';
 import { UserRole } from '../../types';
 import { MobileBottomDrawer } from './MobileBottomDrawer';
+import { formatPlayerNumber } from '../../utils/formatters';
 
 interface RoleSwitcherDrawerProps {
   isOpen: boolean;
@@ -149,7 +150,7 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
                   }}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}><User size={15} /> {p.fullName} ({p.membershipTier})</span>
-                  <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>{p.id}</span>
+                  <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>Player ID {formatPlayerNumber(p)}</span>
                 </button>
               ))}
             </div>

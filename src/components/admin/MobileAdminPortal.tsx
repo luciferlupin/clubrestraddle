@@ -83,11 +83,17 @@ export const MobileAdminPortal: React.FC = () => {
     audit: { eyebrow: 'Governance', title: 'Audit trail', description: 'Review actions across every staff station.' },
   }[activeTab];
 
-  const filteredPlayers = players.filter(p =>
-    p.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.phone.includes(searchQuery) ||
-    p.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const exactPlayerNumberMatch = /^\d+$/.test(searchQuery.trim())
+    ? players.find(p => formatPlayerNumber(p) === searchQuery.trim())
+    : undefined;
+  const filteredPlayers = (exactPlayerNumberMatch
+    ? [exactPlayerNumberMatch]
+    : players.filter(p =>
+        p.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.phone.includes(searchQuery) ||
+        p.id.toLowerCase().includes(searchQuery.toLowerCase())
+      ))
+    .sort((a, b) => Number(formatPlayerNumber(a)) - Number(formatPlayerNumber(b)));
 
   const filteredCheckIns = checkIns.filter(c =>
     c.playerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -657,7 +663,7 @@ export const MobileAdminPortal: React.FC = () => {
                         {p.fullName}
                       </div>
                       <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '2px' }}>
-                        {p.id} • {p.phone}
+                        Player ID {formatPlayerNumber(p)} • {p.phone}
                       </div>
                     </div>
                   </div>
@@ -1270,7 +1276,7 @@ export const MobileAdminPortal: React.FC = () => {
                       className="m-btn m-btn-danger m-btn-sm"
                       style={{ width: 'auto' }}
                       onClick={() => {
-                        if (window.confirm(`Are you sure you want to delete member ${selectedPlayer.fullName} (${selectedPlayer.id})?`)) {
+                        if (window.confirm(`Are you sure you want to delete member ${selectedPlayer.fullName} (Player ID ${formatPlayerNumber(selectedPlayer)})?`)) {
                           deletePlayer(selectedPlayer.id);
                           setIsPlayerModalOpen(false);
                           setSelectedPlayer(null);
