@@ -127,7 +127,7 @@ export const CashManagement: React.FC = () => {
             <span className="stat-value" style={{ color: '#ffffff' }}>
               +{formatCurrency(totalCashInAmount)}
             </span>
-            <span className="stat-helper">Buy-ins, Service Charges, Float Deposits</span>
+            <span className="stat-helper">Entry Charges, Service Charges, Float Deposits</span>
           </div>
           <div className="stat-icon-wrapper">
             <ArrowDownLeft size={22} color="#ffffff" />
@@ -276,8 +276,8 @@ export const CashManagement: React.FC = () => {
               value={cashInData.category}
               onChange={e => setFormDataCategory(e.target.value as CashCategory)}
             >
-              <option value="Tournament Buy-in">Tournament Buy-in</option>
-              <option value="Cash Game Buy-in">Cash Game Buy-in</option>
+              <option value="Tournament Buy-in">Tournament Entry Charge</option>
+              <option value="Cash Game Buy-in">Cash Game Entry Charge</option>
               <option value="Chip Purchase">Chip Purchase</option>
               <option value="Float Deposit">Vault Float Opening / Deposit</option>
               <option value="Table Rake">Table Service Charge Collection</option>

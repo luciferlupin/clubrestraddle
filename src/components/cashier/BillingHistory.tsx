@@ -85,7 +85,7 @@ export const BillingHistory: React.FC = () => {
       eventDetails: `Texas • MTC • Table ${entry.tableNumber || 'Assigned'} • Seat ${entry.seatNumber || 'Assigned'}`,
       items: [
         {
-          description: `${formatClubLabel(entry.tournamentName)} - Player Buy-in Stack`,
+          description: `${formatClubLabel(entry.tournamentName)} - Player Entry Charge`,
           details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Tournament Playing Chips`,
           chips: tournamentObj?.startingChips || 50000,
           amount: entry.buyInAmount,
@@ -115,7 +115,7 @@ export const BillingHistory: React.FC = () => {
             <Receipt size={18} color="#e11d48" />
             Official Settlement Receipts & Invoices ({filteredEntries.length})
           </h3>
-          <p className="card-subtitle">Complete ledger of tournament buy-ins, service charges, and cashier invoices.</p>
+          <p className="card-subtitle">Complete ledger of tournament entry charges, service charges, and cashier invoices.</p>
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -150,7 +150,7 @@ export const BillingHistory: React.FC = () => {
                   <th>Receipt #</th>
                   <th>Player</th>
                   <th>Tournament</th>
-                  <th>Buy-in + Service Charge</th>
+                  <th>Entry Charge + Service Charge</th>
                   <th>Payment Method</th>
                   <th>Payment Ref</th>
                   <th>Table / Seat</th>

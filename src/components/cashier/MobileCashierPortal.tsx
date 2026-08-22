@@ -8,7 +8,6 @@ import {
   Minus,
   Coins,
   Check,
-  CheckCircle2,
   ChevronRight,
   ArrowLeft,
   LogOut,
@@ -156,7 +155,7 @@ export const MobileCashierPortal: React.FC = () => {
     const invoiceData: ClubInvoiceData = {
       invoiceNumber: entry.receiptNumber,
       invoiceDate: entry.registeredAt,
-      category: 'Tournament Entry & Rake',
+      category: 'Tournament Entry & Service Charge',
       playerId: playerObj?.id,
       playerName: entry.playerName,
       playerPhone: playerObj?.phone,
@@ -167,14 +166,14 @@ export const MobileCashierPortal: React.FC = () => {
       tableLocation: `${entry.tableNumber} • ${entry.seatNumber}`,
       items: [
         {
-          description: `${formatClubLabel(entry.tournamentName)} - Tournament Buy-in Stack`,
+          description: `${formatClubLabel(entry.tournamentName)} - Tournament Entry Charge`,
           details: `${tournamentObj?.startingChips?.toLocaleString()} Starting Playing Chips`,
           chips: tournamentObj?.startingChips,
           amount: entry.buyInAmount,
         },
         {
-          description: 'House Operating Rake & Registration Fee',
-          details: 'Club tournament organization & dealer rake',
+          description: 'Tournament Service Charge',
+          details: 'Club tournament organization and dealer service',
           amount: entry.rakeAmount,
         },
       ],
@@ -273,19 +272,17 @@ export const MobileCashierPortal: React.FC = () => {
   return (
     <div className="staff-mobile-portal cashier-mobile-theme">
 
-      {/* ── Station Banner ─────────────────────────────────── */}
-      <div className="staff-station-banner">
-        <div className="staff-banner-left">
-          <span className="staff-banner-role">♦ Cashier Station</span>
-          <span className="staff-banner-name">{staffName}</span>
+      <div className="cashier-session-strip">
+        <div className="cashier-session-person">
+          <span className="cashier-session-avatar" aria-hidden="true">{staffName.charAt(0)}</span>
+          <span><strong>{staffName}</strong><small><span /> Cashier on duty</small></span>
         </div>
-        <div className="staff-banner-right">
+        <div className="cashier-session-actions">
           {pendingChipOrdersCount > 0 && (
-            <span className="staff-pending-pill">
-              {pendingChipOrdersCount} chips
-            </span>
+            <button type="button" onClick={() => setActiveTab('chips')}>
+              <Coins size={14} /> {pendingChipOrdersCount} waiting
+            </button>
           )}
-          <span className="staff-live-dot cashier">On Duty</span>
           <button
             type="button"
             className="staff-header-signout"
@@ -319,154 +316,79 @@ export const MobileCashierPortal: React.FC = () => {
 
       {/* TAB 1: MAIN CASHIER DASHBOARD */}
       {activeTab === 'dashboard' && (
-        <>
-          {/* Top KPI Cards */}
-          <div className="m-stats-grid">
-            <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.4)' }}>
-              <span className="m-stat-label">Active Tournaments</span>
-              <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {activeTournaments.length}
-              </span>
-              <span className="m-stat-sub">Live & Registering</span>
-            </div>
+        <div className="cashier-dashboard-clean">
+          <section className="cashier-dashboard-intro">
+            <span>Cashier workspace</span>
+            <h1>What do you need to do?</h1>
+            <p>Create events, register players and run the cash desk.</p>
+          </section>
 
-            <div className="m-stat-card" style={{ borderColor: pendingChipOrdersCount > 0 ? 'var(--border-red)' : 'rgba(255, 255, 255, 0.2)' }}>
-              <span className="m-stat-label">Table Chip Orders</span>
-              <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {chipRequests.length}
-              </span>
-              <span className="m-stat-sub">{pendingChipOrdersCount} Pending Dispatch</span>
-            </div>
-          </div>
+          <section className="cashier-core-actions" aria-label="Main cashier jobs">
+            <span>Main jobs</span>
+            <button type="button" className="cashier-primary-action" onClick={() => setIsCreateTrnOpen(true)}>
+              <span className="cashier-primary-icon"><Trophy size={24} /></span>
+              <span><small>Core job</small><strong>Create tournament</strong><em>Set entry charge, service charge, structure and start time</em></span>
+              <ChevronRight size={21} />
+            </button>
+            <button type="button" className="cashier-primary-action" onClick={() => setActiveTab('players')}>
+              <span className="cashier-primary-icon"><Users size={24} /></span>
+              <span><small>Core job</small><strong>Register tournament player</strong><em>Collect the entry charge and create the receipt</em></span>
+              <ChevronRight size={21} />
+            </button>
+          </section>
 
-          <div className="m-stats-grid">
-            <div className="m-stat-card" style={{ borderColor: 'rgba(245, 158, 11, 0.4)' }}>
-              <span className="m-stat-label">Registered Members</span>
-              <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                {players.length}
-              </span>
-              <span className="m-stat-sub">{players.filter(p => p.kycStatus === 'verified').length} KYC Verified</span>
+          <section className="cashier-dashboard-actions" aria-labelledby="cashier-quick-actions-title">
+            <div className="cashier-clean-section-title">
+              <h2 id="cashier-quick-actions-title">Quick actions</h2>
+              <span>Everything else</span>
             </div>
-
-            <div className="m-stat-card" style={{ borderColor: 'rgba(16, 185, 129, 0.4)' }}>
-              <span className="m-stat-label">Today's Check-ins</span>
-              <span className="m-stat-val" style={{ color: '#34d399' }}>
-                {players.filter(p => hasPlayerCheckedInToday(p.id)).length}
-              </span>
-              <span className="m-stat-sub">Active in Club</span>
+            <div className="cashier-action-list">
+              <button type="button" onClick={() => setActiveTab('chips')}>
+                <span className="cashier-action-icon amber"><Coins size={19} /></span>
+                <span><strong>Chip orders</strong><small>Review and dispatch table requests</small></span>
+                {pendingChipOrdersCount > 0 && <b>{pendingChipOrdersCount}</b>}
+                <ChevronRight size={18} />
+              </button>
+              <button type="button" onClick={() => setIsCashInOpen(true)}>
+                <span className="cashier-action-icon green"><Plus size={19} /></span>
+                <span><strong>Cash received</strong><small>Add money coming into the drawer</small></span>
+                <ChevronRight size={18} />
+              </button>
+              <button type="button" onClick={() => setIsCashOutOpen(true)}>
+                <span className="cashier-action-icon red"><Minus size={19} /></span>
+                <span><strong>Cash payout</strong><small>Record prizes and player cash-outs</small></span>
+                <ChevronRight size={18} />
+              </button>
+              <button type="button" onClick={() => setIsExpenseOpen(true)}>
+                <span className="cashier-action-icon slate"><Receipt size={19} /></span>
+                <span><strong>Club expense</strong><small>Record wages, supplies or refreshments</small></span>
+                <ChevronRight size={18} />
+              </button>
             </div>
-          </div>
+          </section>
 
-          {/* Real-Time Table Chip Orders Card */}
-          <div
-            className="m-card"
-            style={{
-              border: pendingChipOrdersCount > 0 ? '1.5px solid #e11d48' : '1px solid var(--border-subtle)',
-              background: pendingChipOrdersCount > 0 ? 'linear-gradient(135deg, #18070b 0%, #0d0305 100%)' : undefined,
-              boxShadow: pendingChipOrdersCount > 0 ? '0 4px 20px rgba(225, 29, 72, 0.25)' : undefined,
-            }}
-          >
-            <div className="m-card-header">
-              <span className="m-card-title" style={{ color: pendingChipOrdersCount > 0 ? '#ffffff' : undefined }}>
-                <Coins size={18} color="#e11d48" />
-                Live Table Chip Requests
-              </span>
-              {pendingChipOrdersCount > 0 ? (
-                <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>
-                  <span className="badge-dot" /> {pendingChipOrdersCount} Pending Dispatch
-                </span>
-              ) : (
-                <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
-                  <CheckCircle2 size={12} /> All Clear
-                </span>
-              )}
-            </div>
-
-            {chipRequests.filter(r => r.status === 'pending').length === 0 ? (
-              <div style={{ fontSize: '0.78rem', color: '#94a3b8', padding: '6px 0' }}>
-                No active table chip requests right now. When seated players order chips, they appear here for 1-tap dispatch.
+          {pendingChipOrdersCount > 0 && (
+            <section className="cashier-pending-card" aria-labelledby="cashier-pending-title">
+              <div className="cashier-clean-section-title">
+                <div><span>Live queue</span><h2 id="cashier-pending-title">Ready to dispatch</h2></div>
+                <button type="button" onClick={() => setActiveTab('chips')}>View all</button>
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {chipRequests
-                  .filter(r => r.status === 'pending')
-                  .map(req => (
-                    <div
-                      key={req.id}
-                      style={{
-                        background: 'rgba(0, 0, 0, 0.4)',
-                        border: '1px solid rgba(225, 29, 72, 0.4)',
-                        borderRadius: '12px',
-                        padding: '12px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#ffffff' }}>
-                            {req.playerName}
-                          </div>
-                          <div style={{ fontSize: '0.74rem', color: 'var(--gold-light)' }}>
-                            {req.tableNumber} • {req.seatNumber}
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: 900, fontSize: '1.05rem', color: '#ffffff' }}>
-                            ₹{formatINR(req.amount)}
-                          </div>
-                          <span className="badge badge-secondary" style={{ fontSize: '0.66rem' }}>
-                            {req.paymentMethod}
-                          </span>
-                        </div>
-                      </div>
+              {chipRequests.filter(r => r.status === 'pending').slice(0, 1).map(req => (
+                <article key={req.id}>
+                  <div><strong>{req.playerName}</strong><small>{req.tableNumber} · {req.seatNumber}</small></div>
+                  <div><strong>₹{formatINR(req.amount)}</strong><small>{req.paymentMethod}</small></div>
+                  <button type="button" onClick={() => fulfillChipRequest(req.id)}><Check size={16} /> Dispatch chips</button>
+                </article>
+              ))}
+            </section>
+          )}
 
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
-                        <button
-                          className="m-btn m-btn-primary m-btn-sm"
-                          style={{ flex: 1, padding: '8px' }}
-                          onClick={() => fulfillChipRequest(req.id)}
-                        >
-                          <Check size={14} /> Fulfill & Dispatch
-                        </button>
-                        <button
-                          className="m-btn m-btn-secondary m-btn-sm"
-                          style={{ width: 'auto', padding: '8px 12px', color: '#fca5a5' }}
-                          onClick={() => cancelChipRequest(req.id, 'Cancelled on mobile')}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-
-          {/* Quick Action Strip */}
-          <div>
-            <p className="staff-section-title">Cashier Operations</p>
-            <div className="staff-quick-actions" style={{ marginTop: '8px' }}>
-              <button type="button" className="staff-quick-btn entry" onClick={() => setActiveTab('players')}>
-                <div className="staff-quick-icon"><Users size={20} /></div>
-                Tourney Entry
-              </button>
-              <button type="button" className="staff-quick-btn tourney" onClick={() => setIsCreateTrnOpen(true)}>
-                <div className="staff-quick-icon"><Trophy size={20} /></div>
-                New Tournament
-              </button>
-              <button type="button" className="staff-quick-btn chips" onClick={() => setActiveTab('chips')}>
-                <div className="staff-quick-icon"><Coins size={20} /></div>
-                Chip Orders
-              </button>
-              <button type="button" className="staff-quick-btn records" onClick={() => setActiveTab('records')}>
-                <div className="staff-quick-icon"><Receipt size={20} /></div>
-                Vouchers
-              </button>
-            </div>
-          </div>
-        </>
+          <section className="cashier-quiet-summary" aria-label="Today's cashier summary">
+            <div><span>Events</span><strong>{activeTournaments.length}</strong><small>active</small></div>
+            <div><span>Members</span><strong>{players.length}</strong><small>{players.filter(p => p.kycStatus === 'verified').length} verified</small></div>
+            <div><span>In club</span><strong>{players.filter(p => hasPlayerCheckedInToday(p.id)).length}</strong><small>today</small></div>
+          </section>
+        </div>
       )}
 
       {/* TAB 2: REGISTER PLAYER FOR TOURNAMENT */}
@@ -478,7 +400,7 @@ export const MobileCashierPortal: React.FC = () => {
                 <Users size={18} color="#ffffff" />
                 Tournament Player Entry & Billing
               </h3>
-              <p className="m-card-subtitle">Collect buy-in & generate official entry voucher</p>
+              <p className="m-card-subtitle">Collect the entry charge and generate an official entry voucher</p>
             </div>
           </div>
 
@@ -528,7 +450,7 @@ export const MobileCashierPortal: React.FC = () => {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Buy-in + House Rake:</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Entry Charge + Service Charge:</span>
                   <span style={{ fontWeight: 800, color: 'var(--gold-light)' }}>
                     {formatCurrency(selectedTournamentObj.buyInFee + selectedTournamentObj.clubRake)}
                   </span>
@@ -633,7 +555,7 @@ export const MobileCashierPortal: React.FC = () => {
 
                 <div style={{ background: 'rgba(0,0,0,0.25)', padding: '10px 12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Buy-in + Rake:</span>
+                    <span style={{ color: 'var(--text-muted)' }}>Entry Charge + Service Charge:</span>
                     <span style={{ fontWeight: 700, color: 'var(--gold-light)' }}>
                       {formatCurrency(trn.buyInFee)} + {formatCurrency(trn.clubRake)}
                     </span>
@@ -857,7 +779,7 @@ export const MobileCashierPortal: React.FC = () => {
             const invoiceData: ClubInvoiceData = {
               invoiceNumber: e.receiptNumber,
               invoiceDate: e.registeredAt,
-              category: 'Tournament Entry & Rake',
+              category: 'Tournament Entry & Service Charge',
               playerId: e.playerId,
               playerName: e.playerName,
               playerPhone: e.playerPhone || playerObj?.phone,
@@ -868,14 +790,14 @@ export const MobileCashierPortal: React.FC = () => {
               tableLocation: `${e.tableNumber} • ${e.seatNumber}`,
               items: [
                 {
-                  description: `${formatClubLabel(e.tournamentName)} - Tournament Buy-in Stack`,
+                  description: `${formatClubLabel(e.tournamentName)} - Tournament Entry Charge`,
                   details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Playing Chips`,
                   chips: tournamentObj?.startingChips || 50000,
                   amount: e.buyInAmount,
                 },
                 {
-                  description: 'House Operating Rake & Registration Fee',
-                  details: 'Club tournament organization & dealer rake fee',
+                  description: 'Tournament Service Charge',
+                  details: 'Club tournament organization and dealer service',
                   amount: e.rakeAmount,
                 },
               ],
@@ -931,11 +853,11 @@ export const MobileCashierPortal: React.FC = () => {
               value={cashInData.category}
               onChange={e => setCashInData({ ...cashInData, category: e.target.value as CashCategory })}
             >
-              <option value="Tournament Buy-in">Tournament Buy-in</option>
-              <option value="Cash Game Buy-in">Cash Game Buy-in</option>
+              <option value="Tournament Buy-in">Tournament Entry Charge</option>
+              <option value="Cash Game Buy-in">Cash Game Entry Charge</option>
               <option value="Chip Purchase">Chip Purchase</option>
               <option value="Float Deposit">Vault Float Deposit</option>
-              <option value="Table Rake">Table Rake</option>
+              <option value="Table Rake">Table Service Charge</option>
             </select>
           </div>
 
@@ -1098,7 +1020,7 @@ export const MobileCashierPortal: React.FC = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div className="m-form-group">
-              <label className="m-form-label" htmlFor="tournament-buyin">Buy-in (₹) *</label>
+              <label className="m-form-label" htmlFor="tournament-buyin">Entry Charge (₹) *</label>
               <input
                 id="tournament-buyin"
                 type="number"
@@ -1109,7 +1031,7 @@ export const MobileCashierPortal: React.FC = () => {
               />
             </div>
             <div className="m-form-group">
-              <label className="m-form-label" htmlFor="tournament-rake">Rake (₹) *</label>
+              <label className="m-form-label" htmlFor="tournament-rake">Service Charge (₹) *</label>
               <input
                 id="tournament-rake"
                 type="number"

@@ -75,7 +75,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       eventDetails: `Texas • MTC • Table ${entry.tableNumber} • Seat ${entry.seatNumber}`,
       items: [
         {
-          description: `${formatClubLabel(entry.tournamentName)} - Tournament Buy-in Stack`,
+          description: `${formatClubLabel(entry.tournamentName)} - Tournament Entry Charge`,
           details: `${selectedTournament?.startingChips?.toLocaleString()} Starting Chips`,
           chips: selectedTournament?.startingChips,
           amount: entry.buyInAmount,
@@ -178,7 +178,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
               >
                 {tournaments.map(t => (
                   <option key={t.id} value={t.id}>
-                    {formatClubLabel(t.name)} — Entry Charge: {formatCurrency(t.buyInFee)} + {formatCurrency(t.clubRake)} ({t.status})
+                    {formatClubLabel(t.name)} — Entry Charge: {formatCurrency(t.buyInFee)} + Service Charge: {formatCurrency(t.clubRake)} ({t.status})
                   </option>
                 ))}
               </select>
