@@ -13,37 +13,23 @@ import {
   MoreHorizontal,
   Edit3,
   Trash2,
-  ArrowLeft,
-  LogOut,
   Search,
   ChevronRight,
-  TrendingUp,
   Coins,
   Sparkles,
-  Filter,
-  FileText,
-  CreditCard,
-  Building2,
   Calendar,
-  AlertCircle,
-  Trophy,
-  Clock,
-  MapPin,
-  CheckCircle,
-  ExternalLink
+  CheckCircle
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
-import { Player, ExpenseCategory, PaymentMethod, ChipRequest, Tournament } from '../../types';
+import { Player, ExpenseCategory, PaymentMethod } from '../../types';
 import { StaffManager } from './StaffManager';
 import { PlayerLedger } from '../player/PlayerLedger';
 
 export const MobileAdminPortal: React.FC = () => {
   const {
-    staffName,
-    logoutStaff,
     players,
     tournaments,
     entries,
@@ -53,9 +39,7 @@ export const MobileAdminPortal: React.FC = () => {
     pendingChipOrdersCount,
     expenses,
     auditLogs,
-    currentCashBalance,
     totalExpensesAmount,
-    netTreasuryBalance,
     reviewKYC,
     updatePlayer,
     deletePlayer,
@@ -87,8 +71,16 @@ export const MobileAdminPortal: React.FC = () => {
 
   const approvedTodayCount = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
   const pendingKYCCount = players.filter(p => p.kycStatus === 'pending').length;
-  const deliveredChipOrders = chipRequests.filter(r => r.status === 'delivered');
   const totalChipVolume = chipRequests.reduce((sum, r) => sum + r.amount, 0);
+  const pendingEntryCount = checkIns.filter(c => c.verificationStatus === 'pending').length;
+  const pageMeta = {
+    dashboard: { eyebrow: 'Command centre', title: 'Club overview', description: 'Priority work and live operating signals.' },
+    players: { eyebrow: 'Member operations', title: 'Members', description: 'Search profiles, review KYC and inspect ledgers.' },
+    attendance: { eyebrow: 'Door operations', title: 'Attendance', description: 'Track arrivals and entry decisions.' },
+    finance: { eyebrow: 'Finance controls', title: 'Expenses', description: 'Record and review operating spend.' },
+    staff: { eyebrow: 'Access control', title: 'Staff accounts', description: 'Manage authorised club operators.' },
+    audit: { eyebrow: 'Governance', title: 'Audit trail', description: 'Review actions across every staff station.' },
+  }[activeTab];
 
   const filteredPlayers = players.filter(p =>
     p.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,7 +111,7 @@ export const MobileAdminPortal: React.FC = () => {
   };
 
   return (
-    <div style={{
+    <div className="mobile-admin-command-centre" style={{
       display: 'flex',
       flexDirection: 'column',
       minHeight: '100dvh',
@@ -130,179 +122,61 @@ export const MobileAdminPortal: React.FC = () => {
       boxSizing: 'border-box'
     }}>
 
-      {/* ── Apple Style Navigation Bar ─────────────────────────────── */}
-      <header style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 30,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '14px 18px',
-        backgroundColor: 'rgba(18, 14, 20, 0.92)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '11px',
-            background: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 10px rgba(225, 29, 72, 0.4)'
-          }}>
-            <ShieldCheck size={20} color="#ffffff" />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em', color: '#ffffff' }}>
-                Admin Portal
-              </span>
-              <span style={{
-                fontSize: '0.62rem',
-                fontWeight: 700,
-                padding: '2px 7px',
-                borderRadius: '999px',
-                background: 'rgba(16, 185, 129, 0.16)',
-                color: '#34d399',
-                border: '1px solid rgba(16, 185, 129, 0.3)'
-              }}>
-                LIVE
-              </span>
-            </div>
-            <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-              {staffName}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {pendingChipOrdersCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setIsChipsDrawerOpen(true)}
-              style={{
-                background: 'rgba(244, 63, 94, 0.2)',
-                border: '1px solid rgba(244, 63, 94, 0.5)',
-                borderRadius: '999px',
-                padding: '4px 10px',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                color: '#fda4af',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-            >
-              <Coins size={12} /> {pendingChipOrdersCount} chips
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={logoutStaff}
-            style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '10px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#fda4af',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'background 0.2s'
-            }}
-            title="Sign out"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
-      </header>
-
-      {/* ── Segmented Control Bar (Apple iOS Filter Strip) ─────────── */}
-      <div style={{
-        padding: '10px 16px',
-        backgroundColor: '#0c0a0e',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-        display: 'flex',
-        gap: '6px',
-        overflowX: 'auto',
-        WebkitOverflowScrolling: 'touch',
-        scrollbarWidth: 'none'
-      }}>
-        {[
-          { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-          { id: 'players', label: 'Members', icon: Users, count: players.length },
-          { id: 'attendance', label: 'Attendance', icon: CheckCircle2, count: todayCheckIns.length },
-          { id: 'finance', label: 'Expenses', icon: Receipt },
-          { id: 'staff', label: 'Staff Access', icon: ShieldCheck },
-          { id: 'audit', label: 'Logs', icon: History },
-        ].map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                setActiveTab(tab.id as any);
-                setSearchQuery('');
-              }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '7px 14px',
-                borderRadius: '20px',
-                fontSize: '0.8rem',
-                fontWeight: isActive ? 700 : 500,
-                color: isActive ? '#ffffff' : '#94a3b8',
-                background: isActive ? 'linear-gradient(135deg, rgba(225, 29, 72, 0.3) 0%, rgba(225, 29, 72, 0.15) 100%)' : 'rgba(255, 255, 255, 0.04)',
-                border: isActive ? '1px solid rgba(225, 29, 72, 0.5)' : '1px solid rgba(255, 255, 255, 0.05)',
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Icon size={14} color={isActive ? '#f43f5e' : '#94a3b8'} />
-              <span>{tab.label}</span>
-              {tab.count !== undefined && (
-                <span style={{
-                  fontSize: '0.7rem',
-                  padding: '1px 6px',
-                  borderRadius: '10px',
-                  background: isActive ? 'rgba(225, 29, 72, 0.4)' : 'rgba(255, 255, 255, 0.1)',
-                  color: isActive ? '#ffffff' : '#cbd5e1'
-                }}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
       {/* ── Scrollable Content Area ────────────────────────────────── */}
       <main style={{
         flex: 1,
-        padding: '16px 16px calc(76px + env(safe-area-inset-bottom)) 16px',
+        padding: '14px 14px calc(82px + env(safe-area-inset-bottom)) 14px',
         display: 'flex',
         flexDirection: 'column',
         gap: '16px',
         boxSizing: 'border-box',
         overflowY: 'auto'
       }}>
+        <section className="admin-mobile-page-heading" aria-labelledby="admin-mobile-page-title">
+          <div>
+            <span>{pageMeta.eyebrow}</span>
+            <h1 id="admin-mobile-page-title">{pageMeta.title}</h1>
+            <p>{pageMeta.description}</p>
+          </div>
+          {pendingChipOrdersCount > 0 && (
+            <button type="button" onClick={() => setIsChipsDrawerOpen(true)} aria-label={`Open ${pendingChipOrdersCount} pending chip orders`}>
+              <Coins size={17} />
+              <span>{pendingChipOrdersCount}<small>chip order</small></span>
+            </button>
+          )}
+        </section>
 
         {/* ── TAB 1: EXECUTIVE OVERVIEW ────────────────────────────── */}
         {activeTab === 'dashboard' && (
           <>
+            <section className="admin-mobile-priority" aria-labelledby="admin-priority-title">
+              <div className="admin-mobile-section-heading">
+                <div>
+                  <span>Needs attention</span>
+                  <h2 id="admin-priority-title">Priority queue</h2>
+                </div>
+                <strong>{pendingKYCCount + pendingEntryCount + pendingChipOrdersCount}</strong>
+              </div>
+
+              <div className="admin-mobile-priority-list">
+                <button type="button" onClick={() => { setActiveTab('players'); setSearchQuery(''); }}>
+                  <span className="admin-mobile-priority-icon violet"><ShieldCheck size={18} /></span>
+                  <span><strong>KYC reviews</strong><small>{pendingKYCCount ? `${pendingKYCCount} member profiles waiting` : 'No profiles waiting'}</small></span>
+                  <b>{pendingKYCCount}</b><ChevronRight size={17} />
+                </button>
+                <button type="button" onClick={() => { setActiveTab('attendance'); setSearchQuery(''); }}>
+                  <span className="admin-mobile-priority-icon green"><CheckCircle2 size={18} /></span>
+                  <span><strong>Entry decisions</strong><small>{pendingEntryCount ? `${pendingEntryCount} arrivals need clearance` : 'Door queue is clear'}</small></span>
+                  <b>{pendingEntryCount}</b><ChevronRight size={17} />
+                </button>
+                <button type="button" onClick={() => setIsChipsDrawerOpen(true)}>
+                  <span className="admin-mobile-priority-icon amber"><Coins size={18} /></span>
+                  <span><strong>Chip orders</strong><small>{pendingChipOrdersCount ? `${pendingChipOrdersCount} order awaiting delivery` : 'All orders completed'}</small></span>
+                  <b>{pendingChipOrdersCount}</b><ChevronRight size={17} />
+                </button>
+              </div>
+            </section>
+
             {/* Apple Style 2x2 Tapable Metric Widgets */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               
@@ -474,7 +348,7 @@ export const MobileAdminPortal: React.FC = () => {
               <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>
                 Quick Actions
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+              <div className="admin-mobile-action-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 {/* 1. Record Expense */}
                 <button
                   type="button"
@@ -1016,7 +890,7 @@ export const MobileAdminPortal: React.FC = () => {
         left: 0,
         right: 0,
         zIndex: 30,
-        height: '62px',
+        height: '66px',
         paddingBottom: 'env(safe-area-inset-bottom)',
         backgroundColor: 'rgba(18, 14, 20, 0.92)',
         backdropFilter: 'blur(24px) saturate(180%)',
@@ -1039,7 +913,12 @@ export const MobileAdminPortal: React.FC = () => {
             <button
               key={item.id}
               type="button"
-              onClick={() => setActiveTab(item.id as any)}
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={`Open ${item.label}`}
+              onClick={() => {
+                setActiveTab(item.id as typeof activeTab);
+                setSearchQuery('');
+              }}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -1049,11 +928,16 @@ export const MobileAdminPortal: React.FC = () => {
                 gap: '4px',
                 color: isActive ? '#f43f5e' : '#94a3b8',
                 cursor: 'pointer',
-                padding: '6px 12px',
+                padding: '7px 10px',
+                minWidth: '60px',
+                minHeight: '48px',
+                position: 'relative',
                 transition: 'all 0.15s ease'
               }}
             >
               <Icon size={20} color={isActive ? '#f43f5e' : '#94a3b8'} />
+              {item.id === 'players' && pendingKYCCount > 0 && <span className="nav-badge">{pendingKYCCount}</span>}
+              {item.id === 'attendance' && pendingEntryCount > 0 && <span className="nav-badge">{pendingEntryCount}</span>}
               <span style={{ fontSize: '0.68rem', fontWeight: isActive ? 700 : 500 }}>
                 {item.label}
               </span>
@@ -1063,6 +947,8 @@ export const MobileAdminPortal: React.FC = () => {
 
         <button
           type="button"
+          aria-label="Open admin tools"
+          aria-current={activeTab === 'staff' || activeTab === 'audit' ? 'page' : undefined}
           onClick={() => setIsMoreOpen(true)}
           style={{
             background: 'transparent',
@@ -1073,7 +959,9 @@ export const MobileAdminPortal: React.FC = () => {
             gap: '4px',
             color: activeTab === 'staff' || activeTab === 'audit' ? '#f43f5e' : '#94a3b8',
             cursor: 'pointer',
-            padding: '6px 12px'
+            padding: '7px 10px',
+            minWidth: '60px',
+            minHeight: '48px'
           }}
         >
           <MoreHorizontal size={20} color={activeTab === 'staff' || activeTab === 'audit' ? '#f43f5e' : '#94a3b8'} />
