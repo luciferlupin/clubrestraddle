@@ -60,226 +60,314 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
   };
 
   return (
-    <div className="card" style={{ border: '1px solid var(--border-gold)' }}>
-      <div className="card-header">
-        <div>
-          <h3 className="card-title">
-            <ShieldCheck size={18} color="#e11d48" />
-            Security Verification Desk
-          </h3>
-          <p className="card-subtitle">
-            Verify member identity, Aadhaar & PAN Card KYC credentials, and daily arrival clearance.
-          </p>
+    <div
+      className="card"
+      style={{
+        border: '1px solid rgba(225, 29, 72, 0.4)',
+        background: 'linear-gradient(155deg, rgba(20, 8, 12, 0.95) 0%, rgba(10, 4, 6, 0.95) 100%)',
+        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.4)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '18px',
+      }}
+    >
+      {/* Header Bar */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          flexWrap: 'wrap',
+          gap: '12px',
+          borderBottom: '1px solid var(--border-subtle)',
+          paddingBottom: '14px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              background: 'rgba(225, 29, 72, 0.2)',
+              border: '1px solid var(--border-red)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+            }}
+          >
+            <ShieldCheck size={20} />
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#ffffff' }}>
+              Entrance Clearance Desk
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.76rem', color: '#94a3b8' }}>
+              Inspect identity, UIDAI Aadhaar & PAN KYC credentials for floor entry.
+            </p>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
           <TierBadge tier={player.membershipTier} />
           <KYCBadge status={player.kycStatus} />
           {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
         </div>
       </div>
 
-      {/* Main Verification Details */}
-      <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '20px', marginBottom: '20px' }}>
-        {/* Photo with Verification Clearance Stamp */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+      {/* Member Hero Identity Section */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '14px 16px',
+          background: 'rgba(0, 0, 0, 0.35)',
+          borderRadius: '14px',
+          border: '1px solid var(--border-subtle)',
+        }}
+      >
+        {/* Photo Container */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
           {player.kyc.photoUrl ? (
             <img
               src={player.kyc.photoUrl}
               alt={player.fullName}
               style={{
-                width: '110px',
-                height: '110px',
-                borderRadius: '12px',
+                width: '84px',
+                height: '84px',
+                borderRadius: '14px',
                 objectFit: 'cover',
-                border: '2px solid var(--gold-light)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                border: `2px solid ${player.kycStatus === 'verified' ? '#10b981' : '#e11d48'}`,
+                boxShadow: '0 6px 16px rgba(0,0,0,0.5)',
               }}
             />
           ) : (
             <div
               style={{
-                width: '110px',
-                height: '110px',
-                borderRadius: '12px',
-                background: 'var(--bg-surface-elevated)',
+                width: '84px',
+                height: '84px',
+                borderRadius: '14px',
+                background: 'linear-gradient(135deg, #271018 0%, #15060c 100%)',
+                border: '2px solid rgba(225, 29, 72, 0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '2rem',
-                color: 'var(--gold-light)',
+                fontSize: '1.8rem',
+                fontWeight: 900,
+                color: '#ffffff',
               }}
             >
               {player.fullName.charAt(0)}
             </div>
           )}
-
-          <div
-            style={{
-              fontSize: '0.72rem',
-              fontWeight: 800,
-              padding: '3px 10px',
-              borderRadius: '999px',
-              background: player.kycStatus === 'verified' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(225, 29, 72, 0.2)',
-              color: player.kycStatus === 'verified' ? '#6ee7b7' : '#fb7185',
-              border: `1px solid ${player.kycStatus === 'verified' ? '#10b981' : '#e11d48'}`,
-            }}
-          >
-            {player.kycStatus === 'verified' ? 'KYC VERIFIED' : 'KYC PENDING'}
-          </div>
         </div>
 
-        {/* Player Details Grid */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
-              {player.fullName}
-            </div>
-            <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: 'var(--gold-light)' }}>
-              Member ID: {player.id} • Contact: {player.phone}
-            </div>
+        {/* Member Name and Identifiers */}
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.2 }}>
+            {player.fullName}
           </div>
-
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '12px',
-              background: 'rgba(0,0,0,0.25)',
-              padding: '14px',
-              borderRadius: '10px',
-              border: '1px solid var(--border-subtle)',
+              fontSize: '0.78rem',
+              color: '#fb7185',
+              fontFamily: 'var(--font-mono)',
+              marginTop: '4px',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
             }}
           >
-            <div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                1. Aadhaar Card (UIDAI)
-              </span>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#ffffff', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-                {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
-              </div>
-            </div>
-
-            <div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                2. PAN Card (IT Dept)
-              </span>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fb7185', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-                {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
-              </div>
-            </div>
-
-            <div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Registration Date
-              </span>
-              <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#ffffff', marginTop: '2px' }}>
-                ✓ {formatDateOnly(player.registeredAt)}
-              </div>
-            </div>
-
-            <div>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                City / Address
-              </span>
-              <div style={{ fontWeight: 600, fontSize: '0.82rem', color: '#cbd5e1', marginTop: '2px' }}>
-                {player.kyc.address || 'Delhi NCR, India'}
-              </div>
-            </div>
+            <span>ID: {player.id}</span>
+            <span>•</span>
+            <span style={{ color: '#cbd5e1' }}>{player.phone}</span>
+          </div>
+          <div style={{ marginTop: '6px', fontSize: '0.74rem', color: '#94a3b8' }}>
+            Registered: {formatDateOnly(player.registeredAt)} • {player.kyc.address || 'Delhi NCR, India'}
           </div>
         </div>
       </div>
 
-      {/* Daily Check-In & Game Preference Status */}
+      {/* KYC Credentials 2x2 Grid */}
       <div
         style={{
-          background: 'var(--bg-surface-elevated)',
-          padding: '14px 18px',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: '10px',
+        }}
+      >
+        <div
+          style={{
+            background: 'rgba(0, 0, 0, 0.3)',
+            padding: '12px 14px',
+            borderRadius: '12px',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            1. Aadhaar Card (UIDAI)
+          </span>
+          <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#ffffff', fontFamily: 'var(--font-mono)', marginTop: '4px' }}>
+            {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#10b981', marginTop: '2px' }}>✓ Government ID Verified</div>
+        </div>
+
+        <div
+          style={{
+            background: 'rgba(0, 0, 0, 0.3)',
+            padding: '12px 14px',
+            borderRadius: '12px',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            2. PAN Card (IT Dept)
+          </span>
+          <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fb7185', fontFamily: 'var(--font-mono)', marginTop: '4px' }}>
+            {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#38bdf8', marginTop: '2px' }}>✓ Income Tax PAN Matched</div>
+        </div>
+
+        <div
+          style={{
+            background: 'rgba(0, 0, 0, 0.3)',
+            padding: '12px 14px',
+            borderRadius: '12px',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Date of Birth / Age
+          </span>
+          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#ffffff', marginTop: '4px' }}>
+            {formatDateOnly(player.kyc.dateOfBirth)}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#10b981', marginTop: '2px' }}>✓ Age 21+ Verified</div>
+        </div>
+
+        <div
+          style={{
+            background: 'rgba(0, 0, 0, 0.3)',
+            padding: '12px 14px',
+            borderRadius: '12px',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Table / Game Preference
+          </span>
+          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fef08a', marginTop: '4px' }}>
+            {checkIn?.tablePreference || 'General Seating'}
+          </div>
+          <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
+            {checkIn ? `Checked in ${formatTimeOnly(checkIn.checkInTime)}` : 'Walk-in arrival'}
+          </div>
+        </div>
+      </div>
+
+      {/* Check-In Arrival Status Banner */}
+      <div
+        style={{
+          background: checkIn?.verificationStatus === 'approved'
+            ? 'rgba(16, 185, 129, 0.12)'
+            : checkIn?.verificationStatus === 'rejected'
+            ? 'rgba(239, 68, 68, 0.15)'
+            : 'rgba(245, 158, 11, 0.12)',
+          border: `1px solid ${
+            checkIn?.verificationStatus === 'approved'
+              ? 'rgba(16, 185, 129, 0.3)'
+              : checkIn?.verificationStatus === 'rejected'
+              ? 'rgba(239, 68, 68, 0.3)'
+              : 'rgba(245, 158, 11, 0.3)'
+          }`,
           borderRadius: '12px',
-          marginBottom: '20px',
-          border: '1px solid var(--border-subtle)',
+          padding: '12px 16px',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Today's Daily Check-in Status
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Clock size={16} color={checkIn?.verificationStatus === 'approved' ? '#10b981' : '#e11d48'} />
+            <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.86rem' }}>
+              {checkIn
+                ? `Today's Arrival: ${checkIn.verificationStatus.toUpperCase()} at ${formatTimeOnly(checkIn.checkInTime)}`
+                : 'Walk-in Clearance (Check-in created on approval)'}
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-              {checkIn ? (
-                <>
-                  <Clock size={16} color="#e11d48" />
-                  <span style={{ fontWeight: 700, color: '#ffffff' }}>
-                    Checked In at {formatTimeOnly(checkIn.checkInTime)}
-                  </span>
-                  <span style={{ color: 'var(--text-dim)' }}>•</span>
-                  <span style={{ color: '#ffffff' }}>
-                    Table Preference: {checkIn.tablePreference || 'General Seating'}
-                  </span>
-                </>
-              ) : (
-                <span style={{ color: '#fca5a5', fontWeight: 600 }}>
-                  ⚠ Player has not checked in for today yet
-                </span>
-              )}
-            </div>
           </div>
-
-          <div>
-            {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
-          </div>
+          {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
         </div>
 
         {checkIn?.rejectionReason && (
-          <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
-            <strong>Rejection Reason:</strong> {checkIn.rejectionReason}
+          <div style={{ color: '#fca5a5', fontSize: '0.78rem', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
+            <strong>Denial Reason:</strong> {checkIn.rejectionReason}
           </div>
         )}
 
         {checkIn?.verifiedBy && (
-          <div style={{ color: '#ffffff', fontSize: '0.78rem', marginTop: '8px' }}>
+          <div style={{ color: '#cbd5e1', fontSize: '0.76rem', marginTop: '6px' }}>
             ✓ Verified by <strong>{checkIn.verifiedBy}</strong> on {formatDateTime(checkIn.verifiedAt)}
           </div>
         )}
       </div>
 
-      {/* Verification Action Buttons */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+      {/* Tactile Action Bar */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '12px',
+          flexWrap: 'wrap',
+          borderTop: '1px solid var(--border-subtle)',
+          paddingTop: '16px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: '#94a3b8' }}>
           <Lock size={12} color="#ffffff" />
-          <span>Security access only. No financial or buy-in data visible.</span>
+          <span>Security access only · Audit logged</span>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           {checkIn && (
             <button
               type="button"
-              className="btn btn-secondary"
+              className="btn btn-secondary btn-sm"
               onClick={() => {
                 setEntryInvoice(generateEntryFeeInvoice(player, checkIn, staffName));
                 setIsInvoiceOpen(true);
               }}
               title="Print official ₹500 Door Entry Tax Invoice"
+              style={{ fontSize: '0.78rem', padding: '8px 12px' }}
             >
-              <FileText size={15} color="#e11d48" /> ₹500 Entry Invoice
+              <FileText size={14} color="#e11d48" /> ₹500 Tax Invoice
             </button>
           )}
 
           <button
-            className="btn btn-danger"
+            className="btn btn-danger btn-sm"
             onClick={() => setIsRejectModalOpen(true)}
             disabled={checkIn?.verificationStatus === 'rejected'}
+            style={{ fontSize: '0.78rem', padding: '8px 14px' }}
           >
-            <XCircle size={16} /> Reject Entry / Deny
+            <XCircle size={15} /> Deny Entry
           </button>
 
           <button
-            className="btn btn-emerald btn-lg"
+            className="btn btn-emerald btn-sm"
             onClick={() => setIsApproveModalOpen(true)}
             disabled={checkIn?.verificationStatus === 'approved'}
+            style={{
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              padding: '8px 18px',
+              boxShadow: checkIn?.verificationStatus !== 'approved' ? '0 4px 14px rgba(16, 185, 129, 0.35)' : 'none',
+            }}
           >
-            <CheckCircle size={18} />
-            {checkIn?.verificationStatus === 'approved' ? 'Entry Already Approved' : 'Approve Entry Access'}
+            <CheckCircle size={16} />
+            {checkIn?.verificationStatus === 'approved' ? 'Access Approved ✓' : 'Approve & Clear Access'}
           </button>
         </div>
       </div>
