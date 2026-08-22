@@ -127,7 +127,6 @@ const MainApp: React.FC = () => {
             {activeRole === 'player' && (
               <MobilePlayerPortal
                 key={showNewPlayerForm ? 'player-register' : 'player-standard'}
-                onOpenQR={() => setIsQRModalOpen(true)}
                 showNewPlayerFormInitially={showNewPlayerForm}
               />
             )}
@@ -162,7 +161,6 @@ const MainApp: React.FC = () => {
             {activeRole === 'player' && (
               <PlayerPortal
                 key={showNewPlayerForm ? 'desktop-player-register' : 'desktop-player-standard'}
-                onOpenQR={() => setIsQRModalOpen(true)}
                 showNewPlayerFormInitially={showNewPlayerForm}
                 onRegistrationFlowComplete={() => setShowNewPlayerForm(false)}
               />

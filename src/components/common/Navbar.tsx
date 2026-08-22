@@ -156,11 +156,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQR }) => {
             </div>
           )}
 
-          {/* Club QR Code button */}
-          <button className="action-btn-pill" onClick={onOpenQR} title="Open Physical Entrance QR Code">
-            <QrCode size={14} color="#ffffff" />
-            <span>Club QR</span>
-          </button>
+          {/* Club registration QR is a staff-only tool. */}
+          {activeRole !== 'player' && (
+            <button className="action-btn-pill" onClick={onOpenQR} title="Open Physical Entrance QR Code">
+              <QrCode size={14} color="#ffffff" />
+              <span>Club QR</span>
+            </button>
+          )}
 
           {/* Live Clock */}
           <div

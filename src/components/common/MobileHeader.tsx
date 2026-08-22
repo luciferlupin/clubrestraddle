@@ -66,14 +66,16 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
           </button>
         ) : null}
 
-        <button
-          type="button"
-          onClick={onOpenQR}
-          className="mobile-header-action"
-          aria-label="Open club entrance registration QR"
-        >
-          <QrCode size={20} />
-        </button>
+        {!isPlayerMode && (
+          <button
+            type="button"
+            onClick={onOpenQR}
+            className="mobile-header-action"
+            aria-label="Open club entrance registration QR"
+          >
+            <QrCode size={20} />
+          </button>
+        )}
       </div>
     </header>
   );

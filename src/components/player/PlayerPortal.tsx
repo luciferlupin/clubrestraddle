@@ -32,13 +32,11 @@ import { Pagination } from '../common/Pagination';
 type PlayerTab = 'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history';
 
 interface PlayerPortalProps {
-  onOpenQR: () => void;
   showNewPlayerFormInitially?: boolean;
   onRegistrationFlowComplete?: () => void;
 }
 
 export const PlayerPortal: React.FC<PlayerPortalProps> = ({
-  onOpenQR,
   showNewPlayerFormInitially = false,
   onRegistrationFlowComplete,
 }) => {

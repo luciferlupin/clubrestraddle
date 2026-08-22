@@ -192,11 +192,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ onOpenQR }) => {
             </button>
           )}
 
-          {/* Entrance QR Standee button */}
-          <button className="btn btn-secondary btn-sm" onClick={onOpenQR} aria-label="Open club registration standee QR">
-            <QrCode size={13} color="#ffffff" />
-            <span className="header-action-label">Standee QR</span>
-          </button>
+          {/* Staff-only entrance registration standee */}
+          {!isPlayerMode && (
+            <button className="btn btn-secondary btn-sm" onClick={onOpenQR} aria-label="Open club registration standee QR">
+              <QrCode size={13} color="#ffffff" />
+              <span className="header-action-label">Standee QR</span>
+            </button>
+          )}
         </div>
       </div>
     </header>

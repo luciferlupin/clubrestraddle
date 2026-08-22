@@ -24,7 +24,6 @@ import { TableChipRequestModal } from './TableChipRequestModal';
 import { CardDeckFan, CardSuit, AnimatedSuitsRow } from '../common/PokerGraphics';
 
 interface MobilePlayerPortalProps {
-  onOpenQR: () => void;
   showNewPlayerFormInitially?: boolean;
 }
 
@@ -32,7 +31,6 @@ type PlayerTab = 'home' | 'history' | 'profile' | 'new_kyc';
 type EntryView = 'choice' | 'lookup' | 'register';
 
 export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
-  onOpenQR,
   showNewPlayerFormInitially = false,
 }) => {
   const {
