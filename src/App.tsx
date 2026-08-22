@@ -33,7 +33,7 @@ const MainApp: React.FC = () => {
   const [isRoleSwitcherOpen, setIsRoleSwitcherOpen] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      return window.innerWidth <= 768;
+      return new URLSearchParams(window.location.search).get('mobile') === '1' || window.innerWidth <= 768;
     }
     return false;
   });
@@ -41,7 +41,8 @@ const MainApp: React.FC = () => {
   // Track screen size changes for fixed mobile viewport vs desktop
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const forceMobile = new URLSearchParams(window.location.search).get('mobile') === '1';
+      setIsMobile(forceMobile || window.innerWidth <= 768);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);

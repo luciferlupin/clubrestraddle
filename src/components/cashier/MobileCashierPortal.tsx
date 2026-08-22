@@ -73,9 +73,8 @@ export const MobileCashierPortal: React.FC = () => {
     playerId: players[0]?.id || '',
     paymentMethod: 'Cash' as PaymentMethod,
     paymentRef: '',
-    tableNum: 'Table 1',
-    seatNum: 'Seat 3',
   });
+  const [quickPlayerId, setQuickPlayerId] = useState('');
 
   const [cashInData, setCashInData] = useState({
     category: 'Tournament Buy-in' as CashCategory,
@@ -145,8 +144,6 @@ export const MobileCashierPortal: React.FC = () => {
       playerId: entryFormData.playerId,
       paymentMethod: entryFormData.paymentMethod,
       paymentReference: ref,
-      tableNumber: entryFormData.tableNum,
-      seatNumber: entryFormData.seatNum,
     });
 
     const playerObj = players.find(p => p.id === entryFormData.playerId);
@@ -163,7 +160,7 @@ export const MobileCashierPortal: React.FC = () => {
       govtIdType: playerObj?.kyc.govtIdType,
       govtIdNumber: playerObj?.kyc.govtIdNumber,
       membershipTier: playerObj?.membershipTier,
-      tableLocation: `${entry.tableNumber} • ${entry.seatNumber}`,
+      tableLocation: 'Tournament entry',
       items: [
         {
           description: `${formatClubLabel(entry.tournamentName)} - Tournament Entry Charge`,
@@ -422,18 +419,47 @@ export const MobileCashierPortal: React.FC = () => {
             </div>
 
             <div className="m-form-group">
+              <label className="m-form-label" htmlFor="entry-player-id">Quick Player ID</label>
+              <input
+                id="entry-player-id"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                className="m-input"
+                placeholder="Type Player ID, e.g. 7"
+                value={quickPlayerId}
+                onChange={e => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  setQuickPlayerId(value);
+                  const match = players.find(player => formatPlayerNumber(player) === value);
+                  if (match) setEntryFormData(current => ({ ...current, playerId: match.id }));
+                }}
+              />
+              {quickPlayerId && (
+                <small style={{ color: players.some(player => formatPlayerNumber(player) === quickPlayerId) ? '#86efac' : '#fca5a5' }}>
+                  {players.find(player => formatPlayerNumber(player) === quickPlayerId)?.fullName || 'No player found with this ID'}
+                </small>
+              )}
+            </div>
+
+            <div className="m-form-group">
               <label className="m-form-label" htmlFor="entry-player">Select Registered Player *</label>
               <select
                 id="entry-player"
                 className="m-select"
                 value={entryFormData.playerId}
-                onChange={e => setEntryFormData({ ...entryFormData, playerId: e.target.value })}
+                onChange={e => {
+                  const playerId = e.target.value;
+                  const player = players.find(candidate => candidate.id === playerId);
+                  setEntryFormData({ ...entryFormData, playerId });
+                  setQuickPlayerId(player ? formatPlayerNumber(player) : '');
+                }}
               >
                 {players.map(p => {
                   const isChecked = hasPlayerCheckedInToday(p.id);
                   return (
                     <option key={p.id} value={p.id}>
-                      {p.fullName} ({p.id}) {isChecked ? '— Checked in' : ''}
+                      {p.fullName} (Player ID {formatPlayerNumber(p)}) {isChecked ? '— Checked in' : ''}
                     </option>
                   );
                 })}
@@ -484,30 +510,6 @@ export const MobileCashierPortal: React.FC = () => {
                 value={entryFormData.paymentRef}
                 onChange={e => setEntryFormData({ ...entryFormData, paymentRef: e.target.value })}
               />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div className="m-form-group">
-                <label className="m-form-label" htmlFor="entry-table">Table #</label>
-                <input
-                  id="entry-table"
-                  type="text"
-                  className="m-input"
-                  value={entryFormData.tableNum}
-                  onChange={e => setEntryFormData({ ...entryFormData, tableNum: e.target.value })}
-                />
-              </div>
-
-              <div className="m-form-group">
-                <label className="m-form-label" htmlFor="entry-seat">Seat #</label>
-                <input
-                  id="entry-seat"
-                  type="text"
-                  className="m-input"
-                  value={entryFormData.seatNum}
-                  onChange={e => setEntryFormData({ ...entryFormData, seatNum: e.target.value })}
-                />
-              </div>
             </div>
 
             <button type="submit" className="m-btn m-btn-primary" style={{ marginTop: '6px' }}>

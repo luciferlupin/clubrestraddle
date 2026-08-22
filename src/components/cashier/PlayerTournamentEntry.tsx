@@ -28,10 +28,9 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
     initialTournamentId || tournaments[0]?.id || ''
   );
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>(players[0]?.id || '');
+  const [quickPlayerId, setQuickPlayerId] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   const [paymentRef, setPaymentRef] = useState<string>('');
-  const [tableNum, setTableNum] = useState<string>('Table 1');
-  const [seatNum, setSeatNum] = useState<string>('Seat 4');
 
   const [generatedInvoice, setGeneratedInvoice] = useState<ClubInvoiceData | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
@@ -54,8 +53,6 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       playerId: selectedPlayerId,
       paymentMethod,
       paymentReference: ref,
-      tableNumber: tableNum,
-      seatNumber: seatNum,
     });
 
     const invoiceData: ClubInvoiceData = {
@@ -69,10 +66,10 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       govtIdType: selectedPlayer?.kyc.govtIdType,
       govtIdNumber: selectedPlayer?.kyc.govtIdNumber,
       membershipTier: selectedPlayer?.membershipTier,
-      tableLocation: `${entry.tableNumber} • ${entry.seatNumber}`,
+      tableLocation: 'Tournament entry',
       eventName: `${formatClubLabel(entry.tournamentName)}`,
       eventDate: `Texas • ${formatDateOnly(entry.registeredAt)} • ${formatTimeOnly(entry.registeredAt)}`,
-      eventDetails: `Texas • MTC • Table ${entry.tableNumber} • Seat ${entry.seatNumber}`,
+      eventDetails: 'Tournament registration and payment confirmation',
       items: [
         {
           description: `${formatClubLabel(entry.tournamentName)} - Tournament Entry Charge`,
@@ -120,7 +117,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
             Tournament Player Registration & Billing Desk
           </h3>
           <p className="card-subtitle">
-            Step {step} of 2 · {step === 1 ? 'Select Tournament & Member' : 'Seating & Payment Settlement'}
+            Step {step} of 2 · {step === 1 ? 'Select Tournament & Member' : 'Payment Settlement'}
           </p>
         </div>
         {onDone && (
@@ -155,8 +152,8 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
         >
           <span className="wizard-step-badge">2</span>
           <div className="wizard-step-text">
-            <span className="wizard-step-title">Payment & Seating</span>
-            <span className="wizard-step-desc">Method, table & invoice</span>
+            <span className="wizard-step-title">Payment</span>
+            <span className="wizard-step-desc">Method, reference & invoice</span>
           </div>
         </button>
       </div>
@@ -183,6 +180,30 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
               </select>
             </div>
 
+            <div className="form-group">
+              <label className="form-label" htmlFor="cashier-entry-player-id">Quick Player ID</label>
+              <input
+                id="cashier-entry-player-id"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                className="form-input"
+                placeholder="Type Player ID, e.g. 7"
+                value={quickPlayerId}
+                onChange={e => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  setQuickPlayerId(value);
+                  const match = players.find(player => formatPlayerNumber(player) === value);
+                  if (match) setSelectedPlayerId(match.id);
+                }}
+              />
+              {quickPlayerId && (
+                <small style={{ color: players.some(player => formatPlayerNumber(player) === quickPlayerId) ? '#86efac' : '#fca5a5' }}>
+                  {players.find(player => formatPlayerNumber(player) === quickPlayerId)?.fullName || 'No player found with this ID'}
+                </small>
+              )}
+            </div>
+
             {/* Player Selection */}
             <div className="form-group">
               <label className="form-label" htmlFor="cashier-entry-player">Select Registered Player *</label>
@@ -190,7 +211,12 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
                 id="cashier-entry-player"
                 className="form-select"
                 value={selectedPlayerId}
-                onChange={e => setSelectedPlayerId(e.target.value)}
+                onChange={e => {
+                  const playerId = e.target.value;
+                  const player = players.find(candidate => candidate.id === playerId);
+                  setSelectedPlayerId(playerId);
+                  setQuickPlayerId(player ? formatPlayerNumber(player) : '');
+                }}
                 required
               >
                 {players.map(p => {
@@ -290,31 +316,6 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
               </div>
             </div>
 
-            <div className="form-grid-2">
-              <div className="form-group">
-                <label className="form-label" htmlFor="cashier-entry-table">Assigned Table Number</label>
-                <input
-                  id="cashier-entry-table"
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Table 1"
-                  value={tableNum}
-                  onChange={e => setTableNum(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="cashier-entry-seat">Assigned Seat Number</label>
-                <input
-                  id="cashier-entry-seat"
-                  type="text"
-                  className="form-input"
-                  placeholder="e.g. Seat 4"
-                  value={seatNum}
-                  onChange={e => setSeatNum(e.target.value)}
-                />
-              </div>
-            </div>
           </div>
         )}
 
@@ -349,7 +350,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
                   if (selectedTournamentId && selectedPlayerId) setStep(2);
                 }}
               >
-                <span>Continue to Seating & Payment</span>
+                <span>Continue to Payment</span>
                 <ArrowRight size={16} />
               </button>
             ) : (
