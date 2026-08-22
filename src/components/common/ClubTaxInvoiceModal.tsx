@@ -107,17 +107,17 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
   };
 
   const handleCopySummary = () => {
-    const summary = `CLUB RE STRADDLE • TAX INVOICE
+    const summary = `CLUB SHOWDOWN • OFFICIAL RECEIPT & INVOICE
 Invoice No: ${invoice.invoiceNumber}
 Date: ${dateFormatted} ${timeFormatted}
 Cashier: ${invoice.cashierName}
 Player: ${invoice.playerName} (ID: ${invoice.playerId || '2880'})
-Event: ${eventTitle}
-Service Charges (Taxable): ₹${taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-GST @ 18% (CGST 9% + SGST 9%): ₹${totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-TOTAL: ₹${totalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+Venue: JB Complex, Sector 104, Noida, Uttar Pradesh - 201304
+Event / Item: ${eventTitle}
+Service Charges: ₹${taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+Total Amount: ₹${totalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 Payment Mode: ${invoice.paymentMethod}
-GSTIN: 07AAACL1234F1Z8 / SAC: 999691`;
+Place of Supply: 09 - Uttar Pradesh (Noida)`;
 
     navigator.clipboard.writeText(summary);
     setCopied(true);
@@ -280,16 +280,16 @@ GSTIN: 07AAACL1234F1Z8 / SAC: 999691`;
             </div>
             
             <div style={{ fontSize: '15px', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              CLUB RE STRADDLE
+              CLUB SHOWDOWN
             </div>
-            <div style={{ fontSize: '10px', fontWeight: 600 }}>
-              M/s. Re Straddle Entertainment LLP
+            <div style={{ fontSize: '10.5px', fontWeight: 700 }}>
+              Club Showdown Lounge & Entertainment
+            </div>
+            <div style={{ fontSize: '9.5px', fontWeight: 600 }}>
+              JB Complex, Sector 104, Noida, Uttar Pradesh - 201304
             </div>
             <div style={{ fontSize: '9.5px' }}>
-              DLF Cyber City, Phase 2, Gurugram, Haryana - 122002
-            </div>
-            <div style={{ fontSize: '9.5px', fontWeight: 700 }}>
-              GSTIN: 07AAACL1234F1Z8
+              Tel: +91 98213 85001 • support@clubshowdown.com
             </div>
           </div>
 
@@ -306,14 +306,14 @@ GSTIN: 07AAACL1234F1Z8 / SAC: 999691`;
               marginBottom: '10px',
             }}
           >
-            TAX INVOICE
+            OFFICIAL MEMBER BILL & INVOICE
           </div>
 
           {/* Invoice Metadata Grid */}
           <div style={{ marginBottom: '10px', fontSize: '11px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 600 }}>Invoice No.</span>
-              <span style={{ fontWeight: 800, fontFamily: 'monospace' }}>{invoice.invoiceNumber || 'CRS/DEL_GUR/TN/559'}</span>
+              <span style={{ fontWeight: 800, fontFamily: 'monospace' }}>{invoice.invoiceNumber || 'CSD/NOIDA/TN/559'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 600 }}>Date</span>
@@ -329,7 +329,7 @@ GSTIN: 07AAACL1234F1Z8 / SAC: 999691`;
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 600 }}>Place of Supply</span>
-              <span style={{ fontWeight: 700 }}>{invoice.placeOfSupply || '07'}</span>
+              <span style={{ fontWeight: 700 }}>{invoice.placeOfSupply || '09 - Uttar Pradesh (Noida)'}</span>
             </div>
           </div>
 
@@ -461,7 +461,7 @@ GSTIN: 07AAACL1234F1Z8 / SAC: 999691`;
               Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.
             </div>
             <div>
-              This invoice is for the right to participate only. The prize pool is fixed and pre-determined and bears no relation to entry fees collected. Participation is governed by Club Re Straddle Tournament Rules displayed at the venue.
+              This invoice is for the right to participate only. The prize pool is fixed and pre-determined and bears no relation to entry fees collected. Participation is governed by Club Showdown Rules displayed at the venue.
             </div>
             <div>
               TDS under Section 194BA of the Income Tax Act applies on net winnings at the time of cash-out. PAN is mandatory for prize collection above ₹10,000.
@@ -474,10 +474,10 @@ GSTIN: 07AAACL1234F1Z8 / SAC: 999691`;
           {/* Footer Responsible Gaming & Website */}
           <div style={{ textAlign: 'center', borderTop: '1px solid #000000', paddingTop: '6px', marginBottom: '8px', fontSize: '9px' }}>
             <div style={{ fontWeight: 700 }}>
-              Club Re Straddle — Play Responsibly.
+              Club Showdown — Play Responsibly.
             </div>
             <div style={{ fontSize: '8.5px' }}>
-              www.clubrestraddle.com | +91 98102 34891
+              JB Complex, Sector 104, Noida | +91 98213 85001
             </div>
           </div>
 

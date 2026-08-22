@@ -72,7 +72,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
       email: `aditya.singhal.${randomDigits}@gmail.com`,
       aadhaarNumber: `5432 8765 ${randomDigits}`,
       panNumber: `ABCPS${randomDigits}R`,
-      address: 'Tower 4, DLF Cyber City, Phase 2, Gurugram, Haryana - 122002',
+      address: 'Sector 104, Noida, Uttar Pradesh - 201304',
       emergencyContactName: 'Pooja Singhal',
       emergencyContactPhone: '+91 98112 34567',
       photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',

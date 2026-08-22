@@ -36,7 +36,7 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
     setEmail(`harsh.vardhan.${randomNum}@gmail.com`);
     setAadhaarNumber(`5432 9876 ${randomNum}`);
     setPanNumber(`BKPPS${randomNum}R`);
-    setAddress('DLF Cyber City, Gurugram, Haryana - 122002');
+    setAddress('Sector 104, Noida, Uttar Pradesh - 201304');
     setTablePreference('NLH Cash Game (₹250/₹500)');
     setErrors({});
   };
