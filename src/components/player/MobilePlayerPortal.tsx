@@ -54,7 +54,6 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [isChipModalOpen, setIsChipModalOpen] = useState(false);
   const [isPassOpen, setIsPassOpen] = useState(false);
-  const [tablePreference, setTablePreference] = useState('Table 1 (Main Lounge)');
   const [checkingIn, setCheckingIn] = useState(false);
   const [registrationSuccessData, setRegistrationSuccessData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
   const [isCheckInSuccessOpen, setIsCheckInSuccessOpen] = useState(false);
@@ -95,7 +94,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
     setCheckingIn(true);
 
     setTimeout(() => {
-      performDailyCheckIn(currentPlayer.id, tablePreference);
+      performDailyCheckIn(currentPlayer.id);
       setCheckingIn(false);
       setIsCheckInSuccessOpen(true);
 
@@ -239,10 +238,8 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
               tournaments={tournaments}
               entries={entries}
               chipRequests={chipRequests}
-              tablePreference={tablePreference}
               checkingIn={checkingIn}
               isPassOpen={isPassOpen}
-              onTablePreferenceChange={setTablePreference}
               onCheckIn={handleDailyCheckIn}
               onOpenChipRequest={() => setIsChipModalOpen(true)}
               onOpenVisits={() => setActiveTab('history')}

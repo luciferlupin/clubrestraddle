@@ -74,10 +74,6 @@ export const MobilePlayerVisits: React.FC<MobilePlayerVisitsProps> = ({ player, 
                     </div>
                     <EntryBadge status={checkIn.verificationStatus} />
                   </div>
-                  <div className="player-visit-location">
-                    <MapPin size={15} />
-                    <span>{checkIn.tablePreference || 'General club floor'}</span>
-                  </div>
                   <div className="player-visit-footer">
                     <span>{checkIn.verifiedBy ? `Verified by ${checkIn.verifiedBy}` : 'Awaiting security review'}</span>
                     <code>Visit #{(page - 1) * pageSize + index + 1}</code>

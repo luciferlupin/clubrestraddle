@@ -158,7 +158,6 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
                 <th>DOB / Age</th>
                 <th>KYC Status</th>
                 <th>Arrival Status</th>
-                <th>Table Preference</th>
                 <th style={{ textAlign: 'right' }}>Clearance Actions</th>
               </tr>
             </thead>
@@ -251,10 +250,6 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
                       ) : (
                         <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Not checked in</span>
                       )}
-                    </td>
-
-                    <td style={{ fontSize: '0.78rem', color: '#fef08a', fontWeight: 600 }}>
-                      {checkIn?.tablePreference || 'General'}
                     </td>
 
                     <td style={{ textAlign: 'right' }}>

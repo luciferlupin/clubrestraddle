@@ -37,9 +37,6 @@ import {
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { cartoonAvatarForPlayer } from '../utils/cartoonAvatars';
 
-const normalizeTablePreference = (value?: string | null): string =>
-  value === 'NLH Cash Game (₹250/₹500)' ? 'General Floor' : (value || 'Open Seating');
-
 const ensureSequentialMemberNumbers = (players: Player[]): Player[] => {
   const numberById = new Map(
     [...players]
@@ -59,6 +56,33 @@ const ensureSequentialMemberNumbers = (players: Player[]): Player[] => {
   });
   return changed ? normalized : players;
 };
+
+const playerToDatabaseRow = (player: Player) => ({
+  id: player.id,
+  full_name: player.fullName,
+  phone: player.phone,
+  email: player.email,
+  membership_tier: player.membershipTier,
+  kyc_status: player.kycStatus,
+  date_of_birth: player.kyc.dateOfBirth || '2000-01-01',
+  govt_id_type: player.kyc.govtIdType === 'Aadhaar & PAN Card' ? 'Aadhaar Card' : (player.kyc.govtIdType || 'Aadhaar Card'),
+  govt_id_number: player.kyc.govtIdNumber || 'KYC-PENDING',
+  aadhaar_number: player.kyc.aadhaarNumber || null,
+  pan_number: player.kyc.panNumber || null,
+  aadhaar_photo_url: player.kyc.aadhaarPhotoUrl || null,
+  pan_photo_url: player.kyc.panPhotoUrl || null,
+  address: player.kyc.address || null,
+  emergency_contact_name: player.kyc.emergencyContactName || null,
+  emergency_contact_phone: player.kyc.emergencyContactPhone || null,
+  photo_url: player.kyc.photoUrl || null,
+  agreed_to_rules: player.kyc.agreedToRules,
+  verified_at: player.kyc.verifiedAt || null,
+  verified_by: player.kyc.verifiedBy || null,
+  rejection_reason: player.kyc.rejectionReason || null,
+  total_visits: player.totalVisits,
+  notes: player.notes || null,
+  created_at: player.registeredAt,
+});
 
 const reconcileStalePendingCheckIns = (checkIns: DailyCheckIn[]): {
   checkIns: DailyCheckIn[];
@@ -159,8 +183,8 @@ interface ClubContextType {
   netTreasuryBalance: number;
 
   // Player CRUD Actions
-  registerNewPlayer: (kycData: Omit<PlayerKYC, 'submittedAt'>, tablePreference?: string) => { player: Player; checkIn: DailyCheckIn };
-  performDailyCheckIn: (playerId: string, tablePreference?: string) => DailyCheckIn;
+  registerNewPlayer: (kycData: Omit<PlayerKYC, 'submittedAt'>) => { player: Player; checkIn: DailyCheckIn };
+  performDailyCheckIn: (playerId: string) => DailyCheckIn;
   updatePlayer: (playerId: string, updates: Partial<Player>) => void;
   deletePlayer: (playerId: string) => void;
   updatePlayerKYC: (playerId: string, updatedKYC: Partial<PlayerKYC>) => void;
@@ -532,14 +556,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 phone: p.phone || '',
                 email: p.email || '',
                 dateOfBirth: p.date_of_birth || '1995-01-01',
-                aadhaarNumber: aadhaarParsed,
-                panNumber: panParsed,
+                aadhaarNumber: p.aadhaar_number || aadhaarParsed,
+                panNumber: p.pan_number || panParsed,
+                aadhaarPhotoUrl: p.aadhaar_photo_url,
+                panPhotoUrl: p.pan_photo_url,
                 govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
                 govtIdNumber: p.govt_id_number || 'KYC-PENDING',
                 address: p.address || 'Delhi NCR, India',
                 emergencyContactName: p.emergency_contact_name || '',
                 emergencyContactPhone: p.emergency_contact_phone || '',
-                photoUrl: cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
+                photoUrl: p.photo_url || cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
                 agreedToRules: p.agreed_to_rules ?? true,
                 submittedAt: p.created_at || new Date().toISOString(),
                 verifiedAt: p.verified_at,
@@ -560,6 +586,10 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             date_of_birth: ip.kyc.dateOfBirth || '1995-01-01',
             govt_id_type: 'Aadhaar Card',
             govt_id_number: ip.kyc.govtIdNumber,
+            aadhaar_number: ip.kyc.aadhaarNumber || null,
+            pan_number: ip.kyc.panNumber || null,
+            aadhaar_photo_url: ip.kyc.aadhaarPhotoUrl || null,
+            pan_photo_url: ip.kyc.panPhotoUrl || null,
             address: ip.kyc.address,
             emergency_contact_name: ip.kyc.emergencyContactName,
             emergency_contact_phone: ip.kyc.emergencyContactPhone,
@@ -577,16 +607,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { data: checkInsData, error: chkErr } = await client.from('daily_check_ins').select('*').order('created_at', { ascending: false });
       if (!chkErr && checkInsData) {
         if (checkInsData.length > 0) {
-          const legacyPreferenceIds = checkInsData
-            .filter((checkIn: any) => checkIn.table_preference === 'NLH Cash Game (₹250/₹500)')
-            .map((checkIn: any) => checkIn.id);
-          if (legacyPreferenceIds.length > 0) {
-            const { error } = await client
-              .from('daily_check_ins')
-              .update({ table_preference: 'General Floor' })
-              .in('id', legacyPreferenceIds);
-            if (error) console.error('Supabase legacy table preference cleanup error:', error.message);
-          }
           const mappedCheckIns: DailyCheckIn[] = checkInsData.map((c: any) => ({
             id: c.id,
             playerId: c.player_id,
@@ -598,7 +618,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             verifiedBy: c.verified_by,
             verifiedAt: c.verified_at,
             rejectionReason: c.rejection_reason,
-            tablePreference: normalizeTablePreference(c.table_preference),
           }));
           const reconciled = reconcileStalePendingCheckIns(mappedCheckIns);
           setCheckIns(reconciled.checkIns);
@@ -621,7 +640,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             check_in_date: ic.checkInDate,
             check_in_time: ic.checkInTime,
             verification_status: ic.verificationStatus,
-            table_preference: ic.tablePreference,
           }));
           client.from('daily_check_ins').insert(seedChkRows).then(() => {
             console.log('Seeded initial check-ins to Supabase');
@@ -656,7 +674,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      const { data: entriesData } = await client.from('tournament_entries').select('*');
+      const { data: entriesData, error: entriesError } = await client.from('tournament_entries').select('*');
+      if (entriesError) console.error('Supabase tournament entries fetch error:', entriesError.message);
       if (entriesData) {
         const mappedEntries: TournamentEntry[] = entriesData.map((e: any) => ({
           id: e.id,
@@ -679,7 +698,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setEntries(mappedEntries);
       }
 
-      const { data: cashData } = await client.from('cash_transactions').select('*').order('timestamp', { ascending: false });
+      const { data: cashData, error: cashError } = await client.from('cash_transactions').select('*').order('timestamp', { ascending: false });
+      if (cashError) console.error('Supabase cash transactions fetch error:', cashError.message);
       if (cashData) {
         const mappedCash: CashTransaction[] = cashData.map((t: any) => ({
           id: t.id,
@@ -697,7 +717,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCashTransactions(mappedCash);
       }
 
-      const { data: expensesData } = await client.from('expenses').select('*').order('date', { ascending: false });
+      const { data: expensesData, error: expensesError } = await client.from('expenses').select('*').order('date', { ascending: false });
+      if (expensesError) console.error('Supabase expenses fetch error:', expensesError.message);
       if (expensesData) {
         const mappedExpenses: Expense[] = expensesData.map((exp: any) => ({
           id: exp.id,
@@ -713,7 +734,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setExpenses(mappedExpenses);
       }
 
-      const { data: auditData } = await client.from('audit_logs').select('*').order('timestamp', { ascending: false });
+      const { data: auditData, error: auditError } = await client.from('audit_logs').select('*').order('timestamp', { ascending: false });
+      if (auditError) console.error('Supabase audit logs fetch error:', auditError.message);
       if (auditData) {
         const mappedLogs: AuditLog[] = auditData.map((l: any) => ({
           id: l.id,
@@ -726,7 +748,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAuditLogs(mappedLogs);
       }
 
-      const { data: chipData } = await client.from('chip_requests').select('*').order('requested_at', { ascending: false });
+      const { data: chipData, error: chipError } = await client.from('chip_requests').select('*').order('requested_at', { ascending: false });
+      if (chipError) console.error('Supabase chip requests fetch error:', chipError.message);
       if (chipData) {
         const mappedChips: ChipRequest[] = chipData.map((c: any) => ({
           id: c.id,
@@ -804,14 +827,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 phone: p.phone || '',
                 email: p.email || '',
                 dateOfBirth: p.date_of_birth || '1995-01-01',
-                aadhaarNumber: aadhaarParsed,
-                panNumber: panParsed,
+                aadhaarNumber: p.aadhaar_number || aadhaarParsed,
+                panNumber: p.pan_number || panParsed,
+                aadhaarPhotoUrl: p.aadhaar_photo_url,
+                panPhotoUrl: p.pan_photo_url,
                 govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
                 govtIdNumber: p.govt_id_number || 'KYC-PENDING',
                 address: p.address || 'Delhi NCR, India',
                 emergencyContactName: p.emergency_contact_name || '',
                 emergencyContactPhone: p.emergency_contact_phone || '',
-                photoUrl: cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
+                photoUrl: p.photo_url || cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
                 agreedToRules: p.agreed_to_rules ?? true,
                 submittedAt: p.created_at || new Date().toISOString(),
                 verifiedAt: p.verified_at,
@@ -854,7 +879,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               verifiedBy: c.verified_by,
               verifiedAt: c.verified_at,
               rejectionReason: c.rejection_reason,
-              tablePreference: normalizeTablePreference(c.table_preference),
             };
             setCheckIns(prev => {
               const exists = prev.some(existing => existing.id === updatedCheckIn.id);
@@ -1350,7 +1374,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // PLAYER ACTIONS
-  const registerNewPlayer = (kycData: Omit<PlayerKYC, 'submittedAt'>, tablePreference?: string) => {
+  const registerNewPlayer = (kycData: Omit<PlayerKYC, 'submittedAt'>) => {
     const newId = generateSequentialPlayerId(players);
     const nowIso = new Date().toISOString();
     const nowTime = new Date().toTimeString().split(' ')[0];
@@ -1415,7 +1439,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       checkInDate: today,
       checkInTime: nowTime,
       verificationStatus: 'pending',
-      tablePreference: tablePreference || 'Open Seating',
     };
 
     setPlayers(prev => [newPlayer, ...prev.filter(p => p.id !== newId)]);
@@ -1436,6 +1459,10 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           date_of_birth: completeKYC.dateOfBirth,
           govt_id_type: completeKYC.govtIdType === 'Aadhaar & PAN Card' ? 'Aadhaar Card' : (completeKYC.govtIdType || 'Aadhaar Card'),
           govt_id_number: completeKYC.govtIdNumber,
+          aadhaar_number: completeKYC.aadhaarNumber || null,
+          pan_number: completeKYC.panNumber || null,
+          aadhaar_photo_url: completeKYC.aadhaarPhotoUrl || null,
+          pan_photo_url: completeKYC.panPhotoUrl || null,
           address: completeKYC.address,
           emergency_contact_name: completeKYC.emergencyContactName,
           emergency_contact_phone: completeKYC.emergencyContactPhone,
@@ -1462,7 +1489,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           check_in_date: newCheckIn.checkInDate,
           check_in_time: newCheckIn.checkInTime,
           verification_status: newCheckIn.verificationStatus,
-          table_preference: newCheckIn.tablePreference,
         })
         .then(({ error }) => {
           if (error) {
@@ -1552,12 +1578,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               phone: p.phone || '',
               email: p.email || '',
               dateOfBirth: p.date_of_birth || '1995-01-01',
+              aadhaarNumber: p.aadhaar_number,
+              panNumber: p.pan_number,
+              aadhaarPhotoUrl: p.aadhaar_photo_url,
+              panPhotoUrl: p.pan_photo_url,
               govtIdType: p.govt_id_type || 'Aadhaar Card',
               govtIdNumber: p.govt_id_number || 'KYC-PENDING',
               address: p.address || 'Delhi NCR, India',
               emergencyContactName: p.emergency_contact_name || '',
               emergencyContactPhone: p.emergency_contact_phone || '',
-              photoUrl: cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
+              photoUrl: p.photo_url || cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
               agreedToRules: p.agreed_to_rules ?? true,
               submittedAt: p.created_at || new Date().toISOString(),
               verifiedAt: p.verified_at,
@@ -1598,7 +1628,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             verifiedBy: chk.verified_by,
             verifiedAt: chk.verified_at,
             rejectionReason: chk.rejection_reason,
-            tablePreference: normalizeTablePreference(chk.table_preference),
           };
           setCheckIns(prev => {
             if (prev.some(c => c.id === mappedCheckIn.id)) return prev;
@@ -1624,12 +1653,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 phone: p.phone || '',
                 email: p.email || '',
                 dateOfBirth: p.date_of_birth || '1995-01-01',
+                aadhaarNumber: p.aadhaar_number,
+                panNumber: p.pan_number,
+                aadhaarPhotoUrl: p.aadhaar_photo_url,
+                panPhotoUrl: p.pan_photo_url,
                 govtIdType: p.govt_id_type || 'Aadhaar Card',
                 govtIdNumber: p.govt_id_number || 'KYC-PENDING',
                 address: p.address || 'Delhi NCR, India',
                 emergencyContactName: p.emergency_contact_name || '',
                 emergencyContactPhone: p.emergency_contact_phone || '',
-                photoUrl: cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
+                photoUrl: p.photo_url || cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
                 agreedToRules: p.agreed_to_rules ?? true,
                 submittedAt: p.created_at || new Date().toISOString(),
                 verifiedAt: p.verified_at,
@@ -1729,7 +1762,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               address: p.address || 'Delhi NCR, India',
               emergencyContactName: p.emergency_contact_name || '',
               emergencyContactPhone: p.emergency_contact_phone || '',
-              photoUrl: cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
+              photoUrl: p.photo_url || cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
               agreedToRules: p.agreed_to_rules ?? true,
               submittedAt: p.created_at || new Date().toISOString(),
               verifiedAt: p.verified_at,
@@ -1784,15 +1817,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const dbClient = supabase;
       // Ensure player row exists in database before inserting foreign key
       if (player) {
-        dbClient.from('players').upsert({
-          id: player.id,
-          full_name: player.fullName,
-          phone: player.phone,
-          email: player.email,
-          membership_tier: player.membershipTier,
-          kyc_status: player.kycStatus,
-          created_at: player.registeredAt,
-        }, { onConflict: 'id' }).then(() => {
+        dbClient.from('players').upsert(playerToDatabaseRow(player), { onConflict: 'id' }).then(({ error: playerError }) => {
+          if (playerError) {
+            console.error('Failed to sync player before chip request:', playerError.message);
+            return;
+          }
           dbClient.from('chip_requests').insert({
             id: newRequest.id,
             player_id: newRequest.playerId,
@@ -1847,7 +1876,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return newRequest;
   };
 
-  const performDailyCheckIn = (playerId: string, tablePreference?: string): DailyCheckIn => {
+  const performDailyCheckIn = (playerId: string): DailyCheckIn => {
     const existingCheckIn = hasPlayerCheckedInToday(playerId);
     if (existingCheckIn) {
       return existingCheckIn;
@@ -1868,7 +1897,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       checkInDate: today,
       checkInTime: nowTime,
       verificationStatus: 'pending',
-      tablePreference: tablePreference || 'Open Seating',
     };
 
     setCheckIns(prev => {
@@ -1886,15 +1914,13 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (isSupabaseConfigured && supabase) {
       const dbClient = supabase;
       dbClient.from('players').upsert({
-        id: player.id,
-        full_name: player.fullName,
-        phone: player.phone,
-        email: player.email,
-        membership_tier: player.membershipTier,
-        kyc_status: player.kycStatus,
-        created_at: player.registeredAt,
+        ...playerToDatabaseRow(player),
         total_visits: player.totalVisits + 1,
-      }, { onConflict: 'id' }).then(() => {
+      }, { onConflict: 'id' }).then(({ error: playerError }) => {
+        if (playerError) {
+          console.error('Supabase player check-in sync error:', playerError.message);
+          return;
+        }
         dbClient.from('daily_check_ins').insert({
           id: newCheckIn.id,
           player_id: newCheckIn.playerId,
@@ -1903,7 +1929,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           check_in_date: newCheckIn.checkInDate,
           check_in_time: newCheckIn.checkInTime,
           verification_status: newCheckIn.verificationStatus,
-          table_preference: newCheckIn.tablePreference,
         }).then(({ error }) => {
           if (error) console.error('Supabase daily_check_ins insert error:', error.message);
           else console.log('Daily check-in saved to database:', newCheckIn.id);
@@ -1953,6 +1978,10 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (updatedKYC.dateOfBirth) dbUpdates.date_of_birth = updatedKYC.dateOfBirth;
       if (updatedKYC.govtIdType) dbUpdates.govt_id_type = updatedKYC.govtIdType;
       if (updatedKYC.govtIdNumber) dbUpdates.govt_id_number = updatedKYC.govtIdNumber;
+      if (updatedKYC.aadhaarNumber !== undefined) dbUpdates.aadhaar_number = updatedKYC.aadhaarNumber || null;
+      if (updatedKYC.panNumber !== undefined) dbUpdates.pan_number = updatedKYC.panNumber || null;
+      if (updatedKYC.aadhaarPhotoUrl !== undefined) dbUpdates.aadhaar_photo_url = updatedKYC.aadhaarPhotoUrl || null;
+      if (updatedKYC.panPhotoUrl !== undefined) dbUpdates.pan_photo_url = updatedKYC.panPhotoUrl || null;
       if (updatedKYC.address) dbUpdates.address = updatedKYC.address;
       if (updatedKYC.emergencyContactName) dbUpdates.emergency_contact_name = updatedKYC.emergencyContactName;
       if (updatedKYC.emergencyContactPhone) dbUpdates.emergency_contact_phone = updatedKYC.emergencyContactPhone;
@@ -1990,7 +2019,23 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ...(p.email ? { email: p.email } : {}),
         ...(p.membershipTier ? { membership_tier: p.membershipTier } : {}),
         ...(p.kycStatus ? { kyc_status: p.kycStatus } : {}),
+        ...(p.totalVisits !== undefined ? { total_visits: p.totalVisits } : {}),
         ...(p.notes !== undefined ? { notes: p.notes } : {}),
+        ...(p.kyc?.dateOfBirth !== undefined ? { date_of_birth: p.kyc.dateOfBirth } : {}),
+        ...(p.kyc?.govtIdType !== undefined ? { govt_id_type: p.kyc.govtIdType === 'Aadhaar & PAN Card' ? 'Aadhaar Card' : p.kyc.govtIdType } : {}),
+        ...(p.kyc?.govtIdNumber !== undefined ? { govt_id_number: p.kyc.govtIdNumber } : {}),
+        ...(p.kyc?.aadhaarNumber !== undefined ? { aadhaar_number: p.kyc.aadhaarNumber || null } : {}),
+        ...(p.kyc?.panNumber !== undefined ? { pan_number: p.kyc.panNumber || null } : {}),
+        ...(p.kyc?.aadhaarPhotoUrl !== undefined ? { aadhaar_photo_url: p.kyc.aadhaarPhotoUrl || null } : {}),
+        ...(p.kyc?.panPhotoUrl !== undefined ? { pan_photo_url: p.kyc.panPhotoUrl || null } : {}),
+        ...(p.kyc?.address !== undefined ? { address: p.kyc.address } : {}),
+        ...(p.kyc?.emergencyContactName !== undefined ? { emergency_contact_name: p.kyc.emergencyContactName || null } : {}),
+        ...(p.kyc?.emergencyContactPhone !== undefined ? { emergency_contact_phone: p.kyc.emergencyContactPhone || null } : {}),
+        ...(p.kyc?.photoUrl !== undefined ? { photo_url: p.kyc.photoUrl || null } : {}),
+        ...(p.kyc?.agreedToRules !== undefined ? { agreed_to_rules: p.kyc.agreedToRules } : {}),
+        ...(p.kyc?.verifiedAt !== undefined ? { verified_at: p.kyc.verifiedAt || null } : {}),
+        ...(p.kyc?.verifiedBy !== undefined ? { verified_by: p.kyc.verifiedBy || null } : {}),
+        ...(p.kyc?.rejectionReason !== undefined ? { rejection_reason: p.kyc.rejectionReason || null } : {}),
       }).eq('id', playerId).then(({ error }) => {
         if (error) console.error('Supabase player update error:', error.message);
       });
@@ -2243,6 +2288,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           start_time: tournament.startTime,
           status: tournament.status,
           created_by: tournament.createdBy,
+          created_at: tournament.createdAt,
         }, { onConflict: 'id' });
         if (tournamentError) {
           console.error('Supabase tournament registration setup error:', tournamentError.message);
@@ -2281,8 +2327,18 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           timestamp: cashTxn.timestamp,
           }),
         ]);
-        if (entryResult.error) console.error('Supabase tournament_entries insert error:', entryResult.error.message);
-        if (cashResult.error) console.error('Supabase cash_transactions insert error:', cashResult.error.message);
+        if (entryResult.error || cashResult.error) {
+          // A bill and its payment ledger row are one operation. Compensate any
+          // partial write so Supabase and every portal cannot disagree.
+          if (!entryResult.error) await dbClient.from('tournament_entries').delete().eq('id', newEntry.id);
+          if (!cashResult.error) await dbClient.from('cash_transactions').delete().eq('id', cashTxn.id);
+          setEntries(prev => prev.filter(entry => entry.id !== newEntry.id));
+          setCashTransactions(prev => prev.filter(transaction => transaction.id !== cashTxn.id));
+          console.error(
+            'Supabase tournament billing transaction rolled back:',
+            entryResult.error?.message || cashResult.error?.message,
+          );
+        }
       })().catch((error: unknown) => {
         console.error('Supabase tournament registration error:', error instanceof Error ? error.message : error);
       });
@@ -2304,6 +2360,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     paymentMethod: PaymentMethod;
     playerName?: string;
     referenceId?: string;
+    persistToSupabase?: boolean;
   }): CashTransaction => {
     const nowIso = new Date().toISOString();
     const newBalance = currentCashBalance + params.amount;
@@ -2328,7 +2385,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return next;
     });
 
-    if (isSupabaseConfigured && supabase) {
+    if (params.persistToSupabase !== false && isSupabaseConfigured && supabase) {
       supabase.from('cash_transactions').insert({
         id: newTxn.id,
         type: newTxn.type,
@@ -2418,7 +2475,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return next;
     });
     if (isSupabaseConfigured && supabase) {
-      supabase.from('tournaments').update({ status }).eq('id', tournamentId);
+      supabase.from('tournaments').update({ status }).eq('id', tournamentId).then(({ error }) => {
+        if (error) console.error('Supabase tournament status update error:', error.message);
+      });
     }
     addAuditLog('Cashier', 'Tournament Status Updated', `Updated tournament ${tournamentId} status to ${status}.`);
   };
@@ -2447,23 +2506,53 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     // Automatically record vault cash received
-    addCashReceived({
+    const paymentTransaction = addCashReceived({
       category: 'Chip Purchase',
       amount: req.amount,
       description: `Table chips delivered to ${req.playerName} at ${req.tableNumber}, ${req.seatNumber}`,
       paymentMethod: req.paymentMethod,
       playerName: req.playerName,
       referenceId: receiptNum,
+      persistToSupabase: false,
     });
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('chip_requests').update({
-        status: 'delivered',
-        fulfilled_by: staff,
-        fulfilled_at: nowIso,
-        receipt_number: receiptNum,
-      }).eq('id', requestId).then(({ error }) => {
-        if (error) console.error('Supabase chip request fulfillment error:', error.message);
+      const dbClient = supabase;
+      void Promise.all([
+        dbClient.from('chip_requests').update({
+          status: 'delivered',
+          fulfilled_by: staff,
+          fulfilled_at: nowIso,
+          receipt_number: receiptNum,
+        }).eq('id', requestId).eq('status', 'pending'),
+        dbClient.from('cash_transactions').insert({
+          id: paymentTransaction.id,
+          type: paymentTransaction.type,
+          category: paymentTransaction.category,
+          amount: paymentTransaction.amount,
+          description: paymentTransaction.description,
+          payment_method: paymentTransaction.paymentMethod,
+          reference_id: paymentTransaction.referenceId,
+          player_name: paymentTransaction.playerName,
+          cashier_name: paymentTransaction.cashierName,
+          balance_after: paymentTransaction.balanceAfter,
+          timestamp: paymentTransaction.timestamp,
+        }),
+      ]).then(async ([requestResult, cashResult]) => {
+        if (requestResult.error || cashResult.error) {
+          if (!requestResult.error) {
+            await dbClient.from('chip_requests').update({
+              status: 'pending',
+              fulfilled_by: null,
+              fulfilled_at: null,
+              receipt_number: null,
+            }).eq('id', requestId);
+          }
+          if (!cashResult.error) await dbClient.from('cash_transactions').delete().eq('id', paymentTransaction.id);
+          setCashTransactions(prev => prev.filter(transaction => transaction.id !== paymentTransaction.id));
+          setChipRequests(prev => prev.map(request => request.id === requestId ? req : request));
+          console.error('Supabase chip fulfillment rolled back:', requestResult.error?.message || cashResult.error?.message);
+        }
       });
     }
 
@@ -2562,7 +2651,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         verificationStatus: 'approved',
         verifiedBy: staff,
         verifiedAt: nowIso,
-        tablePreference: 'Cash / Tournament Floor',
       };
       nextCheckIns = [updatedCheckIn, ...checkIns];
     }
@@ -2615,7 +2703,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           verification_status: 'approved',
           verified_by: staff,
           verified_at: nowIso,
-          table_preference: 'Cash / Tournament Floor',
         }).then(({ error }) => {
           if (error) console.error('Supabase daily_check_ins insert error:', error.message);
         });
@@ -2703,7 +2790,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         verifiedBy: staff,
         verifiedAt: nowIso,
         rejectionReason: reason,
-        tablePreference: 'Entrance Desk',
       };
       nextCheckIns = [updatedCheckIn, ...checkIns];
     }
@@ -2751,7 +2837,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           verified_by: staff,
           verified_at: nowIso,
           rejection_reason: reason,
-          table_preference: 'Entrance Desk',
         }).then(({ error }) => {
           if (error) console.error('Supabase daily_check_ins insert error:', error.message);
         });
@@ -2915,7 +3000,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     if (isSupabaseConfigured && supabase) {
-      supabase.from('cash_transactions').delete().eq('id', transactionId);
+      supabase.from('cash_transactions').delete().eq('id', transactionId).then(({ error }) => {
+        if (error) console.error('Supabase cash transaction delete error:', error.message);
+      });
     }
 
     addAuditLog('Admin', 'Cash Transaction Voided', `Voided/Deleted cash transaction: ${txn ? `₹${txn.amount} (${txn.category})` : transactionId}.`);
@@ -2944,7 +3031,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (updates.entryStatus !== undefined) dbUpdates.entry_status = updates.entryStatus;
       if (updates.cashierName !== undefined) dbUpdates.cashier_name = updates.cashierName;
       if (updates.registeredAt !== undefined) dbUpdates.registered_at = updates.registeredAt;
-      supabase.from('tournament_entries').update(dbUpdates).eq('id', entryId);
+      supabase.from('tournament_entries').update(dbUpdates).eq('id', entryId).then(({ error }) => {
+        if (error) console.error('Supabase tournament entry update error:', error.message);
+      });
     }
     addAuditLog('Cashier', 'Tournament Entry Updated', `Updated registration entry ${entryId}.`);
   };
@@ -2982,7 +3071,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (updates.fulfilledBy !== undefined) dbUpdates.fulfilled_by = updates.fulfilledBy;
       if (updates.fulfilledAt !== undefined) dbUpdates.fulfilled_at = updates.fulfilledAt;
       if (updates.receiptNumber !== undefined) dbUpdates.receipt_number = updates.receiptNumber;
-      supabase.from('chip_requests').update(dbUpdates).eq('id', requestId);
+      supabase.from('chip_requests').update(dbUpdates).eq('id', requestId).then(({ error }) => {
+        if (error) console.error('Supabase chip request update error:', error.message);
+      });
     }
     addAuditLog('Cashier', 'Chip Request Updated', `Updated chip order ${requestId}.`);
   };
@@ -2994,7 +3085,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return next;
     });
     if (isSupabaseConfigured && supabase) {
-      supabase.from('chip_requests').delete().eq('id', requestId);
+      supabase.from('chip_requests').delete().eq('id', requestId).then(({ error }) => {
+        if (error) console.error('Supabase chip request delete error:', error.message);
+      });
     }
     addAuditLog('Cashier', 'Chip Request Deleted', `Deleted chip order ${requestId}.`);
   };
@@ -3017,7 +3110,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (updates.cashierName !== undefined) dbUpdates.cashier_name = updates.cashierName;
       if (updates.balanceAfter !== undefined) dbUpdates.balance_after = updates.balanceAfter;
       if (updates.timestamp !== undefined) dbUpdates.timestamp = updates.timestamp;
-      supabase.from('cash_transactions').update(dbUpdates).eq('id', transactionId);
+      supabase.from('cash_transactions').update(dbUpdates).eq('id', transactionId).then(({ error }) => {
+        if (error) console.error('Supabase cash transaction update error:', error.message);
+      });
     }
     addAuditLog('Admin', 'Cash Transaction Updated', `Updated cash ledger entry ${transactionId}.`);
   };
@@ -3039,7 +3134,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (updates.verifiedBy !== undefined) dbUpdates.verified_by = updates.verifiedBy;
       if (updates.verifiedAt !== undefined) dbUpdates.verified_at = updates.verifiedAt;
       if (updates.rejectionReason !== undefined) dbUpdates.rejection_reason = updates.rejectionReason;
-      if (updates.tablePreference !== undefined) dbUpdates.table_preference = updates.tablePreference;
       supabase.from('daily_check_ins').update(dbUpdates).eq('id', checkInId).then(({ error }) => {
         if (error) console.error('Supabase check-in update error:', error.message);
       });

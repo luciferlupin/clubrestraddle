@@ -108,7 +108,6 @@ export interface DailyCheckIn {
   verifiedBy?: string; // Security officer name
   verifiedAt?: string;
   rejectionReason?: string;
-  tablePreference?: string;
 }
 
 export interface Tournament {

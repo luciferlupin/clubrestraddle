@@ -6,7 +6,6 @@ import {
   Coins,
   CreditCard,
   History,
-  MapPin,
   QrCode,
   ReceiptText,
   ShieldAlert,
@@ -26,10 +25,8 @@ interface MobilePlayerHomeProps {
   tournaments: Tournament[];
   entries: TournamentEntry[];
   chipRequests: ChipRequest[];
-  tablePreference: string;
   checkingIn: boolean;
   isPassOpen: boolean;
-  onTablePreferenceChange: (value: string) => void;
   onCheckIn: () => void;
   onOpenChipRequest: () => void;
   onOpenVisits: () => void;
@@ -44,10 +41,8 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
   tournaments,
   entries,
   chipRequests,
-  tablePreference,
   checkingIn,
   isPassOpen,
-  onTablePreferenceChange,
   onCheckIn,
   onOpenChipRequest,
   onOpenVisits,
@@ -75,7 +70,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
         : 'Security check in progress';
 
   const statusDescription = !isCheckedIn
-    ? 'Choose your table seating and check in before heading to the door.'
+    ? 'Check in before heading to the door.'
     : verificationStatus === 'approved'
       ? 'Show your pass at the entrance or cashier whenever asked.'
       : verificationStatus === 'rejected'
@@ -137,12 +132,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
           </div>
         )}
 
-        {todayCheckIn && (
-          <div className="player-status-meta">
-            <span><MapPin size={15} /> {todayCheckIn.tablePreference || 'General floor'}</span>
-            <EntryBadge status={todayCheckIn.verificationStatus} />
-          </div>
-        )}
+        {todayCheckIn && <div className="player-status-meta"><EntryBadge status={todayCheckIn.verificationStatus} /></div>}
       </section>
 
       <section aria-labelledby="player-actions-title">
@@ -261,7 +251,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
             <KYCBadge status={player.kycStatus} />
             {todayCheckIn && <EntryBadge status={todayCheckIn.verificationStatus} />}
           </div>
-          <p>{todayCheckIn ? `${todayCheckIn.tablePreference} · Checked in ${formatTimeOnly(todayCheckIn.checkInTime)}` : 'Member pass ready. Complete today’s check-in for door clearance.'}</p>
+          <p>{todayCheckIn ? `Checked in ${formatTimeOnly(todayCheckIn.checkInTime)}` : 'Member pass ready. Complete today’s check-in for door clearance.'}</p>
           <button type="button" className="m-btn m-btn-primary" onClick={onClosePass}>Done</button>
         </div>
       </MobileBottomDrawer>

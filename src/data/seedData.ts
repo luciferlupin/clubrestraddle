@@ -173,7 +173,6 @@ export const initialCheckIns: DailyCheckIn[] = [
     checkInDate: new Date().toISOString().slice(0, 10),
     checkInTime: new Date(Date.now() - 3600000 * 2).toISOString(),
     verificationStatus: 'approved',
-    tablePreference: 'Table 1 (VIP Lounge)',
     verifiedAt: new Date(Date.now() - 3600000 * 2 + 120000).toISOString(),
     verifiedBy: 'Marcus Vance',
   },
@@ -185,7 +184,6 @@ export const initialCheckIns: DailyCheckIn[] = [
     checkInDate: new Date().toISOString().slice(0, 10),
     checkInTime: new Date(Date.now() - 3600000).toISOString(),
     verificationStatus: 'approved',
-    tablePreference: 'Table 2 (Main Lounge)',
     verifiedAt: new Date(Date.now() - 3600000 + 90000).toISOString(),
     verifiedBy: 'Marcus Vance',
   },
@@ -197,7 +195,6 @@ export const initialCheckIns: DailyCheckIn[] = [
     checkInDate: new Date().toISOString().slice(0, 10),
     checkInTime: new Date().toISOString(),
     verificationStatus: 'pending',
-    tablePreference: 'Table 3 (Executive Lounge)',
   },
 ];
 

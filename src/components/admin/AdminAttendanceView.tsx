@@ -20,11 +20,9 @@ export const AdminAttendanceView: React.FC = () => {
 
   const [createData, setCreateData] = useState({
     playerId: players[0]?.id || '',
-    tablePreference: 'Table 1 (Main Lounge)',
   });
 
   const [editData, setEditData] = useState({
-    tablePreference: '',
     verificationStatus: 'approved' as DailyCheckIn['verificationStatus'],
     rejectionReason: '',
   });
@@ -32,7 +30,6 @@ export const AdminAttendanceView: React.FC = () => {
   const handleOpenEdit = (c: DailyCheckIn) => {
     setSelectedCheckIn(c);
     setEditData({
-      tablePreference: c.tablePreference || 'General Floor',
       verificationStatus: c.verificationStatus,
       rejectionReason: c.rejectionReason || '',
     });
@@ -44,7 +41,6 @@ export const AdminAttendanceView: React.FC = () => {
     if (!selectedCheckIn) return;
 
     updateCheckIn(selectedCheckIn.id, {
-      tablePreference: editData.tablePreference,
       verificationStatus: editData.verificationStatus,
       rejectionReason: editData.verificationStatus === 'rejected' ? editData.rejectionReason : undefined,
     });
@@ -64,7 +60,7 @@ export const AdminAttendanceView: React.FC = () => {
     e.preventDefault();
     if (!createData.playerId) return;
 
-    performDailyCheckIn(createData.playerId, createData.tablePreference);
+    performDailyCheckIn(createData.playerId);
     setIsCreateModalOpen(false);
   };
 
@@ -140,7 +136,6 @@ export const AdminAttendanceView: React.FC = () => {
               <th>Contact Phone</th>
               <th>Date</th>
               <th>Time</th>
-              <th>Table / Game Preference</th>
               <th>Security Clearance</th>
               <th>Verified By</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
@@ -149,7 +144,7 @@ export const AdminAttendanceView: React.FC = () => {
           <tbody>
             {paginatedCheckIns.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
                   No check-in records found.
                 </td>
               </tr>
@@ -175,9 +170,6 @@ export const AdminAttendanceView: React.FC = () => {
                       <Clock size={13} color="#94a3b8" />
                       <span className="tabular-num">{formatTimeOnly(c.checkInTime)}</span>
                     </div>
-                  </td>
-                  <td style={{ fontSize: '0.82rem', color: 'var(--gold-light)' }}>
-                    {c.tablePreference || 'General Floor'}
                   </td>
                   <td>
                     <EntryBadge status={c.verificationStatus} />
@@ -257,17 +249,6 @@ export const AdminAttendanceView: React.FC = () => {
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Table Preference</label>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="e.g. Table 1 (Main Lounge)"
-              value={createData.tablePreference}
-              onChange={e => setCreateData({ ...createData, tablePreference: e.target.value })}
-            />
-          </div>
-
           <div className="modal-footer" style={{ margin: '20px -24px -24px', padding: '16px 24px' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsCreateModalOpen(false)}>
               Cancel
@@ -289,16 +270,6 @@ export const AdminAttendanceView: React.FC = () => {
           size="md"
         >
           <form onSubmit={handleEditSubmit}>
-            <div className="form-group">
-              <label className="form-label">Table Preference</label>
-              <input
-                type="text"
-                className="form-input"
-                value={editData.tablePreference}
-                onChange={e => setEditData({ ...editData, tablePreference: e.target.value })}
-              />
-            </div>
-
             <div className="form-group">
               <label className="form-label">Verification Status</label>
               <select

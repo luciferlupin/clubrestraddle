@@ -44,7 +44,6 @@ export const CheckInHistory: React.FC<CheckInHistoryProps> = ({ checkIns }) => {
                   <th>Visit</th>
                   <th>Date</th>
                   <th>Time</th>
-                  <th>Table / Seating Preference</th>
                   <th>Security Clearance</th>
                   <th>Verified By</th>
                 </tr>
@@ -67,7 +66,6 @@ export const CheckInHistory: React.FC<CheckInHistoryProps> = ({ checkIns }) => {
                         <span className="tabular-num">{formatTimeOnly(c.checkInTime)}</span>
                       </div>
                     </td>
-                    <td>{c.tablePreference || 'General Floor'}</td>
                     <td>
                       <EntryBadge status={c.verificationStatus} />
                       {c.rejectionReason && (

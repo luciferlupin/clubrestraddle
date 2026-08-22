@@ -807,7 +807,7 @@ export const ChipOrderManager: React.FC = () => {
                 setCreateData({
                   ...createData,
                   playerId: pid,
-                  tableNumber: checkIn?.tablePreference?.split('•')[0]?.trim() || createData.tableNumber,
+                  tableNumber: createData.tableNumber,
                 });
               }}
               required

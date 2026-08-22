@@ -178,12 +178,6 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
                 {todayCheckIn?.verificationStatus.toUpperCase() || 'NOT CHECKED IN'}
               </strong>
             </div>
-            {todayCheckIn && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
-                <span>Table / Seating:</span>
-                <strong style={{ color: '#ffffff' }}>{todayCheckIn.tablePreference}</strong>
-              </div>
-            )}
           </div>
 
           <p style={{ fontSize: '0.78rem', color: '#cbd5e1', margin: 0 }}>

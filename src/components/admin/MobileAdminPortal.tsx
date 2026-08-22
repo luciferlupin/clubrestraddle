@@ -28,6 +28,7 @@ import { Player, ExpenseCategory, PaymentMethod } from '../../types';
 import { StaffManager } from './StaffManager';
 import { PlayerLedger } from '../player/PlayerLedger';
 import { isSupabaseConfigured } from '../../services/supabaseClient';
+import { AdminKycDocumentPhotos } from './AdminKycDocumentPhotos';
 
 export const MobileAdminPortal: React.FC = () => {
   const {
@@ -1242,6 +1243,21 @@ export const MobileAdminPortal: React.FC = () => {
                     <span style={{ color: '#94a3b8' }}>Total Club Visits</span>
                     <span style={{ fontWeight: 700, color: '#34d399' }}>{selectedPlayer.totalVisits} Visits</span>
                   </div>
+
+                  <AdminKycDocumentPhotos
+                    aadhaarPhotoUrl={selectedPlayer.kyc.aadhaarPhotoUrl}
+                    panPhotoUrl={selectedPlayer.kyc.panPhotoUrl}
+                    onAadhaarChange={(url) => {
+                      const updated = { ...selectedPlayer, kyc: { ...selectedPlayer.kyc, aadhaarPhotoUrl: url || '' } };
+                      setSelectedPlayer(updated);
+                      updatePlayer(selectedPlayer.id, { kyc: updated.kyc });
+                    }}
+                    onPanChange={(url) => {
+                      const updated = { ...selectedPlayer, kyc: { ...selectedPlayer.kyc, panPhotoUrl: url || '' } };
+                      setSelectedPlayer(updated);
+                      updatePlayer(selectedPlayer.id, { kyc: updated.kyc });
+                    }}
+                  />
                 </div>
 
                 {/* Admin Actions */}

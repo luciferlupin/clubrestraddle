@@ -7,6 +7,8 @@ import { KYCBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
 import { PlayerLedger } from '../player/PlayerLedger';
+import { AdminKycDocumentPhotos } from './AdminKycDocumentPhotos';
+import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 
 export const AdminPlayersView: React.FC = () => {
   const { players, reviewKYC, updatePlayer, deletePlayer, checkIns } = useClub();
@@ -27,6 +29,8 @@ export const AdminPlayersView: React.FC = () => {
   const [editEmail, setEditEmail] = useState('');
   const [editTier, setEditTier] = useState<MembershipTier>('Standard');
   const [editAddress, setEditAddress] = useState('');
+  const [editAadhaarPhotoUrl, setEditAadhaarPhotoUrl] = useState('');
+  const [editPanPhotoUrl, setEditPanPhotoUrl] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
   const exactPlayerNumberMatch = /^\d+$/.test(search.trim())
@@ -57,6 +61,8 @@ export const AdminPlayersView: React.FC = () => {
     setEditEmail(player.email);
     setEditTier(player.membershipTier);
     setEditAddress(player.kyc?.address || '');
+    setEditAadhaarPhotoUrl(player.kyc?.aadhaarPhotoUrl || '');
+    setEditPanPhotoUrl(player.kyc?.panPhotoUrl || '');
     setEditNotes(player.notes || '');
     setIsEditOpen(true);
   };
@@ -77,6 +83,8 @@ export const AdminPlayersView: React.FC = () => {
         phone: editPhone,
         email: editEmail,
         address: editAddress,
+        aadhaarPhotoUrl: editAadhaarPhotoUrl,
+        panPhotoUrl: editPanPhotoUrl,
       },
     });
 
@@ -297,6 +305,10 @@ export const AdminPlayersView: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                <AdminKycDocumentPhotos
+                  aadhaarPhotoUrl={selectedPlayer.kyc.aadhaarPhotoUrl}
+                  panPhotoUrl={selectedPlayer.kyc.panPhotoUrl}
+                />
                 <div style={{ marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Residential Address</span>
                   <div style={{ fontSize: '0.84rem' }}>{selectedPlayer.kyc.address || '—'}</div>
@@ -420,6 +432,20 @@ export const AdminPlayersView: React.FC = () => {
                 onChange={e => setEditAddress(e.target.value)}
               />
             </div>
+
+            <DocumentPhotoUpload
+              id="admin-edit-aadhaar-photo"
+              label="Aadhaar Card"
+              value={editAadhaarPhotoUrl}
+              onChange={(url) => setEditAadhaarPhotoUrl(url || '')}
+            />
+
+            <DocumentPhotoUpload
+              id="admin-edit-pan-photo"
+              label="PAN Card"
+              value={editPanPhotoUrl}
+              onChange={(url) => setEditPanPhotoUrl(url || '')}
+            />
 
             <div className="form-group">
               <label className="form-label">Staff Internal Notes</label>

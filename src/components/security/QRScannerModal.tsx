@@ -460,10 +460,6 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
             {scannedResult.checkIn && (
               <div style={{ background: '#120508', padding: '10px 12px', borderRadius: '10px', fontSize: '0.8rem', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1', marginBottom: '2px' }}>
-                  <span>Table Preference:</span>
-                  <strong style={{ color: '#ffffff' }}>{scannedResult.checkIn.tablePreference}</strong>
-                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1' }}>
                   <span>Check-In Time:</span>
                   <strong style={{ color: '#ffffff' }}>Today at {formatTimeOnly(scannedResult.checkIn.checkInTime)}</strong>

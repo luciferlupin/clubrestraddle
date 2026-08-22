@@ -27,7 +27,6 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
   const [aadhaarPhotoUrl, setAadhaarPhotoUrl] = useState('');
   const [panPhotoUrl, setPanPhotoUrl] = useState('');
   const [address, setAddress] = useState('Delhi NCR, India');
-  const [tablePreference, setTablePreference] = useState('Table 1 (Main Lounge)');
   const [autoApprove, setAutoApprove] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,7 +39,6 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
     setAadhaarNumber(`5432 9876 ${randomNum}`);
     setPanNumber(`BKPPS${randomNum}R`);
     setAddress('Sector 104, Noida, Uttar Pradesh - 201304');
-    setTablePreference('Table 1 (Main Lounge)');
     setErrors({});
   };
 
@@ -89,8 +87,7 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
           emergencyContactPhone: '',
           photoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80',
           agreedToRules: true,
-        },
-        tablePreference
+        }
       );
 
       if (autoApprove) {

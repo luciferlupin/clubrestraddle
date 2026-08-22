@@ -284,12 +284,6 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             border: '1px solid var(--border-subtle)',
           }}
         >
-          <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Table / Game Preference
-          </span>
-          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fef08a', marginTop: '4px' }}>
-            {checkIn?.tablePreference || 'General Seating'}
-          </div>
           <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
             {checkIn ? `Checked in ${formatTimeOnly(checkIn.checkInTime)}` : 'Walk-in arrival'}
           </div>

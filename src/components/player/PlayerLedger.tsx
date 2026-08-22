@@ -58,7 +58,7 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
         id: `LED-ENT-${c.id}`,
         date: checkInDateTime,
         type: 'Entry Fee',
-        description: `Club Door Entry & Facility Access Fee (${c.tablePreference || 'Lounge'})`,
+        description: 'Club Door Entry & Facility Access Fee',
         paymentMethod: 'Cash',
         referenceId: c.id,
         debit: 500,

@@ -44,7 +44,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     emergencyContactPhone: '',
     photoUrl: CARTOON_AVATARS[0].url,
     agreedToRules: false,
-    tablePreference: 'Table 1 (Main Lounge)',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -138,7 +137,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
           photoUrl: formData.photoUrl,
           agreedToRules: formData.agreedToRules,
         },
-        formData.tablePreference,
       );
 
       try {

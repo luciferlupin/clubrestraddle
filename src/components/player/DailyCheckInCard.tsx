@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Clock, ShieldCheck, MapPin, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, Clock, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
 import { Player } from '../../types';
@@ -13,7 +13,6 @@ interface DailyCheckInCardProps {
 
 export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) => {
   const { hasPlayerCheckedInToday, performDailyCheckIn } = useClub();
-  const [tablePref, setTablePref] = useState('Table 1 (Main Lounge)');
   const [checkingIn, setCheckingIn] = useState(false);
 
   const todayCheckIn = hasPlayerCheckedInToday(player.id);
@@ -22,7 +21,7 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
   const handleCheckIn = () => {
     setCheckingIn(true);
     setTimeout(() => {
-      performDailyCheckIn(player.id, tablePref);
+      performDailyCheckIn(player.id);
       setCheckingIn(false);
       try {
         confetti({

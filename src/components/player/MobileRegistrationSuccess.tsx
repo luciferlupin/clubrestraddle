@@ -42,7 +42,6 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
             <strong>{player.fullName}</strong>
             <span>Player ID {formatPlayerNumber(player)}</span>
           </div>
-          <span>{checkIn.tablePreference}</span>
         </div>
       </div>
 
@@ -61,7 +60,7 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
             <span><Check size={18} /></span>
             <div>
               <strong>Enjoy your visit</strong>
-              <p>You checked in at {formatTimeOnly(checkIn.checkInTime)} for {checkIn.tablePreference}.</p>
+              <p>You checked in at {formatTimeOnly(checkIn.checkInTime)}.</p>
             </div>
           </li>
         </ol>

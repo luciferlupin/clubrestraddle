@@ -696,9 +696,8 @@ export const MobileSecurityPortal: React.FC = () => {
                       <EntryBadge status={c.verificationStatus} />
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#cbd5e1', background: 'rgba(0,0,0,0.3)', padding: '6px 10px', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', fontSize: '0.76rem', color: '#cbd5e1', background: 'rgba(0,0,0,0.3)', padding: '6px 10px', borderRadius: '8px' }}>
                       <span>Arrival: <strong>{formatTimeOnly(c.checkInTime)}</strong></span>
-                      <span>Table: <strong style={{ color: '#fb7185' }}>{c.tablePreference || 'Floor'}</strong></span>
                     </div>
 
                     {c.verificationStatus === 'pending' ? (

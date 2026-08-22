@@ -47,7 +47,6 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     emergencyContactPhone: '',
     photoUrl: CARTOON_AVATARS[0].url,
     agreedToRules: false,
-    tablePreference: 'Table 1 (Main Lounge)',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -59,7 +58,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
   const steps = [
     { num: 1 as FormWizardStep, title: 'Personal Info', desc: 'Name, phone & email', icon: <User size={15} /> },
     { num: 2 as FormWizardStep, title: 'ID Verification', desc: 'Aadhaar & PAN cards', icon: <BadgeCheck size={15} /> },
-    { num: 3 as FormWizardStep, title: 'Preferences', desc: 'Table & emergency', icon: <HeartHandshake size={15} /> },
+    { num: 3 as FormWizardStep, title: 'Emergency', desc: 'Emergency contact', icon: <HeartHandshake size={15} /> },
     { num: 4 as FormWizardStep, title: 'Confirmation', desc: 'Rules & pass', icon: <ShieldCheck size={15} /> },
   ];
 
@@ -79,7 +78,6 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
       emergencyContactPhone: '+91 98112 34567',
       photoUrl: CARTOON_AVATARS[0].url,
       agreedToRules: true,
-      tablePreference: 'Table 1 (Main Lounge)',
     });
     setErrors({});
   };
@@ -158,8 +156,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           emergencyContactPhone: formData.emergencyContactPhone,
           photoUrl: formData.photoUrl,
           agreedToRules: formData.agreedToRules,
-        },
-        formData.tablePreference
+        }
       );
 
       try {
