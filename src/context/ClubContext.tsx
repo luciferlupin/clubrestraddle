@@ -198,9 +198,14 @@ const saveToStorage = <T,>(key: string, data: T): void => {
 };
 
 export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [activeRole, setActiveRoleState] = useState<UserRole>(() =>
-    loadFromStorage(STORAGE_KEYS.ACTIVE_ROLE, 'player')
-  );
+  const [activeRole, setActiveRoleState] = useState<UserRole>(() => {
+    const savedRole = loadFromStorage<UserRole>(STORAGE_KEYS.ACTIVE_ROLE, 'player');
+    const savedStaff = loadFromStorage<StaffUser | null>(STORAGE_KEYS.CURRENT_STAFF, null);
+    if (savedStaff && savedRole === 'player') {
+      return savedStaff.role === 'admin' ? 'admin' : (savedStaff.role as UserRole);
+    }
+    return savedRole;
+  });
 
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>(() =>
     loadFromStorage(STORAGE_KEYS.STAFF_USERS, initialStaffUsers)
@@ -956,6 +961,20 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const setActiveRole = useCallback((role: UserRole) => {
     setActiveRoleState(role);
+    saveToStorage(STORAGE_KEYS.ACTIVE_ROLE, role);
+    try {
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        if (role === 'player') {
+          url.searchParams.delete('portal');
+        } else {
+          url.searchParams.set('portal', role);
+        }
+        window.history.replaceState({}, '', url.toString());
+      }
+    } catch {
+      // browser history fallback
+    }
   }, []);
 
   const setSelectedPlayerId = (id: string) => {
@@ -981,6 +1000,20 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updatedUser = { ...user, lastLoginAt: new Date().toISOString() };
     setCurrentStaffUser(updatedUser);
+    saveToStorage(STORAGE_KEYS.CURRENT_STAFF, updatedUser);
+
+    const targetRole: UserRole = user.role === 'admin' ? 'admin' : (user.role as UserRole);
+    setActiveRoleState(targetRole);
+    saveToStorage(STORAGE_KEYS.ACTIVE_ROLE, targetRole);
+
+    try {
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set('portal', targetRole);
+        window.history.replaceState({}, '', url.toString());
+      }
+    } catch {}
+
     setStaffUsers(prev => prev.map(u => (u.id === user.id ? updatedUser : u)));
 
     // Sync last login to Supabase if connected
@@ -997,7 +1030,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addAuditLog('Admin', 'Staff Logout', `Staff member ${currentStaffUser.fullName} (${currentStaffUser.role.toUpperCase()}) logged out.`);
     }
     setCurrentStaffUser(null);
+    saveToStorage(STORAGE_KEYS.CURRENT_STAFF, null);
     setActiveRoleState('player');
+    saveToStorage(STORAGE_KEYS.ACTIVE_ROLE, 'player');
+    try {
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('portal');
+        window.history.replaceState({}, '', url.toString());
+      }
+    } catch {}
   };
 
   const createStaffUser = (params: { fullName: string; email: string; password: string; role: 'cashier' | 'security' }) => {

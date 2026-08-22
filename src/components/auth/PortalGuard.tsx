@@ -16,7 +16,12 @@ export const PortalGuard: React.FC<PortalGuardProps> = ({ requiredRole, children
     if (!currentStaffUser) return false;
     if (currentStaffUser.status === 'suspended') return false;
     if (currentStaffUser.role === 'admin') return true; // Admin can access everything
-    if (requiredRole === 'cash') return currentStaffUser.role === 'cashier';
+    if (requiredRole === 'cash' || requiredRole === 'cashier') {
+      return currentStaffUser.role === 'cashier';
+    }
+    if (requiredRole === 'security') {
+      return currentStaffUser.role === 'security';
+    }
     return (currentStaffUser.role as string) === requiredRole;
   })();
 

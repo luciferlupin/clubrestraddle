@@ -124,6 +124,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
         return;
       }
 
+      setActiveRole(selectedDesk);
       setSubmitting(false);
       onSuccess?.();
     }, 250);
