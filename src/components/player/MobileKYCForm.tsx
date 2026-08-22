@@ -15,7 +15,6 @@ import { Player, DailyCheckIn } from '../../types';
 import confetti from 'canvas-confetti';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 import { OtpVerificationModal } from '../common/OtpVerificationModal';
-import { sendOtp } from '../../utils/otpService';
 
 interface MobileKYCFormProps {
   onSuccess: (result: { player: Player; checkIn: DailyCheckIn }) => void;
@@ -111,7 +110,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     if (step === 1) {
       const phoneChangedOrUnverified = !isPhoneVerified || verifiedPhone !== formData.phone;
       if (phoneChangedOrUnverified) {
-        sendOtp(formData.phone, 'registration');
         setIsOtpModalOpen(true);
         return;
       }
@@ -253,10 +251,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
                 ) : formData.phone.trim().length >= 10 ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      sendOtp(formData.phone, 'registration');
-                      setIsOtpModalOpen(true);
-                    }}
+                    onClick={() => setIsOtpModalOpen(true)}
                     style={{
                       background: 'rgba(225, 29, 72, 0.15)',
                       border: '1px solid rgba(225, 29, 72, 0.4)',

@@ -29,7 +29,6 @@ import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, An
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 import { Pagination } from '../common/Pagination';
 import { OtpVerificationModal } from '../common/OtpVerificationModal';
-import { sendOtp } from '../../utils/otpService';
 import { Player } from '../../types';
 
 type PlayerTab = 'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history';
@@ -91,7 +90,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
 
     if (matched) {
       setPendingPlayer(matched);
-      sendOtp(matched.phone || cleanPhone, 'login');
       setIsOtpModalOpen(true);
     } else {
       setLookupError('No registered member found with this mobile number. Register below or try again.');

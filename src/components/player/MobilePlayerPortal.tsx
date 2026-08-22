@@ -23,7 +23,6 @@ import { MobileRegistrationSuccess } from './MobileRegistrationSuccess';
 import { TableChipRequestModal } from './TableChipRequestModal';
 import { CardDeckFan, CardSuit, AnimatedSuitsRow } from '../common/PokerGraphics';
 import { OtpVerificationModal } from '../common/OtpVerificationModal';
-import { sendOtp } from '../../utils/otpService';
 
 interface MobilePlayerPortalProps {
   onOpenQR: () => void;
@@ -89,7 +88,6 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
 
     if (matched) {
       setPendingPlayer(matched);
-      sendOtp(matched.phone || cleanPhone, 'login');
       setIsOtpModalOpen(true);
     } else {
       setLookupError('We could not find a pass for that number. Check the digits or create a new member pass.');

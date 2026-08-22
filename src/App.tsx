@@ -21,7 +21,6 @@ import { MobileHeader } from './components/common/MobileHeader';
 import { RoleSwitcherDrawer } from './components/common/RoleSwitcherDrawer';
 import { LogOut } from 'lucide-react';
 import { AnimatedSuitsRow, FloatingChipsBackground } from './components/common/PokerGraphics';
-import { SimulatedSmsBanner } from './components/common/SimulatedSmsBanner';
 
 const MainApp: React.FC = () => {
   const { activeRole, setActiveRole } = useClub();
@@ -259,9 +258,6 @@ const MainApp: React.FC = () => {
         onClose={() => setIsQRModalOpen(false)}
         onOpenNewPlayerForm={handleOpenNewPlayerFromQR}
       />
-
-      {/* Global Simulated SMS Notification Toast */}
-      <SimulatedSmsBanner />
     </div>
   );
 };

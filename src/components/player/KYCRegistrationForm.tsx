@@ -22,7 +22,6 @@ import { formatTimeOnly, formatDateOnly, maskGovtId } from '../../utils/formatte
 import confetti from 'canvas-confetti';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 import { OtpVerificationModal } from '../common/OtpVerificationModal';
-import { sendOtp } from '../../utils/otpService';
 
 interface KYCRegistrationFormProps {
   onSuccess: () => void;
@@ -136,7 +135,6 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     if (currentStep === 1) {
       const phoneChangedOrUnverified = !isPhoneVerified || verifiedPhone !== formData.phone;
       if (phoneChangedOrUnverified) {
-        sendOtp(formData.phone, 'registration');
         setIsOtpModalOpen(true);
         return;
       }
@@ -445,10 +443,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                   ) : formData.phone.trim().length >= 10 ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        sendOtp(formData.phone, 'registration');
-                        setIsOtpModalOpen(true);
-                      }}
+                      onClick={() => setIsOtpModalOpen(true)}
                       style={{
                         background: 'rgba(225, 29, 72, 0.15)',
                         border: '1px solid rgba(225, 29, 72, 0.4)',

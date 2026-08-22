@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, Smartphone, RefreshCw, CheckCircle2, AlertCircle, Sparkles, X } from 'lucide-react';
-import { sendOtp, verifyOtpCode, getActiveOtp } from '../../utils/otpService';
+import { ShieldCheck, Smartphone, RefreshCw, CheckCircle2, AlertCircle, X, Lock } from 'lucide-react';
+import { sendOtp, verifyOtpCode, normalizePhone } from '../../utils/otpService';
 import confetti from 'canvas-confetti';
 
 interface OtpVerificationModalProps {
@@ -20,39 +20,50 @@ export const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
 }) => {
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const [canResend, setCanResend] = useState(false);
-  const [activeCodeHint, setActiveCodeHint] = useState<string | null>(null);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Send OTP upon opening modal
+  // Send real SMS OTP upon opening modal
   useEffect(() => {
     if (isOpen && phone) {
-      const active = getActiveOtp(phone);
-      if (!active) {
-        const { code } = sendOtp(phone, purpose);
-        setActiveCodeHint(code);
-      } else {
-        setActiveCodeHint(active.code);
-      }
-
       setDigits(['', '', '', '', '', '']);
       setError(null);
       setCountdown(30);
       setCanResend(false);
 
-      // Focus first input after render
+      const triggerSend = async () => {
+        setSending(true);
+        try {
+          const res = await sendOtp(phone, purpose);
+          if (res.success) {
+            setInfoMessage(res.message);
+          } else {
+            setError(res.message);
+          }
+        } catch (err: any) {
+          setError(err?.message || 'Failed to dispatch SMS OTP.');
+        } finally {
+          setSending(false);
+        }
+      };
+
+      triggerSend();
+
+      // Focus first digit box after render
       setTimeout(() => {
         if (inputRefs.current[0]) {
           inputRefs.current[0].focus();
         }
-      }, 100);
+      }, 150);
     }
   }, [isOpen, phone, purpose]);
 
-  // Countdown timer for resending OTP
+  // Resend countdown timer
   useEffect(() => {
     if (!isOpen) return;
 
@@ -73,10 +84,15 @@ export const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
 
   if (!isOpen) return null;
 
+  const cleanPhone = normalizePhone(phone);
+  const formattedDisplayPhone = cleanPhone.length === 10
+    ? `+91 ${cleanPhone.slice(0, 5)} ${cleanPhone.slice(5)}`
+    : phone;
+
   const handleDigitChange = (index: number, value: string) => {
     setError(null);
 
-    // If pasted full string (e.g. 6 digits)
+    // If pasted full string (e.g. from SMS autofill or clipboard)
     if (value.length > 1) {
       const cleanValue = value.replace(/\D/g, '').slice(0, 6);
       if (cleanValue.length > 0) {
@@ -113,7 +129,6 @@ export const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !digits[index] && index > 0) {
-      // Step back
       inputRefs.current[index - 1]?.focus();
     }
   };
@@ -137,49 +152,66 @@ export const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
     }
   };
 
-  const submitVerification = (codeToVerify?: string) => {
+  const submitVerification = async (codeToVerify?: string) => {
     const code = codeToVerify || digits.join('');
     if (code.length !== 6) {
-      setError('Please enter all 6 digits of the OTP.');
+      setError('Please enter the complete 6-digit OTP received in your SMS.');
       return;
     }
 
     setVerifying(true);
     setError(null);
 
-    setTimeout(() => {
-      const result = verifyOtpCode(phone, code);
-      setVerifying(false);
-
+    try {
+      const result = await verifyOtpCode(phone, code);
       if (result.success) {
-        confetti({
-          particleCount: 40,
-          spread: 60,
-          origin: { y: 0.6 },
-        });
+        try {
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.6 },
+            colors: ['#10b981', '#34d399', '#ffffff'],
+          });
+        } catch {
+          // fallback
+        }
         onSuccess();
       } else {
         setError(result.message);
       }
-    }, 400);
+    } catch (err: any) {
+      setError(err?.message || 'Verification failed. Please try again.');
+    } finally {
+      setVerifying(false);
+    }
   };
 
-  const handleResendOtp = () => {
-    const { code } = sendOtp(phone, purpose);
-    setActiveCodeHint(code);
-    setDigits(['', '', '', '', '', '']);
+  const handleResendOtp = async () => {
+    if (!canResend || sending) return;
+    setSending(true);
     setError(null);
-    setCountdown(30);
-    setCanResend(false);
-    inputRefs.current[0]?.focus();
-  };
+    setInfoMessage(null);
 
-  const handleAutoFill = () => {
-    const active = getActiveOtp(phone);
-    const code = active?.code || activeCodeHint || '123456';
-    const splitDigits = code.split('');
-    setDigits(splitDigits);
-    submitVerification(code);
+    try {
+      const res = await sendOtp(phone, purpose);
+      if (res.success) {
+        setInfoMessage(res.message);
+        setDigits(['', '', '', '', '', '']);
+        setCountdown(30);
+        setCanResend(false);
+        inputRefs.current[0]?.focus();
+      } else {
+        setError(res.message);
+        if (res.cooldownSeconds) {
+          setCountdown(res.cooldownSeconds);
+          setCanResend(false);
+        }
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to resend SMS.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -188,12 +220,13 @@ export const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
         position: 'fixed',
         inset: 0,
         zIndex: 99999,
-        background: 'rgba(0, 0, 0, 0.88)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(0, 0, 0, 0.9)',
+        backdropFilter: 'blur(10px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
+        boxSizing: 'border-box',
       }}
       onClick={onClose}
     >
@@ -202,13 +235,14 @@ export const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
           maxWidth: '440px',
           width: '100%',
           background: 'linear-gradient(180deg, #18060a 0%, #0e0204 100%)',
-          borderRadius: '20px',
+          borderRadius: '24px',
           border: '1.5px solid rgba(225, 29, 72, 0.45)',
           boxShadow: '0 25px 60px -10px rgba(0,0,0,0.9), 0 0 35px rgba(225, 29, 72, 0.25)',
           overflow: 'hidden',
           padding: '28px 24px',
           color: '#ffffff',
           position: 'relative',
+          boxSizing: 'border-box',
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -216,6 +250,7 @@ export const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
         <button
           type="button"
           onClick={onClose}
+          aria-label="Close OTP Verification"
           style={{
             position: 'absolute',
             top: '16px',
@@ -236,7 +271,7 @@ export const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
         </button>
 
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <div
             style={{
               width: '56px',
@@ -251,166 +286,179 @@ export const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
               boxShadow: '0 0 20px rgba(225, 29, 72, 0.3)',
             }}
           >
-            <Smartphone size={26} color="#fb7185" />
+            <Smartphone size={28} color="#fb7185" />
           </div>
 
-          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-            {purpose === 'registration' ? 'Verify Mobile Number' : 'Mobile OTP Sign-In'}
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#ffffff', margin: '0 0 6px 0' }}>
+            Verify Your Mobile Number
           </h3>
-          <p style={{ fontSize: '0.84rem', color: '#94a3b8', marginTop: '6px', lineHeight: 1.4 }}>
-            Enter the 6-digit OTP sent to{' '}
-            <strong style={{ color: '#ffffff', fontFamily: 'monospace' }}>{phone}</strong>
+
+          <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0, lineHeight: 1.4 }}>
+            We've sent a 6-digit SMS verification code to
+          </p>
+          <p style={{ fontSize: '0.92rem', fontWeight: 800, color: '#ffffff', fontFamily: 'monospace', margin: '4px 0 0 0' }}>
+            {formattedDisplayPhone}
           </p>
         </div>
 
-        {/* 6-Digit OTP Box Grid */}
+        {/* Delivery Status Banner */}
+        {infoMessage && !error && (
+          <div
+            style={{
+              background: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: '10px',
+              padding: '8px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '0.78rem',
+              color: '#34d399',
+              marginBottom: '16px',
+            }}
+          >
+            <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
+            <span>{infoMessage}</span>
+          </div>
+        )}
+
+        {/* 6 Digit Input Boxes */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'center',
             gap: '8px',
-            margin: '20px 0',
+            marginBottom: '18px',
           }}
           onPaste={handlePaste}
         >
-          {digits.map((digit, idx) => (
+          {digits.map((digit, index) => (
             <input
-              key={idx}
-              ref={el => {
-                inputRefs.current[idx] = el;
-              }}
-              type="text"
+              key={index}
+              ref={el => { inputRefs.current[index] = el; }}
+              type="tel"
               inputMode="numeric"
-              maxLength={6}
+              maxLength={1}
               value={digit}
-              onChange={e => handleDigitChange(idx, e.target.value)}
-              onKeyDown={e => handleKeyDown(idx, e)}
+              onChange={e => handleDigitChange(index, e.target.value)}
+              onKeyDown={e => handleKeyDown(index, e)}
               style={{
                 width: '46px',
                 height: '54px',
-                textAlign: 'center',
+                borderRadius: '12px',
+                background: 'rgba(0, 0, 0, 0.65)',
+                border: digit ? '2px solid #e11d48' : '1.5px solid rgba(255, 255, 255, 0.18)',
+                color: '#ffffff',
                 fontSize: '1.4rem',
                 fontWeight: 900,
-                fontFamily: 'monospace',
-                borderRadius: '10px',
-                background: digit ? 'rgba(225, 29, 72, 0.15)' : 'rgba(0, 0, 0, 0.4)',
-                border: digit ? '2px solid #e11d48' : '1.5px solid rgba(255, 255, 255, 0.2)',
-                color: '#ffffff',
+                textAlign: 'center',
                 outline: 'none',
-                transition: 'all 0.2s',
-                boxShadow: digit ? '0 0 12px rgba(225, 29, 72, 0.35)' : 'none',
+                boxShadow: digit ? '0 0 14px rgba(225, 29, 72, 0.4)' : 'none',
+                transition: 'all 0.15s ease',
               }}
             />
           ))}
         </div>
 
-        {/* Error Message */}
+        {/* Error message */}
         {error && (
           <div
             style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid #ef4444',
+              borderRadius: '10px',
+              padding: '10px 12px',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.35)',
-              borderRadius: '8px',
-              padding: '8px 12px',
+              gap: '8px',
+              fontSize: '0.78rem',
               color: '#f87171',
-              fontSize: '0.8rem',
-              marginBottom: '14px',
+              marginBottom: '16px',
             }}
           >
-            <AlertCircle size={15} />
+            <AlertCircle size={15} style={{ flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Quick Auto-fill button for testing convenience */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+        {/* Actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <button
             type="button"
-            onClick={handleAutoFill}
+            className="btn btn-primary"
+            onClick={() => submitVerification()}
+            disabled={verifying || digits.some(d => !d.trim())}
             style={{
+              width: '100%',
+              padding: '14px',
+              fontSize: '0.96rem',
+              fontWeight: 800,
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(56, 189, 248, 0.12)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              borderRadius: '8px',
-              padding: '5px 12px',
-              color: '#38bdf8',
-              fontSize: '0.76rem',
-              fontWeight: 700,
-              cursor: 'pointer',
+              justifyContent: 'center',
+              gap: '8px',
             }}
           >
-            <Sparkles size={13} /> Tap to Auto-fill Code {activeCodeHint ? `(${activeCodeHint})` : ''}
+            {verifying ? (
+              <>
+                <RefreshCw size={18} className="spin-anim" />
+                <span>Verifying SMS Code...</span>
+              </>
+            ) : (
+              <>
+                <ShieldCheck size={18} />
+                <span>Verify & Continue</span>
+              </>
+            )}
           </button>
+
+          {/* Resend SMS Controller */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '6px' }}>
+            {canResend ? (
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={sending}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#fb7185',
+                  fontSize: '0.84rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 10px',
+                }}
+              >
+                <RefreshCw size={14} className={sending ? 'spin-anim' : ''} />
+                <span>Resend SMS OTP</span>
+              </button>
+            ) : (
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                Didn't receive SMS? Resend in <strong style={{ color: '#ffffff' }}>{countdown}s</strong>
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Submit Verification CTA */}
-        <button
-          type="button"
-          className="btn btn-primary"
-          style={{
-            width: '100%',
-            padding: '12px',
-            fontSize: '0.95rem',
-            fontWeight: 800,
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            boxShadow: '0 8px 20px rgba(225, 29, 72, 0.4)',
-          }}
-          onClick={() => submitVerification()}
-          disabled={verifying || digits.some(d => d === '')}
-        >
-          {verifying ? (
-            <>
-              <RefreshCw size={16} className="animate-spin" /> Verifying Code...
-            </>
-          ) : (
-            <>
-              <ShieldCheck size={18} /> Verify & Continue
-            </>
-          )}
-        </button>
-
-        {/* Resend OTP Footer */}
+        {/* Security Footer */}
         <div
           style={{
-            marginTop: '18px',
-            textAlign: 'center',
-            fontSize: '0.8rem',
-            color: '#94a3b8',
+            marginTop: '20px',
+            paddingTop: '12px',
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '6px',
+            fontSize: '0.72rem',
+            color: '#94a3b8',
           }}
         >
-          <span>Didn't receive the OTP?</span>
-          {canResend ? (
-            <button
-              type="button"
-              onClick={handleResendOtp}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#e11d48',
-                fontWeight: 700,
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                padding: 0,
-              }}
-            >
-              Resend OTP
-            </button>
-          ) : (
-            <span style={{ color: '#cbd5e1', fontWeight: 600 }}>Resend in {countdown}s</span>
-          )}
+          <Lock size={12} color="#10b981" />
+          <span>Carrier Secured 256-bit SMS Verification</span>
         </div>
       </div>
     </div>
