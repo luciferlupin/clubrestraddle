@@ -305,9 +305,6 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
           <button className={`nav-tab-item player-color ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
             <User size={20} /><span className="nav-tab-label">Profile</span>
           </button>
-          <button className="nav-tab-item player-color" onClick={openRegistration}>
-            <UserPlus size={20} /><span className="nav-tab-label">New player</span>
-          </button>
         </nav>
       )}
 
