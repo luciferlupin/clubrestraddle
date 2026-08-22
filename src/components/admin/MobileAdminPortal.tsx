@@ -61,6 +61,7 @@ export const MobileAdminPortal: React.FC = () => {
   const [resetConfirm, setResetConfirm] = useState(false);
   const [kycAction, setKycAction] = useState<'verified' | 'rejected' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [playerView, setPlayerView] = useState<'all' | 'pending'>('all');
 
   const [expenseData, setExpenseData] = useState({
     category: 'Dealer & Staff Wages' as ExpenseCategory,
@@ -83,12 +84,15 @@ export const MobileAdminPortal: React.FC = () => {
     audit: { eyebrow: 'Governance', title: 'Audit trail', description: 'Review actions across every staff station.' },
   }[activeTab];
 
+  const scopedPlayers = playerView === 'pending'
+    ? players.filter(p => p.kycStatus === 'pending')
+    : players;
   const exactPlayerNumberMatch = /^\d+$/.test(searchQuery.trim())
-    ? players.find(p => formatPlayerNumber(p) === searchQuery.trim())
+    ? scopedPlayers.find(p => formatPlayerNumber(p) === searchQuery.trim())
     : undefined;
   const filteredPlayers = (exactPlayerNumberMatch
     ? [exactPlayerNumberMatch]
-    : players.filter(p =>
+    : scopedPlayers.filter(p =>
         p.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.phone.includes(searchQuery) ||
         p.id.toLowerCase().includes(searchQuery.toLowerCase())
@@ -166,7 +170,7 @@ export const MobileAdminPortal: React.FC = () => {
               </div>
 
               <div className="admin-mobile-priority-list">
-                <button type="button" onClick={() => { setActiveTab('players'); setSearchQuery(''); }}>
+                <button type="button" onClick={() => { setPlayerView('pending'); setActiveTab('players'); setSearchQuery(''); }}>
                   <span className="admin-mobile-priority-icon violet"><ShieldCheck size={18} /></span>
                   <span><strong>KYC reviews</strong><small>{pendingKYCCount ? `${pendingKYCCount} member profiles waiting` : 'No profiles waiting'}</small></span>
                   <b>{pendingKYCCount}</b><ChevronRight size={17} />
@@ -192,6 +196,7 @@ export const MobileAdminPortal: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setActiveTab('players');
+                  setPlayerView('all');
                   setSearchQuery('');
                 }}
                 style={{
@@ -395,6 +400,7 @@ export const MobileAdminPortal: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setActiveTab('players');
+                    setPlayerView('pending');
                     setSearchQuery('');
                   }}
                   style={{
@@ -432,6 +438,7 @@ export const MobileAdminPortal: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setActiveTab('players');
+                    setPlayerView('all');
                     setSearchQuery('');
                   }}
                   style={{
@@ -584,6 +591,23 @@ export const MobileAdminPortal: React.FC = () => {
         {/* ── TAB 2: MEMBERS DIRECTORY ─────────────────────────────── */}
         {activeTab === 'players' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <button
+                type="button"
+                className={`m-btn m-btn-sm ${playerView === 'all' ? 'm-btn-primary' : 'm-btn-secondary'}`}
+                onClick={() => { setPlayerView('all'); setSearchQuery(''); }}
+              >
+                All members ({players.length})
+              </button>
+              <button
+                type="button"
+                className={`m-btn m-btn-sm ${playerView === 'pending' ? 'm-btn-primary' : 'm-btn-secondary'}`}
+                onClick={() => { setPlayerView('pending'); setSearchQuery(''); }}
+              >
+                Pending KYC ({pendingKYCCount})
+              </button>
+            </div>
+
             {/* Search Input Bar */}
             <div style={{
               position: 'relative',
@@ -612,12 +636,21 @@ export const MobileAdminPortal: React.FC = () => {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8' }}>
-                Showing {filteredPlayers.length} of {players.length} members
+                {playerView === 'pending'
+                  ? `Showing ${filteredPlayers.length} pending KYC review${filteredPlayers.length === 1 ? '' : 's'}`
+                  : `Showing ${filteredPlayers.length} of ${players.length} members`}
               </span>
             </div>
 
             {/* Players Inset Group */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {filteredPlayers.length === 0 && (
+                <div className="m-card" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px 16px' }}>
+                  <ShieldCheck size={26} color="#10b981" style={{ marginBottom: '8px' }} />
+                  <div style={{ color: '#ffffff', fontWeight: 800 }}>No pending KYC reviews</div>
+                  <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>Every member profile has been reviewed.</div>
+                </div>
+              )}
               {filteredPlayers.map(p => (
                 <button
                   key={p.id}
@@ -924,6 +957,7 @@ export const MobileAdminPortal: React.FC = () => {
               aria-label={`Open ${item.label}`}
               onClick={() => {
                 setActiveTab(item.id as typeof activeTab);
+                if (item.id === 'players') setPlayerView('all');
                 setSearchQuery('');
               }}
               style={{
