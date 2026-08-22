@@ -61,7 +61,7 @@ export const MobilePlayerVisits: React.FC<MobilePlayerVisitsProps> = ({ player, 
       ) : (
         <>
           <div className="player-visit-timeline">
-            {paginatedCheckIns.map((checkIn) => (
+            {paginatedCheckIns.map((checkIn, index) => (
               <article key={checkIn.id} className="player-visit-card">
                 <span className={`player-visit-marker ${checkIn.verificationStatus}`} aria-hidden="true">
                   <CheckCircle2 size={16} />
@@ -80,7 +80,7 @@ export const MobilePlayerVisits: React.FC<MobilePlayerVisitsProps> = ({ player, 
                   </div>
                   <div className="player-visit-footer">
                     <span>{checkIn.verifiedBy ? `Verified by ${checkIn.verifiedBy}` : 'Awaiting security review'}</span>
-                    <code>{checkIn.id}</code>
+                    <code>Visit #{(page - 1) * pageSize + index + 1}</code>
                   </div>
                 </div>
               </article>

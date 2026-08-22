@@ -135,7 +135,7 @@ export const AdminAttendanceView: React.FC = () => {
         <table className="custom-table">
           <thead>
             <tr>
-              <th>Check-in Ref</th>
+              <th>Player ID</th>
               <th>Player Name</th>
               <th>Contact Phone</th>
               <th>Date</th>
@@ -157,7 +157,10 @@ export const AdminAttendanceView: React.FC = () => {
               paginatedCheckIns.map(c => (
                 <tr key={c.id}>
                   <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
-                    {c.id}
+                    {(() => {
+                      const player = players.find(p => p.id === c.playerId);
+                      return player ? formatPlayerNumber(player) : 'Unavailable';
+                    })()}
                   </td>
                   <td style={{ fontWeight: 700 }}>{c.playerName}</td>
                   <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{c.playerPhone}</td>

@@ -60,6 +60,41 @@ const ensureSequentialMemberNumbers = (players: Player[]): Player[] => {
   return changed ? normalized : players;
 };
 
+const reconcileStalePendingCheckIns = (checkIns: DailyCheckIn[]): {
+  checkIns: DailyCheckIn[];
+  repaired: DailyCheckIn[];
+} => {
+  const latestResolvedByPlayer = new Map<string, DailyCheckIn>();
+  const timestamp = (checkIn: DailyCheckIn) =>
+    new Date(`${checkIn.checkInDate}T${checkIn.checkInTime || '00:00:00'}`).getTime() || 0;
+
+  for (const checkIn of checkIns) {
+    if (checkIn.verificationStatus === 'pending') continue;
+    const current = latestResolvedByPlayer.get(checkIn.playerId);
+    if (!current || timestamp(checkIn) > timestamp(current)) {
+      latestResolvedByPlayer.set(checkIn.playerId, checkIn);
+    }
+  }
+
+  const repaired: DailyCheckIn[] = [];
+  const reconciled = checkIns.map(checkIn => {
+    if (checkIn.verificationStatus !== 'pending') return checkIn;
+    const newerDecision = latestResolvedByPlayer.get(checkIn.playerId);
+    if (!newerDecision || timestamp(checkIn) >= timestamp(newerDecision)) return checkIn;
+    const updated: DailyCheckIn = {
+      ...checkIn,
+      verificationStatus: newerDecision.verificationStatus,
+      verifiedBy: newerDecision.verifiedBy,
+      verifiedAt: newerDecision.verifiedAt,
+      rejectionReason: newerDecision.rejectionReason,
+    };
+    repaired.push(updated);
+    return updated;
+  });
+
+  return { checkIns: reconciled, repaired };
+};
+
 export const playQueueChime = () => {
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -565,7 +600,18 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             rejectionReason: c.rejection_reason,
             tablePreference: normalizeTablePreference(c.table_preference),
           }));
-          setCheckIns(mappedCheckIns);
+          const reconciled = reconcileStalePendingCheckIns(mappedCheckIns);
+          setCheckIns(reconciled.checkIns);
+          if (reconciled.repaired.length > 0) {
+            await Promise.all(reconciled.repaired.map(checkIn =>
+              client.from('daily_check_ins').update({
+                verification_status: checkIn.verificationStatus,
+                verified_by: checkIn.verifiedBy,
+                verified_at: checkIn.verifiedAt,
+                rejection_reason: checkIn.rejectionReason || null,
+              }).eq('id', checkIn.id)
+            ));
+          }
         } else if (initialCheckIns.length > 0) {
           const seedChkRows = initialCheckIns.map(ic => ({
             id: ic.id,
@@ -2494,7 +2540,17 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         verifiedAt: nowIso,
         rejectionReason: undefined,
       };
-      nextCheckIns = checkIns.map(c => (c.id === existingCheckIn.id ? updatedCheckIn : c));
+      nextCheckIns = checkIns.map(c =>
+        c.playerId === targetPlayerId && (c.verificationStatus === 'pending' || c.id === existingCheckIn.id)
+          ? {
+              ...c,
+              verificationStatus: 'approved' as const,
+              verifiedBy: staff,
+              verifiedAt: nowIso,
+              rejectionReason: undefined,
+            }
+          : c
+      );
     } else {
       updatedCheckIn = {
         id: targetCheckInId,
@@ -2564,13 +2620,19 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (error) console.error('Supabase daily_check_ins insert error:', error.message);
         });
       } else {
-        dbClient.from('daily_check_ins').update({
+        const approvalUpdate = {
           verification_status: 'approved',
           verified_by: staff,
           verified_at: nowIso,
           rejection_reason: null,
-        }).eq('id', targetCheckInId).then(({ error }) => {
-          if (error) console.error('Supabase daily_check_ins update error:', error.message);
+        };
+        void Promise.all([
+          dbClient.from('daily_check_ins').update(approvalUpdate).eq('id', targetCheckInId),
+          dbClient.from('daily_check_ins').update(approvalUpdate).eq('player_id', targetPlayerId).eq('verification_status', 'pending'),
+        ]).then(results => {
+          results.forEach(({ error }) => {
+            if (error) console.error('Supabase daily_check_ins update error:', error.message);
+          });
         });
       }
 
@@ -2618,7 +2680,17 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         verifiedAt: nowIso,
         rejectionReason: reason,
       };
-      nextCheckIns = checkIns.map(c => (c.id === existingCheckIn.id ? updatedCheckIn : c));
+      nextCheckIns = checkIns.map(c =>
+        c.playerId === targetPlayerId && (c.verificationStatus === 'pending' || c.id === existingCheckIn.id)
+          ? {
+              ...c,
+              verificationStatus: 'rejected' as const,
+              verifiedBy: staff,
+              verifiedAt: nowIso,
+              rejectionReason: reason,
+            }
+          : c
+      );
     } else {
       updatedCheckIn = {
         id: targetCheckInId,
@@ -2684,13 +2756,19 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           if (error) console.error('Supabase daily_check_ins insert error:', error.message);
         });
       } else {
-        dbClient.from('daily_check_ins').update({
+        const rejectionUpdate = {
           verification_status: 'rejected',
           verified_by: staff,
           verified_at: nowIso,
           rejection_reason: reason,
-        }).eq('id', targetCheckInId).then(({ error }) => {
-          if (error) console.error('Supabase daily_check_ins update error:', error.message);
+        };
+        void Promise.all([
+          dbClient.from('daily_check_ins').update(rejectionUpdate).eq('id', targetCheckInId),
+          dbClient.from('daily_check_ins').update(rejectionUpdate).eq('player_id', targetPlayerId).eq('verification_status', 'pending'),
+        ]).then(results => {
+          results.forEach(({ error }) => {
+            if (error) console.error('Supabase daily_check_ins update error:', error.message);
+          });
         });
       }
 

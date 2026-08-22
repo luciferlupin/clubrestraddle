@@ -41,7 +41,7 @@ export const CheckInHistory: React.FC<CheckInHistoryProps> = ({ checkIns }) => {
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Check-in Ref</th>
+                  <th>Visit</th>
                   <th>Date</th>
                   <th>Time</th>
                   <th>Table / Seating Preference</th>
@@ -50,10 +50,10 @@ export const CheckInHistory: React.FC<CheckInHistoryProps> = ({ checkIns }) => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedCheckIns.map(c => (
+                {paginatedCheckIns.map((c, index) => (
                   <tr key={c.id}>
                     <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
-                      {c.id}
+                      #{(page - 1) * pageSize + index + 1}
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

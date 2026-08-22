@@ -740,7 +740,9 @@ export const MobileAdminPortal: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {filteredCheckIns.map(c => (
+              {filteredCheckIns.map(c => {
+                const player = players.find(p => p.id === c.playerId);
+                return (
                 <div
                   key={c.id}
                   style={{
@@ -761,7 +763,9 @@ export const MobileAdminPortal: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.76rem', color: '#94a3b8' }}>
                     <span>{formatDateOnly(c.checkInDate)} at {formatTimeOnly(c.checkInTime)}</span>
-                    <span style={{ fontFamily: 'monospace', color: '#cbd5e1' }}>{c.id}</span>
+                    <span style={{ fontFamily: 'monospace', color: '#cbd5e1' }}>
+                      {player ? `Player ID ${formatPlayerNumber(player)}` : 'Player ID unavailable'}
+                    </span>
                   </div>
                   {c.verifiedBy && (
                     <div style={{ fontSize: '0.72rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
@@ -769,7 +773,8 @@ export const MobileAdminPortal: React.FC = () => {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
