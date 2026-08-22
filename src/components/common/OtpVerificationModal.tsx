@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, Smartphone, RefreshCw, CheckCircle2, AlertCircle, X, Lock } from 'lucide-react';
-import { sendOtp, verifyOtpCode, normalizePhone } from '../../utils/otpService';
+import { ShieldCheck, Smartphone, RefreshCw, CheckCircle2, AlertCircle, X, Lock, Key } from 'lucide-react';
+import { sendOtp, verifyOtpCode, normalizePhone, isSmsGatewayConfigured } from '../../utils/otpService';
 import confetti from 'canvas-confetti';
 
 interface OtpVerificationModalProps {
@@ -305,20 +305,29 @@ export const OtpVerificationModal: React.FC<OtpVerificationModalProps> = ({
         {infoMessage && !error && (
           <div
             style={{
-              background: 'rgba(16, 185, 129, 0.12)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
+              background: isSmsGatewayConfigured() ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+              border: `1px solid ${isSmsGatewayConfigured() ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
               borderRadius: '10px',
               padding: '8px 12px',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
               fontSize: '0.78rem',
-              color: '#34d399',
+              color: isSmsGatewayConfigured() ? '#34d399' : '#fbbf24',
               marginBottom: '16px',
             }}
           >
-            <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
-            <span>{infoMessage}</span>
+            {isSmsGatewayConfigured() ? (
+              <>
+                <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
+                <span>{infoMessage}</span>
+              </>
+            ) : (
+              <>
+                <Key size={15} style={{ flexShrink: 0 }} />
+                <span>Preview mode active. Enter test code <strong style={{ color: '#ffffff' }}>123456</strong> or add Fast2SMS API key in .env</span>
+              </>
+            )}
           </div>
         )}
 
