@@ -7,7 +7,6 @@ import {
   XCircle,
   Clock,
   QrCode,
-  History,
   ChevronRight,
   LogOut,
   UserPlus,
@@ -42,8 +41,8 @@ export const MobileSecurityPortal: React.FC = () => {
     syncNow,
   } = useClub();
 
-  const [activeNav, setActiveNav] = useState<'scan' | 'queue' | 'history'>('scan');
-  const [queueFilter, setQueueFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [activeNav, setActiveNav] = useState<'scan' | 'queue'>('scan');
+  const [queueFilter, setQueueFilter] = useState<'pending' | 'rejected'>('pending');
   const [search, setSearch] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => {
@@ -69,16 +68,19 @@ export const MobileSecurityPortal: React.FC = () => {
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
 
   const pendingCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'pending');
-  const approvedCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'approved');
 
   // Search filter
   const searchResults = search.trim()
     ? players.filter(
-        p =>
-          p.fullName.toLowerCase().includes(search.toLowerCase()) ||
-          p.phone.includes(search) ||
-          p.id.toLowerCase().includes(search.toLowerCase()) ||
-          p.kyc.govtIdNumber.toLowerCase().includes(search.toLowerCase())
+        p => {
+          const checkIn = todayCheckIns.find(c => c.playerId === p.id);
+          return checkIn?.verificationStatus !== 'approved' && (
+            p.fullName.toLowerCase().includes(search.toLowerCase()) ||
+            p.phone.includes(search) ||
+            p.id.toLowerCase().includes(search.toLowerCase()) ||
+            p.kyc.govtIdNumber.toLowerCase().includes(search.toLowerCase())
+          );
+        }
       )
     : [];
 
@@ -88,6 +90,8 @@ export const MobileSecurityPortal: React.FC = () => {
 
   const handleApprove = (player: Player, checkIn?: DailyCheckIn) => {
     approvePlayerEntry(checkIn?.id || player.id);
+    setSelectedPlayer(null);
+    setPendingApproval(null);
 
     setVerificationSuccessToast(`Entry approved for ${player.fullName}!`);
     setTimeout(() => setVerificationSuccessToast(null), 3000);
@@ -274,7 +278,10 @@ export const MobileSecurityPortal: React.FC = () => {
 
             {/* Selected / Focused Player Verification Card */}
             {(() => {
-              const playerToInspect = selectedPlayer || (pendingCheckIns.length > 0 ? players.find(p => p.id === pendingCheckIns[0].playerId) : players[0]);
+              const selectedCheckIn = selectedPlayer ? todayCheckIns.find(c => c.playerId === selectedPlayer.id) : undefined;
+              const playerToInspect = selectedCheckIn?.verificationStatus === 'pending'
+                ? selectedPlayer
+                : (pendingCheckIns.length > 0 ? players.find(p => p.id === pendingCheckIns[0].playerId) : null);
               if (!playerToInspect) return null;
 
               const checkIn = todayCheckIns.find(c => c.playerId === playerToInspect.id);
@@ -615,19 +622,11 @@ export const MobileSecurityPortal: React.FC = () => {
               </button>
               <button
                 type="button"
-                className={`btn btn-sm ${queueFilter === 'approved' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setQueueFilter('approved')}
+                className={`btn btn-sm ${queueFilter === 'rejected' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setQueueFilter('rejected')}
                 style={{ fontSize: '0.75rem', borderRadius: '10px' }}
               >
-                Approved Today ({approvedCheckIns.length})
-              </button>
-              <button
-                type="button"
-                className={`btn btn-sm ${queueFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-                onClick={() => setQueueFilter('all')}
-                style={{ fontSize: '0.75rem', borderRadius: '10px' }}
-              >
-                All Arrivals ({todayCheckIns.length})
+                Denied
               </button>
             </div>
 
@@ -635,9 +634,8 @@ export const MobileSecurityPortal: React.FC = () => {
             {(() => {
               const items = todayCheckIns.filter(c => {
                 if (queueFilter === 'pending') return c.verificationStatus === 'pending';
-                if (queueFilter === 'approved') return c.verificationStatus === 'approved';
                 if (queueFilter === 'rejected') return c.verificationStatus === 'rejected';
-                return true;
+                return false;
               });
 
               if (items.length === 0) {
@@ -745,64 +743,6 @@ export const MobileSecurityPortal: React.FC = () => {
                 );
               });
             })()}
-          </div>
-        )}
-
-        {/* TAB 3: APPROVED ENTRIES LOG */}
-        {activeNav === 'history' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div
-              style={{
-                background: 'linear-gradient(145deg, #18080d 0%, #0d0305 100%)',
-                border: '1.5px solid rgba(225, 29, 72, 0.4)',
-                borderRadius: '16px',
-                padding: '14px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <div>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <History size={18} color="#e11d48" /> Approved Floor Entries
-                </h3>
-                <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '2px 0 0' }}>
-                  Active players cleared today ({approvedCheckIns.length})
-                </p>
-              </div>
-            </div>
-
-            {approvedCheckIns.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
-                No players approved yet today.
-              </div>
-            ) : (
-              approvedCheckIns.map(c => (
-                <div
-                  key={c.id}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    borderRadius: '12px',
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff' }}>{c.playerName}</span>
-                    <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
-                      <CheckCircle2 size={12} /> Cleared
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8' }}>
-                    <span>Entry: {formatTimeOnly(c.checkInTime)}</span>
-                    <span>Officer: {c.verifiedBy || 'Security'}</span>
-                  </div>
-                </div>
-              ))
-            )}
           </div>
         )}
 
@@ -1113,13 +1053,6 @@ export const MobileSecurityPortal: React.FC = () => {
           <span className="nav-tab-label">Queue</span>
         </button>
 
-        <button
-          className={`nav-tab-item security-color ${activeNav === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveNav('history')}
-        >
-          <History size={20} />
-          <span className="nav-tab-label">Approved ({approvedCheckIns.length})</span>
-        </button>
       </nav>
 
       {/* High-Resolution Document Zoom Lightbox Modal */}

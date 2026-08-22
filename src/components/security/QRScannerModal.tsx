@@ -126,6 +126,12 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       }
 
       if (foundPlayer) {
+        if (foundCheckIn?.verificationStatus === 'approved') {
+          setScannedResult(null);
+          setManualCode('');
+          setScanError('This pass has already been approved. No further security action is required.');
+          return;
+        }
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
           try {
             navigator.vibrate(100);
@@ -364,7 +370,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
     setTimeout(() => {
       setIsVerifying(false);
-      onSelectPlayer(scannedResult.player, scannedResult.checkIn);
+      setScannedResult(null);
       onClose();
     }, 350);
   };

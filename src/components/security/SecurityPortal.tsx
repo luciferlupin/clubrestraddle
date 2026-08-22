@@ -28,7 +28,7 @@ export const SecurityPortal: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Prefer a scanned/deep-linked player, then the first pending arrival.
-  const [selectedPlayer, setSelectedPlayer] = useState<Player>(() => {
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const scanId = params.get('scan');
@@ -44,11 +44,21 @@ export const SecurityPortal: React.FC = () => {
       const p = players.find(x => x.id === pendingCheckIn.playerId);
       if (p) return p;
     }
-    return players[0] || null;
+    return null;
   });
 
   const selectedPlayerCheckIn = selectedPlayer
     ? todayCheckIns.find(c => c.playerId === selectedPlayer.id)
+    : undefined;
+  const firstPendingCheckIn = todayCheckIns.find(c => c.verificationStatus === 'pending');
+  const firstPendingPlayer = firstPendingCheckIn
+    ? players.find(player => player.id === firstPendingCheckIn.playerId) || null
+    : null;
+  const focusedPlayer = selectedPlayerCheckIn?.verificationStatus === 'pending'
+    ? selectedPlayer
+    : firstPendingPlayer;
+  const focusedCheckIn = focusedPlayer
+    ? todayCheckIns.find(c => c.playerId === focusedPlayer.id && c.verificationStatus === 'pending')
     : undefined;
 
   const pendingCount = todayCheckIns.filter(c => c.verificationStatus === 'pending').length;
@@ -77,7 +87,7 @@ export const SecurityPortal: React.FC = () => {
           { label: 'Club Re Straddle' },
           { label: 'Staff Operations' },
           { label: 'Security Entrance' },
-          { label: selectedPlayer ? `Clearance: ${selectedPlayer.fullName}` : 'Inspection Queue' },
+          { label: focusedPlayer ? `Clearance: ${focusedPlayer.fullName}` : 'Inspection Queue' },
         ]}
         activeRole="security"
       />
@@ -237,17 +247,21 @@ export const SecurityPortal: React.FC = () => {
       <div className="security-layout-grid">
         {/* Left Column: Focused Player Verification Card */}
         <div className="security-col-main">
-          <SecurityVerificationCard
-            player={selectedPlayer}
-            checkIn={selectedPlayerCheckIn}
-          />
+          {focusedPlayer && focusedCheckIn ? (
+            <SecurityVerificationCard player={focusedPlayer} checkIn={focusedCheckIn} />
+          ) : (
+            <div className="card" style={{ textAlign: 'center', padding: '48px 20px' }}>
+              <CheckCircle2 size={38} color="#10b981" style={{ margin: '0 auto 12px' }} />
+              <h3 style={{ color: '#ffffff', margin: 0 }}>Entrance queue is clear</h3>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Live Arrival Queue */}
         <div className="security-col-queue">
           <SecurityQueue
             onSelectPlayer={handleSelect}
-            selectedPlayerId={selectedPlayer?.id}
+            selectedPlayerId={focusedPlayer?.id || null}
           />
         </div>
       </div>

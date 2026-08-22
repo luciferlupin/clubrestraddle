@@ -3,7 +3,6 @@ import {
   ShieldCheck,
   Search,
   Clock,
-  CheckCircle2,
   ShieldAlert,
   Check,
 } from 'lucide-react';
@@ -24,10 +23,9 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
 }) => {
   const { players, todayCheckIns, approvePlayerEntry } = useClub();
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+  const [filter, setFilter] = useState<'pending' | 'rejected'>('pending');
 
   const pendingCount = todayCheckIns.filter(c => c.verificationStatus === 'pending').length;
-  const approvedCount = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
   const rejectedCount = todayCheckIns.filter(c => c.verificationStatus === 'rejected').length;
 
   // Build list of items to display
@@ -40,6 +38,7 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
       };
     })
     .filter(({ player, checkIn }) => {
+      if (checkIn?.verificationStatus === 'approved') return false;
       const matchesSearch =
         player.fullName.toLowerCase().includes(search.toLowerCase()) ||
         player.phone.includes(search) ||
@@ -51,13 +50,10 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
       if (filter === 'pending') {
         return checkIn?.verificationStatus === 'pending' || player.kycStatus === 'pending';
       }
-      if (filter === 'approved') {
-        return checkIn?.verificationStatus === 'approved';
-      }
       if (filter === 'rejected') {
         return checkIn?.verificationStatus === 'rejected' || player.kycStatus === 'rejected';
       }
-      return true;
+      return false;
     });
 
   return (
@@ -137,15 +133,6 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
 
         <button
           type="button"
-          className={`btn btn-sm ${filter === 'approved' ? 'btn-emerald' : 'btn-secondary'}`}
-          onClick={() => setFilter('approved')}
-          style={{ fontSize: '0.78rem' }}
-        >
-          <CheckCircle2 size={13} /> Approved Today ({approvedCount})
-        </button>
-
-        <button
-          type="button"
           className={`btn btn-sm ${filter === 'rejected' ? 'btn-danger' : 'btn-secondary'}`}
           onClick={() => setFilter('rejected')}
           style={{ fontSize: '0.78rem' }}
@@ -153,14 +140,6 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
           <ShieldAlert size={13} /> Denied ({rejectedCount})
         </button>
 
-        <button
-          type="button"
-          className={`btn btn-sm ${filter === 'all' ? 'btn-secondary' : 'btn-ghost'}`}
-          onClick={() => setFilter('all')}
-          style={{ fontSize: '0.78rem' }}
-        >
-          All Registered ({players.length})
-        </button>
       </div>
 
       {displayItems.length === 0 ? (

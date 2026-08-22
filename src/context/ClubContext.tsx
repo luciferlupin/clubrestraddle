@@ -37,6 +37,9 @@ import {
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { cartoonAvatarForPlayer } from '../utils/cartoonAvatars';
 
+const normalizeTablePreference = (value?: string | null): string =>
+  value === 'NLH Cash Game (₹250/₹500)' ? 'General Floor' : (value || 'Open Seating');
+
 export const playQueueChime = () => {
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -514,6 +517,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { data: checkInsData, error: chkErr } = await client.from('daily_check_ins').select('*').order('created_at', { ascending: false });
       if (!chkErr && checkInsData) {
         if (checkInsData.length > 0) {
+          const legacyPreferenceIds = checkInsData
+            .filter((checkIn: any) => checkIn.table_preference === 'NLH Cash Game (₹250/₹500)')
+            .map((checkIn: any) => checkIn.id);
+          if (legacyPreferenceIds.length > 0) {
+            const { error } = await client
+              .from('daily_check_ins')
+              .update({ table_preference: 'General Floor' })
+              .in('id', legacyPreferenceIds);
+            if (error) console.error('Supabase legacy table preference cleanup error:', error.message);
+          }
           const mappedCheckIns: DailyCheckIn[] = checkInsData.map((c: any) => ({
             id: c.id,
             playerId: c.player_id,
@@ -525,7 +538,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             verifiedBy: c.verified_by,
             verifiedAt: c.verified_at,
             rejectionReason: c.rejection_reason,
-            tablePreference: c.table_preference || 'Open Seating',
+            tablePreference: normalizeTablePreference(c.table_preference),
           }));
           setCheckIns(mappedCheckIns);
         } else if (initialCheckIns.length > 0) {
@@ -764,7 +777,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               verifiedBy: c.verified_by,
               verifiedAt: c.verified_at,
               rejectionReason: c.rejection_reason,
-              tablePreference: c.table_preference || 'Open Seating',
+              tablePreference: normalizeTablePreference(c.table_preference),
             };
             setCheckIns(prev => {
               const exists = prev.some(existing => existing.id === updatedCheckIn.id);
@@ -1503,7 +1516,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             verifiedBy: chk.verified_by,
             verifiedAt: chk.verified_at,
             rejectionReason: chk.rejection_reason,
-            tablePreference: chk.table_preference || 'Open Seating',
+            tablePreference: normalizeTablePreference(chk.table_preference),
           };
           setCheckIns(prev => {
             if (prev.some(c => c.id === mappedCheckIn.id)) return prev;

@@ -4,9 +4,6 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
-  CreditCard,
-  FileText,
-  Lock,
   ShieldCheck,
   UserRound,
 } from 'lucide-react';
@@ -64,6 +61,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     if (!targetStep || targetStep === 1) {
       if (!formData.fullName.trim()) nextErrors.fullName = 'Enter your name as it appears on your ID.';
       if (!formData.phone.trim()) nextErrors.phone = 'Enter your mobile number.';
+      else if (formData.phone.replace(/\D/g, '').slice(-10).length !== 10) nextErrors.phone = 'Enter a valid 10-digit mobile number.';
       if (!formData.email.trim() || !formData.email.includes('@')) nextErrors.email = 'Enter a valid email address.';
     }
 
@@ -74,13 +72,15 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
       } else if (cleanAadhaar.length !== 12) {
         nextErrors.aadhaarNumber = 'Aadhaar number must be exactly 12 digits.';
       }
+      if (!formData.aadhaarPhotoUrl) nextErrors.aadhaarPhotoUrl = 'Add a clear Aadhaar Card photo.';
 
       const cleanPan = formData.panNumber.trim().toUpperCase();
       if (!cleanPan) {
         nextErrors.panNumber = 'PAN Card number is required.';
-      } else if (cleanPan.length !== 10) {
-        nextErrors.panNumber = 'PAN must be exactly 10 alphanumeric characters.';
+      } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(cleanPan)) {
+        nextErrors.panNumber = 'Enter a valid PAN, for example ABCDE1234F.';
       }
+      if (!formData.panPhotoUrl) nextErrors.panPhotoUrl = 'Add a clear PAN Card photo.';
     }
 
     if (!targetStep || targetStep === 3) {
@@ -129,7 +129,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
       setErrors(validationErrors);
       if (validationErrors.fullName || validationErrors.phone || validationErrors.email) {
         setStep(1);
-      } else if (validationErrors.aadhaarNumber || validationErrors.panNumber) {
+      } else if (validationErrors.aadhaarNumber || validationErrors.panNumber || validationErrors.aadhaarPhotoUrl || validationErrors.panPhotoUrl) {
         setStep(2);
       }
       return;
@@ -185,7 +185,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
         <div>
           <span className="mobile-flow-eyebrow">New member check-in</span>
           <h1 id="mobile-kyc-title">Create your player pass</h1>
-          <p>Quick KYC with Aadhaar & PAN verification.</p>
         </div>
       </div>
 
@@ -219,7 +218,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
         {step === 1 && (
           <div className="m-card mobile-form-card" role="group" aria-labelledby="mobile-step-one-title">
             <h2 id="mobile-step-one-title">Personal details</h2>
-            <p className="mobile-form-intro">Enter your details for your official club membership pass.</p>
 
             <div className="m-form-group">
               <label className="m-form-label" htmlFor="mobile-full-name">Full name</label>
@@ -306,19 +304,11 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
 
         {step === 2 && (
           <div className="m-card mobile-form-card" role="group" aria-labelledby="mobile-step-two-title">
-            <h2 id="mobile-step-two-title">Two ID Proofs (Aadhaar & PAN)</h2>
-            <p className="mobile-form-intro">Both government identity documents are required for membership clearance & tax compliance.</p>
+            <h2 id="mobile-step-two-title">Aadhaar & PAN</h2>
 
             {/* Aadhaar Card Input */}
-            <div className="m-form-group" style={{ background: 'rgba(225, 29, 72, 0.08)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label className="m-form-label" htmlFor="mobile-aadhaar-number" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <CreditCard size={15} color="#e11d48" /> 1. Aadhaar Card Number *
-                </label>
-                <span style={{ fontSize: '0.68rem', background: '#e11d48', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
-                  12 Digits
-                </span>
-              </div>
+            <div className="m-form-group mobile-id-field">
+              <label className="m-form-label" htmlFor="mobile-aadhaar-number">Aadhaar Card number</label>
               <input
                 id="mobile-aadhaar-number"
                 type="text"
@@ -328,7 +318,10 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
                 maxLength={14}
                 value={formData.aadhaarNumber}
                 aria-invalid={Boolean(errors.aadhaarNumber)}
-                onChange={(event) => setFormData({ ...formData, aadhaarNumber: event.target.value })}
+                onChange={(event) => {
+                  const digits = event.target.value.replace(/\D/g, '').slice(0, 12);
+                  setFormData({ ...formData, aadhaarNumber: digits.replace(/(\d{4})(?=\d)/g, '$1 ') });
+                }}
               />
               {errors.aadhaarNumber && <span className="m-field-error" role="alert">{errors.aadhaarNumber}</span>}
 
@@ -339,19 +332,14 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
                 subLabel="Take photo or choose file. Auto-compressed (<100 KB)."
                 value={formData.aadhaarPhotoUrl}
                 onChange={(url) => setFormData({ ...formData, aadhaarPhotoUrl: url || '' })}
+                required
               />
+              {errors.aadhaarPhotoUrl && <span className="m-field-error" role="alert">{errors.aadhaarPhotoUrl}</span>}
             </div>
 
             {/* PAN Card Input */}
-            <div className="m-form-group" style={{ background: 'rgba(225, 29, 72, 0.08)', padding: '12px', borderRadius: '10px', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label className="m-form-label" htmlFor="mobile-pan-number" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <BadgeCheck size={15} color="#e11d48" /> 2. PAN Card Number *
-                </label>
-                <span style={{ fontSize: '0.68rem', background: '#0f172a', color: '#fff', padding: '1px 5px', borderRadius: '4px', fontWeight: 800, border: '1px solid rgba(255,255,255,0.2)' }}>
-                  10 Chars
-                </span>
-              </div>
+            <div className="m-form-group mobile-id-field">
+              <label className="m-form-label" htmlFor="mobile-pan-number">PAN Card number</label>
               <input
                 id="mobile-pan-number"
                 type="text"
@@ -361,7 +349,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
                 style={{ textTransform: 'uppercase', fontFamily: 'monospace', letterSpacing: '0.05em' }}
                 value={formData.panNumber}
                 aria-invalid={Boolean(errors.panNumber)}
-                onChange={(event) => setFormData({ ...formData, panNumber: event.target.value.toUpperCase() })}
+                onChange={(event) => setFormData({ ...formData, panNumber: event.target.value.replace(/[^a-z0-9]/gi, '').toUpperCase() })}
               />
               {errors.panNumber && <span className="m-field-error" role="alert">{errors.panNumber}</span>}
 
@@ -372,7 +360,9 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
                 subLabel="Take photo or choose file. Auto-compressed (<100 KB)."
                 value={formData.panPhotoUrl}
                 onChange={(url) => setFormData({ ...formData, panPhotoUrl: url || '' })}
+                required
               />
+              {errors.panPhotoUrl && <span className="m-field-error" role="alert">{errors.panPhotoUrl}</span>}
             </div>
 
             <div className="m-form-group">
@@ -397,17 +387,12 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
               </div>
             </div>
 
-            <div className="mobile-privacy-note">
-              <Lock size={17} />
-              <span><strong>Your details stay private.</strong> Only authorised club staff can review KYC credentials.</span>
-            </div>
           </div>
         )}
 
         {step === 3 && (
           <div className="m-card mobile-form-card" role="group" aria-labelledby="mobile-step-three-title">
-            <h2 id="mobile-step-three-title">Declaration & Membership Consent</h2>
-            <p className="mobile-form-intro">Review your club membership declaration before submitting.</p>
+            <h2 id="mobile-step-three-title">Confirm details</h2>
 
             <label className={`mobile-consent-card ${errors.agreedToRules ? 'has-error' : ''}`}>
               <input
@@ -423,10 +408,6 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
             </label>
             {errors.agreedToRules && <span id="mobile-rules-error" className="m-field-error" role="alert">{errors.agreedToRules}</span>}
 
-            <div className="mobile-privacy-note">
-              <FileText size={17} />
-              <span>Submitting creates your digital pass and registers your club membership.</span>
-            </div>
           </div>
         )}
 
