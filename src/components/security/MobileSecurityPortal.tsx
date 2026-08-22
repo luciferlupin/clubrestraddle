@@ -9,16 +9,18 @@ import {
   QrCode,
   History,
   ChevronRight,
-  ArrowLeft,
   LogOut,
   UserPlus,
-  Sparkles,
   RefreshCw,
+  Eye,
+  Check,
+  X,
+  Zap,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatDateOnly, formatTimeOnly, maskGovtId } from '../../utils/formatters';
-import { KYCBadge, EntryBadge } from '../common/Badge';
+import { formatTimeOnly, maskGovtId } from '../../utils/formatters';
+import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { QRScannerModal } from './QRScannerModal';
 import { WalkInRegistrationModal } from './WalkInRegistrationModal';
@@ -33,13 +35,12 @@ export const MobileSecurityPortal: React.FC = () => {
     todayCheckIns,
     approvePlayerEntry,
     rejectPlayerEntry,
-    reviewKYC,
-    performDailyCheckIn,
     isRealtimeConnected,
     syncNow,
   } = useClub();
 
   const [activeNav, setActiveNav] = useState<'scan' | 'queue' | 'history'>('scan');
+  const [queueFilter, setQueueFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [search, setSearch] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => {
@@ -53,12 +54,14 @@ export const MobileSecurityPortal: React.FC = () => {
     }
     return players.find(p => p.id === playerId) || null;
   });
+
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
   const [verificationSuccessToast, setVerificationSuccessToast] = useState<string | null>(null);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
   const [isQRStandeeOpen, setIsQRStandeeOpen] = useState(false);
+  const [isKYCInspectOpen, setIsKYCInspectOpen] = useState(false);
   const [pendingApproval, setPendingApproval] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
 
   const pendingCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'pending');
@@ -82,15 +85,15 @@ export const MobileSecurityPortal: React.FC = () => {
   const handleApprove = (player: Player, checkIn?: DailyCheckIn) => {
     approvePlayerEntry(checkIn?.id || player.id);
 
-    setVerificationSuccessToast(`Entry approved for ${player.fullName}`);
+    setVerificationSuccessToast(`Entry approved for ${player.fullName}!`);
     setTimeout(() => setVerificationSuccessToast(null), 3000);
 
     try {
       confetti({
-        particleCount: 50,
+        particleCount: 60,
         spread: 60,
         origin: { y: 0.6 },
-        colors: ['#e11d48', '#ffffff', '#be123c'],
+        colors: ['#10b981', '#ffffff', '#34d399', '#059669'],
       });
     } catch {
       // Fallback
@@ -108,127 +111,232 @@ export const MobileSecurityPortal: React.FC = () => {
     setTimeout(() => setVerificationSuccessToast(null), 3000);
   };
 
-  return (
-    <div className="staff-mobile-portal security-mobile-theme">
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      await syncNow();
+    } finally {
+      setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
 
-      {/* ── Station Banner ─────────────────────────────────── */}
-      <div className="staff-station-banner">
-        <div className="staff-banner-left">
-          <span className="staff-banner-role">♠ Security & Reception</span>
-          <span className="staff-banner-name">{staffName}</span>
+  return (
+    <div className="staff-mobile-portal security-mobile-theme" style={{ paddingBottom: '90px' }}>
+
+      {/* ── Ultra-Sleek Station Header ─────────────────────────────────── */}
+      <header
+        style={{
+          background: 'linear-gradient(180deg, #1f080e 0%, #0d0305 100%)',
+          borderBottom: '1.5px solid rgba(225, 29, 72, 0.4)',
+          padding: '14px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          position: 'sticky',
+          top: 0,
+          zIndex: 40,
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #e11d48 0%, #881337 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 0 15px rgba(225, 29, 72, 0.5)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+            }}
+          >
+            <ShieldCheck size={20} color="#ffffff" />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#fb7185', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span>Security Checkpoint</span>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: isRealtimeConnected ? '#10b981' : '#f59e0b' }} />
+            </div>
+            <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.2 }}>
+              {staffName.split(' ')[0] || 'Officer'} <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>· Desk 1</span>
+            </div>
+          </div>
         </div>
-        <div className="staff-banner-right">
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {pendingCheckIns.length > 0 && (
-            <span className="staff-pending-pill">
-              {pendingCheckIns.length} waiting
-            </span>
+            <button
+              type="button"
+              onClick={() => setActiveNav('queue')}
+              style={{
+                background: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '20px',
+                padding: '4px 10px',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                boxShadow: '0 0 12px rgba(225, 29, 72, 0.6)',
+                animation: 'pulse 2s infinite',
+                cursor: 'pointer',
+              }}
+            >
+              <Clock size={12} /> {pendingCheckIns.length} waiting
+            </button>
           )}
+
           <button
             type="button"
             className="btn btn-secondary btn-sm"
-            style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '4px', height: '26px' }}
-            disabled={isSyncing}
-            onClick={async () => {
-              setIsSyncing(true);
-              try {
-                await syncNow();
-              } finally {
-                setTimeout(() => setIsSyncing(false), 400);
-              }
+            style={{
+              padding: '6px 10px',
+              fontSize: '0.72rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              borderRadius: '8px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
             }}
-            title="Sync check-in queue"
+            disabled={isSyncing}
+            onClick={handleManualSync}
+            title="Sync server queue"
           >
-            <RefreshCw size={11} className={isSyncing ? 'spin-animation' : ''} />
+            <RefreshCw size={12} className={isSyncing ? 'spin-animation' : ''} />
             <span>{isSyncing ? '…' : 'Sync'}</span>
           </button>
-          <span className="staff-live-dot security">Guard</span>
+
           <button
             type="button"
-            className="staff-header-signout"
+            style={{
+              background: 'rgba(225, 29, 72, 0.15)',
+              border: '1px solid rgba(225, 29, 72, 0.3)',
+              color: '#fb7185',
+              padding: '6px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
             onClick={logoutStaff}
-            aria-label="Sign out of staff portal"
             title="Sign out"
+            aria-label="Sign out"
           >
-            <LogOut size={14} />
+            <LogOut size={16} />
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* ── Scrollable content ─────────────────────────────── */}
-      <div className="staff-scroll-area">
+      {/* ── Main Content Area ─────────────────────────────── */}
+      <div className="staff-scroll-area" style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-      {/* Toast Notification */}
-      {verificationSuccessToast && (
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #8B0000, #520000)',
-            color: '#ffffff',
-            padding: '12px 16px',
-            borderRadius: '12px',
-            fontWeight: 800,
-            fontSize: '0.88rem',
-            textAlign: 'center',
-            boxShadow: '0 8px 24px var(--red-glow)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-          }}
-        >
-          <CheckCircle2 size={18} />
-          <span>{verificationSuccessToast}</span>
-        </div>
-      )}
-
-      {activeNav !== 'scan' && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', background: 'rgba(16, 185, 129, 0.12)', padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-          <button
-            type="button"
-            className="btn btn-secondary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem' }}
-            onClick={() => setActiveNav('scan')}
+        {/* Floating Success / Feedback Toast */}
+        {verificationSuccessToast && (
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)',
+              color: '#34d399',
+              border: '1.5px solid #10b981',
+              padding: '12px 16px',
+              borderRadius: '14px',
+              fontWeight: 800,
+              fontSize: '0.88rem',
+              textAlign: 'center',
+              boxShadow: '0 8px 30px rgba(16, 185, 129, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+            }}
           >
-            <ArrowLeft size={14} /> Back to Scanner
-          </button>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#34d399', textTransform: 'capitalize' }}>
-            {activeNav === 'queue' ? 'Live Queue' : 'Door History'}
-          </span>
-        </div>
-      )}
+            <CheckCircle2 size={20} color="#10b981" />
+            <span>{verificationSuccessToast}</span>
+          </div>
+        )}
 
-      {/* TAB 1: DOOR SCANNER / VERIFICATION MAIN */}
-      {activeNav === 'scan' && (
-        <>
-          <div className="m-card" style={{ border: '1.5px solid var(--border-red)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h3 className="m-card-title">
-                  <ShieldCheck size={20} color="#ffffff" />
-                  Entrance Door Scanner
-                </h3>
-                <p className="m-card-subtitle">Fast 1-hand player clearance</p>
+        {/* TAB 1: DOOR SCANNER / VERIFICATION MAIN */}
+        {activeNav === 'scan' && (
+          <>
+            {/* Quick Scanner & Action Hero Card */}
+            <div
+              style={{
+                background: 'linear-gradient(145deg, #1a080d 0%, #0c0204 100%)',
+                border: '1.5px solid rgba(225, 29, 72, 0.5)',
+                borderRadius: '18px',
+                padding: '16px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 25px rgba(225, 29, 72, 0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#fb7185', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    Scanner & Entrance Terminal
+                  </span>
+                  <h2 style={{ fontSize: '1.18rem', fontWeight: 900, color: '#ffffff', margin: '2px 0 0' }}>
+                    Fast Player Clearance
+                  </h2>
+                </div>
+                <span style={{ padding: '4px 10px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', fontSize: '0.72rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Zap size={11} /> Scanner Ready
+                </span>
               </div>
-              <span className="badge badge-success">
-                <span className="badge-dot" /> {staffName.split(' ')[1] || 'Security'}
-              </span>
-            </div>
 
-            {/* Quick Action Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', marginTop: '4px' }}>
+              {/* Main Camera QR Scan Trigger */}
               <button
-                className="m-btn m-btn-primary"
+                type="button"
                 onClick={() => setIsScannerOpen(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '14px',
+                  padding: '14px 16px',
+                  fontWeight: 800,
+                  fontSize: '0.96rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  boxShadow: '0 6px 20px rgba(225, 29, 72, 0.45)',
+                  cursor: 'pointer',
+                  width: '100%',
+                }}
               >
-                <QrCode size={18} />
-                <span>Open Camera QR Scanner</span>
+                <QrCode size={22} />
+                <span>Open Camera Pass Scanner</span>
               </button>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {/* Secondary Registration & Standee Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <button
                   type="button"
-                  className="m-btn m-btn-secondary"
                   onClick={() => setIsWalkInOpen(true)}
-                  style={{ fontSize: '0.82rem', padding: '10px 8px', justifyContent: 'center' }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(225, 29, 72, 0.35)',
+                    borderRadius: '12px',
+                    padding: '10px 12px',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
                 >
                   <UserPlus size={16} color="#fb7185" />
                   <span>Register Walk-in</span>
@@ -236,366 +344,663 @@ export const MobileSecurityPortal: React.FC = () => {
 
                 <button
                   type="button"
-                  className="m-btn m-btn-secondary"
                   onClick={() => setIsQRStandeeOpen(true)}
-                  style={{ fontSize: '0.82rem', padding: '10px 8px', justifyContent: 'center' }}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    borderRadius: '12px',
+                    padding: '10px 12px',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
                 >
                   <QrCode size={16} color="#38bdf8" />
-                  <span>Entrance Standee</span>
+                  <span>Door QR Standee</span>
                 </button>
               </div>
-            </div>
 
-            {/* Big Touch Search Bar */}
-            <div style={{ position: 'relative', marginTop: '2px' }}>
-              <Search size={18} style={{ position: 'absolute', left: '14px', top: '15px', color: '#94a3b8' }} />
-              <input
-                type="text"
-                className="m-input"
-                style={{ paddingLeft: '44px', fontSize: '0.95rem' }}
-                placeholder="Search member name, phone, ID..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-
-            {/* Quick Pending Clearance Alert if players waiting */}
-            {pendingCheckIns.length > 0 && !search && (
-              <button
-                type="button"
-                className="security-queue-alert"
-                style={{
-                  background: 'rgba(225, 29, 72, 0.15)',
-                  border: '1px solid rgba(225, 29, 72, 0.45)',
-                  borderRadius: '12px',
-                  padding: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                  width: '100%',
-                  color: 'inherit',
-                  textAlign: 'left',
-                }}
-                onClick={() => setActiveNav('queue')}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Clock size={18} color="#8B0000" />
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>
-                    {pendingCheckIns.length} Player{pendingCheckIns.length > 1 ? 's' : ''} Waiting at Door
-                  </span>
-                </div>
-                <span className="staff-inline-link">
-                  Inspect Queue <ChevronRight size={14} />
-                </span>
-              </button>
-            )}
-          </div>
-
-          {/* Search Results Dropdown / Cards */}
-          {search.trim() && (
-            <div className="m-card">
-              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Search Results ({searchResults.length})
-              </span>
-
-              {searchResults.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-                  No player found matching "{search}".
-                </div>
-              ) : (
-                searchResults.map(p => {
-                  const checkIn = todayCheckIns.find(c => c.playerId === p.id);
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="m-list-card m-list-button"
-                      onClick={() => {
-                        setSelectedPlayer(p);
-                        setSearch('');
-                      }}
-                    >
-                      <div className="m-list-row">
-                        <span style={{ fontWeight: 800, fontSize: '0.92rem' }}>{p.fullName}</span>
-                        <KYCBadge status={p.kycStatus} />
-                      </div>
-                      <div className="m-list-row" style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                        <span>{p.id} • {p.phone}</span>
-                        {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          )}
-
-          {/* Player Verification Inspector Card (If a player is selected or top pending player) */}
-          {(() => {
-            const playerToInspect = selectedPlayer || (pendingCheckIns.length > 0 ? players.find(p => p.id === pendingCheckIns[0].playerId) : players[0]);
-            if (!playerToInspect) return null;
-
-            const checkIn = todayCheckIns.find(c => c.playerId === playerToInspect.id);
-
-            return (
-              <div className="m-card" style={{ border: '1.5px solid var(--border-red)' }}>
-                <div className="m-card-header">
-                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#ffffff', textTransform: 'uppercase' }}>
-                    Verification Inspection
-                  </span>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <KYCBadge status={playerToInspect.kycStatus} />
-                    {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-                  {playerToInspect.kyc.photoUrl ? (
-                    <img
-                      src={playerToInspect.kyc.photoUrl}
-                      alt=""
-                      style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '2px solid #ffffff',
-                        boxShadow: '0 0 12px rgba(0,0,0,0.5)',
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '50%',
-                        background: 'var(--bg-card-elevated)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.4rem',
-                        fontWeight: 700,
-                        color: 'var(--gold-light)',
-                      }}
-                    >
-                      {playerToInspect.fullName.charAt(0)}
-                    </div>
-                  )}
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>
-                      {playerToInspect.fullName}
-                    </div>
-                    <div style={{ fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--gold-light)' }}>
-                      {playerToInspect.id} • {playerToInspect.phone}
-                    </div>
-                    <div
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        marginTop: '4px',
-                        fontSize: '0.7rem',
-                        fontWeight: 800,
-                        padding: '2px 8px',
-                        borderRadius: '999px',
-                        background: playerToInspect.kycStatus === 'verified' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(225, 29, 72, 0.2)',
-                        color: playerToInspect.kycStatus === 'verified' ? '#6ee7b7' : '#fb7185',
-                        border: `1px solid ${playerToInspect.kycStatus === 'verified' ? '#10b981' : '#e11d48'}`,
-                      }}
-                    >
-                      {playerToInspect.kycStatus === 'verified' ? <CheckCircle2 size={13} /> : <ShieldAlert size={13} />}
-                      {playerToInspect.kycStatus === 'verified' ? 'KYC Verified' : 'KYC Pending Clearance'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* KYC Info Details Box */}
-                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>1. Aadhaar Card:</span>
-                    <span style={{ fontWeight: 700, color: '#ffffff', fontFamily: 'monospace' }}>
-                      {playerToInspect.kyc.aadhaarNumber ? maskGovtId(playerToInspect.kyc.aadhaarNumber) : (playerToInspect.kyc.govtIdNumber || 'UIDAI Verified')}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>2. PAN Card:</span>
-                    <span style={{ fontWeight: 700, color: '#fb7185', fontFamily: 'monospace' }}>
-                      {playerToInspect.kyc.panNumber || (playerToInspect.kyc.govtIdNumber ? maskGovtId(playerToInspect.kyc.govtIdNumber) : 'PAN Verified')}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Today&apos;s Check-in:</span>
-                    <span style={{ color: checkIn ? '#fbbf24' : '#f87171', fontWeight: 700 }}>
-                      {checkIn ? `Checked-in (${formatTimeOnly(checkIn.checkInTime)})` : 'Not checked-in today'}
-                    </span>
-                  </div>
-
-                  {checkIn?.tablePreference && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Table:</span>
-                      <span style={{ color: 'var(--gold-light)' }}>{checkIn.tablePreference}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Large 1-Hand Action Buttons */}
-                {pendingApproval?.player.id === playerToInspect.id ? (
-                  <div className="staff-confirm-panel">
-                    <strong>Approve {playerToInspect.fullName} for entry?</strong>
-                    <p>This records a door clearance under your staff account.</p>
-                    <div>
-                      <button
-                        type="button"
-                        className="m-btn m-btn-emerald m-btn-sm"
-                        onClick={() => {
-                          handleApprove(pendingApproval.player, pendingApproval.checkIn);
-                          setPendingApproval(null);
-                        }}
-                      >
-                        <CheckCircle2 size={16} /> Confirm approval
-                      </button>
-                      <button type="button" className="m-btn m-btn-secondary m-btn-sm" onClick={() => setPendingApproval(null)}>Cancel</button>
-                    </div>
-                  </div>
-                ) : (
-                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+              {/* Direct Search Bar */}
+              <div style={{ position: 'relative' }}>
+                <Search size={17} style={{ position: 'absolute', left: '14px', top: '14px', color: '#94a3b8' }} />
+                <input
+                  type="text"
+                  className="m-input"
+                  style={{
+                    paddingLeft: '42px',
+                    fontSize: '0.9rem',
+                    background: 'rgba(0,0,0,0.5)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '12px',
+                    color: '#ffffff',
+                    width: '100%',
+                    height: '44px',
+                  }}
+                  placeholder="Search member name, phone, or ID..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+                {search && (
                   <button
-                    className="m-btn m-btn-danger"
-                    style={{ flex: 1 }}
-                    onClick={() => {
-                      setSelectedPlayer(playerToInspect);
-                      setIsRejectOpen(true);
-                    }}
-                    disabled={checkIn?.verificationStatus === 'rejected'}
+                    type="button"
+                    onClick={() => setSearch('')}
+                    style={{ position: 'absolute', right: '12px', top: '12px', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
                   >
-                    <XCircle size={18} /> Deny Entry
+                    <X size={18} />
                   </button>
-
-                  <button
-                    className="m-btn m-btn-emerald"
-                    style={{ flex: 2 }}
-                    onClick={() => setPendingApproval({ player: playerToInspect, checkIn })}
-                    disabled={checkIn?.verificationStatus === 'approved'}
-                  >
-                    <CheckCircle2 size={20} />
-                    <span>{checkIn?.verificationStatus === 'approved' ? 'Already Approved' : 'Approve Entry'}</span>
-                  </button>
-                </div>
                 )}
               </div>
-            );
-          })()}
-        </>
-      )}
 
-      {/* TAB 2: LIVE ENTRANCE QUEUE */}
-      {activeNav === 'queue' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div className="m-card">
-            <h3 className="m-card-title">
-              <Clock size={18} color="#ffffff" />
-              Live Door Queue ({pendingCheckIns.length} Awaiting)
-            </h3>
-            <p className="m-card-subtitle">Tap player to inspect and approve entry</p>
-          </div>
-
-          {pendingCheckIns.length === 0 ? (
-            <div className="m-card" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dim)' }}>
-              <CheckCircle2 size={36} color="#ffffff" style={{ margin: '0 auto 8px' }} />
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>No players waiting in door queue.</p>
-            </div>
-          ) : (
-            pendingCheckIns.map(c => {
-              const player = players.find(p => p.id === c.playerId);
-              if (!player) return null;
-              return (
-                <article
-                  key={c.id}
-                  className="m-card"
-                  style={{ borderLeft: '4px solid #8B0000' }}
+              {/* Waiting Arrivals Chip */}
+              {pendingCheckIns.length > 0 && !search && (
+                <button
+                  type="button"
+                  onClick={() => setActiveNav('queue')}
+                  style={{
+                    background: 'linear-gradient(90deg, rgba(225, 29, 72, 0.25) 0%, rgba(159, 18, 57, 0.18) 100%)',
+                    border: '1.5px solid #e11d48',
+                    borderRadius: '12px',
+                    padding: '10px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    width: '100%',
+                    color: '#ffffff',
+                  }}
                 >
-                  <div className="m-list-row">
-                    <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{c.playerName}</span>
-                    <span className="badge badge-warning">Awaiting Door Review</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Clock size={16} color="#fb7185" />
+                    <span style={{ fontSize: '0.84rem', fontWeight: 800 }}>
+                      {pendingCheckIns.length} Player{pendingCheckIns.length > 1 ? 's' : ''} Awaiting Review
+                    </span>
                   </div>
-                  <div className="m-list-row" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                    <span>Checked in at {formatTimeOnly(c.checkInTime)}</span>
-                    <span style={{ color: 'var(--gold-light)' }}>{c.tablePreference}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#fb7185', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    View Queue <ChevronRight size={14} />
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {/* Search Results Dropdown List */}
+            {search.trim() && (
+              <div
+                style={{
+                  background: '#120508',
+                  border: '1.5px solid #e11d48',
+                  borderRadius: '16px',
+                  padding: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', paddingLeft: '4px' }}>
+                  Matching Members ({searchResults.length})
+                </span>
+
+                {searchResults.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '16px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                    No member found matching "{search}".
                   </div>
-                  <button
-                    className="m-btn m-btn-emerald m-btn-sm"
-                    style={{ marginTop: '4px' }}
-                    onClick={() => {
-                      setSelectedPlayer(player);
-                      setPendingApproval({ player, checkIn: c });
-                      setActiveNav('scan');
+                ) : (
+                  searchResults.map(p => {
+                    const checkIn = todayCheckIns.find(c => c.playerId === p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '12px',
+                          padding: '10px 12px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          color: '#ffffff',
+                        }}
+                        onClick={() => {
+                          setSelectedPlayer(p);
+                          setSearch('');
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff' }}>{p.fullName}</span>
+                          <KYCBadge status={p.kycStatus} />
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#94a3b8' }}>
+                          <span>{p.id} • {p.phone}</span>
+                          {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {/* Selected / Focused Player Verification Card */}
+            {(() => {
+              const playerToInspect = selectedPlayer || (pendingCheckIns.length > 0 ? players.find(p => p.id === pendingCheckIns[0].playerId) : players[0]);
+              if (!playerToInspect) return null;
+
+              const checkIn = todayCheckIns.find(c => c.playerId === playerToInspect.id);
+
+              return (
+                <div
+                  style={{
+                    background: 'linear-gradient(155deg, #18080d 0%, #0d0305 100%)',
+                    border: '1.5px solid rgba(225, 29, 72, 0.45)',
+                    borderRadius: '18px',
+                    padding: '16px',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(225, 29, 72, 0.2)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '14px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ShieldCheck size={14} color="#10b981" /> Member Clearance Card
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <TierBadge tier={playerToInspect.membershipTier} />
+                      <KYCBadge status={playerToInspect.kycStatus} />
+                      {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                    {playerToInspect.kyc.photoUrl ? (
+                      <img
+                        src={playerToInspect.kyc.photoUrl}
+                        alt={playerToInspect.fullName}
+                        style={{
+                          width: '68px',
+                          height: '68px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: `2.5px solid ${checkIn?.verificationStatus === 'approved' ? '#10b981' : '#e11d48'}`,
+                          boxShadow: '0 0 15px rgba(0,0,0,0.8)',
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: '68px',
+                          height: '68px',
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #e11d48 0%, #881337 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.6rem',
+                          fontWeight: 900,
+                          color: '#ffffff',
+                          border: '2.5px solid #ffffff',
+                        }}
+                      >
+                        {playerToInspect.fullName.charAt(0)}
+                      </div>
+                    )}
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.2 }}>
+                        {playerToInspect.fullName}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono)', color: '#cbd5e1', marginTop: '2px' }}>
+                        {playerToInspect.id} • {playerToInspect.phone}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>
+                        {playerToInspect.totalVisits} Club Visits · {playerToInspect.membershipTier} Tier
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* KYC & Today's Check-in Summary */}
+                  <div
+                    style={{
+                      background: '#100407',
+                      border: '1px solid rgba(225, 29, 72, 0.3)',
+                      borderRadius: '12px',
+                      padding: '12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      fontSize: '0.8rem',
                     }}
                   >
-                    Review & approve
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1' }}>
+                      <span style={{ color: '#94a3b8' }}>Aadhaar UIDAI:</span>
+                      <strong style={{ color: '#ffffff', fontFamily: 'monospace' }}>
+                        {playerToInspect.kyc.aadhaarNumber ? maskGovtId(playerToInspect.kyc.aadhaarNumber) : (playerToInspect.kyc.govtIdNumber || 'Verified')}
+                      </strong>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1' }}>
+                      <span style={{ color: '#94a3b8' }}>Income Tax PAN:</span>
+                      <strong style={{ color: '#fb7185', fontFamily: 'monospace' }}>
+                        {playerToInspect.kyc.panNumber || 'PAN Verified'}
+                      </strong>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '6px' }}>
+                      <span style={{ color: '#94a3b8' }}>Today's Arrival:</span>
+                      <strong style={{ color: checkIn ? '#fbbf24' : '#94a3b8' }}>
+                        {checkIn ? `Checked In (${formatTimeOnly(checkIn.checkInTime)})` : 'Walk-in (Not Checked In)'}
+                      </strong>
+                    </div>
+
+                    {checkIn?.tablePreference && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1' }}>
+                        <span style={{ color: '#94a3b8' }}>Table Preference:</span>
+                        <strong style={{ color: '#ffffff' }}>{checkIn.tablePreference}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 1-Hand Action Bar */}
+                  {pendingApproval?.player.id === playerToInspect.id ? (
+                    <div
+                      style={{
+                        background: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)',
+                        border: '1.5px solid #10b981',
+                        borderRadius: '14px',
+                        padding: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff' }}>
+                        Grant entry for {playerToInspect.fullName}?
+                      </span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          style={{ flex: 2, background: '#10b981', borderColor: '#10b981', color: '#000', fontWeight: 900 }}
+                          onClick={() => {
+                            handleApprove(pendingApproval.player, pendingApproval.checkIn);
+                            setPendingApproval(null);
+                          }}
+                        >
+                          <CheckCircle2 size={16} /> Confirm Entry
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          style={{ flex: 1 }}
+                          onClick={() => setPendingApproval(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedPlayer(playerToInspect);
+                          setIsRejectOpen(true);
+                        }}
+                        style={{
+                          background: 'rgba(225, 29, 72, 0.15)',
+                          border: '1px solid #e11d48',
+                          borderRadius: '12px',
+                          padding: '12px 14px',
+                          color: '#fb7185',
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          cursor: 'pointer',
+                          flex: 1,
+                        }}
+                        disabled={checkIn?.verificationStatus === 'rejected'}
+                      >
+                        <XCircle size={17} /> Deny Entry
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (checkIn?.verificationStatus === 'approved') {
+                            setVerificationSuccessToast(`${playerToInspect.fullName} is already approved.`);
+                            setTimeout(() => setVerificationSuccessToast(null), 2500);
+                          } else {
+                            handleApprove(playerToInspect, checkIn);
+                          }
+                        }}
+                        style={{
+                          background: checkIn?.verificationStatus === 'approved'
+                            ? 'linear-gradient(135deg, #065f46 0%, #047857 100%)'
+                            : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          border: 'none',
+                          borderRadius: '12px',
+                          padding: '12px 14px',
+                          color: '#ffffff',
+                          fontWeight: 900,
+                          fontSize: '0.92rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          flex: 2,
+                          boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)',
+                        }}
+                      >
+                        <CheckCircle2 size={19} />
+                        <span>{checkIn?.verificationStatus === 'approved' ? 'Entry Approved' : 'Approve & Clear'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Secondary trigger to inspect KYC in full drawer */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPlayer(playerToInspect);
+                      setIsKYCInspectOpen(true);
+                    }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#94a3b8',
+                      fontSize: '0.76rem',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      cursor: 'pointer',
+                      padding: '4px',
+                    }}
+                  >
+                    <Eye size={13} /> View full KYC credentials & emergency contacts
                   </button>
-                </article>
+                </div>
               );
-            })
-          )}
-        </div>
-      )}
+            })()}
+          </>
+        )}
 
-      {/* TAB 3: APPROVED ENTRIES LOG */}
-      {activeNav === 'history' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div className="m-card">
-            <h3 className="m-card-title">
-              <History size={18} color="#e11d48" />
-              Approved Entries Today ({approvedCheckIns.length})
-            </h3>
-            <p className="m-card-subtitle">Active players cleared to play on the club floor</p>
-          </div>
-
-          {approvedCheckIns.map(c => (
-            <div key={c.id} className="m-list-card">
-              <div className="m-list-row">
-                <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>{c.playerName}</span>
-                <span className="badge badge-success"><CheckCircle2 size={12} /> Inside Club</span>
+        {/* TAB 2: LIVE ENTRANCE QUEUE */}
+        {activeNav === 'queue' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div
+              style={{
+                background: 'linear-gradient(145deg, #18080d 0%, #0d0305 100%)',
+                border: '1.5px solid rgba(225, 29, 72, 0.4)',
+                borderRadius: '16px',
+                padding: '14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Clock size={18} color="#fb7185" /> Live Arrival Queue
+                </h3>
+                <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '2px 0 0' }}>
+                  1-tap clearance for checked-in members
+                </p>
               </div>
-              <div className="m-list-row" style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                <span>Checked in: {formatTimeOnly(c.checkInTime)}</span>
-                <span>Verified by {c.verifiedBy || 'Security'}</span>
+              <span style={{ background: '#e11d48', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800 }}>
+                {pendingCheckIns.length} Awaiting
+              </span>
+            </div>
+
+            {/* Filter Tabs */}
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+              <button
+                type="button"
+                className={`btn btn-sm ${queueFilter === 'pending' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setQueueFilter('pending')}
+                style={{ fontSize: '0.75rem', borderRadius: '10px' }}
+              >
+                Awaiting ({pendingCheckIns.length})
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${queueFilter === 'approved' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setQueueFilter('approved')}
+                style={{ fontSize: '0.75rem', borderRadius: '10px' }}
+              >
+                Approved Today ({approvedCheckIns.length})
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${queueFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setQueueFilter('all')}
+                style={{ fontSize: '0.75rem', borderRadius: '10px' }}
+              >
+                All Arrivals ({todayCheckIns.length})
+              </button>
+            </div>
+
+            {/* Queue Items */}
+            {(() => {
+              const items = todayCheckIns.filter(c => {
+                if (queueFilter === 'pending') return c.verificationStatus === 'pending';
+                if (queueFilter === 'approved') return c.verificationStatus === 'approved';
+                if (queueFilter === 'rejected') return c.verificationStatus === 'rejected';
+                return true;
+              });
+
+              if (items.length === 0) {
+                return (
+                  <div
+                    style={{
+                      background: '#120508',
+                      border: '1px dashed rgba(225, 29, 72, 0.4)',
+                      borderRadius: '16px',
+                      padding: '32px 16px',
+                      textAlign: 'center',
+                      color: '#94a3b8',
+                    }}
+                  >
+                    <CheckCircle2 size={36} color="#10b981" style={{ margin: '0 auto 8px' }} />
+                    <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.95rem' }}>Queue is Clear</div>
+                    <div style={{ fontSize: '0.78rem', marginTop: '4px' }}>No players matching the selected filter.</div>
+                  </div>
+                );
+              }
+
+              return items.map(c => {
+                const player = players.find(p => p.id === c.playerId);
+                if (!player) return null;
+
+                return (
+                  <article
+                    key={c.id}
+                    style={{
+                      background: 'linear-gradient(145deg, #15060b 0%, #0a0305 100%)',
+                      border: `1.5px solid ${c.verificationStatus === 'approved' ? '#10b981' : c.verificationStatus === 'rejected' ? '#e11d48' : '#fbbf24'}`,
+                      borderRadius: '14px',
+                      padding: '12px 14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {player.kyc.photoUrl ? (
+                          <img
+                            src={player.kyc.photoUrl}
+                            alt=""
+                            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #ffffff' }}
+                          />
+                        ) : (
+                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#e11d48', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                            {player.fullName.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff' }}>{c.playerName}</div>
+                          <div style={{ fontSize: '0.74rem', color: '#94a3b8', fontFamily: 'monospace' }}>{c.playerId} • {c.playerPhone}</div>
+                        </div>
+                      </div>
+                      <EntryBadge status={c.verificationStatus} />
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#cbd5e1', background: 'rgba(0,0,0,0.3)', padding: '6px 10px', borderRadius: '8px' }}>
+                      <span>Arrival: <strong>{formatTimeOnly(c.checkInTime)}</strong></span>
+                      <span>Table: <strong style={{ color: '#fb7185' }}>{c.tablePreference || 'Floor'}</strong></span>
+                    </div>
+
+                    {c.verificationStatus === 'pending' ? (
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ flex: 1, padding: '8px' }}
+                          onClick={() => {
+                            setSelectedPlayer(player);
+                            setActiveNav('scan');
+                          }}
+                        >
+                          Inspect ID
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          style={{ flex: 2, background: '#10b981', borderColor: '#10b981', color: '#000', fontWeight: 800, padding: '8px' }}
+                          onClick={() => handleApprove(player, c)}
+                        >
+                          <Check size={14} /> Quick Approve
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: '#94a3b8' }}>
+                        <span>Verified by: <strong>{c.verifiedBy || 'Security'}</strong></span>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ fontSize: '0.7rem', padding: '3px 8px' }}
+                          onClick={() => {
+                            setSelectedPlayer(player);
+                            setActiveNav('scan');
+                          }}
+                        >
+                          Inspect
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                );
+              });
+            })()}
+          </div>
+        )}
+
+        {/* TAB 3: APPROVED ENTRIES LOG */}
+        {activeNav === 'history' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div
+              style={{
+                background: 'linear-gradient(145deg, #18080d 0%, #0d0305 100%)',
+                border: '1.5px solid rgba(225, 29, 72, 0.4)',
+                borderRadius: '16px',
+                padding: '14px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <History size={18} color="#e11d48" /> Approved Floor Entries
+                </h3>
+                <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '2px 0 0' }}>
+                  Active players cleared today ({approvedCheckIns.length})
+                </p>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+
+            {approvedCheckIns.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                No players approved yet today.
+              </div>
+            ) : (
+              approvedCheckIns.map(c => (
+                <div
+                  key={c.id}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff' }}>{c.playerName}</span>
+                    <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
+                      <CheckCircle2 size={12} /> Cleared
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8' }}>
+                    <span>Entry: {formatTimeOnly(c.checkInTime)}</span>
+                    <span>Officer: {c.verifiedBy || 'Security'}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+      </div>{/* end staff-scroll-area */}
 
       {/* Reject Reason Bottom Drawer */}
       <MobileBottomDrawer
         isOpen={isRejectOpen}
         onClose={() => setIsRejectOpen(false)}
-        title="Deny Player Entry"
-        subtitle={`Select reason for denying ${selectedPlayer?.fullName}`}
+        title="Deny Entrance Clearance"
+        subtitle={`Select cause for flagging ${selectedPlayer?.fullName}`}
       >
-        <form onSubmit={handleRejectConfirm} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <form onSubmit={handleRejectConfirm} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div className="m-form-group">
             <label className="m-form-label">Predefined Reason</label>
             <select
               className="m-select"
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
+              style={{ background: '#120508', color: '#ffffff', borderColor: '#e11d48' }}
             >
               <option value="Govt ID details mismatch or expired identification.">
                 Govt ID details mismatch / expired
               </option>
-              <option value="Under legal club age requirement (21+).">
+              <option value="Under legal club age requirement (Strictly 21+ only).">
                 Under legal club age (21+)
               </option>
               <option value="Self-exclusion list or house security suspension.">
                 Security suspension / blacklist
               </option>
-              <option value="Dress code or club conduct violation.">
+              <option value="Dress code or club conduct policy violation.">
                 Dress code or conduct violation
+              </option>
+              <option value="Failed security screening check at entrance.">
+                Failed security screening check
               </option>
             </select>
           </div>
@@ -608,13 +1013,92 @@ export const MobileSecurityPortal: React.FC = () => {
               onChange={e => setRejectReason(e.target.value)}
               rows={2}
               required
+              style={{ background: '#120508', color: '#ffffff' }}
             />
           </div>
 
-          <button type="submit" className="m-btn m-btn-danger" style={{ marginTop: '8px' }}>
+          <button
+            type="submit"
+            className="btn btn-danger"
+            style={{ padding: '12px', fontSize: '0.92rem', fontWeight: 800, marginTop: '6px' }}
+          >
             <ShieldAlert size={18} /> Confirm Entry Denial
           </button>
         </form>
+      </MobileBottomDrawer>
+
+      {/* Full KYC Inspection Bottom Drawer */}
+      <MobileBottomDrawer
+        isOpen={isKYCInspectOpen && Boolean(selectedPlayer)}
+        onClose={() => setIsKYCInspectOpen(false)}
+        title="Member KYC Profile"
+        subtitle={selectedPlayer?.fullName || ''}
+      >
+        {selectedPlayer && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+              {selectedPlayer.kyc.photoUrl ? (
+                <img
+                  src={selectedPlayer.kyc.photoUrl}
+                  alt=""
+                  style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #e11d48' }}
+                />
+              ) : (
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#e11d48', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: '#fff' }}>
+                  {selectedPlayer.fullName.charAt(0)}
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ffffff' }}>{selectedPlayer.fullName}</div>
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>ID: {selectedPlayer.id}</div>
+                <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                  <TierBadge tier={selectedPlayer.membershipTier} />
+                  <KYCBadge status={selectedPlayer.kycStatus} />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: '#120508', padding: '14px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Phone:</span>
+                <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedPlayer.phone}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Date of Birth:</span>
+                <span style={{ color: '#ffffff', fontWeight: 700 }}>{selectedPlayer.kyc.dateOfBirth}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Aadhaar Card:</span>
+                <span style={{ color: '#ffffff', fontWeight: 700, fontFamily: 'monospace' }}>
+                  {selectedPlayer.kyc.aadhaarNumber ? maskGovtId(selectedPlayer.kyc.aadhaarNumber) : (selectedPlayer.kyc.govtIdNumber || 'Verified')}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>PAN Card:</span>
+                <span style={{ color: '#fb7185', fontWeight: 700, fontFamily: 'monospace' }}>{selectedPlayer.kyc.panNumber || 'PAN Verified'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Address:</span>
+                <span style={{ color: '#ffffff', textAlign: 'right' }}>{selectedPlayer.kyc.address || 'Delhi NCR'}</span>
+              </div>
+              {selectedPlayer.kyc.emergencyContactPhone && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Emergency Contact:</span>
+                  <span style={{ color: '#ffffff' }}>{selectedPlayer.kyc.emergencyContactName} ({selectedPlayer.kyc.emergencyContactPhone})</span>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setIsKYCInspectOpen(false)}
+              style={{ width: '100%' }}
+            >
+              Close Profile
+            </button>
+          </div>
+        )}
       </MobileBottomDrawer>
 
       {/* Camera & Quick Door Scanner Modal */}
@@ -646,8 +1130,17 @@ export const MobileSecurityPortal: React.FC = () => {
         onOpenNewPlayerForm={() => setIsWalkInOpen(true)}
       />
 
-      {/* Bottom Navigation */}
-      <nav className="mobile-bottom-nav" aria-label="Security portal sections">
+      {/* ── Fixed Mobile Bottom Nav ────────────────────────── */}
+      <nav
+        className="mobile-bottom-nav"
+        aria-label="Security portal sections"
+        style={{
+          background: 'rgba(15, 4, 8, 0.95)',
+          backdropFilter: 'blur(16px)',
+          borderTop: '1.5px solid rgba(225, 29, 72, 0.4)',
+          boxShadow: '0 -4px 25px rgba(0, 0, 0, 0.8)',
+        }}
+      >
         <button
           className={`nav-tab-item security-color ${activeNav === 'scan' ? 'active' : ''}`}
           onClick={() => setActiveNav('scan')}
@@ -660,9 +1153,28 @@ export const MobileSecurityPortal: React.FC = () => {
           className={`nav-tab-item security-color ${activeNav === 'queue' ? 'active' : ''}`}
           onClick={() => setActiveNav('queue')}
         >
-          <Clock size={20} />
-          {pendingCheckIns.length > 0 && <span className="nav-tab-dot" />}
-          <span className="nav-tab-label">Queue ({pendingCheckIns.length})</span>
+          <div style={{ position: 'relative' }}>
+            <Clock size={20} />
+            {pendingCheckIns.length > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-8px',
+                  background: '#e11d48',
+                  color: '#ffffff',
+                  fontSize: '0.65rem',
+                  fontWeight: 900,
+                  borderRadius: '10px',
+                  padding: '1px 5px',
+                  boxShadow: '0 0 8px #e11d48',
+                }}
+              >
+                {pendingCheckIns.length}
+              </span>
+            )}
+          </div>
+          <span className="nav-tab-label">Queue</span>
         </button>
 
         <button
@@ -673,8 +1185,6 @@ export const MobileSecurityPortal: React.FC = () => {
           <span className="nav-tab-label">Approved ({approvedCheckIns.length})</span>
         </button>
       </nav>
-
-      </div>{/* end staff-scroll-area */}
     </div>
   );
 };
