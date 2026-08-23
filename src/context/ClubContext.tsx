@@ -59,6 +59,7 @@ const ensureSequentialMemberNumbers = (players: Player[]): Player[] => {
 
 const playerToDatabaseRow = (player: Player) => ({
   id: player.id,
+  member_number: player.memberNumber,
   full_name: player.fullName,
   phone: player.phone,
   email: player.email,
@@ -540,9 +541,13 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               aadhaarParsed = idNum.trim();
             }
 
+            const memberNumber = (typeof p.member_number === 'number' && p.member_number > 0)
+              ? p.member_number
+              : memberNumberById.get(p.id);
+
             return {
               id: p.id,
-              memberNumber: memberNumberById.get(p.id),
+              memberNumber,
               fullName: p.full_name || 'Member Player',
               phone: p.phone || '',
               email: p.email || '',
@@ -574,10 +579,23 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               },
             };
           });
+
+          // Auto-sync missing member_number back to Supabase database so Supabase table editor displays the sequence
+          const missingMemberNumberRows = playersData.filter((p: any) => typeof p.member_number !== 'number' || !p.member_number);
+          if (missingMemberNumberRows.length > 0) {
+            missingMemberNumberRows.forEach((p: any) => {
+              const seqNum = memberNumberById.get(p.id);
+              if (seqNum) {
+                client.from('players').update({ member_number: seqNum }).eq('id', p.id).then(() => {});
+              }
+            });
+          }
+
           setPlayers(mappedPlayers);
         } else if (initialPlayers.length > 0) {
           const seedRows = initialPlayers.map(ip => ({
             id: ip.id,
+            member_number: ip.memberNumber,
             full_name: ip.fullName,
             phone: ip.phone,
             email: ip.email,
@@ -846,15 +864,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             };
             setPlayers(prev => {
               const exists = prev.some(existing => existing.id === updatedPlayer.id);
+              const dbSeq = typeof p.member_number === 'number' && p.member_number > 0 ? p.member_number : undefined;
               if (exists) {
                 return prev.map(existing => (existing.id === updatedPlayer.id
-                  ? { ...updatedPlayer, memberNumber: existing.memberNumber }
+                  ? { ...updatedPlayer, memberNumber: dbSeq ?? existing.memberNumber }
                   : existing));
               }
-              const nextMemberNumber = prev.reduce(
+              const nextMemberNumber = dbSeq ?? (prev.reduce(
                 (max, player) => Math.max(max, player.memberNumber || 0),
                 0
-              ) + 1;
+              ) + 1);
               return [{ ...updatedPlayer, memberNumber: nextMemberNumber }, ...prev];
             });
           } else if (payload.eventType === 'DELETE' && payload.old?.id) {
@@ -1451,6 +1470,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .from('players')
         .insert({
           id: newPlayer.id,
+          member_number: newPlayer.memberNumber,
           full_name: newPlayer.fullName,
           phone: newPlayer.phone,
           email: newPlayer.email,
@@ -2014,6 +2034,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (isSupabaseConfigured && supabase) {
       const p = updates;
       supabase.from('players').update({
+        ...(p.memberNumber !== undefined ? { member_number: p.memberNumber } : {}),
         ...(p.fullName ? { full_name: p.fullName } : {}),
         ...(p.phone ? { phone: p.phone } : {}),
         ...(p.email ? { email: p.email } : {}),

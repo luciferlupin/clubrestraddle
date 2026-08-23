@@ -44,7 +44,8 @@ CREATE INDEX idx_staff_status ON staff_users(status);
 -- 3. PLAYERS TABLE (KYC & Profile Registry)
 -- ------------------------------------------------------------------------------
 CREATE TABLE players (
-    id VARCHAR(32) PRIMARY KEY, -- sequential member number: '1', '2', '3', ...
+    id VARCHAR(32) PRIMARY KEY, -- e.g. 'PLR-1001' or plain ID
+    member_number INTEGER, -- sequential member number: 1, 2, 3, ...
     full_name VARCHAR(120) NOT NULL,
     phone VARCHAR(32) NOT NULL,
     email VARCHAR(120) NOT NULL,
@@ -76,6 +77,7 @@ CREATE TABLE players (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE INDEX idx_players_member_number ON players(member_number);
 CREATE INDEX idx_players_phone ON players(phone);
 CREATE INDEX idx_players_email ON players(email);
 CREATE INDEX idx_players_kyc_status ON players(kyc_status);
@@ -360,3 +362,21 @@ INSERT INTO audit_logs (id, portal, user_name, action, details, timestamp)
 VALUES
 ('LOG-SYS-001', 'Admin', 'Jai Goel (Super Admin)', 'Database Initialized', 'Club Re Straddle database initialized with Super Admin (jaigoel2206@gmail.com), cashier desk, security checkpoint, and initial tournament fixtures.', NOW())
 ON CONFLICT (id) DO NOTHING;
+
+-- ------------------------------------------------------------------------------
+-- 16. MIGRATION: ADD SEQUENTIAL MEMBER NUMBER COLUMN TO EXISTING PLAYERS TABLE
+-- ------------------------------------------------------------------------------
+-- Run this in Supabase SQL Editor if players table already exists:
+ALTER TABLE players ADD COLUMN IF NOT EXISTS member_number INTEGER;
+CREATE INDEX IF NOT EXISTS idx_players_member_number ON players(member_number);
+
+-- Populate sequence numbers (1, 2, 3, ...) for all existing players by registration order
+WITH ordered_players AS (
+    SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS seq
+    FROM players
+)
+UPDATE players
+SET member_number = ordered_players.seq
+FROM ordered_players
+WHERE players.id = ordered_players.id;
+
