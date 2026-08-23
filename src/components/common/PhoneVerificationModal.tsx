@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, Smartphone, RefreshCw, CheckCircle2, AlertCircle, Sparkles, X, MessageSquare, MessageCircle } from 'lucide-react';
+import { ShieldCheck, Smartphone, RefreshCw, CheckCircle2, AlertCircle, Sparkles, X } from 'lucide-react';
 import { sendPhoneOtp, verifyPhoneOtp, formatToE164 } from '../../services/phoneAuthService';
 
 interface PhoneVerificationModalProps {
@@ -19,7 +19,6 @@ export const PhoneVerificationModal: React.FC<PhoneVerificationModalProps> = ({
   title = 'Verify Mobile Number',
   subtitle,
 }) => {
-  const [channel, setChannel] = useState<'whatsapp' | 'sms'>('whatsapp');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -38,7 +37,7 @@ export const PhoneVerificationModal: React.FC<PhoneVerificationModalProps> = ({
     if (isOpen && phone) {
       setOtpDigits(['', '', '', '', '', '']);
       setErrorMessage(null);
-      handleSendOtp(channel);
+      handleSendOtp();
     }
   }, [isOpen, phone]);
 
@@ -60,12 +59,12 @@ export const PhoneVerificationModal: React.FC<PhoneVerificationModalProps> = ({
     }
   }, [isOpen]);
 
-  const handleSendOtp = async (targetChannel = channel) => {
+  const handleSendOtp = async () => {
     setIsSending(true);
     setErrorMessage(null);
     setStatusMessage(null);
 
-    const result = await sendPhoneOtp(phone, targetChannel);
+    const result = await sendPhoneOtp(phone);
     setIsSending(false);
 
     if (result.success) {
@@ -74,15 +73,8 @@ export const PhoneVerificationModal: React.FC<PhoneVerificationModalProps> = ({
       setDemoCode(result.demoCode || null);
       setCooldown(30);
     } else {
-      setErrorMessage(result.message || `Failed to dispatch ${targetChannel === 'whatsapp' ? 'WhatsApp' : 'SMS'} code.`);
+      setErrorMessage(result.message || 'Failed to dispatch SMS verification code.');
     }
-  };
-
-  const handleSwitchChannel = (newChannel: 'whatsapp' | 'sms') => {
-    if (newChannel === channel) return;
-    setChannel(newChannel);
-    setOtpDigits(['', '', '', '', '', '']);
-    handleSendOtp(newChannel);
   };
 
   const handleDigitChange = (index: number, value: string) => {
@@ -164,12 +156,8 @@ export const PhoneVerificationModal: React.FC<PhoneVerificationModalProps> = ({
       <div className="phone-verify-modal">
         {/* Header */}
         <div className="phone-verify-header">
-          <div className={`phone-verify-badge ${channel === 'whatsapp' ? 'whatsapp-badge' : ''}`}>
-            {channel === 'whatsapp' ? (
-              <MessageCircle size={22} color="#22c55e" />
-            ) : (
-              <Smartphone size={20} className="phone-verify-badge-icon" />
-            )}
+          <div className="phone-verify-badge">
+            <Smartphone size={20} className="phone-verify-badge-icon" />
           </div>
           <button
             type="button"
@@ -186,67 +174,16 @@ export const PhoneVerificationModal: React.FC<PhoneVerificationModalProps> = ({
           <p className="phone-verify-subtitle">
             {subtitle || (
               <>
-                We sent a 6-digit security code via{' '}
-                <strong style={{ color: channel === 'whatsapp' ? '#4ade80' : '#ffffff' }}>
-                  {channel === 'whatsapp' ? 'WhatsApp (WP)' : 'SMS'}
-                </strong>{' '}
-                to <strong className="phone-verify-target">{formattedPhone}</strong>
+                We sent a 6-digit security code via SMS to{' '}
+                <strong className="phone-verify-target">{formattedPhone}</strong>
               </>
             )}
           </p>
 
-          {/* Delivery Channel Selector (WhatsApp vs SMS) */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <button
-              type="button"
-              className={`btn btn-sm ${channel === 'whatsapp' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{
-                flex: 1,
-                fontSize: '0.78rem',
-                padding: '6px 10px',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                background: channel === 'whatsapp' ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'transparent',
-                borderColor: channel === 'whatsapp' ? '#22c55e' : 'transparent',
-                color: channel === 'whatsapp' ? '#ffffff' : '#94a3b8',
-                fontWeight: 700,
-              }}
-              onClick={() => handleSwitchChannel('whatsapp')}
-            >
-              <MessageCircle size={14} color={channel === 'whatsapp' ? '#ffffff' : '#22c55e'} />
-              WhatsApp (WP)
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${channel === 'sms' ? 'btn-primary' : 'btn-secondary'}`}
-              style={{
-                flex: 1,
-                fontSize: '0.78rem',
-                padding: '6px 10px',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                background: channel === 'sms' ? 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)' : 'transparent',
-                borderColor: channel === 'sms' ? '#f43f5e' : 'transparent',
-                color: channel === 'sms' ? '#ffffff' : '#94a3b8',
-                fontWeight: 700,
-              }}
-              onClick={() => handleSwitchChannel('sms')}
-            >
-              <Smartphone size={14} color={channel === 'sms' ? '#ffffff' : '#cbd5e1'} />
-              SMS Code
-            </button>
-          </div>
-
           {/* Twilio & Supabase Trust Banner */}
-          <div className="phone-verify-provider-tag" style={{ borderLeft: channel === 'whatsapp' ? '3px solid #22c55e' : undefined }}>
-            <ShieldCheck size={14} color={channel === 'whatsapp' ? '#4ade80' : undefined} />
-            <span>Secured via Twilio {channel === 'whatsapp' ? 'WhatsApp Gateway' : 'SMS'} & Supabase</span>
+          <div className="phone-verify-provider-tag">
+            <ShieldCheck size={14} />
+            <span>Secured via Twilio SMS & Supabase</span>
           </div>
 
           {/* Demo helper notice if in test mode */}
@@ -277,10 +214,6 @@ export const PhoneVerificationModal: React.FC<PhoneVerificationModalProps> = ({
                 pattern="[0-9]*"
                 maxLength={6} // allows paste of entire code
                 className={`phone-otp-box ${digit ? 'filled' : ''} ${errorMessage ? 'has-error' : ''}`}
-                style={{
-                  borderColor: digit && channel === 'whatsapp' ? '#22c55e' : undefined,
-                  boxShadow: digit && channel === 'whatsapp' ? '0 0 10px rgba(34, 197, 94, 0.25)' : undefined,
-                }}
                 value={digit}
                 disabled={isVerifying}
                 onChange={(e) => handleDigitChange(idx, e.target.value)}
@@ -300,7 +233,7 @@ export const PhoneVerificationModal: React.FC<PhoneVerificationModalProps> = ({
 
           {/* Success / Status Message */}
           {statusMessage && !errorMessage && (
-            <div className="phone-verify-status" style={{ color: channel === 'whatsapp' ? '#86efac' : undefined }}>
+            <div className="phone-verify-status">
               <CheckCircle2 size={15} />
               <span>{statusMessage}</span>
             </div>
@@ -311,10 +244,6 @@ export const PhoneVerificationModal: React.FC<PhoneVerificationModalProps> = ({
             <button
               type="button"
               className="m-btn m-btn-primary phone-verify-submit-btn"
-              style={{
-                background: channel === 'whatsapp' ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : undefined,
-                borderColor: channel === 'whatsapp' ? '#22c55e' : undefined,
-              }}
               disabled={isVerifying || otpDigits.join('').length < 6}
               onClick={() => triggerVerification()}
             >
@@ -331,30 +260,18 @@ export const PhoneVerificationModal: React.FC<PhoneVerificationModalProps> = ({
 
             {/* Resend OTP button with cooldown */}
             <div className="phone-verify-resend-row">
-              <span>Didn&apos;t receive the code?</span>
+              <span>Didn&apos;t receive the SMS?</span>
               {cooldown > 0 ? (
                 <span className="resend-countdown">Resend in {cooldown}s</span>
               ) : (
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    type="button"
-                    className="resend-active-btn"
-                    disabled={isSending}
-                    onClick={() => handleSendOtp('whatsapp')}
-                    style={{ color: '#4ade80' }}
-                  >
-                    {isSending ? 'Sending…' : '💬 Resend on WhatsApp'}
-                  </button>
-                  <span style={{ color: '#475569' }}>•</span>
-                  <button
-                    type="button"
-                    className="resend-active-btn"
-                    disabled={isSending}
-                    onClick={() => handleSendOtp('sms')}
-                  >
-                    {isSending ? 'Sending…' : '📱 Send via SMS'}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className="resend-active-btn"
+                  disabled={isSending}
+                  onClick={handleSendOtp}
+                >
+                  {isSending ? 'Sending…' : 'Resend SMS Code'}
+                </button>
               )}
             </div>
           </div>

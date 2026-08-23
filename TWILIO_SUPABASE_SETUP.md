@@ -1,12 +1,12 @@
-# Twilio Phone WhatsApp (WP) & SMS Verification Setup Guide
+# Twilio Phone SMS Verification Setup Guide
 
-This guide walks you through enabling **Twilio WhatsApp (WP) & SMS Phone Verification** directly in your **Supabase Project** for Club Re Straddle.
+This guide walks you through enabling **Twilio SMS Phone Verification** (with Alphanumeric Sender ID / Messaging Service) directly in your **Supabase Project** for Club Re Straddle.
 
 ---
 
 ## 1. Prerequisites
 1. A **Supabase** account and project ([https://supabase.com](https://supabase.com)).
-2. A **Twilio** account ([https://www.twilio.com](https://www.twilio.com)) with an active phone number or Messaging Service.
+2. A **Twilio** account ([https://www.twilio.com](https://www.twilio.com)) with an active Messaging Service or Alphanumeric Sender ID.
 
 ---
 
@@ -36,15 +36,12 @@ Configure these credentials in your Supabase Dashboard:
 
 ---
 
-## 5. How the App Dispatches WhatsApp (WP) OTP & SMS
+## 4. How the App Dispatches SMS OTP
 
 1. **Player Registration / Pass Lookup**:
    - Player enters mobile number (`+91 98765 43210`).
-   - Clicks **Verify via WhatsApp (WP)** or **Verify via SMS**.
-   - App dispatches a 6-digit OTP code to the player's WhatsApp (`channel: 'whatsapp'`) or SMS (`channel: 'sms'`) via Twilio & Supabase.
-   - Player inputs the OTP code.
+   - Clicks **Verify Mobile via SMS**.
+   - App dispatches a 6-digit OTP code to the player's phone via Twilio SMS Gateway & Supabase.
+   - Player inputs the 6-digit OTP code.
    - Upon verification, the profile is marked with `phone_verified: true` and `phone_verified_at: NOW()`.
 
-2. **Interactive Switching & Resend**:
-   - Players can easily switch between WhatsApp (WP) and SMS delivery with 1 click in the modal.
-   - Fallback interactive sandbox mode ensures local development works seamlessly even before Twilio WhatsApp credentials are fully connected.

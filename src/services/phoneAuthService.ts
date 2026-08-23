@@ -48,7 +48,6 @@ export interface SendOtpResult {
   success: boolean;
   formattedPhone: string;
   message: string;
-  channel?: 'whatsapp' | 'sms';
   isDemo?: boolean;
   demoCode?: string;
   error?: string;
@@ -64,31 +63,27 @@ export interface VerifyOtpResult {
 }
 
 /**
- * Dispatches a WhatsApp (WP) or SMS OTP to the provided phone number using Supabase Auth & Twilio Gateway.
+ * Dispatches an SMS OTP to the provided phone number using Supabase Auth & Twilio Gateway.
  */
-export const sendPhoneOtp = async (
-  rawPhone: string,
-  channel: 'whatsapp' | 'sms' = 'whatsapp'
-): Promise<SendOtpResult> => {
+export const sendPhoneOtp = async (rawPhone: string): Promise<SendOtpResult> => {
   const formattedPhone = formatToE164(rawPhone);
 
   if (!formattedPhone || formattedPhone.replace(/\D/g, '').length < 10) {
     return {
       success: false,
       formattedPhone,
-      channel,
       message: 'Please enter a valid mobile number with country code.',
       error: 'Invalid phone number length',
     };
   }
 
-  // 1. If Supabase is configured, attempt real Twilio WhatsApp/SMS OTP via Supabase Auth
+  // 1. If Supabase is configured, attempt real Twilio SMS OTP via Supabase Auth
   if (isSupabaseConfigured && supabase) {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         phone: formattedPhone,
         options: {
-          channel,
+          channel: 'sms',
         },
       });
 
@@ -96,20 +91,16 @@ export const sendPhoneOtp = async (
         return {
           success: true,
           formattedPhone,
-          channel,
-          message: channel === 'whatsapp'
-            ? `WhatsApp (WP) OTP code dispatched to ${formattedPhone}.`
-            : `SMS verification code dispatched to ${formattedPhone}.`,
+          message: `SMS verification code dispatched to ${formattedPhone}.`,
           isDemo: false,
         };
       }
 
-      console.warn(`Supabase ${channel.toUpperCase()} OTP returned notice (falling back to interactive mode):`, error.message);
+      console.warn('Supabase SMS OTP returned notice (falling back to interactive mode):', error.message);
 
-      // If error is about Twilio provider unconfigured or WhatsApp sender pending, provide demo fallback for testing
+      // If error is about Twilio provider unconfigured or sender pending, provide demo fallback for testing
       const isProviderError = error.message.toLowerCase().includes('provider') ||
         error.message.toLowerCase().includes('sms') ||
-        error.message.toLowerCase().includes('whatsapp') ||
         error.message.toLowerCase().includes('twilio') ||
         error.message.toLowerCase().includes('not enabled') ||
         error.message.toLowerCase().includes('credentials');
@@ -124,8 +115,7 @@ export const sendPhoneOtp = async (
         return {
           success: true,
           formattedPhone,
-          channel,
-          message: `Twilio ${channel === 'whatsapp' ? 'WhatsApp' : 'SMS'} notice: (${error.message}). Demo OTP code [${demoCode}] generated for instant testing.`,
+          message: `Twilio SMS notice: (${error.message}). Demo OTP code [${demoCode}] generated for instant testing.`,
           isDemo: true,
           demoCode,
         };
@@ -134,8 +124,7 @@ export const sendPhoneOtp = async (
       return {
         success: false,
         formattedPhone,
-        channel,
-        message: error.message || `Failed to send ${channel === 'whatsapp' ? 'WhatsApp' : 'SMS'} OTP.`,
+        message: error.message || 'Failed to send SMS OTP.',
         error: error.message,
       };
     } catch (err: unknown) {
@@ -151,7 +140,6 @@ export const sendPhoneOtp = async (
       return {
         success: true,
         formattedPhone,
-        channel,
         message: `Network offline or Twilio pending setup. Testing Demo OTP: [${demoCode}].`,
         isDemo: true,
         demoCode,
@@ -169,8 +157,7 @@ export const sendPhoneOtp = async (
   return {
     success: true,
     formattedPhone,
-    channel,
-    message: `Dev Sandbox Mode: 6-digit ${channel === 'whatsapp' ? 'WhatsApp (WP)' : 'SMS'} OTP code [${demoCode}] generated for ${formattedPhone}.`,
+    message: `Dev Sandbox Mode: 6-digit SMS OTP code [${demoCode}] generated for ${formattedPhone}.`,
     isDemo: true,
     demoCode,
   };
