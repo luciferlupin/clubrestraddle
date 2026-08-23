@@ -292,6 +292,7 @@ CREATE OR REPLACE VIEW v_active_door_queue AS
 SELECT 
     c.id AS checkin_id,
     c.player_id,
+    p.member_number,
     p.full_name,
     p.phone,
     p.membership_tier,
