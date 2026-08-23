@@ -32,13 +32,6 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
       color: '#e11d48',
     },
     {
-      role: 'cash',
-      title: 'Cash & Treasury Vault',
-      desc: 'Cash payments, float balance & master ledger',
-      icon: <DollarSign size={20} color="#fbbf24" />,
-      color: '#fbbf24',
-    },
-    {
       role: 'security',
       title: 'Security desk',
       desc: 'Door queue, scanner and player clearance',

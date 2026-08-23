@@ -139,17 +139,40 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
   return (
     <div className="staff-login-shell">
       <section className="staff-login-card" aria-labelledby="staff-login-title">
-        <div className="staff-desk-tabs" role="group" aria-label="Choose staff portal">
-          <button type="button" className={selectedDesk === 'admin' ? 'active' : ''} onClick={() => handleDeskChange('admin')}>
-            <LayoutDashboard size={15} /> Admin
-          </button>
-          <button type="button" className={selectedDesk === 'cashier' ? 'active' : ''} onClick={() => handleDeskChange('cashier')}>
-            <DollarSign size={15} /> Cashier
-          </button>
-          <button type="button" className={selectedDesk === 'security' ? 'active' : ''} onClick={() => handleDeskChange('security')}>
-            <ShieldCheck size={15} /> Security
-          </button>
-        </div>
+        {portalRole !== 'cash' ? (
+          <div className="staff-desk-tabs" role="group" aria-label="Choose staff portal">
+            <button type="button" className={selectedDesk === 'admin' ? 'active' : ''} onClick={() => handleDeskChange('admin')}>
+              <LayoutDashboard size={15} /> Admin
+            </button>
+            <button type="button" className={selectedDesk === 'cashier' ? 'active' : ''} onClick={() => handleDeskChange('cashier')}>
+              <DollarSign size={15} /> Cashier
+            </button>
+            <button type="button" className={selectedDesk === 'security' ? 'active' : ''} onClick={() => handleDeskChange('security')}>
+              <ShieldCheck size={15} /> Security
+            </button>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 12px',
+                borderRadius: '999px',
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                color: '#fbbf24',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}
+            >
+              <Lock size={12} /> Private Vault Terminal Access
+            </span>
+          </div>
+        )}
 
         <div style={{ textAlign: 'center', margin: '4px auto 16px' }}>
           <img
