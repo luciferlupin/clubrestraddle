@@ -21,14 +21,21 @@ import {
   FileCheck2,
   FileX,
   Users,
+  Wallet,
+  DollarSign,
+  ArrowRightLeft,
+  ArrowRight,
+  Building2,
+  History,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatTimeOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
+import { formatTimeOnly, maskGovtId, formatPlayerNumber, formatCurrency, formatShortDateTime } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { QRScannerModal } from './QRScannerModal';
 import { WalkInRegistrationModal } from './WalkInRegistrationModal';
+import { GateCashHandoverModal } from './GateCashHandoverModal';
 import { ClubQRModal } from '../common/ClubQRModal';
 import confetti from 'canvas-confetti';
 
@@ -43,9 +50,15 @@ export const MobileSecurityPortal: React.FC = () => {
     reviewKYC,
     isRealtimeConnected,
     syncNow,
+    todayApprovedDoorCount,
+    todayGateCollected,
+    todayGateTransferredAmount,
+    todayGateCashInHand,
+    todayGateTransfers,
   } = useClub();
 
-  const [activeNav, setActiveNav] = useState<'scan' | 'queue'>('scan');
+  const [activeNav, setActiveNav] = useState<'scan' | 'queue' | 'gate-cash'>('scan');
+  const [isGateCashModalOpen, setIsGateCashModalOpen] = useState(false);
   const [queueFilter, setQueueFilter] = useState<'pending' | 'rejected' | 'all'>('pending');
   const [search, setSearch] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -178,9 +191,6 @@ export const MobileSecurityPortal: React.FC = () => {
     }
   };
 
-  // Determine which player to inspect:
-  // 1. Explicitly selected player (from search, queue click, deep-link)
-  // 2. Or the first pending player
   const playerToInspect =
     selectedPlayer ||
     (pendingQueuePlayers.length > 0 ? pendingQueuePlayers[0] : null) ||
@@ -191,12 +201,13 @@ export const MobileSecurityPortal: React.FC = () => {
     : undefined;
 
   return (
-    <div className="staff-mobile-portal security-mobile-theme" style={{ paddingBottom: '90px' }}>
-      <header className="security-session-strip">
-        <div className="security-session-person">
-          <span className="security-session-avatar">{(staffName || 'S').charAt(0).toUpperCase()}</span>
-          <span>
-            <strong>{staffName || 'Security officer'}</strong>
+    <div className="mobile-app-shell staff-app-shell is-security-portal">
+      {/* ── Security Officer Top Bar ──────────────────────── */}
+      <header className="security-session-bar" role="banner">
+        <div className="security-session-id">
+          <span className="security-station-badge"><ShieldCheck size={13} /> ENTRANCE GATE</span>
+          <span className="security-officer-name">
+            <strong>{staffName}</strong>
             <small><span className={isRealtimeConnected ? '' : 'offline'} /> Security on duty · Desk 1</small>
           </span>
         </div>
@@ -236,6 +247,54 @@ export const MobileSecurityPortal: React.FC = () => {
             <CheckCircle2 size={18} /> {verificationSuccessToast}
           </div>
         )}
+
+        {/* Gate Till In-Hand Banner (Always visible in Security) */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(30, 20, 10, 0.9) 0%, rgba(15, 8, 4, 0.98) 100%)',
+            border: '1.5px solid rgba(245, 158, 11, 0.55)',
+            borderRadius: '14px',
+            padding: '12px 14px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '10px',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase' }}>
+              <Wallet size={14} /> Gate Till In Hand
+            </div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--gold-light)', marginTop: '2px', fontFamily: 'var(--font-mono)' }}>
+              {formatCurrency(todayGateCashInHand)}
+            </div>
+            <div style={{ fontSize: '0.68rem', color: '#cbd5e1', marginTop: '1px' }}>
+              Collected {formatCurrency(todayGateCollected)} ({todayApprovedDoorCount} entries) · Handed {formatCurrency(todayGateTransferredAmount)}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            style={{
+              fontSize: '0.76rem',
+              padding: '7px 12px',
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              borderColor: '#fbbf24',
+              color: '#000000',
+              fontWeight: 800,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              whiteSpace: 'nowrap',
+            }}
+            onClick={() => setIsGateCashModalOpen(true)}
+          >
+            <ArrowRightLeft size={13} />
+            <span>Handover Cash</span>
+          </button>
+        </div>
 
         {/* TAB 1: SCAN & VERIFICATION */}
         {activeNav === 'scan' && (
@@ -297,7 +356,7 @@ export const MobileSecurityPortal: React.FC = () => {
                 onClick={() => setIsQRStandeeOpen(true)}
               >
                 <QrCode size={20} color="#38bdf8" />
-                <span>Standee QR</span>
+                <span>Desk Standee</span>
               </button>
             </div>
 
@@ -992,6 +1051,12 @@ export const MobileSecurityPortal: React.FC = () => {
         }}
       />
 
+      {/* Gate Cash Handover Modal */}
+      <GateCashHandoverModal
+        isOpen={isGateCashModalOpen}
+        onClose={() => setIsGateCashModalOpen(false)}
+      />
+
       {/* ── Fixed Bottom Navigation ────────────────────────── */}
       <nav className="mobile-bottom-nav" aria-label="Security Sections">
         <button
@@ -1010,6 +1075,15 @@ export const MobileSecurityPortal: React.FC = () => {
           <span className="nav-tab-label">
             Queue {pendingQueuePlayers.length > 0 && `(${pendingQueuePlayers.length})`}
           </span>
+        </button>
+
+        <button
+          className={`nav-tab-item security-color ${activeNav === 'gate-cash' ? 'active' : ''}`}
+          onClick={() => setActiveNav('gate-cash')}
+        >
+          <Wallet size={20} />
+          {todayGateCashInHand > 0 && <span className="nav-badge">₹</span>}
+          <span className="nav-tab-label">Gate Till</span>
         </button>
       </nav>
     </div>

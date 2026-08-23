@@ -34,13 +34,14 @@ export type CashFlowType = 'in' | 'out';
 
 export type CashCategory = 
   // Cash In
+  | 'Gate Cash Handover'
+  | 'Gate Entry Fee Transfer'
   | 'Tournament Entry'
   | 'Table Service Charge'
-  // Legacy stored values retained for backward-compatible reads.
+  | 'Float Deposit'
   | 'Tournament Buy-in'
   | 'Cash Game Buy-in'
   | 'Chip Purchase'
-  | 'Float Deposit'
   | 'Table Rake'
   | 'Membership Fee'
   // Cash Out
@@ -195,5 +196,17 @@ export interface ChipRequest {
   fulfilledBy?: string;
   fulfilledAt?: string;
   receiptNumber?: string;
+  notes?: string;
+}
+
+export interface GateCashTransfer {
+  id: string; // e.g. 'GTR-1001'
+  transferDate: string; // YYYY-MM-DD
+  amount: number;
+  paymentMethod: PaymentMethod;
+  handedOverBy: string; // Security / Gate Officer name
+  receivedBy: string; // Inside Cashier name
+  timestamp: string; // ISO string
+  receiptNumber: string; // e.g. 'GTR-RCP-1001'
   notes?: string;
 }

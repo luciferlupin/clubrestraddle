@@ -191,6 +191,20 @@ export const generateSequentialChipId = (existingRequests: { id: string }[] = []
   return `CHP-${maxSeq + 1}`;
 };
 
+export const generateSequentialGateTransferId = (existingTransfers: { id: string }[] = []): string => {
+  let maxSeq = 1000;
+  for (const t of existingTransfers) {
+    const match = t.id.match(/\d+$/);
+    if (match) {
+      const num = parseInt(match[0], 10);
+      if (!isNaN(num) && num > maxSeq) {
+        maxSeq = num;
+      }
+    }
+  }
+  return `GTR-${maxSeq + 1}`;
+};
+
 export const generateReceiptNumber = (): string => {
   const timestamp = Date.now().toString().slice(-6);
   return `REC-${timestamp}`;

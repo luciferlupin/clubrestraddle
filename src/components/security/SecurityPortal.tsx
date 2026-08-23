@@ -8,23 +8,39 @@ import {
   Lock,
   QrCode,
   UserPlus,
+  DollarSign,
+  ArrowRightLeft,
+  Wallet,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
+import { formatCurrency } from '../../utils/formatters';
 import { SecurityVerificationCard } from './SecurityVerificationCard';
 import { SecurityQueue } from './SecurityQueue';
 import { QRScannerModal } from './QRScannerModal';
 import { WalkInRegistrationModal } from './WalkInRegistrationModal';
+import { GateCashHandoverModal } from './GateCashHandoverModal';
 import { ClubQRModal } from '../common/ClubQRModal';
 import { StatCard } from '../common/StatCard';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 
 export const SecurityPortal: React.FC = () => {
-  const { staffName, players, todayCheckIns, isRealtimeConnected, syncNow } = useClub();
+  const {
+    staffName,
+    players,
+    todayCheckIns,
+    isRealtimeConnected,
+    syncNow,
+    todayApprovedDoorCount,
+    todayGateCollected,
+    todayGateTransferredAmount,
+    todayGateCashInHand,
+  } = useClub();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
   const [isQRStandeeOpen, setIsQRStandeeOpen] = useState(false);
+  const [isGateCashModalOpen, setIsGateCashModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Prefer a scanned/deep-linked player, then the first pending arrival.
@@ -123,6 +139,16 @@ export const SecurityPortal: React.FC = () => {
                 }}
               />
               <span>{isSyncing ? 'Syncing...' : 'Live Sync'}</span>
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setIsGateCashModalOpen(true)}
+              style={{ borderColor: 'rgba(245, 158, 11, 0.45)', background: 'rgba(245, 158, 11, 0.12)' }}
+            >
+              <Wallet size={17} color="#fbbf24" />
+              <span style={{ color: '#fbbf24', fontWeight: 700 }}>
+                Gate Till: {formatCurrency(todayGateCashInHand)}
+              </span>
             </button>
             <button
               className="btn btn-primary"
@@ -227,8 +253,14 @@ export const SecurityPortal: React.FC = () => {
         onOpenNewPlayerForm={() => setIsWalkInOpen(true)}
       />
 
+      {/* Gate Cash Handover Modal */}
+      <GateCashHandoverModal
+        isOpen={isGateCashModalOpen}
+        onClose={() => setIsGateCashModalOpen(false)}
+      />
+
       {/* Security Stat KPIs */}
-      <div className="stats-grid security-kpi-grid">
+      <div className="stats-grid security-kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         <StatCard
           label="Awaiting Door Clearance"
           value={pendingCount}
@@ -241,6 +273,30 @@ export const SecurityPortal: React.FC = () => {
           icon={<CheckCircle2 size={20} color="#ffffff" />}
           helper="Active players on club floor"
         />
+        <div
+          className="stat-card"
+          style={{
+            border: '1.5px solid rgba(245, 158, 11, 0.5)',
+            background: 'linear-gradient(135deg, rgba(30, 20, 10, 0.7) 0%, rgba(15, 8, 4, 0.95) 100%)',
+            cursor: 'pointer',
+          }}
+          onClick={() => setIsGateCashModalOpen(true)}
+        >
+          <div className="stat-info">
+            <span className="stat-label" style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              💵 Gate Cash In Hand
+            </span>
+            <span className="stat-value" style={{ color: 'var(--gold-light)' }}>
+              {formatCurrency(todayGateCashInHand)}
+            </span>
+            <span className="stat-helper" style={{ color: '#fbbf24' }}>
+              Collected {formatCurrency(todayGateCollected)} / Handed Over {formatCurrency(todayGateTransferredAmount)}
+            </span>
+          </div>
+          <div className="stat-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
+            <ArrowRightLeft size={22} />
+          </div>
+        </div>
         <StatCard
           label="Entries Denied Today"
           value={rejectedTodayCount}

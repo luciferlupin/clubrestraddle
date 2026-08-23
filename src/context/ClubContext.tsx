@@ -14,6 +14,7 @@ import {
   KYCStatus,
   StaffUser,
   ChipRequest,
+  GateCashTransfer,
 } from '../types';
 import {
   initialStaffUsers,
@@ -31,6 +32,7 @@ import {
   generateSequentialPlayerId,
   generateSequentialCheckInId,
   generateSequentialChipId,
+  generateSequentialGateTransferId,
   generateReceiptNumber,
   getTodayDateString,
   isTimestampInCurrentSession,
@@ -222,6 +224,23 @@ interface ClubContextType {
   todayBankIn: number;
   todayBankOut: number;
 
+  // Gate Cash Collection & Handover System (Linked to Inside Cashier & Main Cash)
+  gateTransfers: GateCashTransfer[];
+  todayApprovedDoorCount: number;
+  todayGateCollected: number;
+  todayGateTransfers: GateCashTransfer[];
+  todayGateTransferredAmount: number;
+  todayGateCashInHand: number;
+  allTimeGateCollected: number;
+  allTimeGateTransferred: number;
+  allTimeGateCashInHand: number;
+  transferGateCashToCashier: (params: {
+    amount: number;
+    receivedByCashier: string;
+    paymentMethod?: PaymentMethod;
+    notes?: string;
+  }) => GateCashTransfer;
+
   // Player CRUD Actions
   registerNewPlayer: (kycData: Omit<PlayerKYC, 'submittedAt'>) => { player: Player; checkIn: DailyCheckIn };
   performDailyCheckIn: (playerId: string) => DailyCheckIn;
@@ -300,6 +319,7 @@ const STORAGE_KEYS = {
   EXPENSES: 'clubshowdown_expenses_v5',
   AUDIT_LOGS: 'clubshowdown_audit_logs_v5',
   CHIP_REQUESTS: 'clubshowdown_chip_requests_v5',
+  GATE_TRANSFERS: 'clubshowdown_gate_transfers_v5',
   ACTIVE_ROLE: 'clubshowdown_active_role_v5',
   SELECTED_PLAYER: 'clubshowdown_selected_player_v5',
 };
@@ -372,6 +392,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [chipRequests, setChipRequests] = useState<ChipRequest[]>(() =>
     loadFromStorage(STORAGE_KEYS.CHIP_REQUESTS, initialChipRequests)
   );
+  const [gateTransfers, setGateTransfers] = useState<GateCashTransfer[]>(() =>
+    loadFromStorage(STORAGE_KEYS.GATE_TRANSFERS, [])
+  );
 
   // Sync state to LocalStorage
   useEffect(() => saveToStorage(STORAGE_KEYS.STAFF_USERS, staffUsers), [staffUsers]);
@@ -384,6 +407,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => saveToStorage(STORAGE_KEYS.EXPENSES, expenses), [expenses]);
   useEffect(() => saveToStorage(STORAGE_KEYS.AUDIT_LOGS, auditLogs), [auditLogs]);
   useEffect(() => saveToStorage(STORAGE_KEYS.CHIP_REQUESTS, chipRequests), [chipRequests]);
+  useEffect(() => saveToStorage(STORAGE_KEYS.GATE_TRANSFERS, gateTransfers), [gateTransfers]);
   useEffect(() => saveToStorage(STORAGE_KEYS.ACTIVE_ROLE, activeRole), [activeRole]);
   useEffect(() => saveToStorage(STORAGE_KEYS.SELECTED_PLAYER, selectedPlayerId), [selectedPlayerId]);
 
@@ -491,6 +515,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             setCashTransactions(payload);
           } else if (type === 'EXPENSES_UPDATED' && payload) {
             setExpenses(payload);
+          } else if (type === 'GATE_TRANSFERS_UPDATED' && payload) {
+            setGateTransfers(payload);
           } else if (type === 'STAFF_UPDATED' && payload) {
             setStaffUsers(payload);
           }
@@ -518,6 +544,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setCashTransactions(JSON.parse(e.newValue));
         } else if (e.key === STORAGE_KEYS.EXPENSES) {
           setExpenses(JSON.parse(e.newValue));
+        } else if (e.key === STORAGE_KEYS.GATE_TRANSFERS) {
+          setGateTransfers(JSON.parse(e.newValue));
         } else if (e.key === STORAGE_KEYS.STAFF_USERS) {
           setStaffUsers(JSON.parse(e.newValue));
         }
@@ -1646,6 +1674,39 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const pendingChipOrdersCount = useMemo(() => {
     return chipRequests.filter(r => r.status === 'pending').length;
   }, [chipRequests]);
+
+  // ── GATE CASH COLLECTION & HANDOVER METRICS ───────
+  const todayApprovedDoorCount = useMemo(() => {
+    return todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
+  }, [todayCheckIns]);
+
+  const todayGateCollected = useMemo(() => {
+    return todayApprovedDoorCount * 500;
+  }, [todayApprovedDoorCount]);
+
+  const todayGateTransfers = useMemo(() => {
+    return gateTransfers.filter(t => isTimestampInCurrentSession(t.timestamp, today));
+  }, [gateTransfers, today]);
+
+  const todayGateTransferredAmount = useMemo(() => {
+    return todayGateTransfers.reduce((sum, t) => sum + t.amount, 0);
+  }, [todayGateTransfers]);
+
+  const todayGateCashInHand = useMemo(() => {
+    return Math.max(0, todayGateCollected - todayGateTransferredAmount);
+  }, [todayGateCollected, todayGateTransferredAmount]);
+
+  const allTimeGateCollected = useMemo(() => {
+    return checkIns.filter(c => c.verificationStatus === 'approved').length * 500;
+  }, [checkIns]);
+
+  const allTimeGateTransferred = useMemo(() => {
+    return gateTransfers.reduce((sum, t) => sum + t.amount, 0);
+  }, [gateTransfers]);
+
+  const allTimeGateCashInHand = useMemo(() => {
+    return Math.max(0, allTimeGateCollected - allTimeGateTransferred);
+  }, [allTimeGateCollected, allTimeGateTransferred]);
 
   const hasPlayerCheckedInToday = (playerId: string) => {
     return checkIns.find(c => c.playerId === playerId && c.checkInDate === today);
@@ -3198,6 +3259,56 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
   };
 
+  // GATE CASH COLLECTION & HANDOVER ACTION
+  const transferGateCashToCashier = (params: {
+    amount: number;
+    receivedByCashier: string;
+    paymentMethod?: PaymentMethod;
+    notes?: string;
+  }): GateCashTransfer => {
+    const { amount, receivedByCashier, paymentMethod = 'Cash', notes } = params;
+    const nowIso = new Date().toISOString();
+    const todayStr = getTodayDateString();
+    const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
+    const transferId = generateSequentialGateTransferId(gateTransfers);
+    const receiptNum = generateReceiptNumber();
+
+    const newTransfer: GateCashTransfer = {
+      id: transferId,
+      transferDate: todayStr,
+      amount: Number(amount),
+      paymentMethod,
+      handedOverBy: staff,
+      receivedBy: receivedByCashier,
+      timestamp: nowIso,
+      receiptNumber: receiptNum,
+      notes: notes?.trim() || undefined,
+    };
+
+    const nextTransfers = [newTransfer, ...gateTransfers];
+    setGateTransfers(nextTransfers);
+    saveToStorage(STORAGE_KEYS.GATE_TRANSFERS, nextTransfers);
+
+    // Automatically deposit into Inside Cashier & Main Cash Ledger
+    addCashReceived({
+      category: 'Gate Cash Handover',
+      amount: Number(amount),
+      description: `Gate door entry fees handed over from Security (${staff}) to Inside Cashier (${receivedByCashier})${notes ? ` - ${notes}` : ''}`,
+      paymentMethod,
+      playerName: `Gate Collection Handover (${staff})`,
+      referenceId: transferId,
+    });
+
+    addAuditLog(
+      'Security',
+      'Gate Cash Handover to Inside Cashier',
+      `Officer ${staff} handed over ₹${Number(amount).toLocaleString()} (${paymentMethod}) to Inside Cashier ${receivedByCashier}. Receipt #${receiptNum}`
+    );
+
+    broadcastUpdate('GATE_TRANSFERS_UPDATED', nextTransfers);
+    return newTransfer;
+  };
+
   // ADMIN ACTIONS
   const addExpense = (expenseData: Omit<Expense, 'id' | 'recordedBy'>): Expense => {
     const newExpense: Expense = {
@@ -3558,6 +3669,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         todayUpiOut,
         todayBankIn,
         todayBankOut,
+        gateTransfers,
+        todayApprovedDoorCount,
+        todayGateCollected,
+        todayGateTransfers,
+        todayGateTransferredAmount,
+        todayGateCashInHand,
+        allTimeGateCollected,
+        allTimeGateTransferred,
+        allTimeGateCashInHand,
+        transferGateCashToCashier,
         registerNewPlayer,
         performDailyCheckIn,
         updatePlayer,
