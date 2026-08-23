@@ -29,7 +29,7 @@ import {
   History,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { Player, DailyCheckIn } from '../../types';
+import { Player, DailyCheckIn, PaymentMethod } from '../../types';
 import { formatTimeOnly, maskGovtId, formatPlayerNumber, formatCurrency, formatShortDateTime } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
@@ -110,11 +110,13 @@ export const MobileSecurityPortal: React.FC = () => {
     ? todayCheckIns.find(c => c.playerId === selectedPlayer.id)
     : undefined;
 
+  const [doorPaymentMethod, setDoorPaymentMethod] = useState<PaymentMethod>('Cash');
+
   const handleApprove = (player: Player, checkIn?: DailyCheckIn) => {
-    approvePlayerEntry(checkIn?.id || player.id);
+    approvePlayerEntry(checkIn?.id || player.id, doorPaymentMethod);
     setPendingApproval(null);
 
-    setVerificationSuccessToast(`Entry approved for ${player.fullName}!`);
+    setVerificationSuccessToast(`Entry approved for ${player.fullName} (${doorPaymentMethod})!`);
     setTimeout(() => setVerificationSuccessToast(null), 3000);
 
     try {
@@ -145,10 +147,10 @@ export const MobileSecurityPortal: React.FC = () => {
 
   const handleVerifyKycAndApprove = (player: Player, checkIn?: DailyCheckIn) => {
     reviewKYC(player.id, 'verified');
-    approvePlayerEntry(checkIn?.id || player.id);
+    approvePlayerEntry(checkIn?.id || player.id, doorPaymentMethod);
     setPendingApproval(null);
 
-    setVerificationSuccessToast(`KYC Verified & Entry Approved for ${player.fullName}!`);
+    setVerificationSuccessToast(`KYC Verified & Entry Approved for ${player.fullName} (${doorPaymentMethod})!`);
     setTimeout(() => setVerificationSuccessToast(null), 3000);
 
     try {
@@ -657,6 +659,36 @@ export const MobileSecurityPortal: React.FC = () => {
 
                 {/* Entry Approval Buttons */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* Channel Picker for ₹500 Door Fee */}
+                  {playerToInspectCheckIn?.verificationStatus !== 'approved' && (
+                    <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.35)', padding: '3px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${doorPaymentMethod === 'Cash' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ flex: 1, fontSize: '0.68rem', padding: '4px 2px', borderRadius: '6px' }}
+                        onClick={() => setDoorPaymentMethod('Cash')}
+                      >
+                        💵 Cash (Till)
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${doorPaymentMethod === 'UPI/Digital' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ flex: 1, fontSize: '0.68rem', padding: '4px 2px', borderRadius: '6px', color: doorPaymentMethod === 'UPI/Digital' ? undefined : '#38bdf8' }}
+                        onClick={() => setDoorPaymentMethod('UPI/Digital')}
+                      >
+                        📱 UPI (Bank)
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${doorPaymentMethod === 'Bank Transfer' ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ flex: 1, fontSize: '0.68rem', padding: '4px 2px', borderRadius: '6px', color: doorPaymentMethod === 'Bank Transfer' ? undefined : '#c084fc' }}
+                        onClick={() => setDoorPaymentMethod('Bank Transfer')}
+                      >
+                        🏦 Wire (Bank)
+                      </button>
+                    </div>
+                  )}
+
                   {playerToInspect.kycStatus === 'pending' && (
                     <button
                       type="button"

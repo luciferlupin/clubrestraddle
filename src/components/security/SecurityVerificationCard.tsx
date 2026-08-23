@@ -14,7 +14,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { Player, DailyCheckIn } from '../../types';
+import { Player, DailyCheckIn, PaymentMethod } from '../../types';
 import { formatDateOnly, formatDateTime, formatTimeOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
@@ -43,15 +43,17 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const [entryPaymentMethod, setEntryPaymentMethod] = useState<PaymentMethod>('Cash');
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleApproveEntry = () => {
-    approvePlayerEntry(checkIn?.id || player.id);
+    approvePlayerEntry(checkIn?.id || player.id, entryPaymentMethod);
     setIsApproveModalOpen(false);
-    showToast(`Entry cleared for ${player.fullName}!`);
+    showToast(`Entry cleared for ${player.fullName} (${entryPaymentMethod})!`);
 
     try {
       confetti({
@@ -80,9 +82,9 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
 
   const handleVerifyKycAndApproveEntry = () => {
     reviewKYC(player.id, 'verified');
-    approvePlayerEntry(checkIn?.id || player.id);
+    approvePlayerEntry(checkIn?.id || player.id, entryPaymentMethod);
     setIsApproveModalOpen(false);
-    showToast(`KYC Verified & Entry Approved for ${player.fullName}!`);
+    showToast(`KYC Verified & Entry Approved for ${player.fullName} (${entryPaymentMethod})!`);
 
     try {
       confetti({
@@ -523,7 +525,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
           <span>Security officer access only · Realtime Audit Logged</span>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
           {checkIn && (
             <button
               type="button"
@@ -537,6 +539,39 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             >
               <FileText size={14} color="#e11d48" /> ₹500 Tax Invoice
             </button>
+          )}
+
+          {/* Payment Method Selector for Door Fee */}
+          {checkIn?.verificationStatus !== 'approved' && (
+            <div style={{ display: 'inline-flex', background: 'rgba(0,0,0,0.4)', borderRadius: '8px', padding: '2px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <button
+                type="button"
+                className={`btn btn-sm ${entryPaymentMethod === 'Cash' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.72rem', padding: '4px 8px', borderRadius: '6px' }}
+                onClick={() => setEntryPaymentMethod('Cash')}
+                title="Cash collected in Gate Till Drawer"
+              >
+                💵 Cash (Gate Till)
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${entryPaymentMethod === 'UPI/Digital' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.72rem', padding: '4px 8px', borderRadius: '6px', color: entryPaymentMethod === 'UPI/Digital' ? undefined : '#38bdf8' }}
+                onClick={() => setEntryPaymentMethod('UPI/Digital')}
+                title="UPI directly to Common Club Bank Account"
+              >
+                📱 UPI (Common Bank)
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${entryPaymentMethod === 'Bank Transfer' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.72rem', padding: '4px 8px', borderRadius: '6px', color: entryPaymentMethod === 'Bank Transfer' ? undefined : '#c084fc' }}
+                onClick={() => setEntryPaymentMethod('Bank Transfer')}
+                title="Bank wire directly to Common Club Bank Account"
+              >
+                🏦 Bank (Common Bank)
+              </button>
+            </div>
           )}
 
           <button

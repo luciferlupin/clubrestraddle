@@ -33,6 +33,9 @@ export const GateCashHandoverModal: React.FC<GateCashHandoverModalProps> = ({
     staffUsers,
     todayApprovedDoorCount,
     todayGateCollected,
+    todayGateCashCollected,
+    todayGateUpiCollected,
+    todayGateBankCollected,
     todayGateTransfers,
     todayGateTransferredAmount,
     todayGateCashInHand,
@@ -87,7 +90,7 @@ export const GateCashHandoverModal: React.FC<GateCashHandoverModalProps> = ({
         onClose();
       }}
       title="Gate Cash Collection & Handover"
-      subtitle="Transfer door entry cash collection from Security Entrance to Inside Cashier"
+      subtitle="Transfer physical cash collected at Entrance Gate to Inside Cashier Desk"
       size="md"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -113,21 +116,46 @@ export const GateCashHandoverModal: React.FC<GateCashHandoverModalProps> = ({
           </button>
         </div>
 
-        {/* Live Gate Till Overview (3 Summary Cards) */}
+        {/* Informational Callout: UPI & Bank are common/centralized directly to club bank */}
+        <div
+          style={{
+            background: 'rgba(56, 189, 248, 0.08)',
+            border: '1px solid rgba(56, 189, 248, 0.25)',
+            borderRadius: '10px',
+            padding: '10px 12px',
+            fontSize: '0.76rem',
+            color: '#cbd5e1',
+            lineHeight: 1.45,
+          }}
+        >
+          <strong style={{ color: '#38bdf8' }}>💡 Central Treasury Architecture:</strong> UPI and Bank transfers received anywhere (at the gate or inside desk) are credited directly to the club's common bank account. Only <strong>Physical Cash</strong> collected at the gate requires a handover drop to the inside cashier.
+        </div>
+
+        {/* Live Gate Till Overview (Channel Breakdown) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-          <div style={{ background: 'rgba(225, 29, 72, 0.12)', border: '1px solid rgba(225, 29, 72, 0.35)', borderRadius: '12px', padding: '10px 12px' }}>
-            <span style={{ fontSize: '0.68rem', color: '#fda4af', fontWeight: 700, textTransform: 'uppercase' }}>Door Collections</span>
+          <div style={{ background: 'rgba(245, 158, 11, 0.12)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '12px', padding: '10px 12px' }}>
+            <span style={{ fontSize: '0.68rem', color: '#fbbf24', fontWeight: 700, textTransform: 'uppercase' }}>💵 Physical Cash</span>
             <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', marginTop: '2px' }}>
-              {formatCurrency(todayGateCollected)}
+              {formatCurrency(todayGateCashCollected)}
             </div>
             <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-              {todayApprovedDoorCount} Entry Fees @ ₹500
+              Collected at Door
             </div>
           </div>
 
           <div style={{ background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.35)', borderRadius: '12px', padding: '10px 12px' }}>
-            <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase' }}>Handed Over</span>
+            <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: 700, textTransform: 'uppercase' }}>📱 UPI / Bank (Common)</span>
             <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#38bdf8', marginTop: '2px' }}>
+              {formatCurrency(todayGateUpiCollected + todayGateBankCollected)}
+            </div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+              Direct in Club Bank
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.35)', borderRadius: '12px', padding: '10px 12px' }}>
+            <span style={{ fontSize: '0.68rem', color: '#c084fc', fontWeight: 700, textTransform: 'uppercase' }}>🚚 Handed Over</span>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#c084fc', marginTop: '2px' }}>
               {formatCurrency(todayGateTransferredAmount)}
             </div>
             <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
@@ -135,13 +163,13 @@ export const GateCashHandoverModal: React.FC<GateCashHandoverModalProps> = ({
             </div>
           </div>
 
-          <div style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(15, 10, 4, 0.8) 100%)', border: '1.5px solid #fbbf24', borderRadius: '12px', padding: '10px 12px' }}>
-            <span style={{ fontSize: '0.68rem', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase' }}>Gate Till In Hand</span>
+          <div style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(15, 10, 4, 0.85) 100%)', border: '1.5px solid #fbbf24', borderRadius: '12px', padding: '10px 12px' }}>
+            <span style={{ fontSize: '0.68rem', color: '#fbbf24', fontWeight: 800, textTransform: 'uppercase' }}>Till Cash In Hand</span>
             <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--gold-light)', marginTop: '2px' }}>
               {formatCurrency(todayGateCashInHand)}
             </div>
             <div style={{ fontSize: '0.68rem', color: '#fbbf24' }}>
-              Available for Cashier Handover
+              Physical Cash in Drawer
             </div>
           </div>
         </div>

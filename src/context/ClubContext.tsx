@@ -228,6 +228,9 @@ interface ClubContextType {
   gateTransfers: GateCashTransfer[];
   todayApprovedDoorCount: number;
   todayGateCollected: number;
+  todayGateCashCollected: number;
+  todayGateUpiCollected: number;
+  todayGateBankCollected: number;
   todayGateTransfers: GateCashTransfer[];
   todayGateTransferredAmount: number;
   todayGateCashInHand: number;
@@ -291,7 +294,7 @@ interface ClubContextType {
   updateTournamentStatus: (tournamentId: string, status: Tournament['status']) => void;
 
   // Security & Attendance CRUD Actions
-  approvePlayerEntry: (checkInId: string) => void;
+  approvePlayerEntry: (checkInId: string, paymentMethod?: PaymentMethod) => void;
   rejectPlayerEntry: (checkInId: string, reason: string) => void;
   updateCheckIn: (checkInId: string, updates: Partial<DailyCheckIn>) => void;
   deleteCheckIn: (checkInId: string) => void;
@@ -1680,9 +1683,31 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
   }, [todayCheckIns]);
 
+  // Total Door collections across all payment channels
   const todayGateCollected = useMemo(() => {
     return todayApprovedDoorCount * 500;
   }, [todayApprovedDoorCount]);
+
+  // Physical Cash collected at gate (held in Gate Till drawer)
+  const todayGateCashCollected = useMemo(() => {
+    return todayCheckIns
+      .filter(c => c.verificationStatus === 'approved' && (!c.paymentMethod || c.paymentMethod === 'Cash'))
+      .length * 500;
+  }, [todayCheckIns]);
+
+  // UPI/QR collected at gate (goes directly to Central Club Bank Account)
+  const todayGateUpiCollected = useMemo(() => {
+    return todayCheckIns
+      .filter(c => c.verificationStatus === 'approved' && c.paymentMethod === 'UPI/Digital')
+      .length * 500;
+  }, [todayCheckIns]);
+
+  // Bank Wire collected at gate (goes directly to Central Club Bank Account)
+  const todayGateBankCollected = useMemo(() => {
+    return todayCheckIns
+      .filter(c => c.verificationStatus === 'approved' && c.paymentMethod === 'Bank Transfer')
+      .length * 500;
+  }, [todayCheckIns]);
 
   const todayGateTransfers = useMemo(() => {
     return gateTransfers.filter(t => isTimestampInCurrentSession(t.timestamp, today));
@@ -1692,9 +1717,10 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return todayGateTransfers.reduce((sum, t) => sum + t.amount, 0);
   }, [todayGateTransfers]);
 
+  // Physical Cash currently remaining in Gate Till
   const todayGateCashInHand = useMemo(() => {
-    return Math.max(0, todayGateCollected - todayGateTransferredAmount);
-  }, [todayGateCollected, todayGateTransferredAmount]);
+    return Math.max(0, todayGateCashCollected - todayGateTransferredAmount);
+  }, [todayGateCashCollected, todayGateTransferredAmount]);
 
   const allTimeGateCollected = useMemo(() => {
     return checkIns.filter(c => c.verificationStatus === 'approved').length * 500;
@@ -1705,8 +1731,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [gateTransfers]);
 
   const allTimeGateCashInHand = useMemo(() => {
-    return Math.max(0, allTimeGateCollected - allTimeGateTransferred);
-  }, [allTimeGateCollected, allTimeGateTransferred]);
+    const allTimeCashCollected = checkIns
+      .filter(c => c.verificationStatus === 'approved' && (!c.paymentMethod || c.paymentMethod === 'Cash'))
+      .length * 500;
+    return Math.max(0, allTimeCashCollected - allTimeGateTransferred);
+  }, [checkIns, allTimeGateTransferred]);
 
   const hasPlayerCheckedInToday = (playerId: string) => {
     return checkIns.find(c => c.playerId === playerId && c.checkInDate === today);
@@ -2949,7 +2978,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // SECURITY ACTIONS
-  const approvePlayerEntry = (checkInIdOrPlayerId: string) => {
+  const approvePlayerEntry = (checkInIdOrPlayerId: string, paymentMethod: PaymentMethod = 'Cash') => {
     const nowIso = new Date().toISOString();
     const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
     const nowTime = new Date().toTimeString().split(' ')[0];
@@ -2975,6 +3004,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         verificationStatus: 'approved',
         verifiedBy: staff,
         verifiedAt: nowIso,
+        paymentMethod,
         rejectionReason: undefined,
       };
       nextCheckIns = checkIns.map(c =>
@@ -2984,6 +3014,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               verificationStatus: 'approved' as const,
               verifiedBy: staff,
               verifiedAt: nowIso,
+              paymentMethod,
               rejectionReason: undefined,
             }
           : c
@@ -2999,8 +3030,21 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         verificationStatus: 'approved',
         verifiedBy: staff,
         verifiedAt: nowIso,
+        paymentMethod,
       };
       nextCheckIns = [updatedCheckIn, ...checkIns];
+    }
+
+    // If payment method is UPI or Bank, credit the common club treasury balance directly!
+    if (paymentMethod === 'UPI/Digital' || paymentMethod === 'Bank Transfer') {
+      addCashReceived({
+        category: 'Gate Entry Fee Transfer',
+        amount: 500,
+        description: `Door entry fee collected at Gate via ${paymentMethod} for ${approvedPlayerName}`,
+        paymentMethod,
+        playerName: approvedPlayerName,
+        referenceId: targetCheckInId,
+      });
     }
 
     const nextPlayers = players.map(p => {
@@ -3672,6 +3716,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         gateTransfers,
         todayApprovedDoorCount,
         todayGateCollected,
+        todayGateCashCollected,
+        todayGateUpiCollected,
+        todayGateBankCollected,
         todayGateTransfers,
         todayGateTransferredAmount,
         todayGateCashInHand,

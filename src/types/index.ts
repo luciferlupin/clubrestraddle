@@ -109,6 +109,7 @@ export interface DailyCheckIn {
   verificationStatus: EntryVerificationStatus;
   verifiedBy?: string; // Security officer name
   verifiedAt?: string;
+  paymentMethod?: PaymentMethod; // 'Cash' (Gate Till) | 'UPI/Digital' (Common Club Account) | 'Bank Transfer' (Common Club Account)
   rejectionReason?: string;
 }
 
