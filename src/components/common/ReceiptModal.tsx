@@ -35,7 +35,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
             Close
           </button>
           <button className="btn btn-primary" onClick={handlePrint}>
-            <Printer size={16} /> Print / Save Voucher
+            <Printer size={16} /> Print / Save Receipt
           </button>
         </>
       }
@@ -51,7 +51,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
             CLUB RE STRADDLE POKER LOUNGE
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-            OFFICIAL TOURNAMENT ENTRY & PAYMENT VOUCHER
+            OFFICIAL TOURNAMENT ENTRY & PAYMENT RECEIPT
           </div>
           <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '4px' }}>
             {formatDateTime(entry.registeredAt)}

@@ -1055,7 +1055,7 @@ export const CashPortal: React.FC = () => {
             setIsEditExpenseModalOpen(false);
             setSelectedExpense(null);
           }}
-          title={`Edit Expense Voucher: ${selectedExpense.id}`}
+          title={`Edit Expense Record: ${selectedExpense.id}`}
           subtitle={`Paid To: ${selectedExpense.paidTo}`}
           size="md"
         >

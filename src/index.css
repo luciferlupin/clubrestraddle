@@ -1403,7 +1403,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* -------------------------------------------------------------
-   PRINTABLE RECEIPT VOUCHER (White Paper • Dark Sharp Text)
+   PRINTABLE PAYMENT RECEIPT (White Paper • Dark Sharp Text)
    ------------------------------------------------------------- */
 .receipt-paper {
   background: #ffffff !important;

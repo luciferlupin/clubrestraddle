@@ -74,7 +74,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({
     if (selectedDesk === 'cashier') {
       return {
         title: 'Cashier desk',
-        subtitle: 'Entries, chip requests, events and vouchers',
+        subtitle: 'Entries, chip requests, and event operations',
         icon: DollarSign,
         allowedRoles: ['cashier', 'admin'],
       };

@@ -27,7 +27,7 @@ export const RoleSwitcherDrawer: React.FC<RoleSwitcherDrawerProps> = ({ isOpen, 
     {
       role: 'cashier',
       title: 'Cashier desk',
-      desc: 'Entries, chip orders, events and vouchers',
+      desc: 'Entries, chip orders, and event operations',
       icon: <DollarSign size={20} color="#ffffff" />,
       color: '#e11d48',
     },

@@ -160,7 +160,7 @@ export const AdminExpensesView: React.FC = () => {
         </div>
 
         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          {expenses.length} Total Expense Vouchers Filed
+          {expenses.length} Total Expenses Filed
         </div>
       </div>
 
@@ -215,7 +215,7 @@ export const AdminExpensesView: React.FC = () => {
           <table className="custom-table">
             <thead>
               <tr>
-                <th>Voucher #</th>
+                <th>Expense #</th>
                 <th>Category</th>
                 <th>Description</th>
                 <th>Paid To</th>
@@ -230,7 +230,7 @@ export const AdminExpensesView: React.FC = () => {
               {paginatedExpenses.length === 0 ? (
                 <tr>
                   <td colSpan={9} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
-                    No expense vouchers found.
+                    No expense records found.
                   </td>
                 </tr>
               ) : (
@@ -298,7 +298,7 @@ export const AdminExpensesView: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Record Club Operating Expense"
-        subtitle="Enter expense details and payment voucher reference"
+        subtitle="Enter expense details and payment reference"
         size="md"
       >
         <form onSubmit={handleSubmit}>
@@ -392,7 +392,7 @@ export const AdminExpensesView: React.FC = () => {
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              <Plus size={16} /> Record Expense Voucher
+              <Plus size={16} /> Record Expense
             </button>
           </div>
         </form>
@@ -403,7 +403,7 @@ export const AdminExpensesView: React.FC = () => {
         <Modal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
-          title={`Edit Expense Voucher: ${selectedExpense.id}`}
+          title={`Edit Expense Record: ${selectedExpense.id}`}
           subtitle={`Recorded by: ${selectedExpense.recordedBy}`}
           size="md"
         >

@@ -44,7 +44,7 @@ export const MobileCashierPortal: React.FC = () => {
     syncNow,
   } = useClub();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash' | 'records'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash'>('dashboard');
   const [chipFilter, setChipFilter] = useState<'pending' | 'all' | 'delivered' | 'cancelled'>('pending');
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -306,7 +306,7 @@ export const MobileCashierPortal: React.FC = () => {
             <ArrowLeft size={14} /> Back to Dashboard
           </button>
           <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fda4af', textTransform: 'capitalize' }}>
-            {activeTab === 'chips' ? 'Chip Dispatch' : activeTab === 'players' ? 'Tournament Entry' : activeTab === 'tournaments' ? 'Events' : activeTab === 'records' ? 'Vouchers' : 'Cash Desk'}
+            {activeTab === 'chips' ? 'Chip Dispatch' : activeTab === 'players' ? 'Tournament Entry' : activeTab === 'tournaments' ? 'Events' : 'Cash Desk'}
           </span>
         </div>
       )}
@@ -397,7 +397,7 @@ export const MobileCashierPortal: React.FC = () => {
                 <Users size={18} color="#ffffff" />
                 Tournament Player Entry & Billing
               </h3>
-              <p className="m-card-subtitle">Collect the entry charge and generate an official entry voucher</p>
+              <p className="m-card-subtitle">Collect the entry charge and register tournament entry</p>
             </div>
           </div>
 
@@ -763,80 +763,7 @@ export const MobileCashierPortal: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 5: BILLING RECORDS & VOUCHERS */}
-      {activeTab === 'records' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div className="m-card">
-            <h3 className="m-card-title">
-              <Receipt size={18} color="#ffffff" />
-              Issued Payment Receipts ({entries.length})
-            </h3>
-            <p className="m-card-subtitle">Tap any voucher to preview or print</p>
-          </div>
 
-          {entries.map(e => {
-            const playerObj = players.find(p => p.id === e.playerId);
-            const tournamentObj = tournaments.find(t => t.name === e.tournamentName);
-
-            const invoiceData: ClubInvoiceData = {
-              invoiceNumber: e.receiptNumber,
-              invoiceDate: e.registeredAt,
-              category: 'Tournament Entry & Service Charge',
-              playerId: playerObj ? formatPlayerNumber(playerObj) : e.playerId,
-              playerName: e.playerName,
-              playerPhone: e.playerPhone || playerObj?.phone,
-              playerEmail: playerObj?.email,
-              govtIdType: playerObj?.kyc.govtIdType,
-              govtIdNumber: playerObj?.kyc.govtIdNumber,
-              membershipTier: playerObj?.membershipTier,
-              tableLocation: `${e.tableNumber} • ${e.seatNumber}`,
-              items: [
-                {
-                  description: `${formatClubLabel(e.tournamentName)} - Tournament Entry Charge`,
-                  details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Playing Chips`,
-                  chips: tournamentObj?.startingChips || 50000,
-                  amount: e.buyInAmount,
-                },
-                {
-                  description: 'Tournament Service Charge',
-                  details: 'Club tournament organization and dealer service',
-                  amount: e.rakeAmount,
-                },
-              ],
-              subtotal: e.buyInAmount,
-              rakeOrFee: e.rakeAmount,
-              totalAmount: e.buyInAmount + e.rakeAmount,
-              paymentMethod: e.paymentMethod,
-              paymentReference: e.paymentReference,
-              cashierName: e.cashierName || staffName,
-            };
-
-            return (
-              <button
-                key={e.id}
-                type="button"
-                className="m-list-card m-list-button"
-                onClick={() => setSelectedInvoice(invoiceData)}
-              >
-                <div className="m-list-row">
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--gold-light)', fontSize: '0.8rem' }}>
-                    {e.receiptNumber}
-                  </span>
-                  <span className="tabular-num" style={{ fontWeight: 800, color: '#ffffff' }}>
-                    {formatCurrency(e.buyInAmount + e.rakeAmount)}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{e.playerName}</div>
-                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>{formatClubLabel(e.tournamentName)}</div>
-                <div className="m-list-row" style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
-                  <span>{e.tableNumber} • {e.seatNumber}</span>
-                  <span className="staff-inline-link">View invoice <ChevronRight size={14} /></span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* DRAWERS / MODALS */}
 
@@ -1199,13 +1126,7 @@ export const MobileCashierPortal: React.FC = () => {
           <span className="nav-tab-label">Chips</span>
         </button>
 
-        <button
-          className={`nav-tab-item cashier-color ${activeTab === 'records' ? 'active' : ''}`}
-          onClick={() => setActiveTab('records')}
-        >
-          <Receipt size={20} />
-          <span className="nav-tab-label">Vouchers</span>
-        </button>
+
       </nav>
 
       </div>{/* end staff-scroll-area */}

@@ -85,7 +85,7 @@ export const CashierPortal: React.FC = () => {
         eyebrow="Cashier desk"
         title="Cashier operations workspace"
         subtitle={<>Signed in as <strong>{staffName}</strong> · Terminal 1</>}
-        notice={<><Lock size={14} aria-hidden="true" /> Event registration, chip dispatch & member vouchers</>}
+        notice={<><Lock size={14} aria-hidden="true" /> Event registration, chip dispatch & player desk</>}
       />
 
       <DesktopSectionNav<CashierTab>

@@ -315,7 +315,7 @@ export const initialAuditLogs: AuditLog[] = [
     id: 'LOG-SYS-003',
     portal: 'Cashier',
     user: 'Elena Rostova (Cashier)',
-    action: 'Tournament Voucher Issued',
+    action: 'Tournament Receipt Issued',
     details: 'Issued High Roller entry RCP-2026-001 for Sofia Valenti (₹27,500 total).',
     timestamp: new Date(Date.now() - 3600000).toISOString(),
   },
