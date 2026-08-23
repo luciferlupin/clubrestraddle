@@ -279,7 +279,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
               <DocumentPhotoUpload
                 id="mobile-aadhaar-doc"
                 label="Aadhaar Card"
-                subLabel="Take photo or choose file. Auto-compressed (<100 KB)."
+                subLabel="Choose from gallery/files or snap with camera."
                 value={formData.aadhaarPhotoUrl}
                 onChange={(url) => setFormData({ ...formData, aadhaarPhotoUrl: url || '' })}
                 required
@@ -307,7 +307,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
               <DocumentPhotoUpload
                 id="mobile-pan-doc"
                 label="PAN Card"
-                subLabel="Take photo or choose file. Auto-compressed (<100 KB)."
+                subLabel="Choose from gallery/files or snap with camera."
                 value={formData.panPhotoUrl}
                 onChange={(url) => setFormData({ ...formData, panPhotoUrl: url || '' })}
                 required

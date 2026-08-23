@@ -1,5 +1,17 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, CheckCircle2, Eye, Trash2, RefreshCw, AlertCircle, Sparkles, ZoomIn, X } from 'lucide-react';
+import {
+  Camera,
+  Image as ImageIcon,
+  CheckCircle2,
+  Eye,
+  Trash2,
+  RefreshCw,
+  AlertCircle,
+  Sparkles,
+  ZoomIn,
+  X,
+  Upload,
+} from 'lucide-react';
 import { compressImageFile } from '../../utils/imageCompressor';
 
 interface DocumentPhotoUploadProps {
@@ -23,7 +35,8 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
   required = false,
   accentColor = '#e11d48',
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const [compressing, setCompressing] = useState(false);
   const [compressionStats, setCompressionStats] = useState<{
     originalSizeKb: number;
@@ -36,7 +49,7 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      setError('Please upload a valid image file (JPG, PNG, WebP).');
+      setError('Please upload a valid image file (JPG, PNG, WebP, HEIC).');
       return;
     }
 
@@ -71,6 +84,8 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
     if (file) {
       handleFile(file);
     }
+    // Reset inputs so selecting the same file again triggers change event
+    e.target.value = '';
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -86,17 +101,16 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
     e.stopPropagation();
     onChange(undefined);
     setCompressionStats(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
   };
 
   return (
     <div className="doc-photo-upload-wrapper" style={{ marginTop: '8px' }}>
-      {/* Hidden file input */}
+      {/* Camera-specific input (opens camera on mobile devices) */}
       <input
-        ref={fileInputRef}
-        id={id}
+        ref={cameraInputRef}
+        id={`${id}-camera`}
         type="file"
         accept="image/*"
         capture="environment"
@@ -104,8 +118,18 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
         onChange={handleInputChange}
       />
 
+      {/* Gallery / File Picker input (opens photo library or files on mobile/desktop without forcing camera) */}
+      <input
+        ref={galleryInputRef}
+        id={`${id}-gallery`}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={handleInputChange}
+      />
+
       {value ? (
-        /* Uploaded & Compressed State */
+        /* Uploaded & Attached State */
         <div
           style={{
             background: 'rgba(0, 0, 0, 0.45)',
@@ -117,6 +141,7 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
             justifyContent: 'space-between',
             gap: '12px',
             transition: 'all 0.2s ease',
+            flexWrap: 'wrap',
           }}
         >
           {/* Thumbnail preview */}
@@ -156,7 +181,7 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
           </div>
 
           {/* Info & Compression metrics */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: '1 1 180px', minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>
               <CheckCircle2 size={15} color="#10b981" />
               <span>{label} Attached</span>
@@ -178,22 +203,22 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
                   ⚡ Compressed: {compressionStats.compressedSizeKb} KB
                 </span>
                 <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
-                  ({compressionStats.savedPercentage}% storage saved)
+                  ({compressionStats.savedPercentage}% saved)
                 </span>
               </div>
             ) : (
               <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
-                Document photo optimized & ready
+                Photo optimized & verified
               </div>
             )}
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <button
               type="button"
               className="btn btn-secondary btn-sm"
-              style={{ padding: '5px 8px', fontSize: '0.74rem' }}
+              style={{ padding: '6px 9px', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '4px' }}
               onClick={() => setIsLightboxOpen(true)}
               title="Inspect Photo"
             >
@@ -202,16 +227,25 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
             <button
               type="button"
               className="btn btn-secondary btn-sm"
-              style={{ padding: '5px 8px', fontSize: '0.74rem' }}
-              onClick={() => fileInputRef.current?.click()}
-              title="Change Photo"
+              style={{ padding: '6px 9px', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+              onClick={() => cameraInputRef.current?.click()}
+              title="Retake with Camera"
             >
-              <RefreshCw size={13} /> Retake
+              <Camera size={13} /> Camera
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ padding: '6px 9px', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+              onClick={() => galleryInputRef.current?.click()}
+              title="Choose from Gallery / Files"
+            >
+              <ImageIcon size={13} /> Gallery
             </button>
             <button
               type="button"
               className="btn btn-danger btn-sm"
-              style={{ padding: '5px 8px', fontSize: '0.74rem' }}
+              style={{ padding: '6px 9px', fontSize: '0.74rem' }}
               onClick={handleRemove}
               title="Remove Photo"
             >
@@ -220,9 +254,8 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
           </div>
         </div>
       ) : (
-        /* Empty / Upload Dropzone State */
+        /* Empty / Choose File or Photo Option State */
         <div
-          onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => {
             e.preventDefault();
             setIsDragOver(true);
@@ -230,50 +263,123 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
           onDragLeave={() => setIsDragOver(false)}
           onDrop={handleDrop}
           style={{
-            border: `1.5px dashed ${isDragOver ? accentColor : 'rgba(255, 255, 255, 0.2)'}`,
-            background: isDragOver ? 'rgba(225, 29, 72, 0.12)' : 'rgba(0, 0, 0, 0.3)',
+            border: `1.5px dashed ${isDragOver ? accentColor : 'rgba(255, 255, 255, 0.22)'}`,
+            background: isDragOver ? 'rgba(225, 29, 72, 0.14)' : 'rgba(0, 0, 0, 0.32)',
             borderRadius: '12px',
             padding: '14px 16px',
             textAlign: 'center',
-            cursor: 'pointer',
             transition: 'all 0.2s ease',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '6px',
+            gap: '10px',
           }}
         >
+          {/* Header info */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              {compressing ? (
+                <>
+                  <RefreshCw size={15} className="spin-anim" color={accentColor} />
+                  <span>Compressing Photo...</span>
+                </>
+              ) : (
+                <>
+                  <span>Upload or Snap {label} Photo</span>
+                  {required && <span style={{ color: '#fb7185' }}>*</span>}
+                </>
+              )}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#94a3b8', maxWidth: '340px' }}>
+              {subLabel || 'Choose a photo from your gallery/files or take a new photo with camera.'}
+            </div>
+          </div>
+
+          {/* Action Choice Buttons: Camera vs Gallery */}
           <div
             style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              background: 'rgba(225, 29, 72, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: accentColor,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+              gap: '8px',
+              width: '100%',
+              maxWidth: '360px',
             }}
           >
-            {compressing ? (
-              <RefreshCw size={18} className="spin-anim" />
-            ) : (
-              <Camera size={18} />
-            )}
-          </div>
+            {/* Option 1: Choose from Gallery / Files */}
+            <button
+              type="button"
+              disabled={compressing}
+              onClick={(e) => {
+                e.stopPropagation();
+                galleryInputRef.current?.click();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '7px',
+                padding: '9px 12px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '8px',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.18s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.16)';
+                e.currentTarget.style.borderColor = '#ffffff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+              }}
+            >
+              <ImageIcon size={16} color="#38bdf8" />
+              <span>Choose from Gallery</span>
+            </button>
 
-          <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#ffffff' }}>
-            {compressing ? 'Compressing & Optimizing Photo...' : `Upload or Take ${label} Photo`}
-            {required && <span style={{ color: '#fb7185', marginLeft: '4px' }}>*</span>}
-          </div>
-
-          <div style={{ fontSize: '0.72rem', color: '#94a3b8', maxWidth: '300px' }}>
-            {subLabel || 'Tap to take photo or choose file. Auto-compressed (<100 KB) for instant verification.'}
+            {/* Option 2: Take Photo with Camera */}
+            <button
+              type="button"
+              disabled={compressing}
+              onClick={(e) => {
+                e.stopPropagation();
+                cameraInputRef.current?.click();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '7px',
+                padding: '9px 12px',
+                background: 'rgba(225, 29, 72, 0.15)',
+                border: '1px solid rgba(225, 29, 72, 0.4)',
+                borderRadius: '8px',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.18s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(225, 29, 72, 0.28)';
+                e.currentTarget.style.borderColor = '#e11d48';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(225, 29, 72, 0.15)';
+                e.currentTarget.style.borderColor = 'rgba(225, 29, 72, 0.4)';
+              }}
+            >
+              <Camera size={16} color="#fb7185" />
+              <span>Take Photo</span>
+            </button>
           </div>
 
           <div
             style={{
-              marginTop: '4px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '4px',
@@ -285,7 +391,7 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
               border: '1px solid rgba(16, 185, 129, 0.2)',
             }}
           >
-            <Sparkles size={11} /> Smart Low-Storage Compression
+            <Sparkles size={11} /> Auto-compressed for fast verification
           </div>
         </div>
       )}

@@ -494,7 +494,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                 <DocumentPhotoUpload
                   id="kyc-aadhaar-doc-upload"
                   label="Aadhaar Card"
-                  subLabel="Front/document photo of Aadhaar Card. Auto-compressed (<100 KB)."
+                  subLabel="Choose photo from gallery/files or capture with camera."
                   value={formData.aadhaarPhotoUrl}
                   onChange={(url) => setFormData({ ...formData, aadhaarPhotoUrl: url || '' })}
                 />
@@ -537,7 +537,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                 <DocumentPhotoUpload
                   id="kyc-pan-doc-upload"
                   label="PAN Card"
-                  subLabel="Photo of PAN Card. Auto-compressed (<100 KB) for instant review."
+                  subLabel="Choose photo from gallery/files or capture with camera."
                   value={formData.panPhotoUrl}
                   onChange={(url) => setFormData({ ...formData, panPhotoUrl: url || '' })}
                 />
