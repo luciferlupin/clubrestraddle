@@ -1361,7 +1361,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const today = getTodayDateString();
 
   const todayCheckIns = useMemo(() => {
-    return checkIns.filter(c => c.checkInDate === today);
+    return checkIns.filter(c => c.checkInDate === today || c.verificationStatus === 'pending');
   }, [checkIns, today]);
 
   const totalCashInAmount = useMemo(() => {

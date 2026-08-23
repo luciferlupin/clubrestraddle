@@ -5,6 +5,8 @@ import {
   Clock,
   ShieldAlert,
   Check,
+  FileCheck2,
+  Users,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
@@ -21,12 +23,19 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
   selectedPlayerId,
   onSelectPlayer,
 }) => {
-  const { players, todayCheckIns, approvePlayerEntry } = useClub();
+  const { players, todayCheckIns, approvePlayerEntry, reviewKYC } = useClub();
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'pending' | 'rejected'>('pending');
+  const [filter, setFilter] = useState<'pending' | 'rejected' | 'all'>('pending');
 
-  const pendingCount = todayCheckIns.filter(c => c.verificationStatus === 'pending').length;
-  const rejectedCount = todayCheckIns.filter(c => c.verificationStatus === 'rejected').length;
+  const pendingCount = players.filter(p => {
+    const chk = todayCheckIns.find(c => c.playerId === p.id);
+    return chk?.verificationStatus === 'pending' || p.kycStatus === 'pending';
+  }).length;
+
+  const rejectedCount = players.filter(p => {
+    const chk = todayCheckIns.find(c => c.playerId === p.id);
+    return (chk?.verificationStatus === 'rejected' || p.kycStatus === 'rejected') && chk?.verificationStatus !== 'approved';
+  }).length;
 
   // Build list of items to display
   const displayItems = players
@@ -38,7 +47,6 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
       };
     })
     .filter(({ player, checkIn }) => {
-      if (checkIn?.verificationStatus === 'approved') return false;
       const matchesSearch =
         player.fullName.toLowerCase().includes(search.toLowerCase()) ||
         player.phone.includes(search) ||
@@ -48,12 +56,16 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
       if (!matchesSearch) return false;
 
       if (filter === 'pending') {
+        if (checkIn?.verificationStatus === 'approved' && player.kycStatus === 'verified') return false;
         return checkIn?.verificationStatus === 'pending' || player.kycStatus === 'pending';
       }
       if (filter === 'rejected') {
         return checkIn?.verificationStatus === 'rejected' || player.kycStatus === 'rejected';
       }
-      return false;
+      if (filter === 'all') {
+        return !!checkIn || player.kycStatus === 'pending';
+      }
+      return true;
     });
 
   return (
@@ -100,7 +112,7 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
               Live Entrance & KYC Verification Queue
             </h3>
             <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>
-              Real-time arrivals, daily check-ins and member identification credentials.
+              Real-time arrivals, pending member approvals, and KYC document clearance.
             </p>
           </div>
         </div>
@@ -140,13 +152,21 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
           <ShieldAlert size={13} /> Denied ({rejectedCount})
         </button>
 
+        <button
+          type="button"
+          className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setFilter('all')}
+          style={{ fontSize: '0.78rem' }}
+        >
+          <Users size={13} /> All Today ({todayCheckIns.length})
+        </button>
       </div>
 
       {displayItems.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '36px 16px', color: '#94a3b8' }}>
           <ShieldCheck size={36} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
           <p style={{ fontSize: '0.88rem', color: '#ffffff', fontWeight: 600 }}>No players found in this queue.</p>
-          <p style={{ fontSize: '0.76rem' }}>When players check in at the entrance or scan their pass, they will appear here instantly.</p>
+          <p style={{ fontSize: '0.76rem' }}>When players register, check in at the entrance or scan their pass, they appear here instantly.</p>
         </div>
       ) : (
         <div className="table-container">
@@ -164,7 +184,7 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
             <tbody>
               {displayItems.map(({ player, checkIn }) => {
                 const isSelected = selectedPlayerId === player.id;
-                const isPending = checkIn?.verificationStatus === 'pending';
+                const isPending = checkIn?.verificationStatus === 'pending' || player.kycStatus === 'pending';
 
                 return (
                   <tr
@@ -248,25 +268,41 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Not checked in</span>
+                        <span style={{ fontSize: '0.74rem', color: '#fbbf24' }}>Pending Check-in</span>
                       )}
                     </td>
 
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                        {checkIn?.verificationStatus === 'pending' && (
+                        {player.kycStatus === 'pending' && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '4px 8px', fontSize: '0.72rem', color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+                            onClick={() => {
+                              reviewKYC(player.id, 'verified');
+                            }}
+                            title="Verify Member KYC"
+                          >
+                            <FileCheck2 size={12} /> Verify KYC
+                          </button>
+                        )}
+                        {(checkIn?.verificationStatus === 'pending' || (!checkIn && player.kycStatus === 'pending')) && (
                           <button
                             type="button"
                             className="btn btn-emerald btn-sm"
                             style={{ padding: '4px 10px', fontSize: '0.74rem', gap: '4px' }}
                             onClick={() => {
-                              approvePlayerEntry(checkIn.id);
+                              if (player.kycStatus === 'pending') {
+                                reviewKYC(player.id, 'verified');
+                              }
+                              approvePlayerEntry(checkIn?.id || player.id);
                               try {
                                 confetti({
                                   particleCount: 40,
                                   spread: 50,
                                   origin: { y: 0.7 },
-                                  colors: ['#e11d48', '#ffffff', '#fb7185'],
+                                  colors: ['#e11d48', '#ffffff', '#fb7185', '#10b981'],
                                 });
                               } catch {}
                             }}

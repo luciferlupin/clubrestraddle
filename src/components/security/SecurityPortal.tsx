@@ -50,20 +50,26 @@ export const SecurityPortal: React.FC = () => {
   const selectedPlayerCheckIn = selectedPlayer
     ? todayCheckIns.find(c => c.playerId === selectedPlayer.id)
     : undefined;
-  const firstPendingCheckIn = todayCheckIns.find(c => c.verificationStatus === 'pending');
-  const firstPendingPlayer = firstPendingCheckIn
-    ? players.find(player => player.id === firstPendingCheckIn.playerId) || null
-    : null;
-  const focusedPlayer = selectedPlayerCheckIn?.verificationStatus === 'pending'
-    ? selectedPlayer
-    : firstPendingPlayer;
+  
+  const pendingCheckIn = todayCheckIns.find(c => c.verificationStatus === 'pending');
+  const firstPendingPlayer = pendingCheckIn
+    ? players.find(p => p.id === pendingCheckIn.playerId) || null
+    : players.find(p => p.kycStatus === 'pending') || null;
+
+  const focusedPlayer = selectedPlayer || firstPendingPlayer;
   const focusedCheckIn = focusedPlayer
-    ? todayCheckIns.find(c => c.playerId === focusedPlayer.id && c.verificationStatus === 'pending')
+    ? todayCheckIns.find(c => c.playerId === focusedPlayer.id)
     : undefined;
 
-  const pendingCount = todayCheckIns.filter(c => c.verificationStatus === 'pending').length;
+  const pendingCount = players.filter(p => {
+    const chk = todayCheckIns.find(c => c.playerId === p.id);
+    return chk?.verificationStatus === 'pending' || p.kycStatus === 'pending';
+  }).length;
   const approvedTodayCount = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
-  const rejectedTodayCount = todayCheckIns.filter(c => c.verificationStatus === 'rejected').length;
+  const rejectedTodayCount = players.filter(p => {
+    const chk = todayCheckIns.find(c => c.playerId === p.id);
+    return (chk?.verificationStatus === 'rejected' || p.kycStatus === 'rejected') && chk?.verificationStatus !== 'approved';
+  }).length;
 
   const handleSelect = (player: Player, _checkIn?: DailyCheckIn) => {
     setSelectedPlayer(player);

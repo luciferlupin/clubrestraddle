@@ -8,6 +8,10 @@ import {
   Lock,
   Eye,
   X,
+  FileCheck2,
+  FileX,
+  Check,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
@@ -18,8 +22,6 @@ import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceMo
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
 import { FileText } from 'lucide-react';
 import confetti from 'canvas-confetti';
-
-const SESSION_TODAY = new Date();
 
 interface SecurityVerificationCardProps {
   player: Player;
@@ -33,25 +35,63 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
   const { approvePlayerEntry, rejectPlayerEntry, reviewKYC, staffName } = useClub();
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const [isRejectKycModalOpen, setIsRejectKycModalOpen] = useState(false);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [entryInvoice, setEntryInvoice] = useState<ClubInvoiceData | null>(null);
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
+  const [rejectKycReason, setRejectKycReason] = useState('Govt ID photo is unclear or name does not match Aadhaar/PAN record.');
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  const handleApprove = () => {
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleApproveEntry = () => {
     approvePlayerEntry(checkIn?.id || player.id);
     setIsApproveModalOpen(false);
+    showToast(`Entry cleared for ${player.fullName}!`);
 
     try {
       confetti({
         particleCount: 50,
         spread: 60,
         origin: { y: 0.6 },
-        colors: ['#e11d48', '#ffffff', '#be123c'],
+        colors: ['#e11d48', '#ffffff', '#be123c', '#10b981'],
       });
     } catch {
       // Fallback
     }
+  };
+
+  const handleVerifyKYC = () => {
+    reviewKYC(player.id, 'verified');
+    showToast(`Aadhaar & PAN KYC verified for ${player.fullName}!`);
+    try {
+      confetti({
+        particleCount: 40,
+        spread: 50,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#34d399', '#ffffff'],
+      });
+    } catch {}
+  };
+
+  const handleVerifyKycAndApproveEntry = () => {
+    reviewKYC(player.id, 'verified');
+    approvePlayerEntry(checkIn?.id || player.id);
+    setIsApproveModalOpen(false);
+    showToast(`KYC Verified & Entry Approved for ${player.fullName}!`);
+
+    try {
+      confetti({
+        particleCount: 60,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#ffffff', '#34d399', '#e11d48'],
+      });
+    } catch {}
   };
 
   const handleRejectConfirm = (e: React.FormEvent) => {
@@ -60,6 +100,16 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
 
     rejectPlayerEntry(checkIn?.id || player.id, rejectReason.trim());
     setIsRejectModalOpen(false);
+    showToast(`Entry denied for ${player.fullName}`);
+  };
+
+  const handleRejectKycConfirm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rejectKycReason.trim()) return;
+
+    reviewKYC(player.id, 'rejected', rejectKycReason.trim());
+    setIsRejectKycModalOpen(false);
+    showToast(`KYC rejected for ${player.fullName}`);
   };
 
   return (
@@ -74,6 +124,29 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         gap: '18px',
       }}
     >
+      {/* Toast */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 9999,
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            color: '#ffffff',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            fontWeight: 800,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <CheckCircle size={18} /> {toastMessage}
+        </div>
+      )}
+
       {/* Header Bar */}
       <div
         style={{
@@ -104,10 +177,10 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
           </div>
           <div>
             <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#ffffff' }}>
-              Entrance Clearance Desk
+              Entrance Clearance & KYC Desk
             </h3>
             <p style={{ margin: 0, fontSize: '0.76rem', color: '#94a3b8' }}>
-              Inspect identity, UIDAI Aadhaar & PAN KYC credentials for floor entry.
+              Inspect identity, UIDAI Aadhaar & PAN credentials, verify KYC & approve floor entry.
             </p>
           </div>
         </div>
@@ -193,68 +266,82 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         </div>
       </div>
 
-      {/* KYC Credentials 2x2 Grid */}
+      {/* KYC Documents & Credentials Grid */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '10px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '12px',
         }}
       >
+        {/* Aadhaar Card Box */}
         <div
           style={{
-            background: 'rgba(0, 0, 0, 0.3)',
+            background: 'rgba(0, 0, 0, 0.35)',
             padding: '12px 14px',
             borderRadius: '12px',
-            border: '1px solid var(--border-subtle)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
               1. Aadhaar Card (UIDAI)
             </span>
             <div style={{ display: 'flex', gap: '4px' }}>
-              {player.kyc.aadhaarPhotoUrl && (
+              {player.kyc.aadhaarPhotoUrl ? (
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  onClick={() => setViewingDoc({ title: 'Aadhaar Card (Front)', url: player.kyc.aadhaarPhotoUrl! })}
+                  onClick={() => setViewingDoc({ title: 'Aadhaar Card (Front Photo)', url: player.kyc.aadhaarPhotoUrl! })}
                 >
                   <Eye size={11} /> Front
                 </button>
+              ) : (
+                <span style={{ fontSize: '0.66rem', color: '#fca5a5' }}>No Front Photo</span>
               )}
-              {player.kyc.aadhaarBackPhotoUrl && (
+              {player.kyc.aadhaarBackPhotoUrl ? (
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  onClick={() => setViewingDoc({ title: 'Aadhaar Card (Back)', url: player.kyc.aadhaarBackPhotoUrl! })}
+                  onClick={() => setViewingDoc({ title: 'Aadhaar Card (Back Photo)', url: player.kyc.aadhaarBackPhotoUrl! })}
                 >
                   <Eye size={11} /> Back
                 </button>
+              ) : (
+                <span style={{ fontSize: '0.66rem', color: '#fca5a5' }}>No Back Photo</span>
               )}
             </div>
           </div>
-          <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#ffffff', fontFamily: 'var(--font-mono)', marginTop: '4px' }}>
-            {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
+          <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
+            {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'Aadhaar On File')}
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#10b981', marginTop: '2px' }}>✓ Government ID Verified</div>
+          <div style={{ fontSize: '0.72rem', color: player.kyc.aadhaarPhotoUrl && player.kyc.aadhaarBackPhotoUrl ? '#10b981' : '#fbbf24' }}>
+            {player.kyc.aadhaarPhotoUrl && player.kyc.aadhaarBackPhotoUrl ? '✓ Front & Back Attached' : '⚠ Partial / Missing Uploads'}
+          </div>
         </div>
 
+        {/* PAN Card Box */}
         <div
           style={{
-            background: 'rgba(0, 0, 0, 0.3)',
+            background: 'rgba(0, 0, 0, 0.35)',
             padding: '12px 14px',
             borderRadius: '12px',
-            border: '1px solid var(--border-subtle)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
               2. PAN Card (IT Dept)
             </span>
-            {player.kyc.panPhotoUrl && (
+            {player.kyc.panPhotoUrl ? (
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
@@ -263,42 +350,115 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
               >
                 <Eye size={11} /> Photo
               </button>
+            ) : (
+              <span style={{ fontSize: '0.66rem', color: '#fca5a5' }}>No Photo</span>
             )}
           </div>
-          <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fb7185', fontFamily: 'var(--font-mono)', marginTop: '4px' }}>
-            {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
+          <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#fb7185', fontFamily: 'var(--font-mono)' }}>
+            {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN On File')}
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#38bdf8', marginTop: '2px' }}>✓ Income Tax PAN Matched</div>
+          <div style={{ fontSize: '0.72rem', color: '#38bdf8' }}>✓ Income Tax PAN Record</div>
         </div>
 
+        {/* DOB / Age Verification */}
         <div
           style={{
-            background: 'rgba(0, 0, 0, 0.3)',
+            background: 'rgba(0, 0, 0, 0.35)',
             padding: '12px 14px',
             borderRadius: '12px',
-            border: '1px solid var(--border-subtle)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
           }}
         >
-          <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
             Date of Birth / Age
           </span>
-          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#ffffff', marginTop: '4px' }}>
+          <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#ffffff' }}>
             {formatDateOnly(player.kyc.dateOfBirth)}
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#10b981', marginTop: '2px' }}>✓ Age 21+ Verified</div>
+          <div style={{ fontSize: '0.72rem', color: '#10b981' }}>✓ 21+ Age Clearance</div>
+        </div>
+      </div>
+
+      {/* KYC Clearance Panel with Security Controls */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(30, 15, 20, 0.8) 0%, rgba(15, 8, 12, 0.9) 100%)',
+          border: '1.5px solid rgba(225, 29, 72, 0.35)',
+          borderRadius: '12px',
+          padding: '14px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '8px',
+              background: player.kycStatus === 'verified' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+              color: player.kycStatus === 'verified' ? '#34d399' : '#fbbf24',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <FileCheck2 size={18} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>Aadhaar & PAN Member KYC:</span>
+              <KYCBadge status={player.kycStatus} />
+            </div>
+            <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '2px' }}>
+              {player.kycStatus === 'verified'
+                ? `Verified by ${player.kyc.verifiedBy || 'Security'} on ${formatDateTime(player.kyc.verifiedAt || player.registeredAt)}`
+                : player.kycStatus === 'rejected'
+                ? `Rejected: ${player.kyc.rejectionReason || 'Details mismatch'}`
+                : 'Credentials pending security officer approval.'}
+            </div>
+          </div>
         </div>
 
-        <div
-          style={{
-            background: 'rgba(0, 0, 0, 0.3)',
-            padding: '12px 14px',
-            borderRadius: '12px',
-            border: '1px solid var(--border-subtle)',
-          }}
-        >
-          <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
-            {checkIn ? `Checked in ${formatTimeOnly(checkIn.checkInTime)}` : 'Walk-in arrival'}
-          </div>
+        {/* KYC Action Buttons for Security */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {player.kycStatus !== 'verified' ? (
+            <button
+              type="button"
+              className="btn btn-success btn-sm"
+              onClick={handleVerifyKYC}
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', fontWeight: 800, padding: '6px 14px' }}
+            >
+              <Check size={14} /> Verify KYC
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => reviewKYC(player.id, 'pending')}
+              style={{ fontSize: '0.74rem', padding: '6px 10px' }}
+              title="Reset to Pending"
+            >
+              Reset KYC
+            </button>
+          )}
+
+          {player.kycStatus !== 'rejected' && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.4)', padding: '6px 12px' }}
+              onClick={() => setIsRejectKycModalOpen(true)}
+            >
+              <FileX size={14} /> Reject KYC
+            </button>
+          )}
         </div>
       </div>
 
@@ -326,8 +486,8 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             <Clock size={16} color={checkIn?.verificationStatus === 'approved' ? '#10b981' : '#e11d48'} />
             <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.86rem' }}>
               {checkIn
-                ? `Today's Arrival: ${checkIn.verificationStatus.toUpperCase()} at ${formatTimeOnly(checkIn.checkInTime)}`
-                : 'Walk-in Clearance (Check-in created on approval)'}
+                ? `Daily Entrance: ${checkIn.verificationStatus.toUpperCase()} at ${formatTimeOnly(checkIn.checkInTime)}`
+                : 'Walk-in Entrance (Daily arrival created on approval)'}
             </span>
           </div>
           {checkIn && <EntryBadge status={checkIn.verificationStatus} />}
@@ -341,7 +501,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
 
         {checkIn?.verifiedBy && (
           <div style={{ color: '#cbd5e1', fontSize: '0.76rem', marginTop: '6px' }}>
-            ✓ Verified by <strong>{checkIn.verifiedBy}</strong> on {formatDateTime(checkIn.verifiedAt)}
+            ✓ Entry verified by <strong>{checkIn.verifiedBy}</strong> on {formatDateTime(checkIn.verifiedAt)}
           </div>
         )}
       </div>
@@ -360,7 +520,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: '#94a3b8' }}>
           <Lock size={12} color="#ffffff" />
-          <span>Security access only · Audit logged</span>
+          <span>Security officer access only · Realtime Audit Logged</span>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -388,23 +548,85 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             <XCircle size={15} /> Deny Entry
           </button>
 
-          <button
-            className="btn btn-emerald btn-sm"
-            onClick={() => setIsApproveModalOpen(true)}
-            disabled={checkIn?.verificationStatus === 'approved'}
-            style={{
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              padding: '8px 18px',
-              boxShadow: checkIn?.verificationStatus !== 'approved' ? '0 4px 14px rgba(16, 185, 129, 0.35)' : 'none',
-            }}
-          >
-            <CheckCircle size={16} />
-            {checkIn?.verificationStatus === 'approved' ? 'Access Approved ✓' : 'Approve & Clear Access'}
-          </button>
+          {player.kycStatus === 'pending' && (
+            <button
+              className="btn btn-emerald btn-sm"
+              onClick={handleVerifyKycAndApproveEntry}
+              style={{
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                padding: '8px 18px',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+                border: 'none',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+              }}
+            >
+              <CheckCircle size={16} /> Verify KYC & Clear Entry
+            </button>
+          )}
+
+          {player.kycStatus === 'verified' && (
+            <button
+              className="btn btn-emerald btn-sm"
+              onClick={handleApproveEntry}
+              disabled={checkIn?.verificationStatus === 'approved'}
+              style={{
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                padding: '8px 18px',
+                boxShadow: checkIn?.verificationStatus !== 'approved' ? '0 4px 14px rgba(16, 185, 129, 0.35)' : 'none',
+              }}
+            >
+              <CheckCircle size={16} />
+              {checkIn?.verificationStatus === 'approved' ? 'Access Approved ✓' : 'Approve & Clear Access'}
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Modal: Document Lightbox Zoom */}
+      {viewingDoc && (
+        <Modal
+          isOpen={true}
+          onClose={() => setViewingDoc(null)}
+          title={viewingDoc.title}
+          subtitle={`Member: ${player.fullName} (${formatPlayerNumber(player)})`}
+          size="lg"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+            <div style={{ width: '100%', maxHeight: '65vh', overflow: 'auto', textAlign: 'center', background: '#000', borderRadius: '12px', padding: '10px' }}>
+              <img
+                src={viewingDoc.url}
+                alt={viewingDoc.title}
+                style={{ maxWidth: '100%', maxHeight: '60vh', objectFit: 'contain', borderRadius: '8px' }}
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>High-Resolution Document Preview</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setViewingDoc(null)}>
+                  Close
+                </button>
+                {player.kycStatus !== 'verified' && (
+                  <button
+                    type="button"
+                    className="btn btn-success"
+                    onClick={() => {
+                      handleVerifyKYC();
+                      setViewingDoc(null);
+                    }}
+                  >
+                    <Check size={15} /> Verify KYC
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Approve Entry */}
       <Modal
         isOpen={isApproveModalOpen}
         onClose={() => setIsApproveModalOpen(false)}
@@ -416,7 +638,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             <button type="button" className="btn btn-secondary" onClick={() => setIsApproveModalOpen(false)}>
               Review again
             </button>
-            <button type="button" className="btn btn-emerald" onClick={handleApprove}>
+            <button type="button" className="btn btn-emerald" onClick={handleApproveEntry}>
               <CheckCircle size={16} /> Confirm entry
             </button>
           </>
@@ -431,15 +653,15 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         </div>
       </Modal>
 
-      {/* Reject Modal */}
+      {/* Modal: Reject Entry */}
       <Modal
         isOpen={isRejectModalOpen}
         onClose={() => setIsRejectModalOpen(false)}
-        title="Reject Player Entry"
-        subtitle={`Select or specify rejection reason for ${player.fullName}`}
+        title="Deny Player Floor Entry"
+        subtitle={`Select or specify reason for ${player.fullName}`}
         size="md"
       >
-        <form onSubmit={handleRejectConfirm}>
+        <form onSubmit={handleRejectConfirm} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div className="form-group">
             <label className="form-label" htmlFor="security-reject-reason">Predefined Reason</label>
             <select
@@ -448,151 +670,89 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
               onChange={e => setRejectReason(e.target.value)}
               value={rejectReason}
             >
-              <option value="Govt ID details mismatch or expired identification.">
-                Govt ID details mismatch or expired identification
-              </option>
-              <option value="Under legal club age requirement (21+).">
-                Under legal club age requirement (21+)
-              </option>
-              <option value="Self-exclusion list or house security suspension.">
-                Self-exclusion list or house security suspension
-              </option>
-              <option value="Dress code or club conduct violation at entrance.">
-                Dress code or club conduct violation at entrance
-              </option>
-              <option value="Suspicious documentation requiring police verification.">
-                Suspicious documentation requiring police verification
-              </option>
+              <option value="Govt ID details mismatch or expired identification.">Govt ID details mismatch or expired identification</option>
+              <option value="Dress code violation (club rules).">Dress code violation (club rules)</option>
+              <option value="Under 21 age restriction policy.">Under 21 age restriction policy</option>
+              <option value="Club management restriction / blacklisted.">Club management restriction / blacklisted</option>
+              <option value="Other / Security discretion.">Other / Security discretion</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="security-reject-notes">Custom Reason / Notes *</label>
+            <label className="form-label">Detailed Notes</label>
             <textarea
-              id="security-reject-notes"
-              className="form-textarea"
+              className="form-input"
+              rows={3}
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
-              rows={3}
+              placeholder="Provide specific notes regarding entry denial..."
               required
             />
           </div>
 
-          <div className="modal-footer" style={{ margin: '20px -24px -24px', padding: '16px 24px' }}>
+          <div className="modal-footer" style={{ margin: '14px -24px -24px', padding: '16px 24px' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsRejectModalOpen(false)}>
               Cancel
             </button>
             <button type="submit" className="btn btn-danger">
-              <ShieldAlert size={16} /> Confirm Entry Denial
+              <XCircle size={16} /> Confirm Denial
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* Tax Invoice Modal for ₹500 Door Entry */}
+      {/* Modal: Reject KYC */}
+      <Modal
+        isOpen={isRejectKycModalOpen}
+        onClose={() => setIsRejectKycModalOpen(false)}
+        title="Reject Member KYC Documents"
+        subtitle={`Specify why KYC is being rejected for ${player.fullName}`}
+        size="md"
+      >
+        <form onSubmit={handleRejectKycConfirm} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div className="form-group">
+            <label className="form-label">Rejection Reason *</label>
+            <select
+              className="form-select"
+              onChange={e => setRejectKycReason(e.target.value)}
+              value={rejectKycReason}
+            >
+              <option value="Govt ID photo is unclear or blurred.">Govt ID photo is unclear or blurred</option>
+              <option value="Aadhaar back photo is missing or unreadable.">Aadhaar back photo is missing or unreadable</option>
+              <option value="Name on ID does not match registration details.">Name on ID does not match registration details</option>
+              <option value="Invalid or mismatched PAN card.">Invalid or mismatched PAN card</option>
+              <option value="Suspected fraudulent or duplicate document.">Suspected fraudulent or duplicate document</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Additional Officer Notes</label>
+            <textarea
+              className="form-input"
+              rows={3}
+              value={rejectKycReason}
+              onChange={e => setRejectKycReason(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="modal-footer" style={{ margin: '14px -24px -24px', padding: '16px 24px' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setIsRejectKycModalOpen(false)}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-danger">
+              <FileX size={16} /> Confirm KYC Rejection
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Invoice Modal */}
       <ClubTaxInvoiceModal
         isOpen={isInvoiceOpen}
         onClose={() => setIsInvoiceOpen(false)}
         invoice={entryInvoice}
       />
-
-      {/* Document Photo Inspection Lightbox */}
-      {viewingDoc && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            background: 'rgba(0, 0, 0, 0.88)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-          }}
-          onClick={() => setViewingDoc(null)}
-        >
-          <div
-            style={{
-              maxWidth: '650px',
-              width: '100%',
-              background: '#130508',
-              borderRadius: '16px',
-              border: '2px solid rgba(225, 29, 72, 0.5)',
-              overflow: 'hidden',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 16px',
-                background: 'rgba(0,0,0,0.6)',
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-              }}
-            >
-              <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>
-                {viewingDoc.title} • {player.fullName} (Player ID {formatPlayerNumber(player)})
-              </span>
-              <button
-                type="button"
-                onClick={() => setViewingDoc(null)}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '28px',
-                  height: '28px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div style={{ padding: '16px', display: 'flex', justifyContent: 'center', background: '#0a0204' }}>
-              <img
-                src={viewingDoc.url}
-                alt={viewingDoc.title}
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '65vh',
-                  objectFit: 'contain',
-                  borderRadius: '8px',
-                }}
-              />
-            </div>
-
-            <div
-              style={{
-                padding: '10px 16px',
-                background: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                fontSize: '0.78rem',
-                color: '#cbd5e1',
-              }}
-            >
-              <span>Security KYC Verification Check</span>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => setViewingDoc(null)}
-              >
-                Close Preview
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
