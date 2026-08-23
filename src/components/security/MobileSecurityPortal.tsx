@@ -391,14 +391,15 @@ export const MobileSecurityPortal: React.FC = () => {
                     </div>
 
                     {/* Attached Photo Previews */}
-                    {(playerToInspect.kyc.aadhaarPhotoUrl || playerToInspect.kyc.panPhotoUrl) && (
-                      <div style={{ display: 'flex', gap: '8px', paddingTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                    {(playerToInspect.kyc.aadhaarPhotoUrl || playerToInspect.kyc.aadhaarBackPhotoUrl || playerToInspect.kyc.panPhotoUrl) && (
+                      <div style={{ display: 'flex', gap: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', flexWrap: 'wrap' }}>
                         {playerToInspect.kyc.aadhaarPhotoUrl && (
                           <button
                             type="button"
-                            onClick={() => setViewingDoc({ title: `${playerToInspect.fullName} - Aadhaar Card Photo`, url: playerToInspect.kyc.aadhaarPhotoUrl! })}
+                            onClick={() => setViewingDoc({ title: `${playerToInspect.fullName} - Aadhaar Front`, url: playerToInspect.kyc.aadhaarPhotoUrl! })}
                             style={{
                               flex: 1,
+                              minWidth: '95px',
                               background: 'rgba(225, 29, 72, 0.12)',
                               border: '1px solid rgba(225, 29, 72, 0.35)',
                               borderRadius: '8px',
@@ -406,14 +407,38 @@ export const MobileSecurityPortal: React.FC = () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: '5px',
+                              gap: '4px',
                               color: '#ffffff',
-                              fontSize: '0.72rem',
+                              fontSize: '0.7rem',
                               fontWeight: 700,
                               cursor: 'pointer',
                             }}
                           >
-                            <Eye size={12} color="#fb7185" /> Aadhaar Photo
+                            <Eye size={12} color="#fb7185" /> Aadhaar Front
+                          </button>
+                        )}
+                        {playerToInspect.kyc.aadhaarBackPhotoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setViewingDoc({ title: `${playerToInspect.fullName} - Aadhaar Back`, url: playerToInspect.kyc.aadhaarBackPhotoUrl! })}
+                            style={{
+                              flex: 1,
+                              minWidth: '95px',
+                              background: 'rgba(225, 29, 72, 0.12)',
+                              border: '1px solid rgba(225, 29, 72, 0.35)',
+                              borderRadius: '8px',
+                              padding: '6px 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                              color: '#ffffff',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Eye size={12} color="#fb7185" /> Aadhaar Back
                           </button>
                         )}
                         {playerToInspect.kyc.panPhotoUrl && (
@@ -422,6 +447,7 @@ export const MobileSecurityPortal: React.FC = () => {
                             onClick={() => setViewingDoc({ title: `${playerToInspect.fullName} - PAN Card Photo`, url: playerToInspect.kyc.panPhotoUrl! })}
                             style={{
                               flex: 1,
+                              minWidth: '95px',
                               background: 'rgba(56, 189, 248, 0.12)',
                               border: '1px solid rgba(56, 189, 248, 0.35)',
                               borderRadius: '8px',
@@ -429,9 +455,9 @@ export const MobileSecurityPortal: React.FC = () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              gap: '5px',
+                              gap: '4px',
                               color: '#ffffff',
-                              fontSize: '0.72rem',
+                              fontSize: '0.7rem',
                               fontWeight: 700,
                               cursor: 'pointer',
                             }}
@@ -873,7 +899,7 @@ export const MobileSecurityPortal: React.FC = () => {
                 Attached Government Identity Photos
               </span>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                {/* Aadhaar Photo Card */}
+                {/* Aadhaar Front Photo Card */}
                 <div
                   style={{
                     background: '#140508',
@@ -885,13 +911,13 @@ export const MobileSecurityPortal: React.FC = () => {
                   }}
                   onClick={() => {
                     if (selectedPlayer.kyc.aadhaarPhotoUrl) {
-                      setViewingDoc({ title: `${selectedPlayer.fullName} - Aadhaar Card`, url: selectedPlayer.kyc.aadhaarPhotoUrl });
+                      setViewingDoc({ title: `${selectedPlayer.fullName} - Aadhaar Front`, url: selectedPlayer.kyc.aadhaarPhotoUrl });
                     }
                   }}
                 >
                   {selectedPlayer.kyc.aadhaarPhotoUrl ? (
                     <div style={{ position: 'relative', width: '100%', height: '80px', borderRadius: '6px', overflow: 'hidden', marginBottom: '6px' }}>
-                      <img src={selectedPlayer.kyc.aadhaarPhotoUrl} alt="Aadhaar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={selectedPlayer.kyc.aadhaarPhotoUrl} alt="Aadhaar Front" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <ZoomIn size={16} color="#ffffff" />
                       </div>
@@ -901,7 +927,38 @@ export const MobileSecurityPortal: React.FC = () => {
                       No Photo
                     </div>
                   )}
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ffffff' }}>Aadhaar Card</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ffffff' }}>Aadhaar Front</span>
+                </div>
+
+                {/* Aadhaar Back Photo Card */}
+                <div
+                  style={{
+                    background: '#140508',
+                    border: '1px solid rgba(225, 29, 72, 0.35)',
+                    borderRadius: '10px',
+                    padding: '8px',
+                    textAlign: 'center',
+                    cursor: selectedPlayer.kyc.aadhaarBackPhotoUrl ? 'pointer' : 'default',
+                  }}
+                  onClick={() => {
+                    if (selectedPlayer.kyc.aadhaarBackPhotoUrl) {
+                      setViewingDoc({ title: `${selectedPlayer.fullName} - Aadhaar Back`, url: selectedPlayer.kyc.aadhaarBackPhotoUrl });
+                    }
+                  }}
+                >
+                  {selectedPlayer.kyc.aadhaarBackPhotoUrl ? (
+                    <div style={{ position: 'relative', width: '100%', height: '80px', borderRadius: '6px', overflow: 'hidden', marginBottom: '6px' }}>
+                      <img src={selectedPlayer.kyc.aadhaarBackPhotoUrl} alt="Aadhaar Back" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ZoomIn size={16} color="#ffffff" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ height: '80px', background: 'rgba(255,255,255,0.04)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.72rem', marginBottom: '6px' }}>
+                      No Photo
+                    </div>
+                  )}
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ffffff' }}>Aadhaar Back</span>
                 </div>
 
                 {/* PAN Photo Card */}

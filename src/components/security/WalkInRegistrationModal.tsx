@@ -25,6 +25,7 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [aadhaarPhotoUrl, setAadhaarPhotoUrl] = useState('');
+  const [aadhaarBackPhotoUrl, setAadhaarBackPhotoUrl] = useState('');
   const [panPhotoUrl, setPanPhotoUrl] = useState('');
   const [address, setAddress] = useState('Delhi NCR, India');
   const [autoApprove, setAutoApprove] = useState(true);
@@ -79,6 +80,7 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
           aadhaarNumber: aadhaarNumber.trim(),
           panNumber: cleanPan,
           aadhaarPhotoUrl: aadhaarPhotoUrl || undefined,
+          aadhaarBackPhotoUrl: aadhaarBackPhotoUrl || undefined,
           panPhotoUrl: panPhotoUrl || undefined,
           govtIdType: 'Aadhaar & PAN Card',
           govtIdNumber: `PAN: ${cleanPan} | Aadhaar: ${aadhaarNumber.trim()}`,
@@ -184,10 +186,17 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
             {errors.aadhaarNumber && <span style={{ color: '#f87171', fontSize: '0.75rem' }}>{errors.aadhaarNumber}</span>}
             <DocumentPhotoUpload
               id="walkin-aadhaar-doc"
-              label="Aadhaar Card"
-              subLabel="Auto-compressed photo"
+              label="Aadhaar Card (Front)"
+              subLabel="Choose front photo from gallery or camera"
               value={aadhaarPhotoUrl}
               onChange={(url) => setAadhaarPhotoUrl(url || '')}
+            />
+            <DocumentPhotoUpload
+              id="walkin-aadhaar-back-doc"
+              label="Aadhaar Card (Back)"
+              subLabel="Choose back photo with address from gallery or camera"
+              value={aadhaarBackPhotoUrl}
+              onChange={(url) => setAadhaarBackPhotoUrl(url || '')}
             />
           </div>
 

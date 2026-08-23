@@ -213,16 +213,28 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
             <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               1. Aadhaar Card (UIDAI)
             </span>
-            {player.kyc.aadhaarPhotoUrl && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                onClick={() => setViewingDoc({ title: 'Aadhaar Card Photo', url: player.kyc.aadhaarPhotoUrl! })}
-              >
-                <Eye size={11} /> Photo
-              </button>
-            )}
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {player.kyc.aadhaarPhotoUrl && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  onClick={() => setViewingDoc({ title: 'Aadhaar Card (Front)', url: player.kyc.aadhaarPhotoUrl! })}
+                >
+                  <Eye size={11} /> Front
+                </button>
+              )}
+              {player.kyc.aadhaarBackPhotoUrl && (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  onClick={() => setViewingDoc({ title: 'Aadhaar Card (Back)', url: player.kyc.aadhaarBackPhotoUrl! })}
+                >
+                  <Eye size={11} /> Back
+                </button>
+              )}
+            </div>
           </div>
           <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#ffffff', fontFamily: 'var(--font-mono)', marginTop: '4px' }}>
             {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}

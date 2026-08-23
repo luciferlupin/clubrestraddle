@@ -41,6 +41,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     aadhaarNumber: '',
     panNumber: '',
     aadhaarPhotoUrl: '',
+    aadhaarBackPhotoUrl: '',
     panPhotoUrl: '',
     address: '',
     emergencyContactName: '',
@@ -72,6 +73,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
       aadhaarNumber: `5432 8765 ${randomDigits}`,
       panNumber: `ABCPS${randomDigits}R`,
       aadhaarPhotoUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+      aadhaarBackPhotoUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
       panPhotoUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80',
       address: 'Sector 104, Noida, Uttar Pradesh - 201304',
       emergencyContactName: 'Pooja Singhal',
@@ -105,6 +107,16 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
         errs.panNumber = 'PAN Card number is required';
       } else if (cleanPan.length !== 10) {
         errs.panNumber = 'PAN must be exactly 10 alphanumeric characters (e.g. ABCDE1234F)';
+      }
+
+      if (!formData.aadhaarPhotoUrl) {
+        errs.aadhaarPhotoUrl = 'Aadhaar Card Front photo is required';
+      }
+      if (!formData.aadhaarBackPhotoUrl) {
+        errs.aadhaarBackPhotoUrl = 'Aadhaar Card Back photo is required';
+      }
+      if (!formData.panPhotoUrl) {
+        errs.panPhotoUrl = 'PAN Card photo is required';
       }
     }
 
@@ -148,6 +160,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           aadhaarNumber: cleanAadhaar,
           panNumber: cleanPan,
           aadhaarPhotoUrl: formData.aadhaarPhotoUrl || undefined,
+          aadhaarBackPhotoUrl: formData.aadhaarBackPhotoUrl || undefined,
           panPhotoUrl: formData.panPhotoUrl || undefined,
           govtIdType: 'Aadhaar & PAN Card',
           govtIdNumber: `PAN: ${cleanPan} | Aadhaar: ${cleanAadhaar}`,
@@ -490,14 +503,27 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                 </span>
                 {errors.aadhaarNumber && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '2px', display: 'block' }}>{errors.aadhaarNumber}</span>}
 
-                {/* Aadhaar Document Photo Upload */}
+                {/* Aadhaar Front Document Photo Upload */}
                 <DocumentPhotoUpload
                   id="kyc-aadhaar-doc-upload"
-                  label="Aadhaar Card"
-                  subLabel="Choose photo from gallery/files or capture with camera."
+                  label="Aadhaar Card (Front)"
+                  subLabel="Choose front photo from gallery/files or capture with camera."
                   value={formData.aadhaarPhotoUrl}
                   onChange={(url) => setFormData({ ...formData, aadhaarPhotoUrl: url || '' })}
+                  required
                 />
+                {errors.aadhaarPhotoUrl && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '2px', display: 'block' }}>{errors.aadhaarPhotoUrl}</span>}
+
+                {/* Aadhaar Back Document Photo Upload */}
+                <DocumentPhotoUpload
+                  id="kyc-aadhaar-back-doc-upload"
+                  label="Aadhaar Card (Back)"
+                  subLabel="Choose back photo with address from gallery/files or capture with camera."
+                  value={formData.aadhaarBackPhotoUrl}
+                  onChange={(url) => setFormData({ ...formData, aadhaarBackPhotoUrl: url || '' })}
+                  required
+                />
+                {errors.aadhaarBackPhotoUrl && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '2px', display: 'block' }}>{errors.aadhaarBackPhotoUrl}</span>}
               </div>
 
               {/* PAN Card Field */}
@@ -540,7 +566,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                   subLabel="Choose photo from gallery/files or capture with camera."
                   value={formData.panPhotoUrl}
                   onChange={(url) => setFormData({ ...formData, panPhotoUrl: url || '' })}
+                  required
                 />
+                {errors.panPhotoUrl && <span style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '2px', display: 'block' }}>{errors.panPhotoUrl}</span>}
               </div>
             </div>
 
@@ -651,16 +679,26 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                 </div>
               </div>
 
-              {(formData.aadhaarPhotoUrl || formData.panPhotoUrl) && (
+              {(formData.aadhaarPhotoUrl || formData.aadhaarBackPhotoUrl || formData.panPhotoUrl) && (
                 <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                   {formData.aadhaarPhotoUrl && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <img
                         src={formData.aadhaarPhotoUrl}
-                        alt="Aadhaar Card"
+                        alt="Aadhaar Card Front"
                         style={{ width: '48px', height: '34px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(225,29,72,0.5)' }}
                       />
-                      <span style={{ fontSize: '0.74rem', color: '#6ee7b7' }}>✓ Aadhaar Photo Attached</span>
+                      <span style={{ fontSize: '0.74rem', color: '#6ee7b7' }}>✓ Aadhaar Front</span>
+                    </div>
+                  )}
+                  {formData.aadhaarBackPhotoUrl && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <img
+                        src={formData.aadhaarBackPhotoUrl}
+                        alt="Aadhaar Card Back"
+                        style={{ width: '48px', height: '34px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(225,29,72,0.5)' }}
+                      />
+                      <span style={{ fontSize: '0.74rem', color: '#6ee7b7' }}>✓ Aadhaar Back</span>
                     </div>
                   )}
                   {formData.panPhotoUrl && (
@@ -670,7 +708,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                         alt="PAN Card"
                         style={{ width: '48px', height: '34px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(225,29,72,0.5)' }}
                       />
-                      <span style={{ fontSize: '0.74rem', color: '#6ee7b7' }}>✓ PAN Photo Attached</span>
+                      <span style={{ fontSize: '0.74rem', color: '#6ee7b7' }}>✓ PAN Card</span>
                     </div>
                   )}
                 </div>

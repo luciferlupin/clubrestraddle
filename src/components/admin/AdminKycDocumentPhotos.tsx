@@ -4,15 +4,25 @@ import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 
 interface AdminKycDocumentPhotosProps {
   aadhaarPhotoUrl?: string;
+  aadhaarBackPhotoUrl?: string;
   panPhotoUrl?: string;
   onAadhaarChange?: (url?: string) => void;
+  onAadhaarBackChange?: (url?: string) => void;
   onPanChange?: (url?: string) => void;
 }
 
-export const AdminKycDocumentPhotos: React.FC<AdminKycDocumentPhotosProps> = ({ aadhaarPhotoUrl, panPhotoUrl, onAadhaarChange, onPanChange }) => {
+export const AdminKycDocumentPhotos: React.FC<AdminKycDocumentPhotosProps> = ({
+  aadhaarPhotoUrl,
+  aadhaarBackPhotoUrl,
+  panPhotoUrl,
+  onAadhaarChange,
+  onAadhaarBackChange,
+  onPanChange,
+}) => {
   const [preview, setPreview] = useState<{ label: string; url: string } | null>(null);
   const documents = [
-    { label: 'Aadhaar Card', url: aadhaarPhotoUrl, onChange: onAadhaarChange },
+    { label: 'Aadhaar Card (Front)', url: aadhaarPhotoUrl, onChange: onAadhaarChange },
+    { label: 'Aadhaar Card (Back)', url: aadhaarBackPhotoUrl, onChange: onAadhaarBackChange },
     { label: 'PAN Card', url: panPhotoUrl, onChange: onPanChange },
   ];
 
@@ -20,9 +30,9 @@ export const AdminKycDocumentPhotos: React.FC<AdminKycDocumentPhotosProps> = ({ 
     <>
       <div style={{ marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '12px' }}>
         <div style={{ fontSize: '0.74rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '9px' }}>
-          KYC document photos
+          KYC document photos (Aadhaar Front & Back, PAN)
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
           {documents.map((document) => document.url ? (
             <button
               key={document.label}
@@ -38,7 +48,7 @@ export const AdminKycDocumentPhotos: React.FC<AdminKycDocumentPhotosProps> = ({ 
           ) : document.onChange ? (
             <DocumentPhotoUpload
               key={document.label}
-              id={`admin-${document.label.toLowerCase().replace(/\s+/g, '-')}`}
+              id={`admin-${document.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
               label={document.label}
               value={document.url}
               onChange={document.onChange}
@@ -46,7 +56,7 @@ export const AdminKycDocumentPhotos: React.FC<AdminKycDocumentPhotosProps> = ({ 
           ) : (
             <div key={document.label} style={{ minHeight: '108px', padding: '12px', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.16)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px', color: '#94a3b8', textAlign: 'center' }}>
               <FileImage size={22} />
-              <span style={{ fontSize: '0.75rem' }}>{document.label} photo not uploaded</span>
+              <span style={{ fontSize: '0.75rem' }}>{document.label} not uploaded</span>
             </div>
           ))}
         </div>

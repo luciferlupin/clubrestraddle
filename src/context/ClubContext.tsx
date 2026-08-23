@@ -71,6 +71,7 @@ const playerToDatabaseRow = (player: Player) => ({
   aadhaar_number: player.kyc.aadhaarNumber || null,
   pan_number: player.kyc.panNumber || null,
   aadhaar_photo_url: player.kyc.aadhaarPhotoUrl || null,
+  aadhaar_back_photo_url: player.kyc.aadhaarBackPhotoUrl || null,
   pan_photo_url: player.kyc.panPhotoUrl || null,
   address: player.kyc.address || null,
   emergency_contact_name: player.kyc.emergencyContactName || null,
@@ -564,6 +565,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 aadhaarNumber: p.aadhaar_number || aadhaarParsed,
                 panNumber: p.pan_number || panParsed,
                 aadhaarPhotoUrl: p.aadhaar_photo_url,
+                aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
                 panPhotoUrl: p.pan_photo_url,
                 govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
                 govtIdNumber: p.govt_id_number || 'KYC-PENDING',
@@ -607,6 +609,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             aadhaar_number: ip.kyc.aadhaarNumber || null,
             pan_number: ip.kyc.panNumber || null,
             aadhaar_photo_url: ip.kyc.aadhaarPhotoUrl || null,
+            aadhaar_back_photo_url: ip.kyc.aadhaarBackPhotoUrl || null,
             pan_photo_url: ip.kyc.panPhotoUrl || null,
             address: ip.kyc.address,
             emergency_contact_name: ip.kyc.emergencyContactName,
@@ -848,6 +851,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 aadhaarNumber: p.aadhaar_number || aadhaarParsed,
                 panNumber: p.pan_number || panParsed,
                 aadhaarPhotoUrl: p.aadhaar_photo_url,
+                aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
                 panPhotoUrl: p.pan_photo_url,
                 govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
                 govtIdNumber: p.govt_id_number || 'KYC-PENDING',
@@ -1424,6 +1428,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       aadhaarNumber: aadhaarClean,
       panNumber: panClean,
       aadhaarPhotoUrl: kycData.aadhaarPhotoUrl,
+      aadhaarBackPhotoUrl: kycData.aadhaarBackPhotoUrl,
       panPhotoUrl: kycData.panPhotoUrl,
       govtIdType: 'Aadhaar & PAN Card',
       govtIdNumber: combinedGovtIdNumber,
@@ -1482,6 +1487,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           aadhaar_number: completeKYC.aadhaarNumber || null,
           pan_number: completeKYC.panNumber || null,
           aadhaar_photo_url: completeKYC.aadhaarPhotoUrl || null,
+          aadhaar_back_photo_url: completeKYC.aadhaarBackPhotoUrl || null,
           pan_photo_url: completeKYC.panPhotoUrl || null,
           address: completeKYC.address,
           emergency_contact_name: completeKYC.emergencyContactName,
@@ -1601,6 +1607,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               aadhaarNumber: p.aadhaar_number,
               panNumber: p.pan_number,
               aadhaarPhotoUrl: p.aadhaar_photo_url,
+              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
               panPhotoUrl: p.pan_photo_url,
               govtIdType: p.govt_id_type || 'Aadhaar Card',
               govtIdNumber: p.govt_id_number || 'KYC-PENDING',
@@ -1676,6 +1683,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 aadhaarNumber: p.aadhaar_number,
                 panNumber: p.pan_number,
                 aadhaarPhotoUrl: p.aadhaar_photo_url,
+                aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
                 panPhotoUrl: p.pan_photo_url,
                 govtIdType: p.govt_id_type || 'Aadhaar Card',
                 govtIdNumber: p.govt_id_number || 'KYC-PENDING',
@@ -1776,6 +1784,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               aadhaarNumber: p.aadhaar_number,
               panNumber: p.pan_number,
               aadhaarPhotoUrl: p.aadhaar_photo_url,
+              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
               panPhotoUrl: p.pan_photo_url,
               govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
               govtIdNumber: p.govt_id_number || 'KYC-PENDING',
@@ -2001,6 +2010,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (updatedKYC.aadhaarNumber !== undefined) dbUpdates.aadhaar_number = updatedKYC.aadhaarNumber || null;
       if (updatedKYC.panNumber !== undefined) dbUpdates.pan_number = updatedKYC.panNumber || null;
       if (updatedKYC.aadhaarPhotoUrl !== undefined) dbUpdates.aadhaar_photo_url = updatedKYC.aadhaarPhotoUrl || null;
+      if (updatedKYC.aadhaarBackPhotoUrl !== undefined) dbUpdates.aadhaar_back_photo_url = updatedKYC.aadhaarBackPhotoUrl || null;
       if (updatedKYC.panPhotoUrl !== undefined) dbUpdates.pan_photo_url = updatedKYC.panPhotoUrl || null;
       if (updatedKYC.address) dbUpdates.address = updatedKYC.address;
       if (updatedKYC.emergencyContactName) dbUpdates.emergency_contact_name = updatedKYC.emergencyContactName;
@@ -2048,6 +2058,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ...(p.kyc?.aadhaarNumber !== undefined ? { aadhaar_number: p.kyc.aadhaarNumber || null } : {}),
         ...(p.kyc?.panNumber !== undefined ? { pan_number: p.kyc.panNumber || null } : {}),
         ...(p.kyc?.aadhaarPhotoUrl !== undefined ? { aadhaar_photo_url: p.kyc.aadhaarPhotoUrl || null } : {}),
+        ...(p.kyc?.aadhaarBackPhotoUrl !== undefined ? { aadhaar_back_photo_url: p.kyc.aadhaarBackPhotoUrl || null } : {}),
         ...(p.kyc?.panPhotoUrl !== undefined ? { pan_photo_url: p.kyc.panPhotoUrl || null } : {}),
         ...(p.kyc?.address !== undefined ? { address: p.kyc.address } : {}),
         ...(p.kyc?.emergencyContactName !== undefined ? { emergency_contact_name: p.kyc.emergencyContactName || null } : {}),

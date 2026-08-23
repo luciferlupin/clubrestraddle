@@ -59,6 +59,7 @@ CREATE TABLE players (
     aadhaar_number VARCHAR(32),
     pan_number VARCHAR(16),
     aadhaar_photo_url TEXT,
+    aadhaar_back_photo_url TEXT,
     pan_photo_url TEXT,
     address TEXT,
     emergency_contact_name VARCHAR(120),
@@ -369,6 +370,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ------------------------------------------------------------------------------
 -- Run this in Supabase SQL Editor if players table already exists:
 ALTER TABLE players ADD COLUMN IF NOT EXISTS member_number INTEGER;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS aadhaar_back_photo_url TEXT;
 CREATE INDEX IF NOT EXISTS idx_players_member_number ON players(member_number);
 
 -- Populate sequence numbers (1, 2, 3, ...) for all existing players by registration order

@@ -81,16 +81,28 @@ export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player
               <span style={{ fontFamily: 'monospace' }}>
                 {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
               </span>
-              {player.kyc.aadhaarPhotoUrl && (
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  onClick={() => setViewingDoc({ title: 'Aadhaar Card Photo', url: player.kyc.aadhaarPhotoUrl! })}
-                >
-                  <Eye size={12} /> View Photo
-                </button>
-              )}
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {player.kyc.aadhaarPhotoUrl && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    onClick={() => setViewingDoc({ title: 'Aadhaar Card (Front)', url: player.kyc.aadhaarPhotoUrl! })}
+                  >
+                    <Eye size={12} /> Front
+                  </button>
+                )}
+                {player.kyc.aadhaarBackPhotoUrl && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    onClick={() => setViewingDoc({ title: 'Aadhaar Card (Back)', url: player.kyc.aadhaarBackPhotoUrl! })}
+                  >
+                    <Eye size={12} /> Back
+                  </button>
+                )}
+              </div>
             </dd>
           </div>
           <div>

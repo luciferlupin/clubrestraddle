@@ -30,6 +30,7 @@ export const AdminPlayersView: React.FC = () => {
   const [editTier, setEditTier] = useState<MembershipTier>('Standard');
   const [editAddress, setEditAddress] = useState('');
   const [editAadhaarPhotoUrl, setEditAadhaarPhotoUrl] = useState('');
+  const [editAadhaarBackPhotoUrl, setEditAadhaarBackPhotoUrl] = useState('');
   const [editPanPhotoUrl, setEditPanPhotoUrl] = useState('');
   const [editNotes, setEditNotes] = useState('');
 
@@ -62,6 +63,7 @@ export const AdminPlayersView: React.FC = () => {
     setEditTier(player.membershipTier);
     setEditAddress(player.kyc?.address || '');
     setEditAadhaarPhotoUrl(player.kyc?.aadhaarPhotoUrl || '');
+    setEditAadhaarBackPhotoUrl(player.kyc?.aadhaarBackPhotoUrl || '');
     setEditPanPhotoUrl(player.kyc?.panPhotoUrl || '');
     setEditNotes(player.notes || '');
     setIsEditOpen(true);
@@ -84,6 +86,7 @@ export const AdminPlayersView: React.FC = () => {
         email: editEmail,
         address: editAddress,
         aadhaarPhotoUrl: editAadhaarPhotoUrl,
+        aadhaarBackPhotoUrl: editAadhaarBackPhotoUrl,
         panPhotoUrl: editPanPhotoUrl,
       },
     });
@@ -307,6 +310,7 @@ export const AdminPlayersView: React.FC = () => {
                 </div>
                 <AdminKycDocumentPhotos
                   aadhaarPhotoUrl={selectedPlayer.kyc.aadhaarPhotoUrl}
+                  aadhaarBackPhotoUrl={selectedPlayer.kyc.aadhaarBackPhotoUrl}
                   panPhotoUrl={selectedPlayer.kyc.panPhotoUrl}
                 />
                 <div style={{ marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
@@ -435,9 +439,16 @@ export const AdminPlayersView: React.FC = () => {
 
             <DocumentPhotoUpload
               id="admin-edit-aadhaar-photo"
-              label="Aadhaar Card"
+              label="Aadhaar Card (Front)"
               value={editAadhaarPhotoUrl}
               onChange={(url) => setEditAadhaarPhotoUrl(url || '')}
+            />
+
+            <DocumentPhotoUpload
+              id="admin-edit-aadhaar-back-photo"
+              label="Aadhaar Card (Back)"
+              value={editAadhaarBackPhotoUrl}
+              onChange={(url) => setEditAadhaarBackPhotoUrl(url || '')}
             />
 
             <DocumentPhotoUpload

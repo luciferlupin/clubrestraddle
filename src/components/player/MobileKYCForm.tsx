@@ -38,6 +38,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     aadhaarNumber: '',
     panNumber: '',
     aadhaarPhotoUrl: '',
+    aadhaarBackPhotoUrl: '',
     panPhotoUrl: '',
     address: '',
     emergencyContactName: '',
@@ -67,7 +68,8 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
       } else if (cleanAadhaar.length !== 12) {
         nextErrors.aadhaarNumber = 'Aadhaar number must be exactly 12 digits.';
       }
-      if (!formData.aadhaarPhotoUrl) nextErrors.aadhaarPhotoUrl = 'Add a clear Aadhaar Card photo.';
+      if (!formData.aadhaarPhotoUrl) nextErrors.aadhaarPhotoUrl = 'Add Aadhaar Card Front photo.';
+      if (!formData.aadhaarBackPhotoUrl) nextErrors.aadhaarBackPhotoUrl = 'Add Aadhaar Card Back photo.';
 
       const cleanPan = formData.panNumber.trim().toUpperCase();
       if (!cleanPan) {
@@ -109,7 +111,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
       setErrors(validationErrors);
       if (validationErrors.fullName || validationErrors.phone || validationErrors.email) {
         setStep(1);
-      } else if (validationErrors.aadhaarNumber || validationErrors.panNumber || validationErrors.aadhaarPhotoUrl || validationErrors.panPhotoUrl) {
+      } else if (validationErrors.aadhaarNumber || validationErrors.panNumber || validationErrors.aadhaarPhotoUrl || validationErrors.aadhaarBackPhotoUrl || validationErrors.panPhotoUrl) {
         setStep(2);
       }
       return;
@@ -128,6 +130,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
           aadhaarNumber: cleanAadhaar,
           panNumber: cleanPan,
           aadhaarPhotoUrl: formData.aadhaarPhotoUrl || undefined,
+          aadhaarBackPhotoUrl: formData.aadhaarBackPhotoUrl || undefined,
           panPhotoUrl: formData.panPhotoUrl || undefined,
           govtIdType: 'Aadhaar & PAN Card',
           govtIdNumber: `PAN: ${cleanPan} | Aadhaar: ${cleanAadhaar}`,
@@ -275,16 +278,27 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
               />
               {errors.aadhaarNumber && <span className="m-field-error" role="alert">{errors.aadhaarNumber}</span>}
 
-              {/* Mobile Aadhaar Photo Upload */}
+              {/* Mobile Aadhaar Front Photo Upload */}
               <DocumentPhotoUpload
                 id="mobile-aadhaar-doc"
-                label="Aadhaar Card"
-                subLabel="Choose from gallery/files or snap with camera."
+                label="Aadhaar Card (Front)"
+                subLabel="Choose front photo from gallery/files or snap with camera."
                 value={formData.aadhaarPhotoUrl}
                 onChange={(url) => setFormData({ ...formData, aadhaarPhotoUrl: url || '' })}
                 required
               />
               {errors.aadhaarPhotoUrl && <span className="m-field-error" role="alert">{errors.aadhaarPhotoUrl}</span>}
+
+              {/* Mobile Aadhaar Back Photo Upload */}
+              <DocumentPhotoUpload
+                id="mobile-aadhaar-back-doc"
+                label="Aadhaar Card (Back)"
+                subLabel="Choose back photo with address from gallery/files or snap with camera."
+                value={formData.aadhaarBackPhotoUrl}
+                onChange={(url) => setFormData({ ...formData, aadhaarBackPhotoUrl: url || '' })}
+                required
+              />
+              {errors.aadhaarBackPhotoUrl && <span className="m-field-error" role="alert">{errors.aadhaarBackPhotoUrl}</span>}
             </div>
 
             {/* PAN Card Input */}

@@ -1246,9 +1246,15 @@ export const MobileAdminPortal: React.FC = () => {
 
                   <AdminKycDocumentPhotos
                     aadhaarPhotoUrl={selectedPlayer.kyc.aadhaarPhotoUrl}
+                    aadhaarBackPhotoUrl={selectedPlayer.kyc.aadhaarBackPhotoUrl}
                     panPhotoUrl={selectedPlayer.kyc.panPhotoUrl}
                     onAadhaarChange={(url) => {
                       const updated = { ...selectedPlayer, kyc: { ...selectedPlayer.kyc, aadhaarPhotoUrl: url || '' } };
+                      setSelectedPlayer(updated);
+                      updatePlayer(selectedPlayer.id, { kyc: updated.kyc });
+                    }}
+                    onAadhaarBackChange={(url) => {
+                      const updated = { ...selectedPlayer, kyc: { ...selectedPlayer.kyc, aadhaarBackPhotoUrl: url || '' } };
                       setSelectedPlayer(updated);
                       updatePlayer(selectedPlayer.id, { kyc: updated.kyc });
                     }}
