@@ -8,7 +8,6 @@ import {
   History,
   Trophy,
   Receipt,
-  Coins,
   CreditCard,
   ChevronRight,
   ArrowLeft,
@@ -20,7 +19,6 @@ import { DailyCheckInCard } from './DailyCheckInCard';
 import { PlayerPass } from './PlayerPass';
 import { CheckInHistory } from './CheckInHistory';
 import { PlayerProfile } from './PlayerProfile';
-import { TableChipRequestModal } from './TableChipRequestModal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { formatClubLabel, formatCurrency, formatDateTime, formatDateOnly, formatTimeOnly, formatINR, formatPlayerNumber } from '../../utils/formatters';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
@@ -29,7 +27,7 @@ import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, An
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 import { Pagination } from '../common/Pagination';
 
-type PlayerTab = 'pass' | 'chips' | 'tournaments' | 'billing' | 'profile' | 'history';
+type PlayerTab = 'pass' | 'tournaments' | 'billing' | 'profile' | 'history';
 
 interface PlayerPortalProps {
   showNewPlayerFormInitially?: boolean;
@@ -45,7 +43,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
     checkIns,
     tournaments,
     entries,
-    chipRequests,
     hasPlayerCheckedInToday,
     findMemberByPhone,
     setSelectedPlayerId,
@@ -54,7 +51,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
   const [entryView, setEntryView] = useState<'welcome' | 'lookup' | 'register'>(
     showNewPlayerFormInitially ? 'register' : 'welcome'
   );
-  const [isChipModalOpen, setIsChipModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
@@ -93,7 +89,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
 
   const playerSections: DesktopSectionNavItem<PlayerTab>[] = [
     { id: 'pass', label: 'Overview', icon: <CheckCircle size={16} /> },
-    { id: 'chips', label: 'Buy chips', icon: <Coins size={16} /> },
     { id: 'tournaments', label: `Events (${tournaments.length})`, icon: <Trophy size={16} /> },
     { id: 'billing', label: `Receipts (${playerEntries.length})`, icon: <Receipt size={16} /> },
     { id: 'profile', label: 'My profile', icon: <User size={16} /> },
@@ -113,8 +108,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
                 ? 'Member Registration'
                 : activeTab === 'pass'
                 ? 'Member Dashboard'
-                : activeTab === 'chips'
-                ? 'Buy Chips'
                 : activeTab === 'tournaments'
                 ? 'Tournaments & Events'
                 : activeTab === 'billing'
@@ -161,14 +154,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
         )}
         actions={
           <>
-          {currentPlayer && (
-            <button
-              className="btn btn-primary"
-              onClick={() => setIsChipModalOpen(true)}
-            >
-              <Coins size={16} /> Buy chips
-            </button>
-          )}
+
 
           {currentPlayer && (
             <button
@@ -410,101 +396,6 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
               </div>
             )}
 
-            {/* TAB: BUY CHIPS AT TABLE */}
-            {activeTab === 'chips' && (
-              <div className="card">
-                <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                  <div>
-                    <h3 className="card-title">
-                      <Coins size={18} color="#e11d48" />
-                      Table Chip Purchase & Reload Orders
-                    </h3>
-                    <p className="card-subtitle">
-                      Order chips straight to your table seat. Cashier vault dispatches in real-time.
-                    </p>
-                  </div>
-                  <button className="btn btn-primary" onClick={() => setIsChipModalOpen(true)}>
-                    <Coins size={16} /> Request Chips Now
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {chipRequests.filter(r => r.playerId === currentPlayer.id).length === 0 ? (
-                    <div className="chip-empty-state">
-                      <PokerChipStack count={4} size={72} color="#e11d48" />
-                      <div style={{ color: '#ffffff', fontWeight: 700, fontSize: '1rem' }}>No Table Chip Orders Yet</div>
-                      <p style={{ fontSize: '0.8rem', marginTop: '2px', color: '#94a3b8', maxWidth: '280px' }}>
-                        Click <strong style={{ color: '#fb7185' }}>"Request Chips Now"</strong> when seated at a cash game or tournament table.
-                      </p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', opacity: 0.5, marginTop: '4px' }}>
-                        <CardSuit suit="spade" size={14} color="#ffffff" />
-                        <CardSuit suit="heart" size={14} color="#e11d48" />
-                        <CardSuit suit="diamond" size={14} color="#e11d48" />
-                        <CardSuit suit="club" size={14} color="#ffffff" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="table-container">
-                    <table className="custom-table">
-                      <thead>
-                        <tr>
-                          <th>Order ID</th>
-                          <th>Table & Seat</th>
-                          <th>Chip Amount</th>
-                          <th>Payment Method</th>
-                          <th>Time</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {chipRequests
-                          .filter(r => r.playerId === currentPlayer.id)
-                          .map(order => (
-                            <tr key={order.id}>
-                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#ffffff' }}>
-                                {order.id}
-                              </td>
-                              <td style={{ fontWeight: 600, color: '#ffffff' }}>
-                                {order.tableNumber}, {order.seatNumber}
-                              </td>
-                              <td style={{ fontWeight: 800, color: '#ffffff' }}>
-                                ₹{formatINR(order.amount)}
-                              </td>
-                              <td>
-                                <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
-                                  {order.paymentMethod}
-                                </span>
-                              </td>
-                              <td style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
-                                {formatDateTime(order.requestedAt)}
-                              </td>
-                              <td>
-                                {order.status === 'pending' && (
-                                  <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>
-                                    <span className="badge-dot" /> Dispatching to Table...
-                                  </span>
-                                )}
-                                {order.status === 'delivered' && (
-                                  <span className="badge badge-success" style={{ fontSize: '0.72rem' }}>
-                                    <CheckCircle size={12} /> Delivered ({order.receiptNumber})
-                                  </span>
-                                )}
-                                {order.status === 'cancelled' && (
-                                  <span className="badge badge-danger" style={{ fontSize: '0.72rem' }}>
-                                    Cancelled
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* TAB 2: TOURNAMENTS & EVENTS */}
             {activeTab === 'tournaments' && (
               <div className="card">
@@ -727,11 +618,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
         </div>
       )}
 
-      {/* Table Chip Request Modal */}
-      <TableChipRequestModal
-        isOpen={isChipModalOpen}
-        onClose={() => setIsChipModalOpen(false)}
-      />
+
 
       {/* Official Tax / Billing Invoice Modal */}
       <ClubTaxInvoiceModal

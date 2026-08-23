@@ -3,7 +3,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock3,
-  Coins,
   CreditCard,
   History,
   QrCode,
@@ -13,7 +12,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { ChipRequest, DailyCheckIn, Player, Tournament, TournamentEntry } from '../../types';
+import { DailyCheckIn, Player, Tournament, TournamentEntry } from '../../types';
 import { formatClubLabel, formatCurrency, formatDateTime, formatShortDateTime, formatTimeOnly, formatPlayerNumber } from '../../utils/formatters';
 import { EntryBadge, KYCBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
@@ -24,11 +23,9 @@ interface MobilePlayerHomeProps {
   todayCheckIn?: DailyCheckIn;
   tournaments: Tournament[];
   entries: TournamentEntry[];
-  chipRequests: ChipRequest[];
   checkingIn: boolean;
   isPassOpen: boolean;
   onCheckIn: () => void;
-  onOpenChipRequest: () => void;
   onOpenVisits: () => void;
   onOpenProfile: () => void;
   onOpenPass: () => void;
@@ -40,11 +37,9 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
   todayCheckIn,
   tournaments,
   entries,
-  chipRequests,
   checkingIn,
   isPassOpen,
   onCheckIn,
-  onOpenChipRequest,
   onOpenVisits,
   onOpenProfile,
   onOpenPass,
@@ -53,9 +48,6 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
   const isCheckedIn = Boolean(todayCheckIn);
   const verificationStatus = todayCheckIn?.verificationStatus;
   const playerEntries = entries.filter((entry) => entry.playerId === player.id);
-  const activeChipRequest = chipRequests
-    .filter((request) => request.playerId === player.id && request.status === 'pending')
-    .at(-1);
 
   const verificationUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`
@@ -143,11 +135,6 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
           </div>
         </div>
         <div className="player-action-grid">
-          <button type="button" onClick={onOpenChipRequest}>
-            <span className="player-action-icon"><Coins size={22} /></span>
-            <span><strong>Request chips</strong><small>Delivered to your table</small></span>
-            {activeChipRequest && <em>Pending</em>}
-          </button>
           <button type="button" onClick={onOpenPass}>
             <span className="player-action-icon"><QrCode size={22} /></span>
             <span><strong>Show pass</strong><small>Entrance and cashier QR</small></span>
@@ -162,17 +149,6 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
           </button>
         </div>
       </section>
-
-      {activeChipRequest && (
-        <section className="player-activity-banner" aria-label="Pending chip request">
-          <span className="player-activity-icon"><Coins size={19} /></span>
-          <div>
-            <strong>Chip request is with the cashier</strong>
-            <span>{formatCurrency(activeChipRequest.amount)} · {activeChipRequest.tableNumber}, {activeChipRequest.seatNumber}</span>
-          </div>
-          <span className="badge badge-warning">Pending</span>
-        </section>
-      )}
 
       {tournaments.length > 0 && (
         <section className="player-events-section" aria-labelledby="player-events-title">

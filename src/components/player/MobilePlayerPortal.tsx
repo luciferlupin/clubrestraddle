@@ -20,7 +20,6 @@ import { MobilePlayerHome } from './MobilePlayerHome';
 import { MobilePlayerProfile } from './MobilePlayerProfile';
 import { MobilePlayerVisits } from './MobilePlayerVisits';
 import { MobileRegistrationSuccess } from './MobileRegistrationSuccess';
-import { TableChipRequestModal } from './TableChipRequestModal';
 import { CardDeckFan, CardSuit, AnimatedSuitsRow } from '../common/PokerGraphics';
 
 interface MobilePlayerPortalProps {
@@ -38,7 +37,6 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
     checkIns,
     tournaments,
     entries,
-    chipRequests,
     hasPlayerCheckedInToday,
     performDailyCheckIn,
     findMemberByPhone,
@@ -52,7 +50,6 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
-  const [isChipModalOpen, setIsChipModalOpen] = useState(false);
   const [isPassOpen, setIsPassOpen] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [registrationSuccessData, setRegistrationSuccessData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
@@ -237,11 +234,9 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
               todayCheckIn={todayCheckIn}
               tournaments={tournaments}
               entries={entries}
-              chipRequests={chipRequests}
               checkingIn={checkingIn}
               isPassOpen={isPassOpen}
               onCheckIn={handleDailyCheckIn}
-              onOpenChipRequest={() => setIsChipModalOpen(true)}
               onOpenVisits={() => setActiveTab('history')}
               onOpenProfile={() => setActiveTab('profile')}
               onOpenPass={() => setIsPassOpen(true)}
@@ -304,8 +299,6 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
           </button>
         </nav>
       )}
-
-      <TableChipRequestModal isOpen={isChipModalOpen} onClose={() => setIsChipModalOpen(false)} />
 
     </div>
   );
