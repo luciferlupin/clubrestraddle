@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -12,13 +12,20 @@ import {
   ArrowLeft,
   LogOut,
   RefreshCw,
+  Wallet,
+  Smartphone,
+  Landmark,
+  DollarSign,
+  Eye,
+  Calendar,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { TournamentStatus, PaymentMethod, CashCategory, ExpenseCategory } from '../../types';
-import { formatClubLabel, formatCurrency, formatINR, formatPlayerNumber } from '../../utils/formatters';
+import { TournamentStatus, PaymentMethod, CashCategory, ExpenseCategory, TournamentEntry, CashTransaction, Expense } from '../../types';
+import { formatClubLabel, formatCurrency, formatINR, formatPlayerNumber, formatDateOnly, formatTimeOnly, getTodayDateString } from '../../utils/formatters';
 import { TournamentStatusBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { generateCashTransactionInvoice } from '../../utils/invoiceGenerator';
 import confetti from 'canvas-confetti';
 
 const DEFAULT_TOURNAMENT_START = new Date(Date.now() + 4 * 3600 * 1000).toISOString().slice(0, 16);
@@ -42,10 +49,26 @@ export const MobileCashierPortal: React.FC = () => {
     hasPlayerCheckedInToday,
     isRealtimeConnected,
     syncNow,
+    todayEntries,
+    todayCashTransactions,
+    todayExpenses,
+    todayPhysicalCashBalance,
+    todayUpiBalance,
+    todayBankBalance,
+    todayCardBalance,
+    todayTotalBalance,
+    todayPhysicalCashIn,
+    todayPhysicalCashOut,
+    todayUpiIn,
+    todayUpiOut,
+    todayBankIn,
+    todayBankOut,
   } = useClub();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'chips' | 'players' | 'tournaments' | 'cash'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'chips' | 'players' | 'tournaments' | 'today-ledger'>('dashboard');
   const [chipFilter, setChipFilter] = useState<'pending' | 'all' | 'delivered' | 'cancelled'>('pending');
+  const [ledgerChannelFilter, setLedgerChannelFilter] = useState<'all' | PaymentMethod>('all');
+  const [ledgerTypeFilter, setLedgerTypeFilter] = useState<'all' | 'tournament' | 'cash_in' | 'cash_out' | 'expense'>('all');
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Modals / Drawers State
@@ -101,6 +124,86 @@ export const MobileCashierPortal: React.FC = () => {
   });
 
   const activeTournaments = tournaments.filter(t => t.status === 'Registering' || t.status === 'Running');
+  const todayStr = getTodayDateString();
+
+  // Combine all today's items into a single unified stream for the cashier
+  const unifiedTodayItems = useMemo(() => {
+    const list: Array<{
+      id: string;
+      sourceType: 'tournament_entry' | 'cash_in' | 'cash_out' | 'expense';
+      title: string;
+      category: string;
+      description: string;
+      amount: number;
+      paymentMethod: PaymentMethod;
+      playerName?: string;
+      reference?: string;
+      timestamp: string;
+      entryObj?: TournamentEntry;
+      cashTxnObj?: CashTransaction;
+      expenseObj?: Expense;
+    }> = [];
+
+    todayEntries.forEach(entry => {
+      list.push({
+        id: entry.id,
+        sourceType: 'tournament_entry',
+        title: `Tournament Entry: ${formatClubLabel(entry.tournamentName)}`,
+        category: 'Tournament Entry',
+        description: `Receipt #${entry.receiptNumber} · Seat ${entry.seatNumber || 'Assigned'}`,
+        amount: entry.buyInAmount + entry.rakeAmount,
+        paymentMethod: entry.paymentMethod,
+        playerName: entry.playerName,
+        reference: entry.paymentReference,
+        timestamp: entry.registeredAt,
+        entryObj: entry,
+      });
+    });
+
+    todayCashTransactions.forEach(txn => {
+      list.push({
+        id: txn.id,
+        sourceType: txn.type === 'in' ? 'cash_in' : 'cash_out',
+        title: txn.category,
+        category: txn.type === 'in' ? 'Cash In / Gate Fee' : 'Cash Out / Payout',
+        description: txn.description || `${txn.category} transaction`,
+        amount: txn.amount,
+        paymentMethod: txn.paymentMethod,
+        playerName: txn.playerName,
+        reference: txn.referenceId,
+        timestamp: txn.timestamp,
+        cashTxnObj: txn,
+      });
+    });
+
+    todayExpenses.forEach(exp => {
+      list.push({
+        id: exp.id,
+        sourceType: 'expense',
+        title: `Expense: ${exp.category}`,
+        category: 'Club Expense',
+        description: `${exp.description} (Paid to: ${exp.paidTo || 'N/A'})`,
+        amount: exp.amount,
+        paymentMethod: exp.paymentMethod,
+        reference: `EXP-${exp.id}`,
+        timestamp: `${exp.date}T12:00:00.000Z`,
+        expenseObj: exp,
+      });
+    });
+
+    return list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }, [todayEntries, todayCashTransactions, todayExpenses]);
+
+  const filteredTodayItems = useMemo(() => {
+    return unifiedTodayItems.filter(item => {
+      if (ledgerChannelFilter !== 'all' && item.paymentMethod !== ledgerChannelFilter) return false;
+      if (ledgerTypeFilter === 'tournament' && item.sourceType !== 'tournament_entry') return false;
+      if (ledgerTypeFilter === 'cash_in' && item.sourceType !== 'cash_in') return false;
+      if (ledgerTypeFilter === 'cash_out' && item.sourceType !== 'cash_out') return false;
+      if (ledgerTypeFilter === 'expense' && item.sourceType !== 'expense') return false;
+      return true;
+    });
+  }, [unifiedTodayItems, ledgerChannelFilter, ledgerTypeFilter]);
 
   // Submit Handlers
   const handleCreateTournament = (e: React.FormEvent) => {
@@ -320,6 +423,78 @@ export const MobileCashierPortal: React.FC = () => {
             <p>Create events, register players and run the cash desk.</p>
           </section>
 
+          {/* Today's Shift Balances (Physical Cash, UPI, Bank, Total) */}
+          <section className="m-card" style={{ padding: '14px', background: 'linear-gradient(135deg, rgba(24, 10, 15, 0.95) 0%, rgba(12, 4, 8, 0.98) 100%)', border: '1.5px solid rgba(225, 29, 72, 0.45)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 800, color: '#fda4af' }}>
+                <Calendar size={14} />
+                <span>Today's Shift Balances ({todayStr})</span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ fontSize: '0.72rem', padding: '2px 8px' }}
+                onClick={() => setActiveTab('today-ledger')}
+              >
+                View Log ({unifiedTodayItems.length})
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {/* 1. Physical Cash */}
+              <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '10px', padding: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#fbbf24', fontWeight: 700 }}>
+                  <Wallet size={12} /> 💵 Cash in Hand
+                </div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--gold-light)', marginTop: '2px' }}>
+                  {formatCurrency(todayPhysicalCashBalance)}
+                </div>
+                <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>
+                  +{formatCurrency(todayPhysicalCashIn)} / -{formatCurrency(todayPhysicalCashOut)}
+                </div>
+              </div>
+
+              {/* 2. UPI / Digital */}
+              <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '10px', padding: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700 }}>
+                  <Smartphone size={12} /> 📱 UPI / QR
+                </div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#38bdf8', marginTop: '2px' }}>
+                  {formatCurrency(todayUpiBalance)}
+                </div>
+                <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>
+                  +{formatCurrency(todayUpiIn)} / -{formatCurrency(todayUpiOut)}
+                </div>
+              </div>
+
+              {/* 3. Bank Wire */}
+              <div style={{ background: 'rgba(168, 85, 247, 0.1)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '10px', padding: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#c084fc', fontWeight: 700 }}>
+                  <Landmark size={12} /> 🏦 Bank Wire
+                </div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#c084fc', marginTop: '2px' }}>
+                  {formatCurrency(todayBankBalance)}
+                </div>
+                <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>
+                  +{formatCurrency(todayBankIn)} / -{formatCurrency(todayBankOut)}
+                </div>
+              </div>
+
+              {/* 4. Total Shift Liquidity */}
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '10px', padding: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#34d399', fontWeight: 700 }}>
+                  <DollarSign size={12} /> 💎 Shift Total
+                </div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#34d399', marginTop: '2px' }}>
+                  {formatCurrency(todayTotalBalance)}
+                </div>
+                <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>
+                  Net shift collection
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section className="cashier-core-actions" aria-label="Main cashier jobs">
             <span>Main jobs</span>
             <button type="button" className="cashier-primary-action" onClick={() => setIsCreateTrnOpen(true)}>
@@ -330,6 +505,11 @@ export const MobileCashierPortal: React.FC = () => {
             <button type="button" className="cashier-primary-action" onClick={() => setActiveTab('players')}>
               <span className="cashier-primary-icon"><Users size={24} /></span>
               <span><small>Core job</small><strong>Register tournament player</strong><em>Collect the entry charge and create the receipt</em></span>
+              <ChevronRight size={21} />
+            </button>
+            <button type="button" className="cashier-primary-action" onClick={() => setActiveTab('today-ledger')}>
+              <span className="cashier-primary-icon"><Receipt size={24} /></span>
+              <span><small>Daily log</small><strong>Today's transactions ({unifiedTodayItems.length})</strong><em>Entries, fees, payouts and invoices recorded today</em></span>
               <ChevronRight size={21} />
             </button>
           </section>
@@ -765,6 +945,261 @@ export const MobileCashierPortal: React.FC = () => {
 
 
 
+      {/* TAB 5: TODAY'S ACTIVITY & DESK LEDGER */}
+      {activeTab === 'today-ledger' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Header Card */}
+          <div className="m-card">
+            <div className="m-card-header">
+              <div>
+                <h3 className="m-card-title">
+                  <Receipt size={18} color="#fbbf24" />
+                  Today's Desk Transactions
+                </h3>
+                <p className="m-card-subtitle">
+                  {todayStr} · Daily records automatically reset each day
+                </p>
+              </div>
+            </div>
+
+            {/* Separated Balance Strip */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '6px' }}>
+              <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '8px' }}>
+                <span style={{ fontSize: '0.68rem', color: '#fbbf24', fontWeight: 700 }}>💵 Cash in Hand</span>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--gold-light)' }}>{formatCurrency(todayPhysicalCashBalance)}</div>
+              </div>
+              <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '8px', padding: '8px' }}>
+                <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: 700 }}>📱 UPI / Digital</span>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#38bdf8' }}>{formatCurrency(todayUpiBalance)}</div>
+              </div>
+              <div style={{ background: 'rgba(168, 85, 247, 0.1)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '8px', padding: '8px' }}>
+                <span style={{ fontSize: '0.68rem', color: '#c084fc', fontWeight: 700 }}>🏦 Bank Wire</span>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#c084fc' }}>{formatCurrency(todayBankBalance)}</div>
+              </div>
+              <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '8px' }}>
+                <span style={{ fontSize: '0.68rem', color: '#34d399', fontWeight: 700 }}>💎 Total Shift</span>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#34d399' }}>{formatCurrency(todayTotalBalance)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter Pills */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {/* Category Pills */}
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+              <button
+                type="button"
+                className={`btn btn-sm ${ledgerTypeFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setLedgerTypeFilter('all')}
+                style={{ fontSize: '0.72rem', padding: '4px 8px', whiteSpace: 'nowrap' }}
+              >
+                All ({unifiedTodayItems.length})
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${ledgerTypeFilter === 'tournament' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setLedgerTypeFilter('tournament')}
+                style={{ fontSize: '0.72rem', padding: '4px 8px', whiteSpace: 'nowrap' }}
+              >
+                🏆 Entries ({todayEntries.length})
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${ledgerTypeFilter === 'cash_in' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setLedgerTypeFilter('cash_in')}
+                style={{ fontSize: '0.72rem', padding: '4px 8px', whiteSpace: 'nowrap', color: '#34d399' }}
+              >
+                + Cash In
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${ledgerTypeFilter === 'cash_out' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setLedgerTypeFilter('cash_out')}
+                style={{ fontSize: '0.72rem', padding: '4px 8px', whiteSpace: 'nowrap', color: '#f87171' }}
+              >
+                - Payouts
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${ledgerTypeFilter === 'expense' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setLedgerTypeFilter('expense')}
+                style={{ fontSize: '0.72rem', padding: '4px 8px', whiteSpace: 'nowrap', color: '#fda4af' }}
+              >
+                🧾 Expenses
+              </button>
+            </div>
+
+            {/* Channel Pills */}
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+              <button
+                type="button"
+                className={`btn btn-sm ${ledgerChannelFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setLedgerChannelFilter('all')}
+                style={{ fontSize: '0.7rem', padding: '3px 7px', whiteSpace: 'nowrap' }}
+              >
+                All Modes
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${ledgerChannelFilter === 'Cash' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setLedgerChannelFilter('Cash')}
+                style={{ fontSize: '0.7rem', padding: '3px 7px', whiteSpace: 'nowrap', color: ledgerChannelFilter === 'Cash' ? undefined : '#fbbf24' }}
+              >
+                💵 Cash ({formatCurrency(todayPhysicalCashBalance)})
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${ledgerChannelFilter === 'UPI/Digital' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setLedgerChannelFilter('UPI/Digital')}
+                style={{ fontSize: '0.7rem', padding: '3px 7px', whiteSpace: 'nowrap', color: ledgerChannelFilter === 'UPI/Digital' ? undefined : '#38bdf8' }}
+              >
+                📱 UPI ({formatCurrency(todayUpiBalance)})
+              </button>
+              <button
+                type="button"
+                className={`btn btn-sm ${ledgerChannelFilter === 'Bank Transfer' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setLedgerChannelFilter('Bank Transfer')}
+                style={{ fontSize: '0.7rem', padding: '3px 7px', whiteSpace: 'nowrap', color: ledgerChannelFilter === 'Bank Transfer' ? undefined : '#c084fc' }}
+              >
+                🏦 Bank ({formatCurrency(todayBankBalance)})
+              </button>
+            </div>
+          </div>
+
+          {/* Today's Transactions List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {filteredTodayItems.length === 0 ? (
+              <div className="m-card" style={{ textAlign: 'center', padding: '32px 16px', color: '#94a3b8' }}>
+                <Receipt size={32} style={{ margin: '0 auto 8px', opacity: 0.4 }} />
+                <p style={{ fontSize: '0.84rem' }}>No transactions recorded for today matching criteria.</p>
+              </div>
+            ) : (
+              filteredTodayItems.map(item => (
+                <div
+                  key={`${item.sourceType}-${item.id}`}
+                  className="m-card"
+                  style={{
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    borderLeft: `4px solid ${
+                      item.sourceType === 'tournament_entry'
+                        ? '#c084fc'
+                        : item.sourceType === 'cash_in'
+                        ? '#34d399'
+                        : item.sourceType === 'cash_out'
+                        ? '#f87171'
+                        : '#fda4af'
+                    }`,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#ffffff' }}>{item.title}</div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{item.description}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div
+                        style={{
+                          fontWeight: 900,
+                          fontSize: '1rem',
+                          color: (item.sourceType === 'tournament_entry' || item.sourceType === 'cash_in') ? '#34d399' : '#f87171',
+                        }}
+                      >
+                        {(item.sourceType === 'tournament_entry' || item.sourceType === 'cash_in') ? '+' : '-'}
+                        {formatCurrency(item.amount)}
+                      </div>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>
+                        {formatTimeOnly(item.timestamp)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <span
+                        style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: item.paymentMethod === 'Cash' ? 'rgba(251, 191, 36, 0.15)' : item.paymentMethod === 'UPI/Digital' ? 'rgba(56, 189, 248, 0.15)' : item.paymentMethod === 'Bank Transfer' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(52, 211, 153, 0.15)',
+                          color: item.paymentMethod === 'Cash' ? '#fbbf24' : item.paymentMethod === 'UPI/Digital' ? '#38bdf8' : item.paymentMethod === 'Bank Transfer' ? '#c084fc' : '#34d399',
+                        }}
+                      >
+                        {item.paymentMethod === 'Cash' ? '💵 Cash' : item.paymentMethod === 'UPI/Digital' ? '📱 UPI' : item.paymentMethod === 'Bank Transfer' ? '🏦 Bank' : '💳 Card'}
+                      </span>
+                      {item.playerName && (
+                        <span style={{ fontSize: '0.74rem', color: '#cbd5e1' }}>
+                          {item.playerName}
+                        </span>
+                      )}
+                    </div>
+
+                    {(item.entryObj || item.cashTxnObj) && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '3px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        onClick={() => {
+                          if (item.entryObj) {
+                            const entry = item.entryObj;
+                            const playerObj = players.find(p => p.id === entry.playerId);
+                            const tournamentObj = tournaments.find(t => t.name === entry.tournamentName);
+                            setSelectedInvoice({
+                              invoiceNumber: entry.receiptNumber,
+                              invoiceDate: entry.registeredAt,
+                              category: 'Tournament Entry & Service Charge',
+                              playerId: playerObj ? formatPlayerNumber(playerObj) : entry.playerId,
+                              playerName: entry.playerName,
+                              playerPhone: entry.playerPhone || playerObj?.phone,
+                              playerEmail: playerObj?.email,
+                              govtIdType: playerObj?.kyc.govtIdType,
+                              govtIdNumber: playerObj?.kyc.govtIdNumber,
+                              membershipTier: playerObj?.membershipTier,
+                              tableLocation: `${entry.tableNumber || 'Assigned'} • ${entry.seatNumber || 'Assigned'}`,
+                              eventName: `${formatClubLabel(entry.tournamentName)}`,
+                              eventDate: `Texas • ${formatDateOnly(entry.registeredAt)} • ${formatTimeOnly(entry.registeredAt)}`,
+                              eventDetails: `Texas • MTC • Table ${entry.tableNumber || 'Assigned'} • Seat ${entry.seatNumber || 'Assigned'}`,
+                              items: [
+                                {
+                                  description: `${formatClubLabel(entry.tournamentName)} - Player Entry Charge`,
+                                  details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Chips`,
+                                  chips: tournamentObj?.startingChips || 50000,
+                                  amount: entry.buyInAmount,
+                                },
+                                {
+                                  description: 'Club Service Charges & Tournament Organization',
+                                  details: 'Club tournament organization & dealer service fee',
+                                  amount: entry.rakeAmount,
+                                },
+                              ],
+                              subtotal: entry.buyInAmount,
+                              serviceCharge: entry.rakeAmount,
+                              totalAmount: entry.buyInAmount + entry.rakeAmount,
+                              paymentMethod: entry.paymentMethod,
+                              paymentReference: entry.paymentReference,
+                              cashierName: entry.cashierName,
+                            });
+                          } else if (item.cashTxnObj) {
+                            const matchedPlayer = players.find(p => p.fullName.toLowerCase() === (item.cashTxnObj?.playerName || '').toLowerCase());
+                            const inv = generateCashTransactionInvoice(item.cashTxnObj, matchedPlayer, staffName);
+                            setSelectedInvoice(inv);
+                          }
+                        }}
+                      >
+                        <Eye size={12} /> View Bill
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
       {/* DRAWERS / MODALS */}
 
       {/* 1. Cash In Drawer */}
@@ -1102,6 +1537,15 @@ export const MobileCashierPortal: React.FC = () => {
         </button>
 
         <button
+          className={`nav-tab-item cashier-color ${activeTab === 'today-ledger' ? 'active' : ''}`}
+          onClick={() => setActiveTab('today-ledger')}
+        >
+          <Receipt size={20} />
+          {unifiedTodayItems.length > 0 && <span className="nav-badge">{unifiedTodayItems.length}</span>}
+          <span className="nav-tab-label">Today's Log</span>
+        </button>
+
+        <button
           className={`nav-tab-item cashier-color ${activeTab === 'players' ? 'active' : ''}`}
           onClick={() => setActiveTab('players')}
         >
@@ -1114,7 +1558,7 @@ export const MobileCashierPortal: React.FC = () => {
           onClick={() => setActiveTab('tournaments')}
         >
           <Trophy size={20} />
-          <span className="nav-tab-label">Tourneys</span>
+          <span className="nav-tab-label">Events</span>
         </button>
 
         <button
@@ -1125,8 +1569,6 @@ export const MobileCashierPortal: React.FC = () => {
           {pendingChipOrdersCount > 0 && <span className="nav-badge">{pendingChipOrdersCount}</span>}
           <span className="nav-tab-label">Chips</span>
         </button>
-
-
       </nav>
 
       </div>{/* end staff-scroll-area */}

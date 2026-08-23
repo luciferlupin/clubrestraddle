@@ -21,9 +21,11 @@ import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 type CashierTab = 'chip-orders' | 'tournaments' | 'register' | 'billing';
 
 export const CashierPortal: React.FC = () => {
-  const { staffName, tournaments, pendingChipOrdersCount } = useClub();
+  const { staffName, tournaments, pendingChipOrdersCount, todayEntries, todayCashTransactions, todayExpenses } = useClub();
   const [activeTab, setActiveTab] = useState<CashierTab>('chip-orders');
   const [selectedTournamentForReg, setSelectedTournamentForReg] = useState<string | undefined>(undefined);
+
+  const totalTodayRecords = todayEntries.length + todayCashTransactions.length + todayExpenses.length;
 
   const handleStartRegister = (tournamentId: string) => {
     setSelectedTournamentForReg(tournamentId);
@@ -34,7 +36,7 @@ export const CashierPortal: React.FC = () => {
     { id: 'chip-orders', label: 'Chip orders', icon: <Coins size={16} />, badge: pendingChipOrdersCount },
     { id: 'tournaments', label: `Events (${tournaments.length})`, icon: <Trophy size={16} /> },
     { id: 'register', label: 'New entry', icon: <UserPlus size={16} /> },
-    { id: 'billing', label: 'Billing records', icon: <Receipt size={16} /> },
+    { id: 'billing', label: "Today's ledger", icon: <Receipt size={16} />, badge: totalTodayRecords },
   ];
 
   const getActiveTabLabel = () => {
@@ -46,7 +48,7 @@ export const CashierPortal: React.FC = () => {
       case 'register':
         return 'Tournament Entry & Billing';
       case 'billing':
-        return 'Billing Records';
+        return "Today's Desk Transactions & Balances";
       default:
         return 'Overview';
     }

@@ -201,6 +201,25 @@ interface ClubContextType {
   totalCashOutAmount: number;
   netTreasuryBalance: number;
 
+  // Today's Scoped Collections & Balances (for Cashier & Daily Desk)
+  todayCashTransactions: CashTransaction[];
+  todayEntries: TournamentEntry[];
+  todayExpenses: Expense[];
+  todayPhysicalCashBalance: number;
+  todayUpiBalance: number;
+  todayBankBalance: number;
+  todayCardBalance: number;
+  todayTotalBalance: number;
+  todayCashInAmount: number;
+  todayCashOutAmount: number;
+  todayExpensesAmount: number;
+  todayPhysicalCashIn: number;
+  todayPhysicalCashOut: number;
+  todayUpiIn: number;
+  todayUpiOut: number;
+  todayBankIn: number;
+  todayBankOut: number;
+
   // Player CRUD Actions
   registerNewPlayer: (kycData: Omit<PlayerKYC, 'submittedAt'>) => { player: Player; checkIn: DailyCheckIn };
   performDailyCheckIn: (playerId: string) => DailyCheckIn;
@@ -1500,6 +1519,127 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const netTreasuryBalance = useMemo(() => {
     return totalCashInAmount - totalCashOutAmount - totalExpensesAmount;
   }, [totalCashInAmount, totalCashOutAmount, totalExpensesAmount]);
+
+  // ── TODAY-SCOPED COLLECTIONS & BALANCES (FOR CASHIER) ───────
+  const todayCashTransactions = useMemo(() => {
+    return cashTransactions.filter(t => (t.timestamp || '').slice(0, 10) === today);
+  }, [cashTransactions, today]);
+
+  const todayEntries = useMemo(() => {
+    return entries.filter(e => (e.registeredAt || '').slice(0, 10) === today);
+  }, [entries, today]);
+
+  const todayExpenses = useMemo(() => {
+    return expenses.filter(e => (e.date || '').slice(0, 10) === today);
+  }, [expenses, today]);
+
+  const todayPhysicalCashIn = useMemo(() => {
+    return todayCashTransactions
+      .filter(t => t.type === 'in' && (t.paymentMethod === 'Cash' || !t.paymentMethod))
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [todayCashTransactions]);
+
+  const todayPhysicalCashOut = useMemo(() => {
+    return todayCashTransactions
+      .filter(t => t.type === 'out' && (t.paymentMethod === 'Cash' || !t.paymentMethod))
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [todayCashTransactions]);
+
+  const todayPhysicalCashExpenses = useMemo(() => {
+    return todayExpenses
+      .filter(e => e.paymentMethod === 'Cash' || !e.paymentMethod)
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [todayExpenses]);
+
+  const todayPhysicalCashBalance = useMemo(() => {
+    return todayPhysicalCashIn - todayPhysicalCashOut - todayPhysicalCashExpenses;
+  }, [todayPhysicalCashIn, todayPhysicalCashOut, todayPhysicalCashExpenses]);
+
+  const todayUpiIn = useMemo(() => {
+    return todayCashTransactions
+      .filter(t => t.type === 'in' && t.paymentMethod === 'UPI/Digital')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [todayCashTransactions]);
+
+  const todayUpiOut = useMemo(() => {
+    return todayCashTransactions
+      .filter(t => t.type === 'out' && t.paymentMethod === 'UPI/Digital')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [todayCashTransactions]);
+
+  const todayUpiExpenses = useMemo(() => {
+    return todayExpenses
+      .filter(e => e.paymentMethod === 'UPI/Digital')
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [todayExpenses]);
+
+  const todayUpiBalance = useMemo(() => {
+    return todayUpiIn - todayUpiOut - todayUpiExpenses;
+  }, [todayUpiIn, todayUpiOut, todayUpiExpenses]);
+
+  const todayBankIn = useMemo(() => {
+    return todayCashTransactions
+      .filter(t => t.type === 'in' && t.paymentMethod === 'Bank Transfer')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [todayCashTransactions]);
+
+  const todayBankOut = useMemo(() => {
+    return todayCashTransactions
+      .filter(t => t.type === 'out' && t.paymentMethod === 'Bank Transfer')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [todayCashTransactions]);
+
+  const todayBankExpenses = useMemo(() => {
+    return todayExpenses
+      .filter(e => e.paymentMethod === 'Bank Transfer')
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [todayExpenses]);
+
+  const todayBankBalance = useMemo(() => {
+    return todayBankIn - todayBankOut - todayBankExpenses;
+  }, [todayBankIn, todayBankOut, todayBankExpenses]);
+
+  const todayCardIn = useMemo(() => {
+    return todayCashTransactions
+      .filter(t => t.type === 'in' && t.paymentMethod === 'Credit/Debit Card')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [todayCashTransactions]);
+
+  const todayCardOut = useMemo(() => {
+    return todayCashTransactions
+      .filter(t => t.type === 'out' && t.paymentMethod === 'Credit/Debit Card')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [todayCashTransactions]);
+
+  const todayCardExpenses = useMemo(() => {
+    return todayExpenses
+      .filter(e => e.paymentMethod === 'Credit/Debit Card')
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [todayExpenses]);
+
+  const todayCardBalance = useMemo(() => {
+    return todayCardIn - todayCardOut - todayCardExpenses;
+  }, [todayCardIn, todayCardOut, todayCardExpenses]);
+
+  const todayCashInAmount = useMemo(() => {
+    return todayCashTransactions
+      .filter(t => t.type === 'in')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [todayCashTransactions]);
+
+  const todayCashOutAmount = useMemo(() => {
+    return todayCashTransactions
+      .filter(t => t.type === 'out')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [todayCashTransactions]);
+
+  const todayExpensesAmount = useMemo(() => {
+    return todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+  }, [todayExpenses]);
+
+  const todayTotalBalance = useMemo(() => {
+    return todayPhysicalCashBalance + todayUpiBalance + todayBankBalance + todayCardBalance;
+  }, [todayPhysicalCashBalance, todayUpiBalance, todayBankBalance, todayCardBalance]);
 
   const pendingChipOrdersCount = useMemo(() => {
     return chipRequests.filter(r => r.status === 'pending').length;
@@ -3399,6 +3539,23 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         totalCashInAmount,
         totalCashOutAmount,
         netTreasuryBalance,
+        todayCashTransactions,
+        todayEntries,
+        todayExpenses,
+        todayPhysicalCashBalance,
+        todayUpiBalance,
+        todayBankBalance,
+        todayCardBalance,
+        todayTotalBalance,
+        todayCashInAmount,
+        todayCashOutAmount,
+        todayExpensesAmount,
+        todayPhysicalCashIn,
+        todayPhysicalCashOut,
+        todayUpiIn,
+        todayUpiOut,
+        todayBankIn,
+        todayBankOut,
         registerNewPlayer,
         performDailyCheckIn,
         updatePlayer,
