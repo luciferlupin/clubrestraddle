@@ -19,22 +19,29 @@ import {
   AlertTriangle,
   LogOut,
   FileText,
+  Eye,
+  ArrowRight,
+  Sparkles,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction } from '../../types';
-import { formatCurrency, formatShortDateTime, formatINR } from '../../utils/formatters';
+import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction, Player } from '../../types';
+import { formatCurrency, formatShortDateTime, formatINR, formatPlayerNumber } from '../../utils/formatters';
 import { CashFlowBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { Modal } from '../common/Modal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { Pagination } from '../common/Pagination';
 import { InvoiceRepositoryView } from './InvoiceRepositoryView';
+import { generateCashTransactionInvoice } from '../../utils/invoiceGenerator';
 import confetti from 'canvas-confetti';
+
+const QUICK_AMOUNTS = [500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
 
 export const MobileCashPortal: React.FC = () => {
   const {
     staffName,
     logoutStaff,
+    players,
     cashTransactions,
     currentCashBalance,
     totalCashInAmount,
@@ -53,7 +60,7 @@ export const MobileCashPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'invoices' | 'ledger' | 'expenses'>('dashboard');
   const [ledgerPage, setLedgerPage] = useState(1);
   const [expensePage, setExpensePage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 12;
 
   // Drawers & Modals State
   const [isCashInOpen, setIsCashInOpen] = useState(false);
@@ -66,6 +73,40 @@ export const MobileCashPortal: React.FC = () => {
   const [selectedTxn, setSelectedTxn] = useState<CashTransaction | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
 
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'in' | 'out'>('all');
+
+  // Form State for Cash In
+  const [cashInData, setCashInData] = useState({
+    category: 'Tournament Buy-in' as CashCategory,
+    amount: 1000,
+    description: '',
+    paymentMethod: 'Cash' as PaymentMethod,
+    playerName: '',
+    playerId: '',
+    referenceId: '',
+  });
+
+  // Form State for Cash Out
+  const [cashOutData, setCashOutData] = useState({
+    category: 'Tournament Prize Payout' as CashCategory,
+    amount: 500,
+    description: '',
+    paymentMethod: 'Cash' as PaymentMethod,
+    playerName: '',
+    playerId: '',
+    referenceId: '',
+  });
+
+  // Form State for Expense
+  const [expenseData, setExpenseData] = useState({
+    category: 'Dealer & Staff Wages' as ExpenseCategory,
+    amount: 500,
+    description: '',
+    paidTo: '',
+    paymentMethod: 'Cash' as PaymentMethod,
+  });
+
   const [editExpenseData, setEditExpenseData] = useState({
     category: 'Dealer & Staff Wages' as ExpenseCategory,
     amount: 500,
@@ -74,6 +115,90 @@ export const MobileCashPortal: React.FC = () => {
     paymentMethod: 'Cash' as PaymentMethod,
     date: new Date().toISOString().slice(0, 10),
   });
+
+  const handleCashInSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cashInData.amount || cashInData.amount <= 0) return;
+
+    addCashReceived({
+      category: cashInData.category,
+      amount: Number(cashInData.amount),
+      description: cashInData.description || `Cash In: ${cashInData.category}`,
+      paymentMethod: cashInData.paymentMethod,
+      playerName: cashInData.playerName,
+      referenceId: cashInData.referenceId,
+    });
+
+    try {
+      confetti({
+        particleCount: 40,
+        spread: 50,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#34d399', '#ffffff'],
+      });
+    } catch {
+      // Fallback
+    }
+
+    setIsCashInOpen(false);
+    setCashInData({
+      category: 'Tournament Buy-in',
+      amount: 1000,
+      description: '',
+      paymentMethod: 'Cash',
+      playerName: '',
+      playerId: '',
+      referenceId: '',
+    });
+  };
+
+  const handleCashOutSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cashOutData.amount || cashOutData.amount <= 0) return;
+
+    addCashGiven({
+      category: cashOutData.category,
+      amount: Number(cashOutData.amount),
+      description: cashOutData.description || `Cash Out: ${cashOutData.category}`,
+      paymentMethod: cashOutData.paymentMethod,
+      playerName: cashOutData.playerName,
+      referenceId: cashOutData.referenceId,
+    });
+
+    setIsCashOutOpen(false);
+    setCashOutData({
+      category: 'Tournament Prize Payout',
+      amount: 500,
+      description: '',
+      paymentMethod: 'Cash',
+      playerName: '',
+      playerId: '',
+      referenceId: '',
+    });
+  };
+
+  const handleExpenseSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!expenseData.amount || expenseData.amount <= 0) return;
+
+    addExpense({
+      category: expenseData.category,
+      amount: Number(expenseData.amount),
+      description: expenseData.description || `Expense: ${expenseData.category}`,
+      paidTo: expenseData.paidTo || 'Club Supplier',
+      paymentMethod: expenseData.paymentMethod,
+      date: new Date().toISOString().slice(0, 10),
+    });
+
+    setIsExpenseOpen(false);
+    setExpenseData({
+      category: 'Dealer & Staff Wages',
+      amount: 500,
+      description: '',
+      paidTo: '',
+      paymentMethod: 'Cash',
+    });
+  };
 
   const handleOpenEditExpense = (exp: Expense) => {
     setSelectedExpense(exp);
@@ -119,112 +244,10 @@ export const MobileCashPortal: React.FC = () => {
     setSelectedTxn(null);
   };
 
-  const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'in' | 'out'>('all');
-
-  // Form State for Cash In
-  const [cashInData, setCashInData] = useState({
-    category: 'Tournament Buy-in' as CashCategory,
-    amount: 1000,
-    description: '',
-    paymentMethod: 'Cash' as PaymentMethod,
-    playerName: '',
-  });
-
-  // Form State for Cash Out
-  const [cashOutData, setCashOutData] = useState({
-    category: 'Tournament Prize Payout' as CashCategory,
-    amount: 500,
-    description: '',
-    paymentMethod: 'Cash' as PaymentMethod,
-    playerName: '',
-  });
-
-  // Form State for Expense
-  const [expenseData, setExpenseData] = useState({
-    category: 'Dealer & Staff Wages' as ExpenseCategory,
-    amount: 300,
-    description: '',
-    paidTo: '',
-    paymentMethod: 'Cash' as PaymentMethod,
-  });
-
-  const handleCashInSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!cashInData.amount || cashInData.amount <= 0) return;
-
-    addCashReceived({
-      category: cashInData.category,
-      amount: Number(cashInData.amount),
-      description: cashInData.description || `Cash In: ${cashInData.category}`,
-      paymentMethod: cashInData.paymentMethod,
-      playerName: cashInData.playerName,
-    });
-
-    try {
-      confetti({
-        particleCount: 40,
-        spread: 60,
-        origin: { y: 0.6 },
-        colors: ['#10b981', '#34d399', '#ffffff'],
-      });
-    } catch {
-      // Fallback
-    }
-
-    setIsCashInOpen(false);
-    setCashInData({
-      category: 'Tournament Buy-in',
-      amount: 1000,
-      description: '',
-      paymentMethod: 'Cash',
-      playerName: '',
-    });
-  };
-
-  const handleCashOutSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!cashOutData.amount || cashOutData.amount <= 0) return;
-
-    addCashGiven({
-      category: cashOutData.category,
-      amount: Number(cashOutData.amount),
-      description: cashOutData.description || `Cash Out: ${cashOutData.category}`,
-      paymentMethod: cashOutData.paymentMethod,
-      playerName: cashOutData.playerName,
-    });
-
-    setIsCashOutOpen(false);
-    setCashOutData({
-      category: 'Tournament Prize Payout',
-      amount: 500,
-      description: '',
-      paymentMethod: 'Cash',
-      playerName: '',
-    });
-  };
-
-  const handleExpenseSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!expenseData.amount || expenseData.amount <= 0) return;
-
-    addExpense({
-      category: expenseData.category,
-      amount: Number(expenseData.amount),
-      description: expenseData.description || `Expense: ${expenseData.category}`,
-      paidTo: expenseData.paidTo || 'Club Supplier',
-      paymentMethod: expenseData.paymentMethod,
-      date: new Date().toISOString().slice(0, 10),
-    });
-
-    setIsExpenseOpen(false);
-    setExpenseData({
-      category: 'Dealer & Staff Wages',
-      amount: 300,
-      description: '',
-      paidTo: '',
-      paymentMethod: 'Cash',
-    });
+  const handleViewTxnInvoice = (txn: CashTransaction) => {
+    const matchedPlayer = players.find(p => p.fullName.toLowerCase() === (txn.playerName || '').toLowerCase() || p.id === txn.playerName);
+    const invoice = generateCashTransactionInvoice(txn, matchedPlayer, staffName);
+    setSelectedInvoice(invoice);
   };
 
   const filteredTransactions = cashTransactions.filter(t => {
@@ -232,7 +255,8 @@ export const MobileCashPortal: React.FC = () => {
       t.description.toLowerCase().includes(search.toLowerCase()) ||
       t.category.toLowerCase().includes(search.toLowerCase()) ||
       t.id.toLowerCase().includes(search.toLowerCase()) ||
-      (t.playerName && t.playerName.toLowerCase().includes(search.toLowerCase()));
+      (t.playerName && t.playerName.toLowerCase().includes(search.toLowerCase())) ||
+      (t.referenceId && t.referenceId.toLowerCase().includes(search.toLowerCase()));
 
     if (!matchesSearch) return false;
     if (filterType === 'in' && t.type !== 'in') return false;
@@ -241,12 +265,15 @@ export const MobileCashPortal: React.FC = () => {
   });
 
   return (
-    <div className="staff-mobile-portal cash-mobile-theme">
-      {/* ── Station Banner ─────────────────────────────────── */}
-      <div className="staff-station-banner">
+    <div className="mobile-staff-container">
+      {/* ── Fixed Top Header ───────────────────────────────── */}
+      <div className="staff-header-banner">
         <div className="staff-banner-left">
-          <span className="staff-banner-role">♣ Cash & Treasury Desk</span>
-          <span className="staff-banner-name">{staffName}</span>
+          <div className="staff-badge cashier" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', borderColor: 'rgba(245, 158, 11, 0.4)' }}>
+            <Wallet size={12} />
+            <span>Vault Terminal</span>
+          </div>
+          <span className="staff-user-name">{staffName}</span>
         </div>
         <div className="staff-banner-right">
           <span className="staff-live-dot cashier">Live Vault</span>
@@ -269,7 +296,7 @@ export const MobileCashPortal: React.FC = () => {
           <>
             {/* Top KPI Cards */}
             <div className="m-stats-grid">
-              <div className="m-stat-card" style={{ borderColor: 'var(--border-gold)' }}>
+              <div className="m-stat-card" style={{ borderColor: 'rgba(245, 158, 11, 0.45)', background: 'linear-gradient(135deg, rgba(30, 20, 10, 0.6) 0%, rgba(15, 8, 4, 0.9) 100%)' }}>
                 <span className="m-stat-label">Current Cash Balance</span>
                 <span className="m-stat-val" style={{ color: 'var(--gold-light)' }}>
                   {formatCurrency(currentCashBalance)}
@@ -278,7 +305,7 @@ export const MobileCashPortal: React.FC = () => {
               </div>
 
               <div className="m-stat-card" style={{ borderColor: 'rgba(16, 185, 129, 0.4)' }}>
-                <span className="m-stat-label">Today's Collection</span>
+                <span className="m-stat-label">Today's Inflow</span>
                 <span className="m-stat-val" style={{ color: '#34d399' }}>
                   +{formatCurrency(totalCashInAmount)}
                 </span>
@@ -295,7 +322,7 @@ export const MobileCashPortal: React.FC = () => {
                 <span className="m-stat-sub">Prizes & Cash-outs</span>
               </div>
 
-              <div className="m-stat-card" style={{ borderColor: 'rgba(225, 29, 72, 0.4)' }}>
+              <div className="m-stat-card" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}>
                 <span className="m-stat-label">Net Treasury</span>
                 <span className="m-stat-val" style={{ color: '#ffffff' }}>
                   {formatCurrency(netTreasuryBalance)}
@@ -306,7 +333,7 @@ export const MobileCashPortal: React.FC = () => {
 
             {/* Quick Action Strip */}
             <div>
-              <p className="staff-section-title">Cash Operations</p>
+              <p className="staff-section-title">Vault Operations</p>
               <div className="staff-quick-actions" style={{ marginTop: '8px' }}>
                 <button type="button" className="staff-quick-btn cash-in" onClick={() => setIsCashInOpen(true)}>
                   <div className="staff-quick-icon"><ArrowDownLeft size={20} /></div>
@@ -320,9 +347,9 @@ export const MobileCashPortal: React.FC = () => {
                   <div className="staff-quick-icon"><FileText size={20} /></div>
                   Tax Invoices
                 </button>
-                <button type="button" className="staff-quick-btn records" onClick={() => setActiveTab('ledger')}>
-                  <div className="staff-quick-icon"><History size={20} /></div>
-                  View Ledger
+                <button type="button" className="staff-quick-btn records" onClick={() => setIsExpenseOpen(true)}>
+                  <div className="staff-quick-icon"><Receipt size={20} /></div>
+                  Add Expense
                 </button>
               </div>
             </div>
@@ -351,9 +378,19 @@ export const MobileCashPortal: React.FC = () => {
                         {txn.type === 'in' ? '+' : '-'}{formatCurrency(txn.amount)}
                       </span>
                     </div>
-                    <div className="m-list-row" style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                    <div className="m-list-row" style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
                       <span>{txn.playerName || txn.paymentMethod}</span>
-                      <span>{formatShortDateTime(txn.timestamp)}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>{formatShortDateTime(txn.timestamp)}</span>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '1px 5px', fontSize: '0.68rem' }}
+                          onClick={() => handleViewTxnInvoice(txn)}
+                        >
+                          <Eye size={10} /> Inv
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -362,7 +399,12 @@ export const MobileCashPortal: React.FC = () => {
           </>
         )}
 
-        {/* TAB 2: MASTER CASH LEDGER */}
+        {/* TAB 2: CENTRAL TAX INVOICES HUB */}
+        {activeTab === 'invoices' && (
+          <InvoiceRepositoryView />
+        )}
+
+        {/* TAB 3: MASTER CASH LEDGER */}
         {activeTab === 'ledger' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div className="m-card">
@@ -372,7 +414,7 @@ export const MobileCashPortal: React.FC = () => {
                     <DollarSign size={18} color="#fbbf24" />
                     Cash Flow Ledger ({cashTransactions.length})
                   </h3>
-                  <p className="m-card-subtitle">Complete chronological record of all cash receipts and payouts</p>
+                  <p className="m-card-subtitle">Complete chronological record of all receipts and payouts</p>
                 </div>
               </div>
 
@@ -419,52 +461,65 @@ export const MobileCashPortal: React.FC = () => {
             </div>
 
             {/* List */}
-            {filteredTransactions.slice((ledgerPage - 1) * pageSize, ledgerPage * pageSize).map(txn => (
-              <div key={txn.id} className="m-list-card">
-                <div className="m-list-row">
-                  <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>{txn.category}</span>
-                  <span
-                    className="tabular-num"
-                    style={{ fontWeight: 800, color: txn.type === 'in' ? '#34d399' : '#fca5a5' }}
-                  >
-                    {txn.type === 'in' ? '+' : '-'}{formatCurrency(txn.amount)}
-                  </span>
-                </div>
-                {txn.description && (
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{txn.description}</div>
-                )}
-                <div className="m-list-row" style={{ fontSize: '0.74rem', color: 'var(--text-dim)', alignItems: 'center' }}>
-                  <span>{txn.playerName || txn.paymentMethod} · After: {formatCurrency(txn.balanceAfter)}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>{formatShortDateTime(txn.timestamp)}</span>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      style={{ padding: '2px 5px', color: '#ef4444' }}
-                      title="Void / Delete Transaction"
-                      onClick={() => {
-                        setSelectedTxn(txn);
-                        setIsVoidTxnOpen(true);
-                      }}
+            {filteredTransactions.length === 0 ? (
+              <div className="m-card" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                No cash transactions found.
+              </div>
+            ) : (
+              filteredTransactions.slice((ledgerPage - 1) * pageSize, ledgerPage * pageSize).map(txn => (
+                <div key={txn.id} className="m-list-card">
+                  <div className="m-list-row">
+                    <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>{txn.category}</span>
+                    <span
+                      className="tabular-num"
+                      style={{ fontWeight: 800, color: txn.type === 'in' ? '#34d399' : '#fca5a5' }}
                     >
-                      <Trash2 size={12} />
-                    </button>
+                      {txn.type === 'in' ? '+' : '-'}{formatCurrency(txn.amount)}
+                    </span>
+                  </div>
+                  {txn.description && (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{txn.description}</div>
+                  )}
+                  <div className="m-list-row" style={{ fontSize: '0.74rem', color: 'var(--text-dim)', alignItems: 'center' }}>
+                    <span>{txn.playerName || txn.paymentMethod} · After: {formatCurrency(txn.balanceAfter)}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '2px 6px', fontSize: '0.7rem' }}
+                        onClick={() => handleViewTxnInvoice(txn)}
+                      >
+                        <Eye size={11} /> Invoice
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '2px 5px', color: '#ef4444' }}
+                        title="Void / Delete Transaction"
+                        onClick={() => {
+                          setSelectedTxn(txn);
+                          setIsVoidTxnOpen(true);
+                        }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
 
             <Pagination
               currentPage={ledgerPage}
               totalItems={filteredTransactions.length}
               pageSize={pageSize}
               onPageChange={setLedgerPage}
-              itemLabel="records"
+              itemLabel="entries"
             />
           </div>
         )}
 
-        {/* TAB 3: EXPENSES */}
+        {/* TAB 4: OPERATING EXPENSES */}
         {activeTab === 'expenses' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div className="m-card">
@@ -472,55 +527,62 @@ export const MobileCashPortal: React.FC = () => {
                 <div>
                   <h3 className="m-card-title">
                     <Receipt size={18} color="#e11d48" />
-                    Operating Expenses ({expenses.length})
+                    Operating Expenses
                   </h3>
-                  <p className="m-card-subtitle">Total Recorded: {formatCurrency(totalExpensesAmount)}</p>
+                  <p className="m-card-subtitle">Total Recorded Costs: {formatCurrency(totalExpensesAmount)}</p>
                 </div>
-                <button className="m-btn m-btn-primary m-btn-sm" style={{ width: 'auto' }} onClick={() => setIsExpenseOpen(true)}>
-                  <Plus size={14} /> Add
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  style={{ width: 'auto', padding: '6px 10px', fontSize: '0.76rem' }}
+                  onClick={() => setIsExpenseOpen(true)}
+                >
+                  <Plus size={14} /> Add Expense
                 </button>
               </div>
             </div>
 
-            {expenses.slice((expensePage - 1) * pageSize, expensePage * pageSize).map(exp => (
-              <div key={exp.id} className="m-list-card">
-                <div className="m-list-row">
-                  <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>{exp.category}</span>
-                  <span className="tabular-num" style={{ fontWeight: 800, color: '#fca5a5' }}>
-                    -{formatCurrency(exp.amount)}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  {exp.description} · Paid to: {exp.paidTo}
-                </div>
-                <div className="m-list-row" style={{ fontSize: '0.74rem', color: 'var(--text-dim)', alignItems: 'center' }}>
-                  <span>{exp.paymentMethod} · {exp.date}</span>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      style={{ padding: '2px 6px' }}
-                      title="Edit Expense"
-                      onClick={() => handleOpenEditExpense(exp)}
-                    >
-                      <Edit3 size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      style={{ padding: '2px 6px', color: '#ef4444' }}
-                      title="Delete Expense"
-                      onClick={() => {
-                        setSelectedExpense(exp);
-                        setIsDeleteExpenseOpen(true);
-                      }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
+            {expenses.length === 0 ? (
+              <div className="m-card" style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                No expenses recorded yet.
+              </div>
+            ) : (
+              expenses.slice((expensePage - 1) * pageSize, expensePage * pageSize).map(exp => (
+                <div key={exp.id} className="m-list-card">
+                  <div className="m-list-row">
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem' }}>{exp.category}</span>
+                    <span className="tabular-num" style={{ fontWeight: 800, color: '#f87171' }}>
+                      {formatCurrency(exp.amount)}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{exp.description}</div>
+                  <div className="m-list-row" style={{ fontSize: '0.74rem', color: 'var(--text-dim)', alignItems: 'center' }}>
+                    <span>Paid to: {exp.paidTo} ({exp.paymentMethod})</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '2px 6px' }}
+                        onClick={() => handleOpenEditExpense(exp)}
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '2px 6px', color: '#ef4444' }}
+                        onClick={() => {
+                          setSelectedExpense(exp);
+                          setIsDeleteExpenseOpen(true);
+                        }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
 
             <Pagination
               currentPage={expensePage}
@@ -531,25 +593,21 @@ export const MobileCashPortal: React.FC = () => {
             />
           </div>
         )}
-
-        {/* TAB: TAX INVOICES REPOSITORY */}
-        {activeTab === 'invoices' && (
-          <InvoiceRepositoryView />
-        )}
       </div>
 
-      {/* DRAWER: CASH IN */}
+      {/* ── DRAWERS ────────────────────────────────────────── */}
+
+      {/* 1. Cash In Drawer */}
       <MobileBottomDrawer
         isOpen={isCashInOpen}
         onClose={() => setIsCashInOpen(false)}
-        title="Record Cash Received (In)"
-        subtitle="Collect entry charge, chip purchase or float deposit"
+        title="Record Cash In (Deposit / Entry)"
+        subtitle="Money received into the cashier vault drawer"
       >
-        <form onSubmit={handleCashInSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <form onSubmit={handleCashInSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-cashin-cat">Category *</label>
+            <label className="m-form-label">Category</label>
             <select
-              id="m-cashin-cat"
               className="m-select"
               value={cashInData.category}
               onChange={e => setCashInData({ ...cashInData, category: e.target.value as CashCategory })}
@@ -557,166 +615,283 @@ export const MobileCashPortal: React.FC = () => {
               <option value="Tournament Buy-in">Tournament Entry Charge</option>
               <option value="Cash Game Buy-in">Cash Game Entry Charge</option>
               <option value="Chip Purchase">Chip Purchase</option>
-              <option value="Float Deposit">Float Deposit</option>
-              <option value="Table Rake">Table Service Charge</option>
-              <option value="Membership Fee">Membership Fee</option>
+              <option value="Float Deposit">Vault Float Refill / Deposit</option>
+              <option value="Table Rake">Table Service Charge Collection</option>
             </select>
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-cashin-amt">Amount (₹) *</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="m-form-label" style={{ margin: 0 }}>Amount (₹) *</label>
+              <span style={{ color: '#34d399', fontWeight: 800, fontSize: '0.84rem' }}>
+                +{formatCurrency(Number(cashInData.amount || 0))}
+              </span>
+            </div>
             <input
-              id="m-cashin-amt"
               type="number"
               className="m-input"
-              placeholder="e.g. 5000"
+              style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'monospace' }}
               value={cashInData.amount || ''}
               onChange={e => setCashInData({ ...cashInData, amount: Number(e.target.value) })}
-              min={1}
+              min="1"
               required
+              placeholder="e.g. 5000"
             />
+
+            {/* Quick Amount Chips */}
+            <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginTop: '6px' }}>
+              {QUICK_AMOUNTS.map(amt => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setCashInData(prev => ({ ...prev, amount: amt }))}
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    background: cashInData.amount === amt ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                    color: cashInData.amount === amt ? '#34d399' : '#cbd5e1',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  +{amt >= 100000 ? `${amt / 100000}L` : amt >= 1000 ? `${amt / 1000}k` : amt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Running Balance Preview */}
+          <div
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.76rem',
+            }}
+          >
+            <span>Vault Float: <strong>{formatCurrency(currentCashBalance)}</strong></span>
+            <ArrowRight size={12} color="#34d399" />
+            <span style={{ color: '#34d399', fontWeight: 800 }}>
+              After: {formatCurrency(currentCashBalance + (Number(cashInData.amount) || 0))}
+            </span>
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-cashin-player">Player Name</label>
-            <input
-              id="m-cashin-player"
-              type="text"
-              className="m-input"
-              placeholder="e.g. Rahul Sharma"
-              value={cashInData.playerName}
-              onChange={e => setCashInData({ ...cashInData, playerName: e.target.value })}
-            />
-          </div>
-
-          <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-cashin-method">Payment Method</label>
+            <label className="m-form-label">Payment Mode</label>
             <select
-              id="m-cashin-method"
               className="m-select"
               value={cashInData.paymentMethod}
               onChange={e => setCashInData({ ...cashInData, paymentMethod: e.target.value as PaymentMethod })}
             >
-              <option value="Cash">Cash (Currency)</option>
-              <option value="UPI/Digital">UPI / QR Code</option>
-              <option value="Credit/Debit Card">Credit/Debit Card</option>
-              <option value="Bank Transfer">Bank Transfer / IMPS</option>
+              <option value="Cash">Cash at Counter</option>
+              <option value="UPI/Digital">UPI / QR Payment</option>
+              <option value="Bank Transfer">Bank Wire Transfer</option>
+              <option value="Credit/Debit Card">POS Card Swiped</option>
             </select>
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-cashin-desc">Memo / Notes</label>
+            <label className="m-form-label">Member / Player (Optional)</label>
+            <select
+              className="m-select"
+              value={cashInData.playerId}
+              onChange={e => {
+                const selId = e.target.value;
+                const pl = players.find(p => p.id === selId);
+                setCashInData({
+                  ...cashInData,
+                  playerId: selId,
+                  playerName: pl ? pl.fullName : '',
+                });
+              }}
+            >
+              <option value="">— Select Member or Walk-in —</option>
+              {players.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.fullName} ({formatPlayerNumber(p)})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="m-form-group">
+            <label className="m-form-label">Notes / Reference</label>
             <input
-              id="m-cashin-desc"
               type="text"
               className="m-input"
-              placeholder="e.g. Table 2 Entry Charge"
+              placeholder="e.g. Table 3 buy-in or UTR ref"
               value={cashInData.description}
               onChange={e => setCashInData({ ...cashInData, description: e.target.value })}
             />
           </div>
 
-          <button type="submit" className="m-btn m-btn-primary" style={{ marginTop: '8px', background: '#10b981', borderColor: '#059669' }}>
-            <Plus size={18} /> Confirm Cash In
+          <button
+            type="submit"
+            className="m-btn m-btn-primary"
+            style={{ marginTop: '8px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none' }}
+          >
+            <Plus size={16} /> Confirm Cash In
           </button>
         </form>
       </MobileBottomDrawer>
 
-      {/* DRAWER: CASH OUT */}
+      {/* 2. Cash Out Drawer */}
       <MobileBottomDrawer
         isOpen={isCashOutOpen}
         onClose={() => setIsCashOutOpen(false)}
-        title="Record Cash Paid Out"
-        subtitle="Disburse prize payout, cash-out or float withdrawal"
+        title="Record Cash Out (Payout / Withdrawal)"
+        subtitle="Money disbursed from the cashier vault drawer"
       >
-        <form onSubmit={handleCashOutSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <form onSubmit={handleCashOutSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-cashout-cat">Category *</label>
+            <label className="m-form-label">Category</label>
             <select
-              id="m-cashout-cat"
               className="m-select"
               value={cashOutData.category}
               onChange={e => setCashOutData({ ...cashOutData, category: e.target.value as CashCategory })}
             >
               <option value="Tournament Prize Payout">Tournament Prize Payout</option>
-              <option value="Cash Game Cash-out">Cash Game Cash-out</option>
-              <option value="Player Cash Withdrawal">Player Cash Withdrawal</option>
-              <option value="Float Withdrawal">Float Withdrawal / Drop</option>
-              <option value="Player Refund">Player Refund</option>
-              <option value="Cashier Settlement">Cashier Settlement</option>
+              <option value="Cash Game Cash-out">Cash Game Chip Cash-out</option>
+              <option value="Float Withdrawal">Vault Float Drop / Bank Deposit</option>
+              <option value="Player Rakeback Payout">Player Reward / Rakeback</option>
             </select>
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-cashout-amt">Amount (₹) *</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label className="m-form-label" style={{ margin: 0 }}>Amount (₹) *</label>
+              <span style={{ color: '#f87171', fontWeight: 800, fontSize: '0.84rem' }}>
+                -{formatCurrency(Number(cashOutData.amount || 0))}
+              </span>
+            </div>
             <input
-              id="m-cashout-amt"
               type="number"
               className="m-input"
-              placeholder="e.g. 2500"
+              style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'monospace' }}
               value={cashOutData.amount || ''}
               onChange={e => setCashOutData({ ...cashOutData, amount: Number(e.target.value) })}
-              min={1}
+              min="1"
               required
+              placeholder="e.g. 5000"
             />
+
+            {/* Quick Amount Chips */}
+            <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginTop: '6px' }}>
+              {QUICK_AMOUNTS.map(amt => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setCashOutData(prev => ({ ...prev, amount: amt }))}
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    background: cashOutData.amount === amt ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                    color: cashOutData.amount === amt ? '#f87171' : '#cbd5e1',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  {amt >= 100000 ? `${amt / 100000}L` : amt >= 1000 ? `${amt / 1000}k` : amt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Running Balance Preview */}
+          <div
+            style={{
+              padding: '8px 12px',
+              borderRadius: '8px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.76rem',
+            }}
+          >
+            <span>Vault Float: <strong>{formatCurrency(currentCashBalance)}</strong></span>
+            <ArrowRight size={12} color="#f87171" />
+            <span style={{ color: '#f87171', fontWeight: 800 }}>
+              After: {formatCurrency(currentCashBalance - (Number(cashOutData.amount) || 0))}
+            </span>
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-cashout-player">Recipient / Player Name</label>
-            <input
-              id="m-cashout-player"
-              type="text"
-              className="m-input"
-              placeholder="e.g. Vikram Malhotra"
-              value={cashOutData.playerName}
-              onChange={e => setCashOutData({ ...cashOutData, playerName: e.target.value })}
-            />
-          </div>
-
-          <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-cashout-method">Disbursement Method</label>
+            <label className="m-form-label">Payout Mode</label>
             <select
-              id="m-cashout-method"
               className="m-select"
               value={cashOutData.paymentMethod}
               onChange={e => setCashOutData({ ...cashOutData, paymentMethod: e.target.value as PaymentMethod })}
             >
-              <option value="Cash">Cash (Physical)</option>
-              <option value="Bank Transfer">Bank Transfer / IMPS</option>
-              <option value="UPI/Digital">UPI / Digital</option>
+              <option value="Cash">Cash Handed Over</option>
+              <option value="UPI/Digital">Instant UPI Transfer</option>
+              <option value="Bank Transfer">NEFT / RTGS Bank Wire</option>
             </select>
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-cashout-desc">Authorization Notes</label>
+            <label className="m-form-label">Recipient Member (Optional)</label>
+            <select
+              className="m-select"
+              value={cashOutData.playerId}
+              onChange={e => {
+                const selId = e.target.value;
+                const pl = players.find(p => p.id === selId);
+                setCashOutData({
+                  ...cashOutData,
+                  playerId: selId,
+                  playerName: pl ? pl.fullName : '',
+                });
+              }}
+            >
+              <option value="">— Select Member —</option>
+              {players.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.fullName} ({formatPlayerNumber(p)})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="m-form-group">
+            <label className="m-form-label">Notes / Remarks</label>
             <input
-              id="m-cashout-desc"
               type="text"
               className="m-input"
-              placeholder="e.g. Prize distribution verified"
+              placeholder="e.g. 1st Place prize or chip cash-out"
               value={cashOutData.description}
               onChange={e => setCashOutData({ ...cashOutData, description: e.target.value })}
             />
           </div>
 
-          <button type="submit" className="m-btn m-btn-danger" style={{ marginTop: '8px' }}>
-            <Minus size={18} /> Confirm Cash Out
+          <button
+            type="submit"
+            className="m-btn m-btn-danger"
+            style={{ marginTop: '8px', background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', color: '#ffffff', border: 'none' }}
+          >
+            <Minus size={16} /> Confirm Cash Out
           </button>
         </form>
       </MobileBottomDrawer>
 
-      {/* DRAWER: EXPENSE */}
+      {/* 3. Expense Drawer */}
       <MobileBottomDrawer
         isOpen={isExpenseOpen}
         onClose={() => setIsExpenseOpen(false)}
         title="Record Operating Expense"
-        subtitle="Staff wages, rent, F&B and table supplies"
+        subtitle="Club operating costs, wages, utilities and refreshments"
       >
-        <form onSubmit={handleExpenseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <form onSubmit={handleExpenseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-exp-cat">Category *</label>
+            <label className="m-form-label">Category</label>
             <select
-              id="m-exp-cat"
               className="m-select"
               value={expenseData.category}
               onChange={e => setExpenseData({ ...expenseData, category: e.target.value as ExpenseCategory })}
@@ -733,26 +908,38 @@ export const MobileCashPortal: React.FC = () => {
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-exp-amt">Amount (₹) *</label>
+            <label className="m-form-label">Amount (₹) *</label>
             <input
-              id="m-exp-amt"
               type="number"
               className="m-input"
-              placeholder="e.g. 1500"
               value={expenseData.amount || ''}
               onChange={e => setExpenseData({ ...expenseData, amount: Number(e.target.value) })}
-              min={1}
+              min="1"
               required
+              placeholder="e.g. 1500"
             />
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-exp-paidto">Paid To *</label>
+            <label className="m-form-label">Payment Mode</label>
+            <select
+              className="m-select"
+              value={expenseData.paymentMethod}
+              onChange={e => setExpenseData({ ...expenseData, paymentMethod: e.target.value as PaymentMethod })}
+            >
+              <option value="Cash">Cash</option>
+              <option value="UPI/Digital">UPI / Digital</option>
+              <option value="Bank Transfer">Bank Wire Transfer</option>
+              <option value="Credit/Debit Card">Card Payment</option>
+            </select>
+          </div>
+
+          <div className="m-form-group">
+            <label className="m-form-label">Paid To (Vendor / Staff) *</label>
             <input
-              id="m-exp-paidto"
               type="text"
               className="m-input"
-              placeholder="e.g. Floor Crew"
+              placeholder="e.g. Master Cards, Night Shift Dealers"
               value={expenseData.paidTo}
               onChange={e => setExpenseData({ ...expenseData, paidTo: e.target.value })}
               required
@@ -760,92 +947,86 @@ export const MobileCashPortal: React.FC = () => {
           </div>
 
           <div className="m-form-group">
-            <label className="m-form-label" htmlFor="m-exp-desc">Description</label>
+            <label className="m-form-label">Description / Remarks</label>
             <input
-              id="m-exp-desc"
               type="text"
               className="m-input"
-              placeholder="e.g. Food & Beverage supplies"
+              placeholder="e.g. 4 Dealers night shift payout"
               value={expenseData.description}
               onChange={e => setExpenseData({ ...expenseData, description: e.target.value })}
             />
           </div>
 
           <button type="submit" className="m-btn m-btn-primary" style={{ marginTop: '8px' }}>
-            <Receipt size={18} /> Record Expense
+            <Plus size={16} /> Save Expense Record
           </button>
         </form>
       </MobileBottomDrawer>
 
-      {/* DRAWER: EDIT EXPENSE */}
-      {selectedExpense && (
-        <MobileBottomDrawer
-          isOpen={isEditExpenseOpen}
-          onClose={() => {
-            setIsEditExpenseOpen(false);
-            setSelectedExpense(null);
-          }}
-          title={`Edit Expense: ${selectedExpense.id}`}
-          subtitle={`Paid To: ${selectedExpense.paidTo}`}
-        >
-          <form onSubmit={handleEditExpenseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div className="m-form-group">
-              <label className="m-form-label">Category *</label>
-              <select
-                className="m-select"
-                value={editExpenseData.category}
-                onChange={e => setEditExpenseData({ ...editExpenseData, category: e.target.value as ExpenseCategory })}
-              >
-                <option value="Dealer & Staff Wages">Dealer & Staff Wages</option>
-                <option value="Rent & Utilities">Rent & Utilities</option>
-                <option value="Cards, Chips & Tables">Cards, Chips & Tables</option>
-                <option value="Refreshments & F&B">Refreshments & F&B</option>
-                <option value="Security & Surveillance">Security & Surveillance</option>
-                <option value="Licensing & Compliance">Licensing & Compliance</option>
-                <option value="Maintenance & Repairs">Maintenance & Repairs</option>
-                <option value="Miscellaneous">Miscellaneous</option>
-              </select>
-            </div>
+      {/* 4. Edit Expense Drawer */}
+      <MobileBottomDrawer
+        isOpen={isEditExpenseOpen}
+        onClose={() => setIsEditExpenseOpen(false)}
+        title="Edit Expense Record"
+        subtitle={selectedExpense ? `ID: ${selectedExpense.id}` : ''}
+      >
+        <form onSubmit={handleEditExpenseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="m-form-group">
+            <label className="m-form-label">Category</label>
+            <select
+              className="m-select"
+              value={editExpenseData.category}
+              onChange={e => setEditExpenseData({ ...editExpenseData, category: e.target.value as ExpenseCategory })}
+            >
+              <option value="Dealer & Staff Wages">Dealer & Staff Wages</option>
+              <option value="Rent & Utilities">Rent & Utilities</option>
+              <option value="Cards, Chips & Tables">Cards, Chips & Tables</option>
+              <option value="Refreshments & F&B">Refreshments & F&B</option>
+              <option value="Security & Surveillance">Security & Surveillance</option>
+              <option value="Licensing & Compliance">Licensing & Compliance</option>
+              <option value="Maintenance & Repairs">Maintenance & Repairs</option>
+              <option value="Miscellaneous">Miscellaneous</option>
+            </select>
+          </div>
 
-            <div className="m-form-group">
-              <label className="m-form-label">Amount (₹) *</label>
-              <input
-                type="number"
-                className="m-input"
-                value={editExpenseData.amount}
-                onChange={e => setEditExpenseData({ ...editExpenseData, amount: Number(e.target.value) })}
-                min={1}
-                required
-              />
-            </div>
+          <div className="m-form-group">
+            <label className="m-form-label">Amount (₹) *</label>
+            <input
+              type="number"
+              className="m-input"
+              value={editExpenseData.amount || ''}
+              onChange={e => setEditExpenseData({ ...editExpenseData, amount: Number(e.target.value) })}
+              min="1"
+              required
+            />
+          </div>
 
-            <div className="m-form-group">
-              <label className="m-form-label">Paid To *</label>
-              <input
-                type="text"
-                className="m-input"
-                value={editExpenseData.paidTo}
-                onChange={e => setEditExpenseData({ ...editExpenseData, paidTo: e.target.value })}
-                required
-              />
-            </div>
+          <div className="m-form-group">
+            <label className="m-form-label">Paid To *</label>
+            <input
+              type="text"
+              className="m-input"
+              value={editExpenseData.paidTo}
+              onChange={e => setEditExpenseData({ ...editExpenseData, paidTo: e.target.value })}
+              required
+            />
+          </div>
 
-            <div className="m-form-group">
-              <label className="m-form-label">Description</label>
-              <input
-                type="text"
-                className="m-input"
-                value={editExpenseData.description}
-                onChange={e => setEditExpenseData({ ...editExpenseData, description: e.target.value })}
-              />
-            </div>
+          <div className="m-form-group">
+            <label className="m-form-label">Description</label>
+            <input
+              type="text"
+              className="m-input"
+              value={editExpenseData.description}
+              onChange={e => setEditExpenseData({ ...editExpenseData, description: e.target.value })}
+            />
+          </div>
 
-            <button type="submit" className="m-btn m-btn-primary" style={{ marginTop: '8px' }}>
-              Save Expense Changes
-            </button>
-          </form>
-        </MobileBottomDrawer>
-      )}
+          <button type="submit" className="m-btn m-btn-primary" style={{ marginTop: '8px' }}>
+            Save Changes
+          </button>
+        </form>
+      </MobileBottomDrawer>
 
       {/* Delete Expense Modal */}
       {selectedExpense && (

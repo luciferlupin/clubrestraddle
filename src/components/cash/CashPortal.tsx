@@ -17,10 +17,18 @@ import {
   Trash2,
   AlertTriangle,
   FileText,
+  Eye,
+  CheckCircle2,
+  Sparkles,
+  ArrowRight,
+  User,
+  CreditCard,
+  Building2,
+  RefreshCw,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction } from '../../types';
-import { formatCurrency, formatDateTime } from '../../utils/formatters';
+import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction, Player } from '../../types';
+import { formatCurrency, formatDateTime, formatPlayerNumber } from '../../utils/formatters';
 import { CashFlowBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
@@ -29,13 +37,17 @@ import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceMo
 import { Pagination } from '../common/Pagination';
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 import { InvoiceRepositoryView } from './InvoiceRepositoryView';
+import { generateCashTransactionInvoice } from '../../utils/invoiceGenerator';
 import confetti from 'canvas-confetti';
 
 type CashPortalTab = 'overview' | 'invoices' | 'ledger' | 'expenses';
 
+const QUICK_AMOUNTS = [500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
+
 export const CashPortal: React.FC = () => {
   const {
     staffName,
+    players,
     cashTransactions,
     currentCashBalance,
     totalCashInAmount,
@@ -87,6 +99,7 @@ export const CashPortal: React.FC = () => {
     description: '',
     paymentMethod: 'Cash' as PaymentMethod,
     playerName: '',
+    playerId: '',
     referenceId: '',
   });
 
@@ -97,6 +110,7 @@ export const CashPortal: React.FC = () => {
     description: '',
     paymentMethod: 'Cash' as PaymentMethod,
     playerName: '',
+    playerId: '',
     referenceId: '',
   });
 
@@ -140,6 +154,7 @@ export const CashPortal: React.FC = () => {
       description: '',
       paymentMethod: 'Cash',
       playerName: '',
+      playerId: '',
       referenceId: '',
     });
   };
@@ -164,6 +179,7 @@ export const CashPortal: React.FC = () => {
       description: '',
       paymentMethod: 'Cash',
       playerName: '',
+      playerId: '',
       referenceId: '',
     });
   };
@@ -235,6 +251,12 @@ export const CashPortal: React.FC = () => {
     setSelectedTxn(null);
   };
 
+  const handleViewTxnInvoice = (txn: CashTransaction) => {
+    const matchedPlayer = players.find(p => p.fullName.toLowerCase() === (txn.playerName || '').toLowerCase() || p.id === txn.playerName);
+    const invoice = generateCashTransactionInvoice(txn, matchedPlayer, staffName);
+    setSelectedInvoice(invoice);
+  };
+
   const filteredTransactions = cashTransactions.filter(t => {
     const matchesSearch =
       t.description.toLowerCase().includes(search.toLowerCase()) ||
@@ -283,27 +305,28 @@ export const CashPortal: React.FC = () => {
         icon={<DollarSign size={24} color="#fbbf24" />}
         eyebrow="Exclusive Cash Desk"
         title="Cash Payments & Treasury Vault"
-        subtitle={<>Dedicated portal for all <strong>Cash In, Cash Out, Float & Vault Ledger</strong> · Operator: <strong>{staffName}</strong></>}
-        notice={<><Lock size={14} aria-hidden="true" /> Confidential financial records · Restricted direct link</>}
+        subtitle={<>Dedicated workspace for <strong>Cash In, Cash Out, Float & Vault Ledger</strong> · Operator: <strong>{staffName}</strong></>}
+        notice={<><Lock size={14} aria-hidden="true" /> Confidential financial records · Direct /cash URL</>}
         actions={
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button
               className="btn btn-success btn-sm"
               onClick={() => setIsCashInModalOpen(true)}
-              style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none' }}
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}
             >
               <Plus size={15} /> Record Cash In
             </button>
             <button
               className="btn btn-danger btn-sm"
               onClick={() => setIsCashOutModalOpen(true)}
-              style={{ background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', color: '#ffffff', border: 'none' }}
+              style={{ background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', color: '#ffffff', border: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}
             >
               <Minus size={15} /> Record Cash Out
             </button>
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => setIsExpenseModalOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
             >
               <Receipt size={15} /> Add Expense
             </button>
@@ -325,7 +348,7 @@ export const CashPortal: React.FC = () => {
           <div className="stats-grid">
             <div
               className="stat-card"
-              style={{ '--stat-glow': 'rgba(245, 158, 11, 0.2)', '--stat-color': '#fbbf24', border: '1.5px solid rgba(245, 158, 11, 0.4)' } as React.CSSProperties}
+              style={{ '--stat-glow': 'rgba(245, 158, 11, 0.25)', '--stat-color': '#fbbf24', border: '1.5px solid rgba(245, 158, 11, 0.45)', background: 'linear-gradient(135deg, rgba(30, 20, 10, 0.6) 0%, rgba(15, 8, 4, 0.9) 100%)' } as React.CSSProperties}
             >
               <div className="stat-info">
                 <span className="stat-label">Current Cash Drawer Float</span>
@@ -341,7 +364,7 @@ export const CashPortal: React.FC = () => {
 
             <div
               className="stat-card"
-              style={{ '--stat-glow': 'rgba(16, 185, 129, 0.2)', '--stat-color': '#34d399' } as React.CSSProperties}
+              style={{ '--stat-glow': 'rgba(16, 185, 129, 0.25)', '--stat-color': '#34d399', border: '1.5px solid rgba(16, 185, 129, 0.35)' } as React.CSSProperties}
             >
               <div className="stat-info">
                 <span className="stat-label">Total Cash In Received</span>
@@ -357,7 +380,7 @@ export const CashPortal: React.FC = () => {
 
             <div
               className="stat-card"
-              style={{ '--stat-glow': 'rgba(239, 68, 68, 0.2)', '--stat-color': '#f87171' } as React.CSSProperties}
+              style={{ '--stat-glow': 'rgba(239, 68, 68, 0.25)', '--stat-color': '#f87171', border: '1.5px solid rgba(239, 68, 68, 0.35)' } as React.CSSProperties}
             >
               <div className="stat-info">
                 <span className="stat-label">Total Cash Paid Out</span>
@@ -371,7 +394,7 @@ export const CashPortal: React.FC = () => {
               </div>
             </div>
 
-            <div className="stat-card">
+            <div className="stat-card" style={{ border: '1.5px solid rgba(255, 255, 255, 0.15)' }}>
               <div className="stat-info">
                 <span className="stat-label">Net Club Treasury</span>
                 <span className="stat-value" style={{ color: '#ffffff' }}>
@@ -390,16 +413,16 @@ export const CashPortal: React.FC = () => {
             className="card"
             style={{
               background: 'linear-gradient(135deg, rgba(24, 7, 11, 0.95) 0%, rgba(12, 4, 7, 0.98) 100%)',
-              border: '1px solid rgba(225, 29, 72, 0.35)',
+              border: '1.5px solid rgba(245, 158, 11, 0.3)',
             }}
           >
             <div className="card-header">
               <div>
                 <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Coins size={20} color="#fbbf24" />
-                  1-Tap Cash Payment Dispatch
+                  1-Tap Cash Operations Dispatch
                 </h3>
-                <p className="card-subtitle">Quickly record member transactions, prize distributions, and float entries.</p>
+                <p className="card-subtitle">Quickly record member transactions, prize payouts, and float adjustments.</p>
               </div>
             </div>
 
@@ -416,17 +439,19 @@ export const CashPortal: React.FC = () => {
                   borderRadius: '14px',
                   border: '1.5px solid rgba(16, 185, 129, 0.4)',
                   background: 'rgba(16, 185, 129, 0.08)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                 }}
                 onClick={() => {
                   setCashInData(prev => ({ ...prev, category: 'Tournament Buy-in' }));
                   setIsCashInModalOpen(true);
                 }}
               >
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399' }}>
-                  <ArrowDownLeft size={20} />
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399' }}>
+                  <ArrowDownLeft size={22} />
                 </div>
                 <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>Receive Entry Charge / Deposit</span>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Cash In to drawer</span>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Cash In to drawer vault</span>
               </button>
 
               <button
@@ -441,17 +466,19 @@ export const CashPortal: React.FC = () => {
                   borderRadius: '14px',
                   border: '1.5px solid rgba(239, 68, 68, 0.4)',
                   background: 'rgba(239, 68, 68, 0.08)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                 }}
                 onClick={() => {
                   setCashOutData(prev => ({ ...prev, category: 'Tournament Prize Payout' }));
                   setIsCashOutModalOpen(true);
                 }}
               >
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f87171' }}>
-                  <ArrowUpRight size={20} />
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f87171' }}>
+                  <ArrowUpRight size={22} />
                 </div>
                 <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>Pay Out Prize / Cash-out</span>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Cash Out from drawer</span>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Cash Out from drawer vault</span>
               </button>
 
               <button
@@ -466,17 +493,19 @@ export const CashPortal: React.FC = () => {
                   borderRadius: '14px',
                   border: '1.5px solid rgba(245, 158, 11, 0.4)',
                   background: 'rgba(245, 158, 11, 0.08)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                 }}
                 onClick={() => {
                   setCashInData(prev => ({ ...prev, category: 'Float Deposit' }));
                   setIsCashInModalOpen(true);
                 }}
               >
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fbbf24' }}>
-                  <Wallet size={20} />
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fbbf24' }}>
+                  <Wallet size={22} />
                 </div>
                 <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>Float Deposit / Refill</span>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Increase register cash</span>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Refill register cash</span>
               </button>
 
               <button
@@ -491,21 +520,23 @@ export const CashPortal: React.FC = () => {
                   borderRadius: '14px',
                   border: '1.5px solid rgba(139, 92, 246, 0.4)',
                   background: 'rgba(139, 92, 246, 0.08)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                 }}
                 onClick={() => setIsExpenseModalOpen(true)}
               >
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c4b5fd' }}>
-                  <Receipt size={20} />
+                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(139, 92, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c4b5fd' }}>
+                  <Receipt size={22} />
                 </div>
                 <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.92rem' }}>Record Club Expense</span>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Staff, utilities, F&B</span>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Wages, supplies, F&B</span>
               </button>
             </div>
           </div>
 
           {/* Recent Cash Activity Preview */}
           <div className="card">
-            <div className="card-header">
+            <div className="card-header" style={{ flexWrap: 'wrap', gap: '10px' }}>
               <div>
                 <h3 className="card-title">Recent Cash Transactions</h3>
                 <p className="card-subtitle">Last 8 cash entries across all cashier terminals</p>
@@ -528,6 +559,7 @@ export const CashPortal: React.FC = () => {
                     <th>Player / Ref</th>
                     <th>Cashier</th>
                     <th>Time</th>
+                    <th style={{ textAlign: 'right' }}>Invoice</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -556,6 +588,16 @@ export const CashPortal: React.FC = () => {
                       <td style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
                         {formatDateTime(txn.timestamp)}
                       </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '3px 8px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          onClick={() => handleViewTxnInvoice(txn)}
+                        >
+                          <Eye size={12} /> Invoice
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -573,16 +615,16 @@ export const CashPortal: React.FC = () => {
       {/* TAB 2: MASTER CASH LEDGER */}
       {activeTab === 'ledger' && (
         <div className="card">
-          <div className="card-header">
+          <div className="card-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <h3 className="card-title">
+              <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <DollarSign size={18} color="#fbbf24" />
                 Master Cash Flow Ledger & Reconciliation
               </h3>
               <p className="card-subtitle">Complete chronological record with running vault balance.</p>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
               <div style={{ position: 'relative' }}>
                 <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
                 <input
@@ -608,7 +650,7 @@ export const CashPortal: React.FC = () => {
 
               <select
                 className="form-input"
-                style={{ width: '160px', fontSize: '0.82rem' }}
+                style={{ width: '170px', fontSize: '0.82rem' }}
                 value={filterCategory}
                 onChange={e => setFilterCategory(e.target.value)}
               >
@@ -642,59 +684,78 @@ export const CashPortal: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredTransactions.slice((ledgerPage - 1) * ledgerPageSize, ledgerPage * ledgerPageSize).map(txn => (
-                  <tr key={txn.id}>
-                    <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
-                      {txn.id}
-                    </td>
-                    <td>
-                      <CashFlowBadge type={txn.type} />
-                    </td>
-                    <td style={{ fontWeight: 700 }}>{txn.category}</td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '240px' }}>
-                      {txn.description}
-                    </td>
-                    <td
-                      className="tabular-num"
-                      style={{
-                        fontWeight: 800,
-                        color: txn.type === 'in' ? '#34d399' : '#f87171',
-                      }}
-                    >
-                      {txn.type === 'in' ? '+' : '-'}
-                      {formatCurrency(txn.amount)}
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{txn.paymentMethod}</span>
-                    </td>
-                    <td style={{ fontSize: '0.8rem' }}>
-                      {txn.playerName || txn.referenceId || '—'}
-                    </td>
-                    <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      {txn.cashierName}
-                    </td>
-                    <td className="tabular-num" style={{ fontWeight: 700, color: 'var(--gold-light)' }}>
-                      {formatCurrency(txn.balanceAfter)}
-                    </td>
-                    <td style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                      {formatDateTime(txn.timestamp)}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        style={{ color: '#ef4444', padding: '3px 6px' }}
-                        title="Void Transaction"
-                        onClick={() => {
-                          setSelectedTxn(txn);
-                          setIsVoidTxnModalOpen(true);
-                        }}
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                {filteredTransactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={11} style={{ textAlign: 'center', padding: '36px', color: '#94a3b8' }}>
+                      No cash transactions found matching criteria.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredTransactions.slice((ledgerPage - 1) * ledgerPageSize, ledgerPage * ledgerPageSize).map(txn => (
+                    <tr key={txn.id}>
+                      <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
+                        {txn.id}
+                      </td>
+                      <td>
+                        <CashFlowBadge type={txn.type} />
+                      </td>
+                      <td style={{ fontWeight: 700 }}>{txn.category}</td>
+                      <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '240px' }}>
+                        {txn.description}
+                      </td>
+                      <td
+                        className="tabular-num"
+                        style={{
+                          fontWeight: 800,
+                          color: txn.type === 'in' ? '#34d399' : '#f87171',
+                        }}
+                      >
+                        {txn.type === 'in' ? '+' : '-'}
+                        {formatCurrency(txn.amount)}
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{txn.paymentMethod}</span>
+                      </td>
+                      <td style={{ fontSize: '0.8rem' }}>
+                        {txn.playerName || txn.referenceId || '—'}
+                      </td>
+                      <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                        {txn.cashierName}
+                      </td>
+                      <td className="tabular-num" style={{ fontWeight: 700, color: 'var(--gold-light)' }}>
+                        {formatCurrency(txn.balanceAfter)}
+                      </td>
+                      <td style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                        {formatDateTime(txn.timestamp)}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '5px' }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '3px 7px', fontSize: '0.74rem' }}
+                            title="View Tax Invoice"
+                            onClick={() => handleViewTxnInvoice(txn)}
+                          >
+                            <Eye size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ color: '#ef4444', padding: '3px 7px' }}
+                            title="Void Transaction"
+                            onClick={() => {
+                              setSelectedTxn(txn);
+                              setIsVoidTxnModalOpen(true);
+                            }}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -713,9 +774,9 @@ export const CashPortal: React.FC = () => {
       {/* TAB 3: EXPENSES LEDGER */}
       {activeTab === 'expenses' && (
         <div className="card">
-          <div className="card-header">
+          <div className="card-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <h3 className="card-title">
+              <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Receipt size={18} color="#e11d48" />
                 Operating Expenses Ledger
               </h3>
@@ -741,46 +802,54 @@ export const CashPortal: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {expenses.slice((expensePage - 1) * expensePageSize, expensePage * expensePageSize).map(exp => (
-                  <tr key={exp.id}>
-                    <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
-                      {exp.id}
-                    </td>
-                    <td style={{ fontWeight: 700 }}>{exp.category}</td>
-                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{exp.description}</td>
-                    <td className="tabular-num" style={{ fontWeight: 800, color: '#fca5a5' }}>
-                      -{formatCurrency(exp.amount)}
-                    </td>
-                    <td style={{ fontSize: '0.82rem' }}>{exp.paidTo}</td>
-                    <td style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>{exp.paymentMethod}</td>
-                    <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{exp.date}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: '3px 6px' }}
-                          title="Edit"
-                          onClick={() => handleOpenEditExpense(exp)}
-                        >
-                          <Edit3 size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          style={{ color: '#ef4444', padding: '3px 6px' }}
-                          title="Delete"
-                          onClick={() => {
-                            setSelectedExpense(exp);
-                            setIsDeleteExpenseModalOpen(true);
-                          }}
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
+                {expenses.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: '36px', color: '#94a3b8' }}>
+                      No operating expenses recorded yet.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  expenses.slice((expensePage - 1) * expensePageSize, expensePage * expensePageSize).map(exp => (
+                    <tr key={exp.id}>
+                      <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
+                        {exp.id}
+                      </td>
+                      <td style={{ fontWeight: 700 }}>{exp.category}</td>
+                      <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{exp.description}</td>
+                      <td className="tabular-num" style={{ fontWeight: 800, color: '#f87171' }}>
+                        {formatCurrency(exp.amount)}
+                      </td>
+                      <td style={{ fontSize: '0.82rem' }}>{exp.paidTo}</td>
+                      <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{exp.paymentMethod}</td>
+                      <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{exp.date}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '5px' }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '3px 7px' }}
+                            onClick={() => handleOpenEditExpense(exp)}
+                            title="Edit Expense"
+                          >
+                            <Edit3 size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ color: '#ef4444', padding: '3px 7px' }}
+                            onClick={() => {
+                              setSelectedExpense(exp);
+                              setIsDeleteExpenseModalOpen(true);
+                            }}
+                            title="Delete Expense"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -796,193 +865,317 @@ export const CashPortal: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL: RECORD CASH IN */}
+      {/* ── MODALS ────────────────────────────────────────────── */}
+
+      {/* 1. RECORD CASH IN MODAL */}
       <Modal
         isOpen={isCashInModalOpen}
         onClose={() => setIsCashInModalOpen(false)}
-        title="Record Cash In (Cash Received)"
+        title="Record Cash In (Deposit / Entry)"
+        subtitle="Money received into the cashier vault drawer"
+        size="md"
       >
         <form onSubmit={handleCashInSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div className="form-group">
-            <label className="form-label" htmlFor="cashin-category">Category *</label>
+            <label className="form-label">Category *</label>
             <select
-              id="cashin-category"
-              className="form-input"
+              className="form-select"
               value={cashInData.category}
               onChange={e => setCashInData({ ...cashInData, category: e.target.value as CashCategory })}
             >
               <option value="Tournament Buy-in">Tournament Entry Charge</option>
               <option value="Cash Game Buy-in">Cash Game Entry Charge</option>
               <option value="Chip Purchase">Chip Purchase</option>
-              <option value="Float Deposit">Float Deposit</option>
-              <option value="Table Rake">Table Service Charge</option>
-              <option value="Membership Fee">Membership Fee</option>
+              <option value="Float Deposit">Vault Float Refill / Deposit</option>
+              <option value="Table Rake">Table Service Charge Collection</option>
             </select>
           </div>
 
+          {/* Amount & Quick Presets */}
           <div className="form-group">
-            <label className="form-label" htmlFor="cashin-amount">Amount (₹) *</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label className="form-label" style={{ margin: 0 }}>Amount (₹) *</label>
+              <span style={{ fontSize: '0.74rem', color: '#34d399', fontWeight: 700 }}>
+                +{formatCurrency(Number(cashInData.amount || 0))}
+              </span>
+            </div>
             <input
-              id="cashin-amount"
               type="number"
               className="form-input"
-              placeholder="e.g. 5000"
+              style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace' }}
               value={cashInData.amount || ''}
               onChange={e => setCashInData({ ...cashInData, amount: Number(e.target.value) })}
-              min={1}
+              min="1"
               required
+              placeholder="e.g. 5000"
             />
+
+            {/* Quick Amount Chips */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+              {QUICK_AMOUNTS.map(amt => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setCashInData(prev => ({ ...prev, amount: amt }))}
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    background: cashInData.amount === amt ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                    color: cashInData.amount === amt ? '#34d399' : '#cbd5e1',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  +{amt >= 100000 ? `${amt / 100000}L` : amt >= 1000 ? `${amt / 1000}k` : amt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Running Balance Preview Banner */}
+          <div
+            style={{
+              padding: '10px 14px',
+              borderRadius: '10px',
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.8rem',
+            }}
+          >
+            <span style={{ color: '#cbd5e1' }}>Current Vault: <strong>{formatCurrency(currentCashBalance)}</strong></span>
+            <ArrowRight size={14} color="#34d399" />
+            <span style={{ color: '#34d399', fontWeight: 800 }}>
+              Projected: {formatCurrency(currentCashBalance + (Number(cashInData.amount) || 0))}
+            </span>
+          </div>
+
+          <div className="form-grid-2">
+            <div className="form-group">
+              <label className="form-label">Payment Mode *</label>
+              <select
+                className="form-select"
+                value={cashInData.paymentMethod}
+                onChange={e => setCashInData({ ...cashInData, paymentMethod: e.target.value as PaymentMethod })}
+              >
+                <option value="Cash">Cash at Counter</option>
+                <option value="UPI/Digital">UPI / QR Payment</option>
+                <option value="Bank Transfer">Bank Wire Transfer</option>
+                <option value="Credit/Debit Card">POS Card Swiped</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Member / Player (Optional)</label>
+              <select
+                className="form-select"
+                value={cashInData.playerId}
+                onChange={e => {
+                  const selId = e.target.value;
+                  const pl = players.find(p => p.id === selId);
+                  setCashInData({
+                    ...cashInData,
+                    playerId: selId,
+                    playerName: pl ? pl.fullName : '',
+                  });
+                }}
+              >
+                <option value="">— Select Member or Walk-in —</option>
+                {players.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.fullName} ({formatPlayerNumber(p)})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="cashin-player">Player Name / Member Ref</label>
+            <label className="form-label">Reference / Receipt / Notes</label>
             <input
-              id="cashin-player"
               type="text"
               className="form-input"
-              placeholder="e.g. Vikram Malhotra"
-              value={cashInData.playerName}
-              onChange={e => setCashInData({ ...cashInData, playerName: e.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="cashin-method">Payment Method *</label>
-            <select
-              id="cashin-method"
-              className="form-input"
-              value={cashInData.paymentMethod}
-              onChange={e => setCashInData({ ...cashInData, paymentMethod: e.target.value as PaymentMethod })}
-            >
-              <option value="Cash">Cash (Physical Currency)</option>
-              <option value="UPI/Digital">UPI / QR Code</option>
-              <option value="Credit/Debit Card">Credit / Debit Card</option>
-              <option value="Bank Transfer">Bank Transfer / IMPS</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="cashin-desc">Memo / Notes</label>
-            <input
-              id="cashin-desc"
-              type="text"
-              className="form-input"
-              placeholder="e.g. Table 2 Top-up"
+              placeholder="e.g. Table 3 buy-in or Bank UTR Ref"
               value={cashInData.description}
               onChange={e => setCashInData({ ...cashInData, description: e.target.value })}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+          <div className="modal-footer" style={{ margin: '14px -24px -24px', padding: '16px 24px' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsCashInModalOpen(false)}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" style={{ background: '#10b981', borderColor: '#059669' }}>
+            <button type="submit" className="btn btn-success" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none' }}>
               <Plus size={16} /> Confirm Cash In
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* MODAL: RECORD CASH OUT */}
+      {/* 2. RECORD CASH OUT MODAL */}
       <Modal
         isOpen={isCashOutModalOpen}
         onClose={() => setIsCashOutModalOpen(false)}
-        title="Record Cash Out (Cash Paid Out)"
+        title="Record Cash Out (Payout / Withdrawal)"
+        subtitle="Money disbursed from the cashier vault drawer"
+        size="md"
       >
         <form onSubmit={handleCashOutSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div className="form-group">
-            <label className="form-label" htmlFor="cashout-category">Category *</label>
+            <label className="form-label">Category *</label>
             <select
-              id="cashout-category"
-              className="form-input"
+              className="form-select"
               value={cashOutData.category}
               onChange={e => setCashOutData({ ...cashOutData, category: e.target.value as CashCategory })}
             >
               <option value="Tournament Prize Payout">Tournament Prize Payout</option>
-              <option value="Cash Game Cash-out">Cash Game Cash-out</option>
-              <option value="Player Cash Withdrawal">Player Cash Withdrawal</option>
-              <option value="Float Withdrawal">Float Withdrawal / Vault Drop</option>
-              <option value="Player Refund">Player Refund</option>
-              <option value="Cashier Settlement">Cashier Settlement</option>
+              <option value="Cash Game Cash-out">Cash Game Chip Cash-out</option>
+              <option value="Float Withdrawal">Vault Float Drop / Bank Deposit</option>
+              <option value="Player Rakeback Payout">Player Reward / Rakeback</option>
             </select>
           </div>
 
+          {/* Amount & Quick Presets */}
           <div className="form-group">
-            <label className="form-label" htmlFor="cashout-amount">Amount (₹) *</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label className="form-label" style={{ margin: 0 }}>Amount (₹) *</label>
+              <span style={{ fontSize: '0.74rem', color: '#f87171', fontWeight: 700 }}>
+                -{formatCurrency(Number(cashOutData.amount || 0))}
+              </span>
+            </div>
             <input
-              id="cashout-amount"
               type="number"
               className="form-input"
-              placeholder="e.g. 2500"
+              style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'monospace' }}
               value={cashOutData.amount || ''}
               onChange={e => setCashOutData({ ...cashOutData, amount: Number(e.target.value) })}
-              min={1}
+              min="1"
               required
+              placeholder="e.g. 5000"
             />
+
+            {/* Quick Amount Chips */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+              {QUICK_AMOUNTS.map(amt => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setCashOutData(prev => ({ ...prev, amount: amt }))}
+                  style={{
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    background: cashOutData.amount === amt ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                    color: cashOutData.amount === amt ? '#f87171' : '#cbd5e1',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {amt >= 100000 ? `${amt / 100000}L` : amt >= 1000 ? `${amt / 1000}k` : amt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Running Balance Preview Banner */}
+          <div
+            style={{
+              padding: '10px 14px',
+              borderRadius: '10px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.8rem',
+            }}
+          >
+            <span style={{ color: '#cbd5e1' }}>Current Vault: <strong>{formatCurrency(currentCashBalance)}</strong></span>
+            <ArrowRight size={14} color="#f87171" />
+            <span style={{ color: '#f87171', fontWeight: 800 }}>
+              Projected: {formatCurrency(currentCashBalance - (Number(cashOutData.amount) || 0))}
+            </span>
+          </div>
+
+          <div className="form-grid-2">
+            <div className="form-group">
+              <label className="form-label">Payout Mode *</label>
+              <select
+                className="form-select"
+                value={cashOutData.paymentMethod}
+                onChange={e => setCashOutData({ ...cashOutData, paymentMethod: e.target.value as PaymentMethod })}
+              >
+                <option value="Cash">Cash Handed Over</option>
+                <option value="UPI/Digital">Instant UPI Transfer</option>
+                <option value="Bank Transfer">NEFT / RTGS Bank Wire</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Recipient Player (Optional)</label>
+              <select
+                className="form-select"
+                value={cashOutData.playerId}
+                onChange={e => {
+                  const selId = e.target.value;
+                  const pl = players.find(p => p.id === selId);
+                  setCashOutData({
+                    ...cashOutData,
+                    playerId: selId,
+                    playerName: pl ? pl.fullName : '',
+                  });
+                }}
+              >
+                <option value="">— Select Member —</option>
+                {players.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.fullName} ({formatPlayerNumber(p)})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="cashout-player">Recipient / Player Name</label>
+            <label className="form-label">Notes / Payout Reference</label>
             <input
-              id="cashout-player"
               type="text"
               className="form-input"
-              placeholder="e.g. Rohan Mehra"
-              value={cashOutData.playerName}
-              onChange={e => setCashOutData({ ...cashOutData, playerName: e.target.value })}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="cashout-method">Disbursement Method *</label>
-            <select
-              id="cashout-method"
-              className="form-input"
-              value={cashOutData.paymentMethod}
-              onChange={e => setCashOutData({ ...cashOutData, paymentMethod: e.target.value as PaymentMethod })}
-            >
-              <option value="Cash">Cash (From Drawer)</option>
-              <option value="Bank Transfer">Bank Transfer / IMPS</option>
-              <option value="UPI/Digital">UPI / Instant Pay</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label" htmlFor="cashout-desc">Authorization / Notes</label>
-            <input
-              id="cashout-desc"
-              type="text"
-              className="form-input"
-              placeholder="e.g. 1st Place Main Event Winner"
+              placeholder="e.g. 1st Place Winner - Deepstack Sunday or Chip surrender"
               value={cashOutData.description}
               onChange={e => setCashOutData({ ...cashOutData, description: e.target.value })}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+          <div className="modal-footer" style={{ margin: '14px -24px -24px', padding: '16px 24px' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsCashOutModalOpen(false)}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-danger">
+            <button type="submit" className="btn btn-danger" style={{ background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', color: '#ffffff', border: 'none' }}>
               <Minus size={16} /> Confirm Cash Out
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* MODAL: RECORD EXPENSE */}
+      {/* 3. RECORD EXPENSE MODAL */}
       <Modal
         isOpen={isExpenseModalOpen}
         onClose={() => setIsExpenseModalOpen(false)}
         title="Record Operating Expense"
+        subtitle="Club operating costs, wages, utilities and refreshments"
+        size="md"
       >
         <form onSubmit={handleExpenseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div className="form-group">
-            <label className="form-label" htmlFor="exp-category">Expense Category *</label>
+            <label className="form-label">Category *</label>
             <select
-              id="exp-category"
-              className="form-input"
+              className="form-select"
               value={expenseData.category}
               onChange={e => setExpenseData({ ...expenseData, category: e.target.value as ExpenseCategory })}
             >
@@ -997,27 +1190,41 @@ export const CashPortal: React.FC = () => {
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="exp-amount">Amount (₹) *</label>
-            <input
-              id="exp-amount"
-              type="number"
-              className="form-input"
-              placeholder="e.g. 1500"
-              value={expenseData.amount || ''}
-              onChange={e => setExpenseData({ ...expenseData, amount: Number(e.target.value) })}
-              min={1}
-              required
-            />
+          <div className="form-grid-2">
+            <div className="form-group">
+              <label className="form-label">Amount (₹) *</label>
+              <input
+                type="number"
+                className="form-input"
+                value={expenseData.amount || ''}
+                onChange={e => setExpenseData({ ...expenseData, amount: Number(e.target.value) })}
+                min="1"
+                required
+                placeholder="e.g. 1500"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Payment Mode *</label>
+              <select
+                className="form-select"
+                value={expenseData.paymentMethod}
+                onChange={e => setExpenseData({ ...expenseData, paymentMethod: e.target.value as PaymentMethod })}
+              >
+                <option value="Cash">Cash</option>
+                <option value="UPI/Digital">UPI / Digital</option>
+                <option value="Bank Transfer">Bank Wire Transfer</option>
+                <option value="Credit/Debit Card">Card Payment</option>
+              </select>
+            </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="exp-paidto">Paid To / Supplier *</label>
+            <label className="form-label">Paid To (Vendor / Person) *</label>
             <input
-              id="exp-paidto"
               type="text"
               className="form-input"
-              placeholder="e.g. Table Supplies Co."
+              placeholder="e.g. Dealer Shift Wages, Copag Card Importers, Coffee Bar"
               value={expenseData.paidTo}
               onChange={e => setExpenseData({ ...expenseData, paidTo: e.target.value })}
               required
@@ -1025,29 +1232,28 @@ export const CashPortal: React.FC = () => {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="exp-desc">Description</label>
+            <label className="form-label">Description / Remarks</label>
             <input
-              id="exp-desc"
               type="text"
               className="form-input"
-              placeholder="e.g. 10x Copag Plastic Playing Cards Decks"
+              placeholder="e.g. 4 Dealers night shift payout (₹2,500 each)"
               value={expenseData.description}
               onChange={e => setExpenseData({ ...expenseData, description: e.target.value })}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+          <div className="modal-footer" style={{ margin: '14px -24px -24px', padding: '16px 24px' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsExpenseModalOpen(false)}>
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              <Receipt size={16} /> Save Expense
+              <Plus size={16} /> Save Expense Record
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* MODAL: EDIT EXPENSE */}
+      {/* 4. EDIT EXPENSE MODAL */}
       {selectedExpense && (
         <Modal
           isOpen={isEditExpenseModalOpen}
@@ -1063,7 +1269,7 @@ export const CashPortal: React.FC = () => {
             <div className="form-group">
               <label className="form-label">Expense Category *</label>
               <select
-                className="form-input"
+                className="form-select"
                 value={editExpenseData.category}
                 onChange={e => setEditExpenseData({ ...editExpenseData, category: e.target.value as ExpenseCategory })}
               >
@@ -1078,27 +1284,55 @@ export const CashPortal: React.FC = () => {
               </select>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Amount (₹) *</label>
-              <input
-                type="number"
-                className="form-input"
-                value={editExpenseData.amount}
-                onChange={e => setEditExpenseData({ ...editExpenseData, amount: Number(e.target.value) })}
-                min={1}
-                required
-              />
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Amount (₹) *</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={editExpenseData.amount || ''}
+                  onChange={e => setEditExpenseData({ ...editExpenseData, amount: Number(e.target.value) })}
+                  min="1"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Payment Method *</label>
+                <select
+                  className="form-select"
+                  value={editExpenseData.paymentMethod}
+                  onChange={e => setEditExpenseData({ ...editExpenseData, paymentMethod: e.target.value as PaymentMethod })}
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="UPI/Digital">UPI / Digital</option>
+                  <option value="Bank Transfer">Bank Wire Transfer</option>
+                  <option value="Credit/Debit Card">Card</option>
+                </select>
+              </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Paid To / Supplier *</label>
-              <input
-                type="text"
-                className="form-input"
-                value={editExpenseData.paidTo}
-                onChange={e => setEditExpenseData({ ...editExpenseData, paidTo: e.target.value })}
-                required
-              />
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">Paid To *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editExpenseData.paidTo}
+                  onChange={e => setEditExpenseData({ ...editExpenseData, paidTo: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Date</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={editExpenseData.date}
+                  onChange={e => setEditExpenseData({ ...editExpenseData, date: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="form-group">
@@ -1111,7 +1345,7 @@ export const CashPortal: React.FC = () => {
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+            <div className="modal-footer" style={{ margin: '14px -24px -24px', padding: '16px 24px' }}>
               <button
                 type="button"
                 className="btn btn-secondary"
@@ -1123,14 +1357,14 @@ export const CashPortal: React.FC = () => {
                 Cancel
               </button>
               <button type="submit" className="btn btn-primary">
-                Save Expense Changes
+                Save Changes
               </button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* MODAL: DELETE EXPENSE CONFIRMATION */}
+      {/* 5. DELETE EXPENSE MODAL */}
       {selectedExpense && (
         <Modal
           isOpen={isDeleteExpenseModalOpen}
@@ -1139,35 +1373,20 @@ export const CashPortal: React.FC = () => {
             setSelectedExpense(null);
           }}
           title="Delete Expense Record"
-          subtitle="Irreversible financial action"
+          subtitle="Irreversible financial audit action"
           size="sm"
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
-            <div
-              style={{
-                width: '54px',
-                height: '54px',
-                borderRadius: '50%',
-                background: 'rgba(239, 68, 68, 0.2)',
-                border: '1.5px solid #ef4444',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto',
-                color: '#ef4444',
-              }}
-            >
-              <AlertTriangle size={28} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <AlertTriangle size={24} color="#ef4444" />
+              <div style={{ fontSize: '0.84rem', color: '#cbd5e1' }}>
+                Are you sure you want to permanently delete expense record <strong>{selectedExpense.id}</strong> (₹{selectedExpense.amount.toLocaleString('en-IN')} for {selectedExpense.category})?
+              </div>
             </div>
 
-            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>
-              Are you sure you want to delete expense <strong>{selectedExpense.id}</strong> (₹{selectedExpense.amount.toLocaleString('en-IN')} for {selectedExpense.category})?
-            </p>
-
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
                 className="btn btn-secondary"
-                style={{ flex: 1 }}
                 onClick={() => {
                   setIsDeleteExpenseModalOpen(false);
                   setSelectedExpense(null);
@@ -1175,15 +1394,15 @@ export const CashPortal: React.FC = () => {
               >
                 Cancel
               </button>
-              <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleDeleteExpense}>
-                Delete Expense
+              <button className="btn btn-danger" onClick={handleDeleteExpense}>
+                <Trash2 size={15} /> Delete Record
               </button>
             </div>
           </div>
         </Modal>
       )}
 
-      {/* MODAL: VOID / DELETE CASH TRANSACTION CONFIRMATION */}
+      {/* 6. VOID TRANSACTION MODAL */}
       {selectedTxn && (
         <Modal
           isOpen={isVoidTxnModalOpen}
@@ -1191,36 +1410,21 @@ export const CashPortal: React.FC = () => {
             setIsVoidTxnModalOpen(false);
             setSelectedTxn(null);
           }}
-          title="Void / Delete Transaction"
-          subtitle="Audit ledger deletion"
+          title="Void / Delete Cash Transaction"
+          subtitle="Audit ledger removal"
           size="sm"
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'center' }}>
-            <div
-              style={{
-                width: '54px',
-                height: '54px',
-                borderRadius: '50%',
-                background: 'rgba(239, 68, 68, 0.2)',
-                border: '1.5px solid #ef4444',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto',
-                color: '#ef4444',
-              }}
-            >
-              <AlertTriangle size={28} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <AlertTriangle size={24} color="#ef4444" />
+              <div style={{ fontSize: '0.84rem', color: '#cbd5e1' }}>
+                Are you sure you want to void transaction <strong>{selectedTxn.id}</strong> ({selectedTxn.type === 'in' ? '+' : '-'}₹{selectedTxn.amount.toLocaleString('en-IN')} - {selectedTxn.category})?
+              </div>
             </div>
 
-            <p style={{ fontSize: '0.9rem', color: '#cbd5e1', margin: 0 }}>
-              Are you sure you want to void transaction <strong>{selectedTxn.id}</strong> ({selectedTxn.type === 'in' ? '+' : '-'}₹{selectedTxn.amount.toLocaleString('en-IN')} for {selectedTxn.category})?
-            </p>
-
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
                 className="btn btn-secondary"
-                style={{ flex: 1 }}
                 onClick={() => {
                   setIsVoidTxnModalOpen(false);
                   setSelectedTxn(null);
@@ -1228,15 +1432,15 @@ export const CashPortal: React.FC = () => {
               >
                 Cancel
               </button>
-              <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleVoidTxn}>
-                Void Transaction
+              <button className="btn btn-danger" onClick={handleVoidTxn}>
+                <Trash2 size={15} /> Confirm Void
               </button>
             </div>
           </div>
         </Modal>
       )}
 
-      {/* Official Tax Invoice Modal */}
+      {/* 7. CLUB TAX INVOICE MODAL */}
       <ClubTaxInvoiceModal
         invoice={selectedInvoice}
         isOpen={!!selectedInvoice}
