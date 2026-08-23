@@ -48,49 +48,104 @@ const MainApp: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Read URL pathname and query parameters on initial page load
+  // Read URL pathname and query parameters on initial page load and route changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleRouteChange = () => {
+      const pathname = window.location.pathname.toLowerCase();
+      const params = new URLSearchParams(window.location.search);
+      const portalParam = params.get('portal')?.toLowerCase();
+      const actionParam = params.get('action')?.toLowerCase();
+      const scanParam = params.get('scan');
+      const playerParam = params.get('player') || params.get('playerId');
+
+      // 1. Check Cashier Portal: /cashier, /cashier/... or ?portal=cashier
+      const isCashier =
+        pathname === '/cashier' ||
+        pathname === '/cashier/' ||
+        pathname.startsWith('/cashier/') ||
+        portalParam === 'cashier';
+
+      // 2. Check Cash Vault / Treasury Portal: /cash, /cash/..., /treasury or ?portal=cash / ?portal=treasury
+      const isCash =
+        pathname === '/cash' ||
+        pathname === '/cash/' ||
+        pathname.startsWith('/cash/') ||
+        pathname === '/treasury' ||
+        pathname === '/treasury/' ||
+        pathname.startsWith('/treasury/') ||
+        portalParam === 'cash' ||
+        portalParam === 'treasury';
+
+      // 3. Check Security Desk: /security, /security/... or ?portal=security
+      const isSecurity =
+        pathname === '/security' ||
+        pathname === '/security/' ||
+        pathname.startsWith('/security/') ||
+        portalParam === 'security' ||
+        Boolean(scanParam) ||
+        Boolean(playerParam);
+
+      // 4. Check Admin Portal: /admin, /admin/..., /staff, /staff/... or ?portal=admin
+      const isAdmin =
+        pathname === '/admin' ||
+        pathname === '/admin/' ||
+        pathname.startsWith('/admin/') ||
+        pathname === '/staff' ||
+        pathname === '/staff/' ||
+        pathname.startsWith('/staff/') ||
+        portalParam === 'admin' ||
+        portalParam === 'staff';
+
+      // 5. Check Player Portal
+      const isPlayer =
+        pathname === '/player' ||
+        pathname === '/player/' ||
+        pathname.startsWith('/player/') ||
+        portalParam === 'player' ||
+        actionParam === 'kyc' ||
+        actionParam === 'qr_scan' ||
+        actionParam === 'register';
+
+      if (isCashier) {
+        setActiveRole('cashier');
+      } else if (isCash) {
+        setActiveRole('cash');
+      } else if (isSecurity) {
+        setActiveRole('security');
+      } else if (isAdmin) {
+        setActiveRole('admin');
+      } else if (isPlayer) {
+        setActiveRole('player');
+      }
+    };
+
+    handleRouteChange();
+    window.addEventListener('popstate', handleRouteChange);
+    return () => window.removeEventListener('popstate', handleRouteChange);
+  }, [setActiveRole]);
+
+  // Sync activeRole changes with browser address bar path for distinct shareable links
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const pathname = window.location.pathname.toLowerCase();
-    const params = new URLSearchParams(window.location.search);
-    const portalParam = params.get('portal');
-    const actionParam = params.get('action');
-    const scanParam = params.get('scan');
-    const playerParam = params.get('player') || params.get('playerId');
+    const targetPath =
+      activeRole === 'cashier'
+        ? '/cashier'
+        : activeRole === 'cash'
+        ? '/cash'
+        : activeRole === 'security'
+        ? '/security'
+        : activeRole === 'admin'
+        ? '/admin'
+        : '/player';
 
-    // 1. Dedicated Cash Desk Direct Link: /cash, /treasury or ?portal=cash/treasury
-    if (
-      pathname.startsWith('/cash') ||
-      pathname.startsWith('/treasury') ||
-      portalParam === 'cash' ||
-      portalParam === 'treasury'
-    ) {
-      setActiveRole('cash');
-    } else if (
-      pathname.startsWith('/staff') ||
-      pathname.startsWith('/admin') ||
-      pathname.startsWith('/cashier') ||
-      pathname.startsWith('/security') ||
-      ['staff', 'cashier', 'security', 'admin'].includes(portalParam || '') ||
-      scanParam ||
-      playerParam
-    ) {
-      if (pathname.startsWith('/cashier') || portalParam === 'cashier') {
-        setActiveRole('cashier');
-      } else if (pathname.startsWith('/security') || portalParam === 'security' || scanParam || playerParam) {
-        setActiveRole('security');
-      } else {
-        setActiveRole('admin');
-      }
-    } else if (pathname.startsWith('/player') || portalParam === 'player') {
-      // 2. Explicit Player Portal Link
-      setActiveRole('player');
+    // Update address bar if path differs and not on root with params
+    if (pathname !== targetPath && pathname !== '/' && !window.location.search.includes('portal=')) {
+      window.history.replaceState(null, '', targetPath + window.location.search);
     }
-
-    if (actionParam === 'kyc' || actionParam === 'qr_scan' || actionParam === 'register') {
-      setActiveRole('player');
-    }
-  }, [setActiveRole]);
+  }, [activeRole]);
 
   const handleOpenNewPlayerFromQR = () => {
     setActiveRole('player');
