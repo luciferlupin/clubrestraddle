@@ -6210,6 +6210,41 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* =============================================================
+   RESPONSIVE TABLE & CARD UTILITIES (MOBILE ADAPTATION)
+   ============================================================= */
+.desktop-only-table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-only-cards {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-only-table {
+    display: none !important;
+  }
+  .mobile-only-cards {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.is-mobile-device .desktop-only-table {
+  display: none !important;
+}
+
+.is-mobile-device .mobile-only-cards {
+  display: flex !important;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* =============================================================
    THERMAL TAX INVOICE & RECEIPT PRINT STYLES (80mm / POS / A4)
    ============================================================= */
 @media print {

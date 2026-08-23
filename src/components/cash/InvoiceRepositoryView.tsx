@@ -283,22 +283,22 @@ export const InvoiceRepositoryView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Invoices Table Card */}
+      {/* Main Invoices Table & Card List */}
       <div className="card">
-        <div className="card-header" style={{ flexWrap: 'wrap', gap: '14px' }}>
-          <div>
-            <h3 className="card-title">
+        <div className="card-header" style={{ flexWrap: 'wrap', gap: '14px', alignItems: 'flex-start' }}>
+          <div style={{ flex: '1 1 280px' }}>
+            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <FileText size={18} color="#e11d48" />
-              Central Tax Invoice & Billing Records Repository ({filteredInvoices.length})
+              <span>Central Tax Invoice & Billing Records ({filteredInvoices.length})</span>
             </h3>
             <p className="card-subtitle">
               Comprehensive ledger of all GST 18% Tax Invoices for player door entries, tournaments, chip transactions, and payouts.
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-            {/* Category Filter Pills */}
-            <div style={{ display: 'flex', gap: '4px', background: 'rgba(255,255,255,0.04)', padding: '3px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', width: '100%', maxWidth: '100%' }}>
+            {/* Category Filter Pills (Smooth Horizontal Scroll on Mobile) */}
+            <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.04)', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', scrollbarWidth: 'none' }}>
               {[
                 { id: 'all', label: 'All Records' },
                 { id: 'entry', label: '₹500 Entry' },
@@ -310,7 +310,7 @@ export const InvoiceRepositoryView: React.FC = () => {
                   key={f.id}
                   type="button"
                   className={`btn btn-sm ${categoryFilter === f.id ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ padding: '4px 10px', fontSize: '0.76rem', borderRadius: '8px' }}
+                  style={{ padding: '5px 12px', fontSize: '0.76rem', borderRadius: '8px', whiteSpace: 'nowrap', flexShrink: 0 }}
                   onClick={() => {
                     setCategoryFilter(f.id);
                     setPage(1);
@@ -322,12 +322,12 @@ export const InvoiceRepositoryView: React.FC = () => {
             </div>
 
             {/* Search Input */}
-            <div style={{ position: 'relative', width: '240px' }}>
+            <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '180px', width: '100%' }}>
               <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
                 className="form-input"
-                style={{ paddingLeft: '32px', height: '34px', fontSize: '0.82rem' }}
+                style={{ paddingLeft: '32px', height: '36px', fontSize: '0.82rem', width: '100%' }}
                 placeholder="Search Invoice #, Name, Phone..."
                 value={search}
                 onChange={e => {
@@ -339,8 +339,114 @@ export const InvoiceRepositoryView: React.FC = () => {
           </div>
         </div>
 
+        {/* Mobile View: Dedicated Luxury Cards */}
+        <div className="mobile-only-cards" style={{ padding: '12px 14px 4px' }}>
+          {paginatedInvoices.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+              No invoice records found matching your filter.
+            </div>
+          ) : (
+            paginatedInvoices.map(inv => (
+              <div
+                key={inv.id}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(20, 8, 12, 0.85) 0%, rgba(10, 3, 6, 0.95) 100%)',
+                  border: '1px solid rgba(225, 29, 72, 0.35)',
+                  borderRadius: '14px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                }}
+              >
+                {/* Card Header: Invoice # & Category Pill */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '0.88rem', color: 'var(--gold-light)' }}>
+                      {inv.invoiceNumber}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                      {formatDateTime(inv.date)}
+                    </div>
+                  </div>
+                  <span
+                    className="badge"
+                    style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      background:
+                        inv.category === 'Door Entry'
+                          ? 'rgba(225, 29, 72, 0.18)'
+                          : inv.category === 'Tournament'
+                          ? 'rgba(168, 85, 247, 0.18)'
+                          : inv.category === 'Payout'
+                          ? 'rgba(239, 68, 68, 0.18)'
+                          : 'rgba(16, 185, 129, 0.18)',
+                      color:
+                        inv.category === 'Door Entry'
+                          ? '#fda4af'
+                          : inv.category === 'Tournament'
+                          ? '#c084fc'
+                          : inv.category === 'Payout'
+                          ? '#fca5a5'
+                          : '#6ee7b7',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {inv.category}
+                  </span>
+                </div>
+
+                {/* Member & Description Row */}
+                <div style={{ background: 'rgba(0, 0, 0, 0.3)', borderRadius: '10px', padding: '10px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <strong style={{ fontSize: '0.92rem', color: '#ffffff' }}>{inv.playerName}</strong>
+                    {inv.playerId && (
+                      <span style={{ fontSize: '0.74rem', color: 'var(--gold-light)', fontWeight: 600 }}>
+                        Member #{inv.playerId}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '2px' }}>
+                    📞 {inv.playerPhone || 'On File'} · Staff: {inv.cashierOrStaff}
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: '#cbd5e1', marginTop: '6px', lineHeight: '1.35', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '6px' }}>
+                    {inv.description}
+                  </div>
+                </div>
+
+                {/* Amount Details & Action Button */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '2px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>
+                      Taxable {formatCurrency(inv.taxableAmount)} + GST {formatCurrency(inv.gstAmount)}
+                    </div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff', fontFamily: 'var(--font-mono)', marginTop: '1px' }}>
+                      {formatCurrency(inv.totalAmount)}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', padding: '6px 14px', borderRadius: '8px', background: 'rgba(225, 29, 72, 0.2)', borderColor: 'rgba(225, 29, 72, 0.5)', color: '#ffffff' }}
+                    onClick={() => handleOpenInvoice(inv.invoiceData)}
+                  >
+                    <Eye size={14} color="#fda4af" />
+                    <span>View Bill</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
         {/* Desktop Table View */}
-        <div className="table-responsive">
+        <div className="table-responsive desktop-only-table">
           <table className="table">
             <thead>
               <tr>
