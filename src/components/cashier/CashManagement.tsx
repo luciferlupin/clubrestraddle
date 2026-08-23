@@ -6,6 +6,8 @@ import {
   Wallet,
   Plus,
   Minus,
+  Smartphone,
+  Landmark,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { CashCategory, PaymentMethod } from '../../types';
@@ -16,7 +18,20 @@ import { Modal } from '../common/Modal';
 export const CashManagement: React.FC = () => {
   const {
     cashTransactions,
-    currentCashBalance,
+    physicalCashBalance,
+    upiBalance,
+    bankBalance,
+    cardBalance,
+    totalLiquidityBalance,
+    physicalCashIn,
+    physicalCashOut,
+    physicalCashExpenses,
+    upiIn,
+    upiOut,
+    upiExpenses,
+    bankIn,
+    bankOut,
+    bankExpenses,
     totalCashInAmount,
     totalCashOutAmount,
     addCashReceived,
@@ -26,6 +41,7 @@ export const CashManagement: React.FC = () => {
   const [isCashInModalOpen, setIsCashInModalOpen] = useState(false);
   const [isCashOutModalOpen, setIsCashOutModalOpen] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'in' | 'out'>('all');
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<'all' | PaymentMethod>('all');
 
   // Form State for Cash In
   const [cashInData, setCashInData] = useState({
@@ -96,54 +112,81 @@ export const CashManagement: React.FC = () => {
   };
 
   const filteredTransactions = cashTransactions.filter(t => {
-    if (filterType === 'in') return t.type === 'in';
-    if (filterType === 'out') return t.type === 'out';
+    if (filterType === 'in' && t.type !== 'in') return false;
+    if (filterType === 'out' && t.type !== 'out') return false;
+    if (filterPaymentMethod !== 'all' && t.paymentMethod !== filterPaymentMethod) return false;
     return true;
   });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Balances Bar */}
-      <div className="stats-grid" style={{ marginBottom: 0 }}>
+      {/* Top Separated Balances Bar */}
+      <div className="stats-grid" style={{ marginBottom: 0, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        {/* 1. Physical Cash in Hand */}
         <div
           className="stat-card"
-          style={{ '--stat-glow': 'rgba(245, 158, 11, 0.15)', '--stat-color': '#fbbf24' } as React.CSSProperties}
+          style={{ '--stat-glow': 'rgba(245, 158, 11, 0.15)', '--stat-color': '#fbbf24', border: '1.5px solid rgba(245, 158, 11, 0.4)' } as React.CSSProperties}
         >
           <div className="stat-info">
-            <span className="stat-label">Daily Cash Balance (Vault)</span>
+            <span className="stat-label">💵 Physical Cash in Hand</span>
             <span className="stat-value" style={{ color: 'var(--gold-light)' }}>
-              {formatCurrency(currentCashBalance)}
+              {formatCurrency(physicalCashBalance)}
             </span>
-            <span className="stat-helper">Live Available Drawer Float</span>
+            <span className="stat-helper">+{formatCurrency(physicalCashIn)} in / -{formatCurrency(physicalCashOut + physicalCashExpenses)} out</span>
           </div>
-          <div className="stat-icon-wrapper">
+          <div className="stat-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
             <Wallet size={22} />
           </div>
         </div>
 
-        <div className="stat-card">
+        {/* 2. UPI / Digital Payments */}
+        <div
+          className="stat-card"
+          style={{ '--stat-glow': 'rgba(56, 189, 248, 0.15)', '--stat-color': '#38bdf8', border: '1.5px solid rgba(56, 189, 248, 0.4)' } as React.CSSProperties}
+        >
           <div className="stat-info">
-            <span className="stat-label">Total Cash Received (In)</span>
-            <span className="stat-value" style={{ color: '#ffffff' }}>
-              +{formatCurrency(totalCashInAmount)}
+            <span className="stat-label">📱 UPI / QR Payments</span>
+            <span className="stat-value" style={{ color: '#38bdf8' }}>
+              {formatCurrency(upiBalance)}
             </span>
-            <span className="stat-helper">Entry Charges, Service Charges, Float Deposits</span>
+            <span className="stat-helper">+{formatCurrency(upiIn)} in / -{formatCurrency(upiOut + upiExpenses)} out</span>
           </div>
-          <div className="stat-icon-wrapper">
-            <ArrowDownLeft size={22} color="#ffffff" />
+          <div className="stat-icon-wrapper" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+            <Smartphone size={22} />
           </div>
         </div>
 
-        <div className="stat-card">
+        {/* 3. Direct Bank Wire */}
+        <div
+          className="stat-card"
+          style={{ '--stat-glow': 'rgba(168, 85, 247, 0.15)', '--stat-color': '#c084fc', border: '1.5px solid rgba(168, 85, 247, 0.4)' } as React.CSSProperties}
+        >
           <div className="stat-info">
-            <span className="stat-label">Total Cash Given (Out)</span>
-            <span className="stat-value" style={{ color: '#fca5a5' }}>
-              -{formatCurrency(totalCashOutAmount)}
+            <span className="stat-label">🏦 Direct Bank Wire</span>
+            <span className="stat-value" style={{ color: '#c084fc' }}>
+              {formatCurrency(bankBalance)}
             </span>
-            <span className="stat-helper">Prize Payouts, Cash-outs</span>
+            <span className="stat-helper">+{formatCurrency(bankIn)} in / -{formatCurrency(bankOut + bankExpenses)} out</span>
           </div>
-          <div className="stat-icon-wrapper">
-            <ArrowUpRight size={22} color="#e11d48" />
+          <div className="stat-icon-wrapper" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
+            <Landmark size={22} />
+          </div>
+        </div>
+
+        {/* 4. Combined Treasury */}
+        <div
+          className="stat-card"
+          style={{ '--stat-glow': 'rgba(16, 185, 129, 0.15)', '--stat-color': '#34d399', border: '1.5px solid rgba(16, 185, 129, 0.4)' } as React.CSSProperties}
+        >
+          <div className="stat-info">
+            <span className="stat-label">💎 Total Liquid Treasury</span>
+            <span className="stat-value" style={{ color: '#34d399' }}>
+              {formatCurrency(totalLiquidityBalance)}
+            </span>
+            <span className="stat-helper">Gross Receipts: {formatCurrency(totalCashInAmount)}</span>
+          </div>
+          <div className="stat-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+            <DollarSign size={22} />
           </div>
         </div>
       </div>
@@ -161,18 +204,18 @@ export const CashManagement: React.FC = () => {
 
       {/* Cash Flow Ledger Table */}
       <div className="card">
-        <div className="card-header">
+        <div className="card-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h3 className="card-title">
               <DollarSign size={18} color="#e11d48" />
               Cashier Cash Flow Ledger
             </h3>
             <p className="card-subtitle">
-              Live audit trail of all money coming into and going out from the cashier desk.
+              Live audit trail of all money coming into and going out with channel separation.
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button
               className={`btn btn-sm ${filterType === 'all' ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setFilterType('all')}
@@ -192,6 +235,43 @@ export const CashManagement: React.FC = () => {
               Cash Out
             </button>
           </div>
+        </div>
+
+        {/* Channel Filter Pills */}
+        <div style={{ display: 'flex', gap: '8px', padding: '10px 16px', background: 'rgba(0, 0, 0, 0.35)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Channel:</span>
+          <button
+            type="button"
+            className={`btn btn-sm ${filterPaymentMethod === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setFilterPaymentMethod('all')}
+            style={{ fontSize: '0.74rem', padding: '3px 8px' }}
+          >
+            All Channels ({formatCurrency(totalLiquidityBalance)})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${filterPaymentMethod === 'Cash' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setFilterPaymentMethod('Cash')}
+            style={{ fontSize: '0.74rem', padding: '3px 8px', color: filterPaymentMethod === 'Cash' ? undefined : '#fbbf24' }}
+          >
+            💵 Cash ({formatCurrency(physicalCashBalance)})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${filterPaymentMethod === 'UPI/Digital' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setFilterPaymentMethod('UPI/Digital')}
+            style={{ fontSize: '0.74rem', padding: '3px 8px', color: filterPaymentMethod === 'UPI/Digital' ? undefined : '#38bdf8' }}
+          >
+            📱 UPI ({formatCurrency(upiBalance)})
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${filterPaymentMethod === 'Bank Transfer' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setFilterPaymentMethod('Bank Transfer')}
+            style={{ fontSize: '0.74rem', padding: '3px 8px', color: filterPaymentMethod === 'Bank Transfer' ? undefined : '#c084fc' }}
+          >
+            🏦 Bank ({formatCurrency(bankBalance)})
+          </button>
         </div>
 
         <div className="table-container">

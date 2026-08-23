@@ -22,6 +22,8 @@ import {
   Eye,
   ArrowRight,
   Sparkles,
+  Smartphone,
+  Landmark,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction, Player } from '../../types';
@@ -44,6 +46,23 @@ export const MobileCashPortal: React.FC = () => {
     players,
     cashTransactions,
     currentCashBalance,
+    physicalCashBalance,
+    upiBalance,
+    bankBalance,
+    cardBalance,
+    totalLiquidityBalance,
+    physicalCashIn,
+    physicalCashOut,
+    physicalCashExpenses,
+    upiIn,
+    upiOut,
+    upiExpenses,
+    bankIn,
+    bankOut,
+    bankExpenses,
+    cardIn,
+    cardOut,
+    cardExpenses,
     totalCashInAmount,
     totalCashOutAmount,
     expenses,
@@ -75,6 +94,22 @@ export const MobileCashPortal: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'in' | 'out'>('all');
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<'all' | PaymentMethod>('all');
+
+  const getChannelBalance = (method: PaymentMethod) => {
+    switch (method) {
+      case 'Cash':
+        return { name: 'Physical Cash Vault', balance: physicalCashBalance, color: '#fbbf24' };
+      case 'UPI/Digital':
+        return { name: 'UPI & QR Account', balance: upiBalance, color: '#38bdf8' };
+      case 'Bank Transfer':
+        return { name: 'Direct Bank Account', balance: bankBalance, color: '#c084fc' };
+      case 'Credit/Debit Card':
+        return { name: 'Card POS Terminal', balance: cardBalance, color: '#34d399' };
+      default:
+        return { name: 'Physical Cash Vault', balance: physicalCashBalance, color: '#fbbf24' };
+    }
+  };
 
   // Form State for Cash In
   const [cashInData, setCashInData] = useState({
@@ -261,6 +296,7 @@ export const MobileCashPortal: React.FC = () => {
     if (!matchesSearch) return false;
     if (filterType === 'in' && t.type !== 'in') return false;
     if (filterType === 'out' && t.type !== 'out') return false;
+    if (filterPaymentMethod !== 'all' && t.paymentMethod !== filterPaymentMethod) return false;
     return true;
   });
 
@@ -294,40 +330,40 @@ export const MobileCashPortal: React.FC = () => {
         {/* TAB 1: DASHBOARD & QUICK ACTIONS */}
         {activeTab === 'dashboard' && (
           <>
-            {/* Top KPI Cards */}
+            {/* Top KPI Cards - Separated Liquidity Channels */}
             <div className="m-stats-grid">
               <div className="m-stat-card" style={{ borderColor: 'rgba(245, 158, 11, 0.45)', background: 'linear-gradient(135deg, rgba(30, 20, 10, 0.6) 0%, rgba(15, 8, 4, 0.9) 100%)' }}>
-                <span className="m-stat-label">Current Cash Balance</span>
+                <span className="m-stat-label">💵 Physical Cash</span>
                 <span className="m-stat-val" style={{ color: 'var(--gold-light)' }}>
-                  {formatCurrency(currentCashBalance)}
+                  {formatCurrency(physicalCashBalance)}
                 </span>
-                <span className="m-stat-sub">Physical Drawer Vault Float</span>
+                <span className="m-stat-sub">In-Hand Vault Float</span>
               </div>
 
-              <div className="m-stat-card" style={{ borderColor: 'rgba(16, 185, 129, 0.4)' }}>
-                <span className="m-stat-label">Today's Inflow</span>
-                <span className="m-stat-val" style={{ color: '#34d399' }}>
-                  +{formatCurrency(totalCashInAmount)}
+              <div className="m-stat-card" style={{ borderColor: 'rgba(56, 189, 248, 0.45)', background: 'linear-gradient(135deg, rgba(8, 28, 38, 0.6) 0%, rgba(4, 14, 20, 0.9) 100%)' }}>
+                <span className="m-stat-label">📱 UPI / QR Balance</span>
+                <span className="m-stat-val" style={{ color: '#38bdf8' }}>
+                  {formatCurrency(upiBalance)}
                 </span>
-                <span className="m-stat-sub">Total Cash In Received</span>
+                <span className="m-stat-sub">Digital Payments In</span>
               </div>
             </div>
 
             <div className="m-stats-grid">
-              <div className="m-stat-card" style={{ borderColor: 'rgba(239, 68, 68, 0.4)' }}>
-                <span className="m-stat-label">Total Payouts (Out)</span>
-                <span className="m-stat-val" style={{ color: '#fca5a5' }}>
-                  -{formatCurrency(totalCashOutAmount)}
+              <div className="m-stat-card" style={{ borderColor: 'rgba(168, 85, 247, 0.45)', background: 'linear-gradient(135deg, rgba(28, 12, 38, 0.6) 0%, rgba(14, 6, 20, 0.9) 100%)' }}>
+                <span className="m-stat-label">🏦 Bank Transfer</span>
+                <span className="m-stat-val" style={{ color: '#c084fc' }}>
+                  {formatCurrency(bankBalance)}
                 </span>
-                <span className="m-stat-sub">Prizes & Cash-outs</span>
+                <span className="m-stat-sub">IMPS / NEFT Received</span>
               </div>
 
-              <div className="m-stat-card" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                <span className="m-stat-label">Net Treasury</span>
-                <span className="m-stat-val" style={{ color: '#ffffff' }}>
-                  {formatCurrency(netTreasuryBalance)}
+              <div className="m-stat-card" style={{ borderColor: 'rgba(16, 185, 129, 0.45)', background: 'linear-gradient(135deg, rgba(8, 30, 20, 0.6) 0%, rgba(4, 15, 10, 0.9) 100%)' }}>
+                <span className="m-stat-label">💎 Total Treasury</span>
+                <span className="m-stat-val" style={{ color: '#34d399' }}>
+                  {formatCurrency(totalLiquidityBalance)}
                 </span>
-                <span className="m-stat-sub">Float − Expenses</span>
+                <span className="m-stat-sub">Combined Net Liquidity</span>
               </div>
             </div>
 
@@ -358,42 +394,72 @@ export const MobileCashPortal: React.FC = () => {
             <div className="m-card">
               <div className="m-card-header">
                 <span className="m-card-title">
-                  <Wallet size={16} color="#fbbf24" />
-                  Recent Cash Movements
+                  <Coins size={16} color="#fbbf24" />
+                  Recent Ledger Activity
                 </span>
-                <button className="m-btn m-btn-ghost m-btn-sm" style={{ width: 'auto' }} onClick={() => setActiveTab('ledger')}>
-                  View All
+                <button
+                  type="button"
+                  className="m-card-action"
+                  onClick={() => setActiveTab('ledger')}
+                >
+                  View All ({cashTransactions.length}) →
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {cashTransactions.slice(0, 5).map(txn => (
-                  <div key={txn.id} className="m-list-card">
-                    <div className="m-list-row">
-                      <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{txn.category}</span>
-                      <span
-                        className="tabular-num"
-                        style={{ fontWeight: 800, color: txn.type === 'in' ? '#34d399' : '#fca5a5' }}
-                      >
-                        {txn.type === 'in' ? '+' : '-'}{formatCurrency(txn.amount)}
-                      </span>
-                    </div>
-                    <div className="m-list-row" style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-                      <span>{txn.playerName || txn.paymentMethod}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>{formatShortDateTime(txn.timestamp)}</span>
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: '1px 5px', fontSize: '0.68rem' }}
-                          onClick={() => handleViewTxnInvoice(txn)}
+              <div className="m-list" style={{ marginTop: '10px' }}>
+                {cashTransactions.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '0.84rem' }}>
+                    No cash transactions recorded yet.
+                  </div>
+                ) : (
+                  cashTransactions.slice(0, 6).map(txn => (
+                    <div key={txn.id} className="m-list-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
+                      <div className="m-list-row">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <CashFlowBadge type={txn.type} />
+                          <strong style={{ fontSize: '0.84rem' }}>{txn.category}</strong>
+                        </div>
+                        <span
+                          style={{
+                            fontWeight: 800,
+                            fontFamily: 'monospace',
+                            color: txn.type === 'in' ? '#34d399' : '#f87171',
+                            fontSize: '0.9rem',
+                          }}
                         >
-                          <Eye size={10} /> Inv
-                        </button>
+                          {txn.type === 'in' ? '+' : '-'}{formatCurrency(txn.amount)}
+                        </span>
+                      </div>
+                      <div className="m-list-row" style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span
+                            style={{
+                              fontSize: '0.68rem',
+                              padding: '1px 5px',
+                              borderRadius: '4px',
+                              background: txn.paymentMethod === 'Cash' ? 'rgba(251, 191, 36, 0.15)' : txn.paymentMethod === 'UPI/Digital' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(168, 85, 247, 0.15)',
+                              color: txn.paymentMethod === 'Cash' ? '#fbbf24' : txn.paymentMethod === 'UPI/Digital' ? '#38bdf8' : '#c084fc',
+                            }}
+                          >
+                            {txn.paymentMethod === 'Cash' ? '💵 Cash' : txn.paymentMethod === 'UPI/Digital' ? '📱 UPI' : '🏦 Bank'}
+                          </span>
+                          <span>{txn.playerName || txn.description}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{formatShortDateTime(txn.timestamp)}</span>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '1px 5px', fontSize: '0.68rem' }}
+                            onClick={() => handleViewTxnInvoice(txn)}
+                          >
+                            <Eye size={10} /> Inv
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </>
@@ -414,7 +480,7 @@ export const MobileCashPortal: React.FC = () => {
                     <DollarSign size={18} color="#fbbf24" />
                     Cash Flow Ledger ({cashTransactions.length})
                   </h3>
-                  <p className="m-card-subtitle">Complete chronological record of all receipts and payouts</p>
+                  <p className="m-card-subtitle">Complete chronological record with channel separation</p>
                 </div>
               </div>
 
@@ -431,7 +497,7 @@ export const MobileCashPortal: React.FC = () => {
                 />
               </div>
 
-              {/* Filter Pills */}
+              {/* Filter Flow Pills */}
               <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
                 <button
                   type="button"
@@ -456,6 +522,42 @@ export const MobileCashPortal: React.FC = () => {
                   onClick={() => setFilterType('out')}
                 >
                   Cash Out
+                </button>
+              </div>
+
+              {/* Payment Channel Pills */}
+              <div style={{ display: 'flex', gap: '6px', marginTop: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                <button
+                  type="button"
+                  className={`m-btn m-btn-sm ${filterPaymentMethod === 'all' ? 'm-btn-primary' : 'm-btn-secondary'}`}
+                  style={{ whiteSpace: 'nowrap', fontSize: '0.72rem', padding: '4px 8px' }}
+                  onClick={() => { setFilterPaymentMethod('all'); setLedgerPage(1); }}
+                >
+                  All Accounts
+                </button>
+                <button
+                  type="button"
+                  className={`m-btn m-btn-sm ${filterPaymentMethod === 'Cash' ? 'm-btn-primary' : 'm-btn-secondary'}`}
+                  style={{ whiteSpace: 'nowrap', fontSize: '0.72rem', padding: '4px 8px', color: filterPaymentMethod === 'Cash' ? undefined : '#fbbf24' }}
+                  onClick={() => { setFilterPaymentMethod('Cash'); setLedgerPage(1); }}
+                >
+                  💵 Cash ({formatCurrency(physicalCashBalance)})
+                </button>
+                <button
+                  type="button"
+                  className={`m-btn m-btn-sm ${filterPaymentMethod === 'UPI/Digital' ? 'm-btn-primary' : 'm-btn-secondary'}`}
+                  style={{ whiteSpace: 'nowrap', fontSize: '0.72rem', padding: '4px 8px', color: filterPaymentMethod === 'UPI/Digital' ? undefined : '#38bdf8' }}
+                  onClick={() => { setFilterPaymentMethod('UPI/Digital'); setLedgerPage(1); }}
+                >
+                  📱 UPI ({formatCurrency(upiBalance)})
+                </button>
+                <button
+                  type="button"
+                  className={`m-btn m-btn-sm ${filterPaymentMethod === 'Bank Transfer' ? 'm-btn-primary' : 'm-btn-secondary'}`}
+                  style={{ whiteSpace: 'nowrap', fontSize: '0.72rem', padding: '4px 8px', color: filterPaymentMethod === 'Bank Transfer' ? undefined : '#c084fc' }}
+                  onClick={() => { setFilterPaymentMethod('Bank Transfer'); setLedgerPage(1); }}
+                >
+                  🏦 Bank ({formatCurrency(bankBalance)})
                 </button>
               </div>
             </div>
@@ -661,25 +763,30 @@ export const MobileCashPortal: React.FC = () => {
             </div>
           </div>
 
-          {/* Running Balance Preview */}
-          <div
-            style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: '0.76rem',
-            }}
-          >
-            <span>Vault Float: <strong>{formatCurrency(currentCashBalance)}</strong></span>
-            <ArrowRight size={12} color="#34d399" />
-            <span style={{ color: '#34d399', fontWeight: 800 }}>
-              After: {formatCurrency(currentCashBalance + (Number(cashInData.amount) || 0))}
-            </span>
-          </div>
+          {/* Dynamic Running Balance Preview */}
+          {(() => {
+            const chan = getChannelBalance(cashInData.paymentMethod);
+            return (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.76rem',
+                }}
+              >
+                <span>{chan.name}: <strong>{formatCurrency(chan.balance)}</strong></span>
+                <ArrowRight size={12} color="#34d399" />
+                <span style={{ color: '#34d399', fontWeight: 800 }}>
+                  After: {formatCurrency(chan.balance + (Number(cashInData.amount) || 0))}
+                </span>
+              </div>
+            );
+          })()}
 
           <div className="m-form-group">
             <label className="m-form-label">Payment Mode</label>
@@ -688,10 +795,10 @@ export const MobileCashPortal: React.FC = () => {
               value={cashInData.paymentMethod}
               onChange={e => setCashInData({ ...cashInData, paymentMethod: e.target.value as PaymentMethod })}
             >
-              <option value="Cash">Cash at Counter</option>
-              <option value="UPI/Digital">UPI / QR Payment</option>
-              <option value="Bank Transfer">Bank Wire Transfer</option>
-              <option value="Credit/Debit Card">POS Card Swiped</option>
+              <option value="Cash">💵 Cash at Counter</option>
+              <option value="UPI/Digital">📱 UPI / QR Payment</option>
+              <option value="Bank Transfer">🏦 Bank Wire Transfer</option>
+              <option value="Credit/Debit Card">💳 POS Card Swiped</option>
             </select>
           </div>
 
@@ -745,7 +852,7 @@ export const MobileCashPortal: React.FC = () => {
         isOpen={isCashOutOpen}
         onClose={() => setIsCashOutOpen(false)}
         title="Record Cash Out (Payout / Withdrawal)"
-        subtitle="Money disbursed from the cashier vault drawer"
+        subtitle="Money disbursed from the cashier vault drawer or online channels"
       >
         <form onSubmit={handleCashOutSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div className="m-form-group">
@@ -803,25 +910,30 @@ export const MobileCashPortal: React.FC = () => {
             </div>
           </div>
 
-          {/* Running Balance Preview */}
-          <div
-            style={{
-              padding: '8px 12px',
-              borderRadius: '8px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.25)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: '0.76rem',
-            }}
-          >
-            <span>Vault Float: <strong>{formatCurrency(currentCashBalance)}</strong></span>
-            <ArrowRight size={12} color="#f87171" />
-            <span style={{ color: '#f87171', fontWeight: 800 }}>
-              After: {formatCurrency(currentCashBalance - (Number(cashOutData.amount) || 0))}
-            </span>
-          </div>
+          {/* Dynamic Running Balance Preview */}
+          {(() => {
+            const chan = getChannelBalance(cashOutData.paymentMethod);
+            return (
+              <div
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.76rem',
+                }}
+              >
+                <span>{chan.name}: <strong>{formatCurrency(chan.balance)}</strong></span>
+                <ArrowRight size={12} color="#f87171" />
+                <span style={{ color: '#f87171', fontWeight: 800 }}>
+                  After: {formatCurrency(chan.balance - (Number(cashOutData.amount) || 0))}
+                </span>
+              </div>
+            );
+          })()}
 
           <div className="m-form-group">
             <label className="m-form-label">Payout Mode</label>

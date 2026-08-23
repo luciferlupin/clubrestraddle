@@ -179,6 +179,23 @@ interface ClubContextType {
   todayCheckIns: DailyCheckIn[];
   pendingChipOrdersCount: number;
   currentCashBalance: number;
+  physicalCashBalance: number;
+  upiBalance: number;
+  bankBalance: number;
+  cardBalance: number;
+  totalLiquidityBalance: number;
+  physicalCashIn: number;
+  physicalCashOut: number;
+  physicalCashExpenses: number;
+  upiIn: number;
+  upiOut: number;
+  upiExpenses: number;
+  bankIn: number;
+  bankOut: number;
+  bankExpenses: number;
+  cardIn: number;
+  cardOut: number;
+  cardExpenses: number;
   totalExpensesAmount: number;
   totalCashInAmount: number;
   totalCashOutAmount: number;
@@ -1376,17 +1393,113 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       .reduce((sum, t) => sum + t.amount, 0);
   }, [cashTransactions]);
 
-  const currentCashBalance = useMemo(() => {
-    return totalCashInAmount - totalCashOutAmount;
-  }, [totalCashInAmount, totalCashOutAmount]);
+  // 1. Physical Cash Breakdown
+  const physicalCashIn = useMemo(() => {
+    return cashTransactions
+      .filter(t => t.type === 'in' && (t.paymentMethod === 'Cash' || !t.paymentMethod))
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [cashTransactions]);
+
+  const physicalCashOut = useMemo(() => {
+    return cashTransactions
+      .filter(t => t.type === 'out' && (t.paymentMethod === 'Cash' || !t.paymentMethod))
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [cashTransactions]);
+
+  const physicalCashExpenses = useMemo(() => {
+    return expenses
+      .filter(e => e.paymentMethod === 'Cash' || !e.paymentMethod)
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [expenses]);
+
+  const physicalCashBalance = useMemo(() => {
+    return physicalCashIn - physicalCashOut - physicalCashExpenses;
+  }, [physicalCashIn, physicalCashOut, physicalCashExpenses]);
+
+  // 2. UPI / Digital Breakdown
+  const upiIn = useMemo(() => {
+    return cashTransactions
+      .filter(t => t.type === 'in' && t.paymentMethod === 'UPI/Digital')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [cashTransactions]);
+
+  const upiOut = useMemo(() => {
+    return cashTransactions
+      .filter(t => t.type === 'out' && t.paymentMethod === 'UPI/Digital')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [cashTransactions]);
+
+  const upiExpenses = useMemo(() => {
+    return expenses
+      .filter(e => e.paymentMethod === 'UPI/Digital')
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [expenses]);
+
+  const upiBalance = useMemo(() => {
+    return upiIn - upiOut - upiExpenses;
+  }, [upiIn, upiOut, upiExpenses]);
+
+  // 3. Bank Transfer Breakdown
+  const bankIn = useMemo(() => {
+    return cashTransactions
+      .filter(t => t.type === 'in' && t.paymentMethod === 'Bank Transfer')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [cashTransactions]);
+
+  const bankOut = useMemo(() => {
+    return cashTransactions
+      .filter(t => t.type === 'out' && t.paymentMethod === 'Bank Transfer')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [cashTransactions]);
+
+  const bankExpenses = useMemo(() => {
+    return expenses
+      .filter(e => e.paymentMethod === 'Bank Transfer')
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [expenses]);
+
+  const bankBalance = useMemo(() => {
+    return bankIn - bankOut - bankExpenses;
+  }, [bankIn, bankOut, bankExpenses]);
+
+  // 4. Card POS Terminal Breakdown
+  const cardIn = useMemo(() => {
+    return cashTransactions
+      .filter(t => t.type === 'in' && t.paymentMethod === 'Credit/Debit Card')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [cashTransactions]);
+
+  const cardOut = useMemo(() => {
+    return cashTransactions
+      .filter(t => t.type === 'out' && t.paymentMethod === 'Credit/Debit Card')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [cashTransactions]);
+
+  const cardExpenses = useMemo(() => {
+    return expenses
+      .filter(e => e.paymentMethod === 'Credit/Debit Card')
+      .reduce((sum, e) => sum + e.amount, 0);
+  }, [expenses]);
+
+  const cardBalance = useMemo(() => {
+    return cardIn - cardOut - cardExpenses;
+  }, [cardIn, cardOut, cardExpenses]);
+
+  // Current physical cash balance in hand (Vault float)
+  const currentCashBalance = physicalCashBalance;
+
+  // Total combined liquid treasury across all channels
+  const totalLiquidityBalance = useMemo(() => {
+    return physicalCashBalance + upiBalance + bankBalance + cardBalance;
+  }, [physicalCashBalance, upiBalance, bankBalance, cardBalance]);
 
   const totalExpensesAmount = useMemo(() => {
     return expenses.reduce((sum, e) => sum + e.amount, 0);
   }, [expenses]);
 
   const netTreasuryBalance = useMemo(() => {
-    return currentCashBalance - totalExpensesAmount;
-  }, [currentCashBalance, totalExpensesAmount]);
+    return totalCashInAmount - totalCashOutAmount - totalExpensesAmount;
+  }, [totalCashInAmount, totalCashOutAmount, totalExpensesAmount]);
 
   const pendingChipOrdersCount = useMemo(() => {
     return chipRequests.filter(r => r.status === 'pending').length;
@@ -3265,6 +3378,23 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         todayCheckIns,
         pendingChipOrdersCount,
         currentCashBalance,
+        physicalCashBalance,
+        upiBalance,
+        bankBalance,
+        cardBalance,
+        totalLiquidityBalance,
+        physicalCashIn,
+        physicalCashOut,
+        physicalCashExpenses,
+        upiIn,
+        upiOut,
+        upiExpenses,
+        bankIn,
+        bankOut,
+        bankExpenses,
+        cardIn,
+        cardOut,
+        cardExpenses,
         totalExpensesAmount,
         totalCashInAmount,
         totalCashOutAmount,

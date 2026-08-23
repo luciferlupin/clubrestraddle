@@ -22,9 +22,10 @@ import {
   Sparkles,
   ArrowRight,
   User,
-  CreditCard,
   Building2,
   RefreshCw,
+  Smartphone,
+  Landmark,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { CashCategory, PaymentMethod, ExpenseCategory, Expense, CashTransaction, Player } from '../../types';
@@ -50,6 +51,23 @@ export const CashPortal: React.FC = () => {
     players,
     cashTransactions,
     currentCashBalance,
+    physicalCashBalance,
+    upiBalance,
+    bankBalance,
+    cardBalance,
+    totalLiquidityBalance,
+    physicalCashIn,
+    physicalCashOut,
+    physicalCashExpenses,
+    upiIn,
+    upiOut,
+    upiExpenses,
+    bankIn,
+    bankOut,
+    bankExpenses,
+    cardIn,
+    cardOut,
+    cardExpenses,
     totalCashInAmount,
     totalCashOutAmount,
     expenses,
@@ -91,6 +109,22 @@ export const CashPortal: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'in' | 'out'>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<'all' | PaymentMethod>('all');
+
+  const getChannelBalance = (method: PaymentMethod) => {
+    switch (method) {
+      case 'Cash':
+        return { name: 'Physical Cash Vault', balance: physicalCashBalance, color: '#fbbf24' };
+      case 'UPI/Digital':
+        return { name: 'UPI & QR Account', balance: upiBalance, color: '#38bdf8' };
+      case 'Bank Transfer':
+        return { name: 'Direct Bank Account', balance: bankBalance, color: '#c084fc' };
+      case 'Credit/Debit Card':
+        return { name: 'Card POS Terminal', balance: cardBalance, color: '#34d399' };
+      default:
+        return { name: 'Physical Cash Vault', balance: physicalCashBalance, color: '#fbbf24' };
+    }
+  };
 
   // Form State for Cash In
   const [cashInData, setCashInData] = useState({
@@ -269,6 +303,7 @@ export const CashPortal: React.FC = () => {
     if (filterType === 'in' && t.type !== 'in') return false;
     if (filterType === 'out' && t.type !== 'out') return false;
     if (filterCategory !== 'all' && t.category !== filterCategory) return false;
+    if (filterPaymentMethod !== 'all' && t.paymentMethod !== filterPaymentMethod) return false;
     return true;
   });
 
@@ -344,65 +379,80 @@ export const CashPortal: React.FC = () => {
       {/* TAB 1: OVERVIEW & QUICK ACTIONS */}
       {activeTab === 'overview' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-          {/* Top KPI Cards */}
-          <div className="stats-grid">
+          {/* Channel-Separated Liquidity & Balances Grid */}
+          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+            {/* 1. PHYSICAL CASH IN HAND */}
             <div
               className="stat-card"
               style={{ '--stat-glow': 'rgba(245, 158, 11, 0.25)', '--stat-color': '#fbbf24', border: '1.5px solid rgba(245, 158, 11, 0.45)', background: 'linear-gradient(135deg, rgba(30, 20, 10, 0.6) 0%, rgba(15, 8, 4, 0.9) 100%)' } as React.CSSProperties}
             >
               <div className="stat-info">
-                <span className="stat-label">Current Cash Drawer Float</span>
+                <span className="stat-label">💵 Physical Cash in Hand</span>
                 <span className="stat-value" style={{ color: 'var(--gold-light)' }}>
-                  {formatCurrency(currentCashBalance)}
+                  {formatCurrency(physicalCashBalance)}
                 </span>
-                <span className="stat-helper">Physical Cash in Drawer Vault</span>
+                <span className="stat-helper">
+                  +{formatCurrency(physicalCashIn)} in · -{formatCurrency(physicalCashOut + physicalCashExpenses)} out
+                </span>
               </div>
               <div className="stat-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
                 <Wallet size={24} />
               </div>
             </div>
 
+            {/* 2. UPI & DIGITAL (QR / ONLINE) */}
             <div
               className="stat-card"
-              style={{ '--stat-glow': 'rgba(16, 185, 129, 0.25)', '--stat-color': '#34d399', border: '1.5px solid rgba(16, 185, 129, 0.35)' } as React.CSSProperties}
+              style={{ '--stat-glow': 'rgba(56, 189, 248, 0.25)', '--stat-color': '#38bdf8', border: '1.5px solid rgba(56, 189, 248, 0.45)', background: 'linear-gradient(135deg, rgba(8, 28, 38, 0.6) 0%, rgba(4, 14, 20, 0.9) 100%)' } as React.CSSProperties}
             >
               <div className="stat-info">
-                <span className="stat-label">Total Cash In Received</span>
-                <span className="stat-value" style={{ color: '#34d399' }}>
-                  +{formatCurrency(totalCashInAmount)}
+                <span className="stat-label">📱 UPI & QR Payments</span>
+                <span className="stat-value" style={{ color: '#38bdf8' }}>
+                  {formatCurrency(upiBalance)}
                 </span>
-                <span className="stat-helper">Entry Charges, Deposits & Fees</span>
+                <span className="stat-helper">
+                  +{formatCurrency(upiIn)} in · -{formatCurrency(upiOut + upiExpenses)} out
+                </span>
+              </div>
+              <div className="stat-icon-wrapper" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                <Smartphone size={24} />
+              </div>
+            </div>
+
+            {/* 3. DIRECT BANK TRANSFER (IMPS / NEFT) */}
+            <div
+              className="stat-card"
+              style={{ '--stat-glow': 'rgba(168, 85, 247, 0.25)', '--stat-color': '#c084fc', border: '1.5px solid rgba(168, 85, 247, 0.45)', background: 'linear-gradient(135deg, rgba(28, 12, 38, 0.6) 0%, rgba(14, 6, 20, 0.9) 100%)' } as React.CSSProperties}
+            >
+              <div className="stat-info">
+                <span className="stat-label">🏦 Bank Transfer (IMPS/NEFT)</span>
+                <span className="stat-value" style={{ color: '#c084fc' }}>
+                  {formatCurrency(bankBalance)}
+                </span>
+                <span className="stat-helper">
+                  +{formatCurrency(bankIn)} in · -{formatCurrency(bankOut + bankExpenses)} out
+                </span>
+              </div>
+              <div className="stat-icon-wrapper" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
+                <Landmark size={24} />
+              </div>
+            </div>
+
+            {/* 4. TOTAL COMBINED LIQUID TREASURY */}
+            <div
+              className="stat-card"
+              style={{ '--stat-glow': 'rgba(16, 185, 129, 0.25)', '--stat-color': '#34d399', border: '1.5px solid rgba(16, 185, 129, 0.45)', background: 'linear-gradient(135deg, rgba(8, 30, 20, 0.6) 0%, rgba(4, 15, 10, 0.9) 100%)' } as React.CSSProperties}
+            >
+              <div className="stat-info">
+                <span className="stat-label">💎 Total Liquid Treasury</span>
+                <span className="stat-value" style={{ color: '#34d399' }}>
+                  {formatCurrency(totalLiquidityBalance)}
+                </span>
+                <span className="stat-helper">
+                  Gross In: {formatCurrency(totalCashInAmount)} · Exp: {formatCurrency(totalExpensesAmount)}
+                </span>
               </div>
               <div className="stat-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
-                <ArrowDownLeft size={24} />
-              </div>
-            </div>
-
-            <div
-              className="stat-card"
-              style={{ '--stat-glow': 'rgba(239, 68, 68, 0.25)', '--stat-color': '#f87171', border: '1.5px solid rgba(239, 68, 68, 0.35)' } as React.CSSProperties}
-            >
-              <div className="stat-info">
-                <span className="stat-label">Total Cash Paid Out</span>
-                <span className="stat-value" style={{ color: '#f87171' }}>
-                  -{formatCurrency(totalCashOutAmount)}
-                </span>
-                <span className="stat-helper">Prize Payouts & Cash-outs</span>
-              </div>
-              <div className="stat-icon-wrapper" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}>
-                <ArrowUpRight size={24} />
-              </div>
-            </div>
-
-            <div className="stat-card" style={{ border: '1.5px solid rgba(255, 255, 255, 0.15)' }}>
-              <div className="stat-info">
-                <span className="stat-label">Net Club Treasury</span>
-                <span className="stat-value" style={{ color: '#ffffff' }}>
-                  {formatCurrency(netTreasuryBalance)}
-                </span>
-                <span className="stat-helper">Float − {formatCurrency(totalExpensesAmount)} Expenses</span>
-              </div>
-              <div className="stat-icon-wrapper">
                 <DollarSign size={24} />
               </div>
             </div>
@@ -663,6 +713,51 @@ export const CashPortal: React.FC = () => {
                 <option value="Float Deposit">Float Deposit</option>
                 <option value="Float Withdrawal">Float Withdrawal</option>
               </select>
+
+              {/* Payment Channel Filter Strip */}
+              <div style={{ display: 'flex', gap: '8px', padding: '10px 14px', background: 'rgba(0, 0, 0, 0.35)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)', flexWrap: 'wrap', alignItems: 'center', margin: '14px 0 6px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Filter Channel:</span>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filterPaymentMethod === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => { setFilterPaymentMethod('all'); setLedgerPage(1); }}
+                  style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                >
+                  All Accounts ({formatCurrency(totalLiquidityBalance)})
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filterPaymentMethod === 'Cash' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => { setFilterPaymentMethod('Cash'); setLedgerPage(1); }}
+                  style={{ fontSize: '0.75rem', padding: '4px 10px', color: filterPaymentMethod === 'Cash' ? undefined : '#fbbf24' }}
+                >
+                  💵 Cash ({formatCurrency(physicalCashBalance)})
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filterPaymentMethod === 'UPI/Digital' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => { setFilterPaymentMethod('UPI/Digital'); setLedgerPage(1); }}
+                  style={{ fontSize: '0.75rem', padding: '4px 10px', color: filterPaymentMethod === 'UPI/Digital' ? undefined : '#38bdf8' }}
+                >
+                  📱 UPI ({formatCurrency(upiBalance)})
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filterPaymentMethod === 'Bank Transfer' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => { setFilterPaymentMethod('Bank Transfer'); setLedgerPage(1); }}
+                  style={{ fontSize: '0.75rem', padding: '4px 10px', color: filterPaymentMethod === 'Bank Transfer' ? undefined : '#c084fc' }}
+                >
+                  🏦 Bank Wire ({formatCurrency(bankBalance)})
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm ${filterPaymentMethod === 'Credit/Debit Card' ? 'btn-primary' : 'btn-secondary'}`}
+                  onClick={() => { setFilterPaymentMethod('Credit/Debit Card'); setLedgerPage(1); }}
+                  style={{ fontSize: '0.75rem', padding: '4px 10px', color: filterPaymentMethod === 'Credit/Debit Card' ? undefined : '#34d399' }}
+                >
+                  💳 Cards ({formatCurrency(cardBalance)})
+                </button>
+              </div>
             </div>
           </div>
 
@@ -714,7 +809,19 @@ export const CashPortal: React.FC = () => {
                         {formatCurrency(txn.amount)}
                       </td>
                       <td>
-                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{txn.paymentMethod}</span>
+                        <span
+                          style={{
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            background: txn.paymentMethod === 'Cash' ? 'rgba(251, 191, 36, 0.15)' : txn.paymentMethod === 'UPI/Digital' ? 'rgba(56, 189, 248, 0.15)' : txn.paymentMethod === 'Bank Transfer' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(52, 211, 153, 0.15)',
+                            color: txn.paymentMethod === 'Cash' ? '#fbbf24' : txn.paymentMethod === 'UPI/Digital' ? '#38bdf8' : txn.paymentMethod === 'Bank Transfer' ? '#c084fc' : '#34d399',
+                            border: `1px solid ${txn.paymentMethod === 'Cash' ? 'rgba(251, 191, 36, 0.3)' : txn.paymentMethod === 'UPI/Digital' ? 'rgba(56, 189, 248, 0.3)' : txn.paymentMethod === 'Bank Transfer' ? 'rgba(168, 85, 247, 0.3)' : 'rgba(52, 211, 153, 0.3)'}`,
+                          }}
+                        >
+                          {txn.paymentMethod === 'Cash' ? '💵 Cash' : txn.paymentMethod === 'UPI/Digital' ? '📱 UPI' : txn.paymentMethod === 'Bank Transfer' ? '🏦 Bank' : '💳 Card'}
+                        </span>
                       </td>
                       <td style={{ fontSize: '0.8rem' }}>
                         {txn.playerName || txn.referenceId || '—'}
@@ -762,8 +869,8 @@ export const CashPortal: React.FC = () => {
 
           <Pagination
             currentPage={ledgerPage}
-            totalItems={filteredTransactions.length}
             pageSize={ledgerPageSize}
+            totalItems={filteredTransactions.length}
             onPageChange={setLedgerPage}
             onPageSizeChange={setLedgerPageSize}
             itemLabel="transactions"
@@ -771,19 +878,27 @@ export const CashPortal: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: EXPENSES LEDGER */}
+      {/* TAB 4: OPERATING EXPENSES */}
       {activeTab === 'expenses' && (
         <div className="card">
           <div className="card-header" style={{ flexWrap: 'wrap', gap: '12px' }}>
             <div>
               <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Receipt size={18} color="#e11d48" />
-                Operating Expenses Ledger
+                Operating Expenses Register
               </h3>
-              <p className="card-subtitle">Total Recorded Operating Costs: {formatCurrency(totalExpensesAmount)}</p>
+              <p className="card-subtitle">
+                Total Expenses: <strong style={{ color: '#f87171' }}>{formatCurrency(totalExpensesAmount)}</strong> across {expenses.length} records.
+              </p>
             </div>
-            <button className="btn btn-primary btn-sm" onClick={() => setIsExpenseModalOpen(true)}>
-              <Plus size={14} /> Record Expense
+
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => setIsExpenseModalOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Plus size={15} /> Record Expense
             </button>
           </div>
 
@@ -791,13 +906,13 @@ export const CashPortal: React.FC = () => {
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Expense ID</th>
+                  <th>Date</th>
                   <th>Category</th>
                   <th>Description</th>
-                  <th>Amount</th>
                   <th>Paid To</th>
-                  <th>Method</th>
-                  <th>Date</th>
+                  <th>Payment Method</th>
+                  <th>Amount</th>
+                  <th>Recorded By</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -805,31 +920,44 @@ export const CashPortal: React.FC = () => {
                 {expenses.length === 0 ? (
                   <tr>
                     <td colSpan={8} style={{ textAlign: 'center', padding: '36px', color: '#94a3b8' }}>
-                      No operating expenses recorded yet.
+                      No expenses recorded yet.
                     </td>
                   </tr>
                 ) : (
                   expenses.slice((expensePage - 1) * expensePageSize, expensePage * expensePageSize).map(exp => (
                     <tr key={exp.id}>
-                      <td className="tabular-num" style={{ color: 'var(--gold-light)' }}>
-                        {exp.id}
+                      <td style={{ fontSize: '0.82rem' }}>{exp.date}</td>
+                      <td>
+                        <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>{exp.category}</span>
                       </td>
-                      <td style={{ fontWeight: 700 }}>{exp.category}</td>
-                      <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{exp.description}</td>
+                      <td style={{ fontSize: '0.82rem', color: '#ffffff', fontWeight: 600 }}>{exp.description}</td>
+                      <td style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{exp.paidTo}</td>
+                      <td>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{exp.paymentMethod}</span>
+                      </td>
                       <td className="tabular-num" style={{ fontWeight: 800, color: '#f87171' }}>
-                        {formatCurrency(exp.amount)}
+                        -{formatCurrency(exp.amount)}
                       </td>
-                      <td style={{ fontSize: '0.82rem' }}>{exp.paidTo}</td>
-                      <td style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{exp.paymentMethod}</td>
-                      <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{exp.date}</td>
+                      <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{exp.recordedBy}</td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: '5px' }}>
                           <button
                             type="button"
                             className="btn btn-secondary btn-sm"
                             style={{ padding: '3px 7px' }}
-                            onClick={() => handleOpenEditExpense(exp)}
                             title="Edit Expense"
+                            onClick={() => {
+                              setSelectedExpense(exp);
+                              setEditExpenseData({
+                                category: exp.category,
+                                amount: exp.amount,
+                                description: exp.description,
+                                paidTo: exp.paidTo,
+                                paymentMethod: exp.paymentMethod,
+                                date: exp.date,
+                              });
+                              setIsEditExpenseModalOpen(true);
+                            }}
                           >
                             <Edit3 size={12} />
                           </button>
@@ -837,11 +965,11 @@ export const CashPortal: React.FC = () => {
                             type="button"
                             className="btn btn-secondary btn-sm"
                             style={{ color: '#ef4444', padding: '3px 7px' }}
+                            title="Delete Expense"
                             onClick={() => {
                               setSelectedExpense(exp);
                               setIsDeleteExpenseModalOpen(true);
                             }}
-                            title="Delete Expense"
                           >
                             <Trash2 size={12} />
                           </button>
@@ -865,14 +993,14 @@ export const CashPortal: React.FC = () => {
         </div>
       )}
 
-      {/* ── MODALS ────────────────────────────────────────────── */}
+      {/* ── MODALS & DRAWERS ───────────────────────────────── */}
 
       {/* 1. RECORD CASH IN MODAL */}
       <Modal
         isOpen={isCashInModalOpen}
         onClose={() => setIsCashInModalOpen(false)}
-        title="Record Cash In (Deposit / Entry)"
-        subtitle="Money received into the cashier vault drawer"
+        title="Record Cash In (Deposit / Receipt)"
+        subtitle="Money received into the cashier vault drawer or online accounts"
         size="md"
       >
         <form onSubmit={handleCashInSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -884,10 +1012,11 @@ export const CashPortal: React.FC = () => {
               onChange={e => setCashInData({ ...cashInData, category: e.target.value as CashCategory })}
             >
               <option value="Tournament Buy-in">Tournament Entry Charge</option>
-              <option value="Cash Game Buy-in">Cash Game Entry Charge</option>
+              <option value="Cash Game Buy-in">Cash Game Buy-in</option>
               <option value="Chip Purchase">Chip Purchase</option>
-              <option value="Float Deposit">Vault Float Refill / Deposit</option>
-              <option value="Table Rake">Table Service Charge Collection</option>
+              <option value="Float Deposit">Vault Float Top-up / Opening Float</option>
+              <option value="Table Rake">Table Service Charge Deposit</option>
+              <option value="Membership Fee">Membership Fee</option>
             </select>
           </div>
 
@@ -928,31 +1057,36 @@ export const CashPortal: React.FC = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  +{amt >= 100000 ? `${amt / 100000}L` : amt >= 1000 ? `${amt / 1000}k` : amt}
+                  {amt >= 100000 ? `${amt / 100000}L` : amt >= 1000 ? `${amt / 1000}k` : amt}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Running Balance Preview Banner */}
-          <div
-            style={{
-              padding: '10px 14px',
-              borderRadius: '10px',
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: '0.8rem',
-            }}
-          >
-            <span style={{ color: '#cbd5e1' }}>Current Vault: <strong>{formatCurrency(currentCashBalance)}</strong></span>
-            <ArrowRight size={14} color="#34d399" />
-            <span style={{ color: '#34d399', fontWeight: 800 }}>
-              Projected: {formatCurrency(currentCashBalance + (Number(cashInData.amount) || 0))}
-            </span>
-          </div>
+          {/* Dynamic Running Balance Preview Banner */}
+          {(() => {
+            const chan = getChannelBalance(cashInData.paymentMethod);
+            return (
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.8rem',
+                }}
+              >
+                <span style={{ color: '#cbd5e1' }}>Current {chan.name}: <strong>{formatCurrency(chan.balance)}</strong></span>
+                <ArrowRight size={14} color="#34d399" />
+                <span style={{ color: '#34d399', fontWeight: 800 }}>
+                  Projected: {formatCurrency(chan.balance + (Number(cashInData.amount) || 0))}
+                </span>
+              </div>
+            );
+          })()}
 
           <div className="form-grid-2">
             <div className="form-group">
@@ -962,10 +1096,10 @@ export const CashPortal: React.FC = () => {
                 value={cashInData.paymentMethod}
                 onChange={e => setCashInData({ ...cashInData, paymentMethod: e.target.value as PaymentMethod })}
               >
-                <option value="Cash">Cash at Counter</option>
-                <option value="UPI/Digital">UPI / QR Payment</option>
-                <option value="Bank Transfer">Bank Wire Transfer</option>
-                <option value="Credit/Debit Card">POS Card Swiped</option>
+                <option value="Cash">💵 Physical Cash at Counter</option>
+                <option value="UPI/Digital">📱 UPI / QR Payment</option>
+                <option value="Bank Transfer">🏦 Direct Bank Wire Transfer</option>
+                <option value="Credit/Debit Card">💳 POS Card Swiped</option>
               </select>
             </div>
 
@@ -1021,7 +1155,7 @@ export const CashPortal: React.FC = () => {
         isOpen={isCashOutModalOpen}
         onClose={() => setIsCashOutModalOpen(false)}
         title="Record Cash Out (Payout / Withdrawal)"
-        subtitle="Money disbursed from the cashier vault drawer"
+        subtitle="Money disbursed from cashier vault or online channels"
         size="md"
       >
         <form onSubmit={handleCashOutSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -1082,25 +1216,30 @@ export const CashPortal: React.FC = () => {
             </div>
           </div>
 
-          {/* Running Balance Preview Banner */}
-          <div
-            style={{
-              padding: '10px 14px',
-              borderRadius: '10px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.25)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: '0.8rem',
-            }}
-          >
-            <span style={{ color: '#cbd5e1' }}>Current Vault: <strong>{formatCurrency(currentCashBalance)}</strong></span>
-            <ArrowRight size={14} color="#f87171" />
-            <span style={{ color: '#f87171', fontWeight: 800 }}>
-              Projected: {formatCurrency(currentCashBalance - (Number(cashOutData.amount) || 0))}
-            </span>
-          </div>
+          {/* Dynamic Running Balance Preview Banner */}
+          {(() => {
+            const chan = getChannelBalance(cashOutData.paymentMethod);
+            return (
+              <div
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.8rem',
+                }}
+              >
+                <span style={{ color: '#cbd5e1' }}>Current {chan.name}: <strong>{formatCurrency(chan.balance)}</strong></span>
+                <ArrowRight size={14} color="#f87171" />
+                <span style={{ color: '#f87171', fontWeight: 800 }}>
+                  Projected: {formatCurrency(chan.balance - (Number(cashOutData.amount) || 0))}
+                </span>
+              </div>
+            );
+          })()}
 
           <div className="form-grid-2">
             <div className="form-group">
@@ -1110,9 +1249,10 @@ export const CashPortal: React.FC = () => {
                 value={cashOutData.paymentMethod}
                 onChange={e => setCashOutData({ ...cashOutData, paymentMethod: e.target.value as PaymentMethod })}
               >
-                <option value="Cash">Cash Handed Over</option>
-                <option value="UPI/Digital">Instant UPI Transfer</option>
-                <option value="Bank Transfer">NEFT / RTGS Bank Wire</option>
+                <option value="Cash">💵 Physical Cash Handed Over</option>
+                <option value="UPI/Digital">📱 Instant UPI Transfer</option>
+                <option value="Bank Transfer">🏦 NEFT / RTGS Bank Wire</option>
+                <option value="Credit/Debit Card">💳 POS Card Reversal</option>
               </select>
             </div>
 
