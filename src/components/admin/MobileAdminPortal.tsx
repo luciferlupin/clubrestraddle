@@ -49,6 +49,7 @@ export const MobileAdminPortal: React.FC = () => {
     reviewKYC,
     updatePlayer,
     deletePlayer,
+    deleteTournamentEntry,
     addExpense,
     fulfillChipRequest,
     cancelChipRequest,
@@ -1194,11 +1195,57 @@ export const MobileAdminPortal: React.FC = () => {
                   </div>
                   <div>
                     <span style={{ color: '#94a3b8' }}>Enrolled:</span>
-                    <div style={{ fontWeight: 700, color: '#34d399' }}>
+                    <div style={{ fontWeight: 700, color: trnEntries.length > 0 ? '#34d399' : '#64748b' }}>
                       {trnEntries.length} Players
                     </div>
                   </div>
                 </div>
+
+                {trnEntries.length > 0 && (
+                  <div style={{ background: 'rgba(0, 0, 0, 0.4)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8' }}>
+                      ENROLLED PLAYERS ({trnEntries.length})
+                    </div>
+                    {trnEntries.map(e => (
+                      <div
+                        key={e.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '4px 8px',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          gap: '6px',
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontWeight: 700, color: '#ffffff' }}>{e.playerName}</span>
+                          <span style={{ color: '#64748b', marginLeft: '6px', fontSize: '0.7rem' }}>({e.paymentMethod})</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 800, color: '#34d399', fontSize: '0.78rem' }}>
+                            {formatCurrency(e.buyInAmount + e.rakeAmount)}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                            style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'inline-flex', alignItems: 'center', gap: '2px' }}
+                            title="Remove player registration & void ledger"
+                            onClick={() => {
+                              if (window.confirm(`Remove ${e.playerName} from ${trn.name}? This will void the cashier billing entry immediately.`)) {
+                                deleteTournamentEntry(e.id);
+                              }
+                            }}
+                          >
+                            <Trash2 size={10} /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#64748b', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '6px' }}>
                   <Calendar size={12} />

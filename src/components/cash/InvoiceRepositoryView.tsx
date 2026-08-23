@@ -60,8 +60,8 @@ export const InvoiceRepositoryView: React.FC = () => {
   const allInvoices = useMemo<AggregatedInvoiceRecord[]>(() => {
     const list: AggregatedInvoiceRecord[] = [];
 
-    // 1. ₹500 Door Entry Invoices from Check-Ins
-    checkIns.forEach(chk => {
+    // 1. ₹500 Door Entry Invoices from Check-Ins (ONLY SECURITY APPROVED)
+    checkIns.filter(chk => chk.verificationStatus === 'approved').forEach(chk => {
       const player = players.find(p => p.id === chk.playerId) || {
         id: chk.playerId,
         fullName: chk.playerName,

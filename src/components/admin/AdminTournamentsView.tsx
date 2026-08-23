@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { Trophy, DollarSign, Award, Plus, Edit3, Trash2, AlertTriangle } from 'lucide-react';
+import { Trophy, DollarSign, Award, Plus, Edit3, Trash2, AlertTriangle, Users } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { Tournament, TournamentStatus } from '../../types';
+import { Tournament, TournamentStatus, TournamentEntry } from '../../types';
 import { formatClubLabel, formatCurrency, formatDateTime } from '../../utils/formatters';
 import { TournamentStatusBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 
 export const AdminTournamentsView: React.FC = () => {
-  const { tournaments, entries, createTournament, updateTournament, deleteTournament, updateTournamentStatus } = useClub();
+  const { tournaments, entries, createTournament, updateTournament, deleteTournament, updateTournamentStatus, deleteTournamentEntry } = useClub();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [viewingEntriesTournament, setViewingEntriesTournament] = useState<Tournament | null>(null);
+  const [entryToDelete, setEntryToDelete] = useState<TournamentEntry | null>(null);
 
   const [formData, setFormData] = useState(() => ({
     name: '',
@@ -205,9 +207,25 @@ export const AdminTournamentsView: React.FC = () => {
                       {formatCurrency(trn.guaranteedPrizePool)}
                     </td>
                     <td>
-                      <span className="badge badge-default">
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{
+                          padding: '3px 8px',
+                          fontSize: '0.75rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          background: trnEntries.length > 0 ? 'rgba(52, 211, 153, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+                          color: trnEntries.length > 0 ? '#34d399' : 'var(--text-muted)',
+                          borderColor: trnEntries.length > 0 ? 'rgba(52, 211, 153, 0.3)' : 'var(--border-subtle)',
+                        }}
+                        onClick={() => setViewingEntriesTournament(trn)}
+                        title="View enrolled players & manage entries"
+                      >
+                        <Users size={12} />
                         {trnEntries.length} Players
-                      </span>
+                      </button>
                     </td>
                     <td style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
                       {formatDateTime(trn.startTime)}
@@ -515,6 +533,136 @@ export const AdminTournamentsView: React.FC = () => {
               </button>
               <button className="btn btn-danger" style={{ flex: 1 }} onClick={handleDelete}>
                 Delete Tournament
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Enrolled Players Modal */}
+      {viewingEntriesTournament && (
+        <Modal
+          isOpen={!!viewingEntriesTournament}
+          onClose={() => setViewingEntriesTournament(null)}
+          title={`Enrolled Players (${entries.filter(e => e.tournamentId === viewingEntriesTournament.id).length})`}
+          subtitle={`Event: ${viewingEntriesTournament.name} • ${formatCurrency(viewingEntriesTournament.buyInFee + viewingEntriesTournament.clubRake)}`}
+          size="lg"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {entries.filter(e => e.tournamentId === viewingEntriesTournament.id).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                No players currently registered for this event.
+              </div>
+            ) : (
+              <div className="table-container">
+                <table className="custom-table">
+                  <thead>
+                    <tr>
+                      <th>Player Name</th>
+                      <th>Receipt #</th>
+                      <th>Seat / Table</th>
+                      <th>Amount Paid</th>
+                      <th>Payment Mode</th>
+                      <th>Registered At</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entries
+                      .filter(e => e.tournamentId === viewingEntriesTournament.id)
+                      .map(entry => (
+                        <tr key={entry.id}>
+                          <td style={{ fontWeight: 700, color: '#ffffff' }}>
+                            {entry.playerName}
+                          </td>
+                          <td className="tabular-num" style={{ color: 'var(--gold-light)', fontSize: '0.8rem' }}>
+                            {entry.receiptNumber || entry.id}
+                          </td>
+                          <td style={{ fontSize: '0.8rem' }}>
+                            {entry.seatNumber ? `Table ${entry.tableNumber || 1} • Seat ${entry.seatNumber}` : 'Assigned'}
+                          </td>
+                          <td className="tabular-num" style={{ fontWeight: 700, color: '#34d399' }}>
+                            {formatCurrency(entry.buyInAmount + entry.rakeAmount)}
+                          </td>
+                          <td>
+                            <span className="badge badge-default" style={{ fontSize: '0.72rem' }}>
+                              {entry.paymentMethod}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                            {formatDateTime(entry.registeredAt)}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-sm"
+                              style={{ padding: '3px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              title="Delete/Void Player Entry"
+                              onClick={() => setEntryToDelete(entry)}
+                            >
+                              <Trash2 size={12} /> Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setViewingEntriesTournament(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete / Void Entry Confirmation Modal */}
+      {entryToDelete && (
+        <Modal
+          isOpen={!!entryToDelete}
+          onClose={() => setEntryToDelete(null)}
+          title="Remove Player Entry"
+          subtitle={`Receipt: ${entryToDelete.receiptNumber || entryToDelete.id}`}
+          size="sm"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: '10px', padding: '12px' }}>
+              <div style={{ fontWeight: 800, color: '#ffffff' }}>{entryToDelete.playerName}</div>
+              <div style={{ fontSize: '0.82rem', color: '#fda4af' }}>{entryToDelete.tournamentName}</div>
+              <div style={{ fontWeight: 800, color: '#f43f5e', fontSize: '1.1rem', marginTop: '4px' }}>
+                {formatCurrency(entryToDelete.buyInAmount + entryToDelete.rakeAmount)} • {entryToDelete.paymentMethod}
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+              Are you sure you want to remove this player entry? This will permanently delete the registration and void the associated cashier billing transaction across all terminals.
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => setEntryToDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  deleteTournamentEntry(entryToDelete.id);
+                  setEntryToDelete(null);
+                }}
+              >
+                <Trash2 size={14} /> Confirm Remove
               </button>
             </div>
           </div>

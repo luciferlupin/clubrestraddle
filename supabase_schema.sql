@@ -67,6 +67,10 @@ CREATE TABLE players (
     photo_url TEXT,
     agreed_to_rules BOOLEAN DEFAULT TRUE,
     
+    -- Phone Verification (Twilio SMS Auth via Supabase)
+    phone_verified BOOLEAN DEFAULT FALSE,
+    phone_verified_at TIMESTAMPTZ,
+    
     -- Verification & Visit Records
     verified_at TIMESTAMPTZ,
     verified_by VARCHAR(120),
@@ -78,8 +82,13 @@ CREATE TABLE players (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Migration snippet for existing databases:
+-- ALTER TABLE players ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT FALSE;
+-- ALTER TABLE players ADD COLUMN IF NOT EXISTS phone_verified_at TIMESTAMPTZ;
+
 CREATE INDEX idx_players_member_number ON players(member_number);
 CREATE INDEX idx_players_phone ON players(phone);
+CREATE INDEX idx_players_phone_verified ON players(phone_verified);
 CREATE INDEX idx_players_email ON players(email);
 CREATE INDEX idx_players_kyc_status ON players(kyc_status);
 CREATE INDEX idx_players_tier ON players(membership_tier);

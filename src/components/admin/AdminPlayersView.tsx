@@ -289,7 +289,18 @@ export const AdminPlayersView: React.FC = () => {
                 <div className="form-grid-2" style={{ rowGap: '10px' }}>
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Phone</span>
-                    <div style={{ fontWeight: 600 }}>{selectedPlayer.phone}</div>
+                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>{selectedPlayer.phone}</span>
+                      {selectedPlayer.phoneVerified || selectedPlayer.kyc.phoneVerified ? (
+                        <span style={{ fontSize: '0.68rem', background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.4)', borderRadius: '4px', padding: '1px 5px', fontWeight: 700 }}>
+                          ✓ SMS Verified
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.68rem', background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '4px', padding: '1px 5px', fontWeight: 600 }}>
+                          Unverified
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Member ID</span>

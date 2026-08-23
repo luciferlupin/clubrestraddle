@@ -18,6 +18,8 @@ import {
   DollarSign,
   Eye,
   Calendar,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentStatus, PaymentMethod, CashCategory, ExpenseCategory, TournamentEntry, CashTransaction, Expense } from '../../types';
@@ -43,6 +45,9 @@ export const MobileCashierPortal: React.FC = () => {
     cancelChipRequest,
     createTournament,
     registerPlayerForTournament,
+    deleteTournamentEntry,
+    deleteCashTransaction,
+    deleteExpense,
     addCashReceived,
     addCashGiven,
     addExpense,
@@ -77,6 +82,7 @@ export const MobileCashierPortal: React.FC = () => {
   const [isCreateTrnOpen, setIsCreateTrnOpen] = useState(false);
   const [isExpenseOpen, setIsExpenseOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<ClubInvoiceData | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
 
   // Forms
   const [trnFormData, setTrnFormData] = useState({
@@ -748,9 +754,68 @@ export const MobileCashierPortal: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Players Enrolled:</span>
-                    <span style={{ fontWeight: 700, color: '#6ee7b7' }}>{trnEntries.length} Players</span>
+                    <span style={{ fontWeight: 700, color: trnEntries.length > 0 ? '#6ee7b7' : 'var(--text-muted)' }}>
+                      {trnEntries.length} Players
+                    </span>
                   </div>
                 </div>
+
+                {trnEntries.length > 0 && (
+                  <div style={{ background: 'rgba(0, 0, 0, 0.35)', borderRadius: '10px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>ENROLLED PLAYERS ({trnEntries.length})</span>
+                      <span style={{ fontSize: '0.68rem', color: '#34d399' }}>Live Registered</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {trnEntries.map(e => (
+                        <div
+                          key={e.id}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            borderRadius: '8px',
+                            padding: '8px 10px',
+                            gap: '8px',
+                          }}
+                        >
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {e.playerName}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                              Receipt #{e.receiptNumber || e.id} · {e.paymentMethod}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#34d399' }}>
+                              {formatCurrency(e.buyInAmount + e.rakeAmount)}
+                            </span>
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-sm"
+                              style={{ padding: '4px 7px', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                              title="Void / Remove Player Entry"
+                              onClick={() => setItemToDelete({
+                                id: e.id,
+                                sourceType: 'tournament_entry',
+                                title: `Tournament Entry: ${e.tournamentName}`,
+                                description: `Player: ${e.playerName} · Receipt #${e.receiptNumber || e.id}`,
+                                amount: e.buyInAmount + e.rakeAmount,
+                                paymentMethod: e.paymentMethod,
+                                entryObj: e,
+                              })}
+                            >
+                              <Trash2 size={11} /> Void
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <button
                   className="m-btn m-btn-emerald m-btn-sm"
@@ -1192,6 +1257,15 @@ export const MobileCashierPortal: React.FC = () => {
                         <Eye size={12} /> View Bill
                       </button>
                     )}
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      style={{ padding: '3px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      onClick={() => setItemToDelete(item)}
+                      title="Void or delete transaction"
+                    >
+                      <Trash2 size={12} /> Void / Delete
+                    </button>
                   </div>
                 </div>
               ))
@@ -1525,6 +1599,51 @@ export const MobileCashierPortal: React.FC = () => {
         isOpen={!!selectedInvoice}
         onClose={() => setSelectedInvoice(null)}
       />
+
+      {/* Void / Delete Confirmation Drawer */}
+      <MobileBottomDrawer
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        title="Void / Delete Transaction"
+        subtitle="Remove this record and reconcile shift balances"
+      >
+        {itemToDelete && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: '12px', padding: '14px' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#ffffff' }}>{itemToDelete.title}</div>
+              <div style={{ fontSize: '0.8rem', color: '#fda4af', marginTop: '2px' }}>{itemToDelete.description}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f43f5e', marginTop: '8px', fontFamily: 'var(--font-number)' }}>
+                {formatCurrency(itemToDelete.amount)} • {itemToDelete.paymentMethod}
+              </div>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.45 }}>
+              Are you sure you want to void and permanently delete this entry? This will update shift cash balances and audit logs across all terminals immediately.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+              <button type="button" className="m-btn m-btn-secondary" style={{ flex: 1 }} onClick={() => setItemToDelete(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="m-btn m-btn-primary"
+                style={{ flex: 1, background: '#e11d48', borderColor: '#f43f5e' }}
+                onClick={() => {
+                  if (itemToDelete.sourceType === 'tournament_entry' || itemToDelete.entryObj) {
+                    deleteTournamentEntry(itemToDelete.entryObj?.id || itemToDelete.id);
+                  } else if (itemToDelete.sourceType === 'expense' || itemToDelete.expenseObj) {
+                    deleteExpense(itemToDelete.expenseObj?.id || itemToDelete.id);
+                  } else {
+                    deleteCashTransaction(itemToDelete.cashTxnObj?.id || itemToDelete.id);
+                  }
+                  setItemToDelete(null);
+                }}
+              >
+                <Trash2 size={16} /> Confirm Void
+              </button>
+            </div>
+          </div>
+        )}
+      </MobileBottomDrawer>
 
       {/* Bottom Navigation Bar */}
       <nav className="mobile-bottom-nav" aria-label="Cashier portal sections">

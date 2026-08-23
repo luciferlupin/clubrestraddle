@@ -6301,3 +6301,325 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
     border: none !important;
   }
 }
+
+/* =============================================================
+   PHONE VERIFICATION MODAL & TWILIO / SUPABASE OTP STYLES
+   ============================================================= */
+.phone-verify-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 2, 3, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: overlayFadeIn 0.2s ease-out;
+}
+
+.phone-verify-modal {
+  background: linear-gradient(165deg, #16060c 0%, #0d0306 100%);
+  border: 1.5px solid rgba(225, 29, 72, 0.45);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(225, 29, 72, 0.25);
+  overflow: hidden;
+  position: relative;
+  animation: fadeSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.phone-verify-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 0;
+}
+
+.phone-verify-badge {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(225, 29, 72, 0.3) 0%, rgba(190, 18, 60, 0.15) 100%);
+  border: 1.5px solid rgba(244, 63, 94, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(225, 29, 72, 0.35);
+  transition: all 0.25s ease;
+}
+
+.phone-verify-badge.whatsapp-badge {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(21, 128, 61, 0.15) 100%);
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.35);
+}
+
+.phone-verify-badge-icon {
+  color: #f43f5e;
+}
+
+.phone-verify-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.phone-verify-close-btn:hover {
+  background: rgba(225, 29, 72, 0.2);
+  color: #ffffff;
+  border-color: rgba(225, 29, 72, 0.5);
+}
+
+.phone-verify-body {
+  padding: 16px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+.phone-verify-body h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.phone-verify-subtitle {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.phone-verify-target {
+  color: #f43f5e;
+  font-weight: 700;
+  font-family: var(--font-number);
+}
+
+.phone-verify-provider-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(225, 29, 72, 0.12);
+  border: 1px solid rgba(225, 29, 72, 0.35);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #fda4af;
+  align-self: flex-start;
+}
+
+.phone-verify-demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  color: #fde68a;
+  gap: 8px;
+}
+
+.demo-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.demo-fill-btn {
+  background: rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.demo-fill-btn:hover {
+  background: rgba(245, 158, 11, 0.5);
+}
+
+.phone-verify-inputs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.phone-otp-box {
+  flex: 1;
+  height: 52px;
+  min-width: 0;
+  background: #0d0306;
+  border: 1.5px solid rgba(225, 29, 72, 0.4);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-family: var(--font-number);
+  text-align: center;
+  outline: none;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.phone-otp-box:focus {
+  border-color: #f43f5e;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.35), inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  background: #14050a;
+}
+
+.phone-otp-box.filled {
+  border-color: rgba(244, 63, 94, 0.8);
+  background: rgba(225, 29, 72, 0.12);
+}
+
+.phone-otp-box.has-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+.phone-verify-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #fca5a5;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.phone-verify-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #6ee7b7;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.phone-verify-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.phone-verify-submit-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 750;
+  padding: 12px 18px;
+  border-radius: 12px;
+}
+
+.phone-verify-resend-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+.resend-countdown {
+  color: #cbd5e1;
+  font-weight: 700;
+  font-family: var(--font-number);
+}
+
+.resend-active-btn {
+  background: none;
+  border: none;
+  color: #f43f5e;
+  font-weight: 700;
+  font-size: 0.78rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.resend-active-btn:hover {
+  color: #fb7185;
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Verified phone tag in forms */
+.phone-verified-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #34d399;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 9999px;
+  margin-left: 6px;
+}
+
+.phone-verify-action-btn {
+  background: rgba(225, 29, 72, 0.2);
+  border: 1px solid rgba(225, 29, 72, 0.5);
+  color: #fda4af;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.phone-verify-action-btn:hover {
+  background: rgba(225, 29, 72, 0.35);
+  color: #ffffff;
+  border-color: #f43f5e;
+}
+

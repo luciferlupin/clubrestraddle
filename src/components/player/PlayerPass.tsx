@@ -185,11 +185,15 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
           </div>
 
           <p style={{ fontSize: '0.78rem', color: '#cbd5e1', margin: 0 }}>
-            The security officer will scan this QR to verify Aadhaar & PAN credentials and grant door entrance.
+            {todayCheckIn?.verificationStatus === 'approved'
+              ? 'Your entrance pass is verified and ₹500 entry fee invoice is active.'
+              : todayCheckIn?.verificationStatus === 'rejected'
+              ? 'Access was denied by door security. No gate billing entry or invoice has been generated.'
+              : 'The security officer will scan this QR to verify Aadhaar & PAN credentials and grant door entrance.'}
           </p>
 
           <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-            {todayCheckIn && (
+            {todayCheckIn?.verificationStatus === 'approved' && (
               <button
                 type="button"
                 className="btn btn-secondary"

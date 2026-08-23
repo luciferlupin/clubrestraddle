@@ -125,7 +125,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
               </span>
             </button>
 
-            {todayCheckIn && (
+            {todayCheckIn?.verificationStatus === 'approved' ? (
               <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(225, 29, 72, 0.1)', border: '1px solid rgba(225, 29, 72, 0.3)', borderRadius: '10px', padding: '8px 12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#ffffff' }}>
                   <FileText size={14} color="#e11d48" />
@@ -151,7 +151,15 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
                   <Eye size={12} /> View Bill
                 </button>
               </div>
-            )}
+            ) : todayCheckIn?.verificationStatus === 'rejected' ? (
+              <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', padding: '8px 12px', fontSize: '0.76rem', color: '#fca5a5' }}>
+                <span>✕ Entry Denied by Security • No entrance bill issued</span>
+              </div>
+            ) : todayCheckIn ? (
+              <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '10px', padding: '8px 12px', fontSize: '0.76rem', color: '#fcd34d' }}>
+                <span>⏳ Awaiting Security Approval • Bill will generate upon door clearance</span>
+              </div>
+            ) : null}
           </>
         ) : (
           <div className="player-checkin-form">
@@ -164,8 +172,8 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
         {todayCheckIn && <div className="player-status-meta"><EntryBadge status={todayCheckIn.verificationStatus} /></div>}
       </section>
 
-      {/* Entry Fee Invoice Modal */}
-      {todayCheckIn && (
+      {/* Entry Fee Invoice Modal (Only if approved) */}
+      {todayCheckIn?.verificationStatus === 'approved' && (
         <ClubTaxInvoiceModal
           isOpen={isInvoiceOpen}
           onClose={() => setIsInvoiceOpen(false)}

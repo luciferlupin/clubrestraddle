@@ -80,6 +80,8 @@ export interface PlayerKYC {
   photoUrl: string;
   agreedToRules: boolean;
   submittedAt: string;
+  phoneVerified?: boolean;
+  phoneVerifiedAt?: string;
   verifiedAt?: string;
   verifiedBy?: string;
   rejectionReason?: string;
@@ -93,6 +95,8 @@ export interface Player {
   email: string;
   membershipTier: MembershipTier;
   kycStatus: KYCStatus;
+  phoneVerified?: boolean;
+  phoneVerifiedAt?: string;
   kyc: PlayerKYC;
   registeredAt: string;
   totalVisits: number;

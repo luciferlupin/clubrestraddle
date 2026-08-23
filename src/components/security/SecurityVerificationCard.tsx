@@ -526,7 +526,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {checkIn && (
+          {checkIn?.verificationStatus === 'approved' && (
             <button
               type="button"
               className="btn btn-secondary btn-sm"

@@ -49,8 +49,8 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
   const ledgerItems = useMemo<LedgerItem[]>(() => {
     const items: LedgerItem[] = [];
 
-    // 1. Entry Fees from Check-Ins (₹500 per visit)
-    const playerCheckIns = checkIns.filter(c => c.playerId === player.id);
+    // 1. Entry Fees from Check-Ins (₹500 per visit, ONLY SECURITY APPROVED)
+    const playerCheckIns = checkIns.filter(c => c.playerId === player.id && c.verificationStatus === 'approved');
     playerCheckIns.forEach(c => {
       const checkInDateTime = c.checkInDate && c.checkInTime ? `${c.checkInDate}T${c.checkInTime}` : player.registeredAt;
       const inv = generateEntryFeeInvoice(player, c, staffName);

@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { DollarSign, ArrowDownLeft, ArrowUpRight, Wallet, Search, Filter, Smartphone, Landmark, CreditCard } from 'lucide-react';
+import { DollarSign, ArrowDownLeft, ArrowUpRight, Wallet, Search, Filter, Smartphone, Landmark, CreditCard, Trash2, AlertTriangle } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { CashFlowBadge } from '../common/Badge';
-import { PaymentMethod } from '../../types';
+import { PaymentMethod, CashTransaction } from '../../types';
+import { Modal } from '../common/Modal';
 
 export const AdminCashView: React.FC = () => {
   const {
     cashTransactions,
+    deleteCashTransaction,
     physicalCashBalance,
     upiBalance,
     bankBalance,
@@ -29,6 +31,7 @@ export const AdminCashView: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'in' | 'out'>('all');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState<'all' | PaymentMethod>('all');
+  const [txnToDelete, setTxnToDelete] = useState<CashTransaction | null>(null);
 
   const filteredTransactions = cashTransactions.filter(t => {
     const matchesSearch =
@@ -205,12 +208,13 @@ export const AdminCashView: React.FC = () => {
                 <th>Cashier</th>
                 <th>Balance After</th>
                 <th>Timestamp</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                  <td colSpan={11} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
                     No cash transactions found.
                   </td>
                 </tr>
@@ -264,6 +268,17 @@ export const AdminCashView: React.FC = () => {
                     <td style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
                       {formatDateTime(txn.timestamp)}
                     </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm"
+                        style={{ padding: '3px 7px' }}
+                        title="Void / Delete Transaction"
+                        onClick={() => setTxnToDelete(txn)}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -271,6 +286,56 @@ export const AdminCashView: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Delete / Void Transaction Confirmation Modal */}
+      {txnToDelete && (
+        <Modal
+          isOpen={!!txnToDelete}
+          onClose={() => setTxnToDelete(null)}
+          title="Void Cash Transaction"
+          subtitle={`Transaction ID: ${txnToDelete.id}`}
+          size="sm"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: '10px', padding: '12px' }}>
+              <AlertTriangle size={24} color="#f43f5e" />
+              <div>
+                <div style={{ fontWeight: 800, color: '#ffffff' }}>{txnToDelete.category} ({txnToDelete.paymentMethod})</div>
+                <div style={{ fontSize: '0.82rem', color: '#fda4af' }}>{txnToDelete.description}</div>
+                <div style={{ fontWeight: 800, color: '#f43f5e', fontSize: '1.1rem', marginTop: '4px' }}>
+                  {txnToDelete.type === 'in' ? '+' : '-'}{formatCurrency(txnToDelete.amount)}
+                </div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+              Are you sure you want to void and delete this transaction? If this transaction is linked to a tournament entry or bill receipt, both records will be removed and shift balances reconciled.
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ flex: 1 }}
+                onClick={() => setTxnToDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  deleteCashTransaction(txnToDelete.id);
+                  setTxnToDelete(null);
+                }}
+              >
+                <Trash2 size={14} /> Confirm Void
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

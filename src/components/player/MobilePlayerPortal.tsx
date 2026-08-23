@@ -8,6 +8,8 @@ import {
   History,
   Phone,
   QrCode,
+  ShieldCheck,
+  Smartphone,
   User,
   UserPlus,
 } from 'lucide-react';
@@ -15,6 +17,7 @@ import confetti from 'canvas-confetti';
 import { useClub } from '../../context/ClubContext';
 import { DailyCheckIn, Player } from '../../types';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
+import { PhoneVerificationModal } from '../common/PhoneVerificationModal';
 import { MobileKYCForm } from './MobileKYCForm';
 import { MobilePlayerHome } from './MobilePlayerHome';
 import { MobilePlayerProfile } from './MobilePlayerProfile';
@@ -50,6 +53,8 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
+  const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
   const [isPassOpen, setIsPassOpen] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [registrationSuccessData, setRegistrationSuccessData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
@@ -77,12 +82,20 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
     setIsLookingUp(false);
 
     if (matched) {
-      setSelectedPlayerId(matched.id);
+      setPendingPlayer(matched);
+      setIsVerifyModalOpen(true);
+    } else {
+      setLookupError('We could not find a pass for that number. Check the digits or create a new member pass.');
+    }
+  };
+
+  const handleOtpVerified = () => {
+    if (pendingPlayer) {
+      setSelectedPlayerId(pendingPlayer.id);
       setActiveTab('home');
       setEntryView('choice');
       setLookupPhone('');
-    } else {
-      setLookupError('We could not find a pass for that number. Check the digits or create a new member pass.');
+      setPendingPlayer(null);
     }
   };
 
@@ -299,6 +312,22 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
           </button>
         </nav>
       )}
+
+      <PhoneVerificationModal
+        isOpen={isVerifyModalOpen}
+        phone={lookupPhone}
+        title="Verify Pass Access"
+        subtitle={
+          pendingPlayer
+            ? `We sent a 6-digit SMS verification code to open the member pass for ${pendingPlayer.fullName}.`
+            : undefined
+        }
+        onClose={() => {
+          setIsVerifyModalOpen(false);
+          setPendingPlayer(null);
+        }}
+        onSuccess={handleOtpVerified}
+      />
 
     </div>
   );

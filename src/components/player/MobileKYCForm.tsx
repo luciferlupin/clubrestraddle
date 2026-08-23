@@ -4,13 +4,16 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
+  CheckCircle2,
   ShieldCheck,
+  Smartphone,
   UserRound,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import confetti from 'canvas-confetti';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
+import { PhoneVerificationModal } from '../common/PhoneVerificationModal';
 import { CARTOON_AVATARS } from '../../utils/cartoonAvatars';
 
 interface MobileKYCFormProps {
@@ -48,6 +51,9 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState('');
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
 
   const sampleAvatars = CARTOON_AVATARS.map(avatar => avatar.url);
 
@@ -121,12 +127,15 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     setTimeout(() => {
       const cleanPan = formData.panNumber.trim().toUpperCase();
       const cleanAadhaar = formData.aadhaarNumber.trim();
+      const phoneIsVerified = isPhoneVerified && verifiedPhoneNumber === formData.phone;
 
       const result = registerNewPlayer(
         {
           fullName: formData.fullName,
           phone: formData.phone,
           email: formData.email,
+          phoneVerified: phoneIsVerified,
+          phoneVerifiedAt: phoneIsVerified ? new Date().toISOString() : undefined,
           aadhaarNumber: cleanAadhaar,
           panNumber: cleanPan,
           aadhaarPhotoUrl: formData.aadhaarPhotoUrl || undefined,
@@ -218,7 +227,24 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
             </div>
 
             <div className="m-form-group">
-              <label className="m-form-label" htmlFor="mobile-phone">Mobile number</label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <label className="m-form-label" htmlFor="mobile-phone" style={{ marginBottom: 0 }}>
+                  Mobile number
+                </label>
+                {isPhoneVerified && verifiedPhoneNumber === formData.phone ? (
+                  <span className="phone-verified-pill">
+                    <CheckCircle2 size={13} /> SMS Verified
+                  </span>
+                ) : formData.phone.replace(/\D/g, '').length >= 10 ? (
+                  <button
+                    type="button"
+                    className="phone-verify-action-btn"
+                    onClick={() => setIsVerifyModalOpen(true)}
+                  >
+                    <Smartphone size={13} /> Verify via SMS
+                  </button>
+                ) : null}
+              </div>
               <div className="mobile-phone-field">
                 <span aria-hidden="true">+91</span>
                 <input
@@ -231,7 +257,13 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
                   value={formData.phone}
                   aria-invalid={Boolean(errors.phone)}
                   aria-describedby={errors.phone ? 'mobile-phone-error' : undefined}
-                  onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+                  onChange={(event) => {
+                    const nextPhone = event.target.value;
+                    setFormData({ ...formData, phone: nextPhone });
+                    if (isPhoneVerified && nextPhone !== verifiedPhoneNumber) {
+                      setIsPhoneVerified(false);
+                    }
+                  }}
                 />
               </div>
               {errors.phone && <span id="mobile-phone-error" className="m-field-error" role="alert">{errors.phone}</span>}
@@ -409,6 +441,15 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
         </div>
       </form>
 
+      <PhoneVerificationModal
+        isOpen={isVerifyModalOpen}
+        phone={formData.phone}
+        onClose={() => setIsVerifyModalOpen(false)}
+        onSuccess={(verifiedNumber) => {
+          setIsPhoneVerified(true);
+          setVerifiedPhoneNumber(formData.phone);
+        }}
+      />
     </section>
   );
 };

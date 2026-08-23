@@ -85,6 +85,8 @@ const playerToDatabaseRow = (player: Player) => ({
   verified_at: player.kyc.verifiedAt || null,
   verified_by: player.kyc.verifiedBy || null,
   rejection_reason: player.kyc.rejectionReason || null,
+  phone_verified: player.phoneVerified || player.kyc.phoneVerified || false,
+  phone_verified_at: player.phoneVerifiedAt || player.kyc.phoneVerifiedAt || null,
   total_visits: player.totalVisits,
   notes: player.notes || null,
   created_at: player.registeredAt,
@@ -623,6 +625,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               email: p.email || '',
               membershipTier: p.membership_tier || 'Standard',
               kycStatus: p.kyc_status || 'pending',
+              phoneVerified: Boolean(p.phone_verified),
+              phoneVerifiedAt: p.phone_verified_at || undefined,
               registeredAt: p.created_at || new Date().toISOString(),
               totalVisits: p.total_visits || 1,
               notes: p.notes,
@@ -630,6 +634,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 fullName: p.full_name || 'Member Player',
                 phone: p.phone || '',
                 email: p.email || '',
+                phoneVerified: Boolean(p.phone_verified),
+                phoneVerifiedAt: p.phone_verified_at || undefined,
                 dateOfBirth: p.date_of_birth || '1995-01-01',
                 aadhaarNumber: p.aadhaar_number || aadhaarParsed,
                 panNumber: p.pan_number || panParsed,
@@ -1084,7 +1090,14 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               return [updatedEntry, ...prev];
             });
           } else if (payload.eventType === 'DELETE' && payload.old?.id) {
-            setEntries(prev => prev.filter(e => e.id !== payload.old.id));
+            const deletedId = payload.old.id;
+            setEntries(prev => {
+              const toDelete = prev.find(e => e.id === deletedId);
+              if (toDelete?.receiptNumber) {
+                setCashTransactions(currTxns => currTxns.filter(t => t.referenceId !== toDelete.receiptNumber && t.referenceId !== toDelete.id));
+              }
+              return prev.filter(e => e.id !== deletedId);
+            });
           }
         }
       )
@@ -1113,7 +1126,14 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               return [updatedCash, ...prev];
             });
           } else if (payload.eventType === 'DELETE' && payload.old?.id) {
-            setCashTransactions(prev => prev.filter(t => t.id !== payload.old.id));
+            const deletedId = payload.old.id;
+            setCashTransactions(prev => {
+              const toDelete = prev.find(t => t.id === deletedId);
+              if (toDelete?.referenceId) {
+                setEntries(currEntries => currEntries.filter(e => e.receiptNumber !== toDelete.referenceId && e.id !== toDelete.referenceId));
+              }
+              return prev.filter(t => t.id !== deletedId);
+            });
           }
         }
       )
@@ -1780,6 +1800,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       address: (kycData.address || 'Delhi NCR, India').trim(),
       emergencyContactName: (kycData.emergencyContactName || '').trim(),
       emergencyContactPhone: (kycData.emergencyContactPhone || '').trim(),
+      phoneVerified: kycData.phoneVerified ?? false,
+      phoneVerifiedAt: kycData.phoneVerifiedAt,
       photoUrl: kycData.photoUrl?.startsWith('data:image/svg')
         ? kycData.photoUrl
         : cartoonAvatarForPlayer(newId),
@@ -1795,6 +1817,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       email: completeKYC.email,
       membershipTier: 'Standard',
       kycStatus: 'pending',
+      phoneVerified: completeKYC.phoneVerified,
+      phoneVerifiedAt: completeKYC.phoneVerifiedAt,
       kyc: completeKYC,
       registeredAt: nowIso,
       totalVisits: 1,
@@ -1826,6 +1850,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           email: newPlayer.email,
           membership_tier: newPlayer.membershipTier,
           kyc_status: newPlayer.kycStatus,
+          phone_verified: newPlayer.phoneVerified || false,
+          phone_verified_at: newPlayer.phoneVerifiedAt || null,
           date_of_birth: completeKYC.dateOfBirth,
           govt_id_type: completeKYC.govtIdType === 'Aadhaar & PAN Card' ? 'Aadhaar Card' : (completeKYC.govtIdType || 'Aadhaar Card'),
           govt_id_number: completeKYC.govtIdNumber,
@@ -2423,24 +2449,42 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deletePlayer = (playerId: string) => {
     const p = players.find(x => x.id === playerId);
+    const playerEntries = entries.filter(entry => entry.playerId === playerId);
+    const receiptNums = new Set(playerEntries.map(e => e.receiptNumber).filter(Boolean));
+    const entryIds = new Set(playerEntries.map(e => e.id));
+
     setPlayers(prev => {
       const next = prev.filter(x => x.id !== playerId);
       broadcastUpdate('PLAYERS_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.PLAYERS, next);
       return next;
     });
     setCheckIns(prev => {
       const next = prev.filter(c => c.playerId !== playerId);
       broadcastUpdate('CHECK_INS_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.CHECK_INS, next);
       return next;
     });
     setEntries(prev => {
       const next = prev.filter(entry => entry.playerId !== playerId);
       broadcastUpdate('ENTRIES_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.ENTRIES, next);
       return next;
     });
     setChipRequests(prev => {
       const next = prev.filter(request => request.playerId !== playerId);
       broadcastUpdate('CHIP_REQUESTS_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.CHIP_REQUESTS, next);
+      return next;
+    });
+    setCashTransactions(prev => {
+      const next = prev.filter(t => 
+        (!p?.fullName || t.playerName?.toLowerCase() !== p.fullName.toLowerCase()) &&
+        (!receiptNums.has(t.referenceId || '')) &&
+        (!entryIds.has(t.referenceId || ''))
+      );
+      broadcastUpdate('CASH_TXNS_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.CASH_TXNS, next);
       return next;
     });
     if (selectedPlayerId === playerId) {
@@ -2450,16 +2494,14 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
       void (async () => {
-        const childDeletes = await Promise.all([
+        await Promise.all([
           client.from('daily_check_ins').delete().eq('player_id', playerId),
           client.from('tournament_entries').delete().eq('player_id', playerId),
           client.from('chip_requests').delete().eq('player_id', playerId),
         ]);
-        const childError = childDeletes.find(result => result.error)?.error;
-        if (childError) {
-          console.error('Supabase related player records delete error:', childError.message);
-          return;
-        }
+        Array.from(receiptNums).forEach(rec => {
+          client.from('cash_transactions').delete().eq('reference_id', rec).then(() => {});
+        });
         const { error } = await client.from('players').delete().eq('id', playerId);
         if (error) console.error('Supabase player delete error:', error.message);
       })();
@@ -2556,6 +2598,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteTournament = (tournamentId: string) => {
     const trn = tournaments.find(t => t.id === tournamentId);
+    const tournamentEntries = entries.filter(e => e.tournamentId === tournamentId);
+    const receiptNums = new Set(tournamentEntries.map(e => e.receiptNumber).filter(Boolean));
+    const entryIds = new Set(tournamentEntries.map(e => e.id));
     
     // 1. Remove from local state and storage immediately
     setTournaments(prev => {
@@ -2573,9 +2618,22 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return next;
     });
 
-    // 3. Delete from Supabase: child entries first, then tournament
+    // 3. Remove associated cash transactions
+    if (receiptNums.size > 0 || entryIds.size > 0) {
+      setCashTransactions(prev => {
+        const next = prev.filter(t => !receiptNums.has(t.referenceId || '') && !entryIds.has(t.referenceId || ''));
+        broadcastUpdate('CASH_TXNS_UPDATED', next);
+        saveToStorage(STORAGE_KEYS.CASH_TXNS, next);
+        return next;
+      });
+    }
+
+    // 4. Delete from Supabase: child entries & cash transactions first, then tournament
     if (isSupabaseConfigured && supabase) {
       const client = supabase;
+      Array.from(receiptNums).forEach(rec => {
+        client.from('cash_transactions').delete().eq('reference_id', rec).then(() => {});
+      });
       client.from('tournament_entries').delete().eq('tournament_id', tournamentId).then(() => {
         client.from('tournaments').delete().eq('id', tournamentId).then(({ error }) => {
           if (error) console.error('Supabase tournament delete error:', error.message);
@@ -3435,11 +3493,37 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteCashTransaction = (transactionId: string) => {
     const txn = cashTransactions.find(t => t.id === transactionId);
+    
+    // 1. Remove cash transaction from state and localStorage
     setCashTransactions(prev => {
       const next = prev.filter(t => t.id !== transactionId);
       broadcastUpdate('CASH_TXNS_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.CASH_TXNS, next);
       return next;
     });
+
+    // 2. If this cash transaction was linked to a Tournament Entry (via referenceId or receiptNumber),
+    // also remove the associated tournament entry so cashier logs and admin views stay 100% in sync!
+    if (txn) {
+      const matchingEntry = entries.find(e => 
+        (txn.referenceId && (e.receiptNumber === txn.referenceId || e.id === txn.referenceId)) ||
+        (txn.category === 'Tournament Entry' && e.playerName.toLowerCase() === (txn.playerName || '').toLowerCase() && (e.buyInAmount + e.rakeAmount) === txn.amount)
+      );
+
+      if (matchingEntry) {
+        setEntries(prev => {
+          const next = prev.filter(e => e.id !== matchingEntry.id);
+          broadcastUpdate('ENTRIES_UPDATED', next);
+          saveToStorage(STORAGE_KEYS.ENTRIES, next);
+          return next;
+        });
+        if (isSupabaseConfigured && supabase) {
+          supabase.from('tournament_entries').delete().eq('id', matchingEntry.id).then(({ error }) => {
+            if (error) console.error('Supabase tournament entry delete error on cash txn delete:', error.message);
+          });
+        }
+      }
+    }
 
     if (isSupabaseConfigured && supabase) {
       supabase.from('cash_transactions').delete().eq('id', transactionId).then(({ error }) => {
@@ -3454,6 +3538,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setEntries(prev => {
       const next = prev.map(e => (e.id === entryId ? { ...e, ...updates } : e));
       broadcastUpdate('ENTRIES_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.ENTRIES, next);
       return next;
     });
     if (isSupabaseConfigured && supabase) {
@@ -3482,17 +3567,43 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deleteTournamentEntry = (entryId: string) => {
     const entry = entries.find(e => e.id === entryId);
+    
+    // 1. Remove from entries
     setEntries(prev => {
       const next = prev.filter(e => e.id !== entryId);
       broadcastUpdate('ENTRIES_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.ENTRIES, next);
       return next;
     });
+
+    // 2. Also remove associated cash transaction from cashTransactions & Supabase
+    if (entry) {
+      const matchingTxn = cashTransactions.find(t =>
+        (entry.receiptNumber && t.referenceId === entry.receiptNumber) ||
+        (t.referenceId === entry.id) ||
+        (t.category === 'Tournament Entry' && (t.playerName || '').toLowerCase() === entry.playerName.toLowerCase() && t.amount === (entry.buyInAmount + entry.rakeAmount))
+      );
+      if (matchingTxn) {
+        setCashTransactions(prev => {
+          const next = prev.filter(t => t.id !== matchingTxn.id);
+          broadcastUpdate('CASH_TXNS_UPDATED', next);
+          saveToStorage(STORAGE_KEYS.CASH_TXNS, next);
+          return next;
+        });
+        if (isSupabaseConfigured && supabase) {
+          supabase.from('cash_transactions').delete().eq('id', matchingTxn.id).then(({ error }) => {
+            if (error) console.error('Supabase cash transaction delete error on entry delete:', error.message);
+          });
+        }
+      }
+    }
+
     if (isSupabaseConfigured && supabase) {
       supabase.from('tournament_entries').delete().eq('id', entryId).then(({ error }) => {
         if (error) console.error('Supabase tournament entry delete error:', error.message);
       });
     }
-    addAuditLog('Cashier', 'Tournament Entry Removed', `Removed player entry (no automatic refund): ${entry ? `${entry.playerName} for ${entry.tournamentName}` : entryId}.`);
+    addAuditLog('Cashier', 'Tournament Entry Removed', `Removed player entry and voided associated billing record: ${entry ? `${entry.playerName} for ${entry.tournamentName}` : entryId}.`);
   };
 
   const updateChipRequest = (requestId: string, updates: Partial<ChipRequest>) => {
