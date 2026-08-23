@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Clock3,
   Clock,
+  Smartphone,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
@@ -27,6 +28,7 @@ import { CARTOON_AVATARS } from '../../utils/cartoonAvatars';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
 import { Eye, Receipt } from 'lucide-react';
+import { PhoneVerificationModal } from '../common/PhoneVerificationModal';
 
 interface KYCRegistrationFormProps {
   onSuccess: () => void;
@@ -39,6 +41,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
   const { registerNewPlayer, staffName } = useClub();
   const [currentStep, setCurrentStep] = useState<FormWizardStep>(1);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState('');
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -158,11 +163,15 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
       const cleanPan = formData.panNumber.trim().toUpperCase();
       const cleanAadhaar = formData.aadhaarNumber.trim();
 
+      const phoneIsVerified = isPhoneVerified && verifiedPhoneNumber === formData.phone;
+
       const result = registerNewPlayer(
         {
           fullName: formData.fullName,
           phone: formData.phone,
           email: formData.email,
+          phoneVerified: phoneIsVerified,
+          phoneVerifiedAt: phoneIsVerified ? new Date().toISOString() : undefined,
           aadhaarNumber: cleanAadhaar,
           panNumber: cleanPan,
           aadhaarPhotoUrl: formData.aadhaarPhotoUrl || undefined,
@@ -538,14 +547,35 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="kyc-phone">Primary Mobile Number *</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="form-label" htmlFor="kyc-phone" style={{ marginBottom: 0 }}>Primary Mobile Number *</label>
+                  {isPhoneVerified && verifiedPhoneNumber === formData.phone ? (
+                    <span className="phone-verified-pill" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '999px', padding: '2px 8px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <CheckCircle2 size={12} /> SMS Verified
+                    </span>
+                  ) : formData.phone.replace(/\D/g, '').length >= 10 ? (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-secondary"
+                      style={{ padding: '3px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#fda4af', borderColor: 'rgba(225,29,72,0.4)' }}
+                      onClick={() => setIsVerifyModalOpen(true)}
+                    >
+                      <Smartphone size={12} /> Verify via SMS
+                    </button>
+                  ) : null}
+                </div>
                 <input
                   id="kyc-phone"
                   type="tel"
                   className="form-input"
                   placeholder="+91 98765 43210"
                   value={formData.phone}
-                  onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={e => {
+                    setFormData({ ...formData, phone: e.target.value });
+                    if (isPhoneVerified && e.target.value !== verifiedPhoneNumber) {
+                      setIsPhoneVerified(false);
+                    }
+                  }}
                 />
                 {errors.phone && <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>{errors.phone}</span>}
               </div>
@@ -887,6 +917,20 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           )}
         </div>
       </form>
+
+      {/* Phone SMS OTP Verification Modal */}
+      <PhoneVerificationModal
+        isOpen={isVerifyModalOpen}
+        phone={formData.phone}
+        title="Verify Mobile Number"
+        subtitle={`We sent a 6-digit SMS security code to verify mobile number ${formData.phone}.`}
+        onSuccess={(verifiedPhone) => {
+          setIsPhoneVerified(true);
+          setVerifiedPhoneNumber(formData.phone);
+          setIsVerifyModalOpen(false);
+        }}
+        onClose={() => setIsVerifyModalOpen(false)}
+      />
 
     </div>
   );

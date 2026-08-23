@@ -26,6 +26,8 @@ import { DesktopSectionNav, DesktopSectionNavItem } from '../common/DesktopSecti
 import { PokerChipStack, GameTypeBadge, CardSuit, SuitWatermark, CardDeckFan, AnimatedSuitsRow } from '../common/PokerGraphics';
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
 import { Pagination } from '../common/Pagination';
+import { PhoneVerificationModal } from '../common/PhoneVerificationModal';
+import { Player } from '../../types';
 
 type PlayerTab = 'pass' | 'tournaments' | 'billing' | 'profile' | 'history';
 
@@ -46,6 +48,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
     hasPlayerCheckedInToday,
     findMemberByPhone,
     setSelectedPlayerId,
+    updatePlayer,
   } = useClub();
   const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially || !currentPlayer);
   const [entryView, setEntryView] = useState<'welcome' | 'lookup' | 'register'>(
@@ -55,6 +58,8 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
   const [lookupPhone, setLookupPhone] = useState('');
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [isLookingUp, setIsLookingUp] = useState(false);
+  const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<PlayerTab>('pass');
 
   const playerCheckIns = currentPlayer
@@ -78,12 +83,26 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
     setIsLookingUp(false);
 
     if (matched) {
-      setSelectedPlayerId(matched.id);
+      setPendingPlayer(matched);
+      setIsVerifyModalOpen(true);
+    } else {
+      setLookupError('No registered member found with this mobile number. Register below or try again.');
+    }
+  };
+
+  const handleOtpVerified = () => {
+    if (pendingPlayer) {
+      if (!pendingPlayer.phoneVerified) {
+        updatePlayer(pendingPlayer.id, {
+          phoneVerified: true,
+          phoneVerifiedAt: new Date().toISOString(),
+        });
+      }
+      setSelectedPlayerId(pendingPlayer.id);
       setShowKYCForm(false);
       setEntryView('welcome');
       setLookupPhone('');
-    } else {
-      setLookupError('No registered member found with this mobile number. Register below or try again.');
+      setPendingPlayer(null);
     }
   };
 
@@ -625,6 +644,23 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
         invoice={selectedInvoice}
         isOpen={!!selectedInvoice}
         onClose={() => setSelectedInvoice(null)}
+      />
+
+      {/* Existing Member SMS OTP Verification Modal */}
+      <PhoneVerificationModal
+        isOpen={isVerifyModalOpen}
+        phone={lookupPhone}
+        title="Verify Pass Access"
+        subtitle={
+          pendingPlayer
+            ? `We sent a 6-digit SMS security code to open the member pass for ${pendingPlayer.fullName}.`
+            : undefined
+        }
+        onClose={() => {
+          setIsVerifyModalOpen(false);
+          setPendingPlayer(null);
+        }}
+        onSuccess={handleOtpVerified}
       />
 
     </div>

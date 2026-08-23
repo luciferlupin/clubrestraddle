@@ -44,6 +44,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
     performDailyCheckIn,
     findMemberByPhone,
     setSelectedPlayerId,
+    updatePlayer,
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<PlayerTab>(
@@ -91,6 +92,12 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
 
   const handleOtpVerified = () => {
     if (pendingPlayer) {
+      if (!pendingPlayer.phoneVerified) {
+        updatePlayer(pendingPlayer.id, {
+          phoneVerified: true,
+          phoneVerifiedAt: new Date().toISOString(),
+        });
+      }
       setSelectedPlayerId(pendingPlayer.id);
       setActiveTab('home');
       setEntryView('choice');
