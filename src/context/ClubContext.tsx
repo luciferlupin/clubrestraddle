@@ -33,6 +33,8 @@ import {
   generateSequentialChipId,
   generateReceiptNumber,
   getTodayDateString,
+  isTimestampInCurrentSession,
+  formatSessionLabel,
 } from '../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { cartoonAvatarForPlayer } from '../utils/cartoonAvatars';
@@ -1520,17 +1522,17 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return totalCashInAmount - totalCashOutAmount - totalExpensesAmount;
   }, [totalCashInAmount, totalCashOutAmount, totalExpensesAmount]);
 
-  // ── TODAY-SCOPED COLLECTIONS & BALANCES (FOR CASHIER) ───────
+  // ── TODAY-SCOPED COLLECTIONS & BALANCES (FOR CASHIER 10 AM - 10 AM SESSION) ───────
   const todayCashTransactions = useMemo(() => {
-    return cashTransactions.filter(t => (t.timestamp || '').slice(0, 10) === today);
+    return cashTransactions.filter(t => isTimestampInCurrentSession(t.timestamp, today));
   }, [cashTransactions, today]);
 
   const todayEntries = useMemo(() => {
-    return entries.filter(e => (e.registeredAt || '').slice(0, 10) === today);
+    return entries.filter(e => isTimestampInCurrentSession(e.registeredAt, today));
   }, [entries, today]);
 
   const todayExpenses = useMemo(() => {
-    return expenses.filter(e => (e.date || '').slice(0, 10) === today);
+    return expenses.filter(e => isTimestampInCurrentSession(e.date, today));
   }, [expenses, today]);
 
   const todayPhysicalCashIn = useMemo(() => {

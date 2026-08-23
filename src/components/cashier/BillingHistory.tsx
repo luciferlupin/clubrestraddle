@@ -22,6 +22,8 @@ import {
   formatTimeOnly,
   formatPlayerNumber,
   getTodayDateString,
+  isTimestampInCurrentSession,
+  formatSessionLabel,
 } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { Modal } from '../common/Modal';
@@ -84,6 +86,7 @@ export const BillingHistory: React.FC = () => {
   });
 
   const todayStr = getTodayDateString();
+  const sessionLabel = formatSessionLabel(todayStr);
 
   const unifiedTodayItems: TodayTxnItem[] = useMemo(() => {
     const list: TodayTxnItem[] = [];
@@ -269,7 +272,7 @@ export const BillingHistory: React.FC = () => {
           <div className="stat-info">
             <span className="stat-label">💎 Today's Shift Total</span>
             <span className="stat-value" style={{ color: '#34d399' }}>{formatCurrency(todayTotalBalance)}</span>
-            <span className="stat-helper">Net Receipts for {todayStr}</span>
+            <span className="stat-helper">Net Receipts for Session</span>
           </div>
           <div className="stat-icon-wrapper" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}><DollarSign size={22} /></div>
         </div>
@@ -278,9 +281,9 @@ export const BillingHistory: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(225, 29, 72, 0.12)', border: '1px solid rgba(225, 29, 72, 0.3)', borderRadius: '12px', fontSize: '0.8rem', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fda4af' }}>
           <Calendar size={16} />
-          <span><strong>Today's Cashier Ledger ({todayStr})</strong> — Automatically resets each day.</span>
+          <span><strong>Current Gaming Session: {sessionLabel}</strong> (10:00 AM – 10:00 AM Daily Cycle)</span>
         </div>
-        <span style={{ fontSize: '0.72rem', color: '#cbd5e1', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '6px' }}>{filteredItems.length} records today</span>
+        <span style={{ fontSize: '0.72rem', color: '#cbd5e1', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '6px' }}>{filteredItems.length} records this session</span>
       </div>
 
       <div className="card">

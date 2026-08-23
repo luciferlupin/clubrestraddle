@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { TournamentStatus, PaymentMethod, CashCategory, ExpenseCategory, TournamentEntry, CashTransaction, Expense } from '../../types';
-import { formatClubLabel, formatCurrency, formatINR, formatPlayerNumber, formatDateOnly, formatTimeOnly, getTodayDateString } from '../../utils/formatters';
+import { formatClubLabel, formatCurrency, formatINR, formatPlayerNumber, formatDateOnly, formatTimeOnly, getTodayDateString, formatSessionLabel, isTimestampInCurrentSession } from '../../utils/formatters';
 import { TournamentStatusBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
@@ -428,7 +428,7 @@ export const MobileCashierPortal: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 800, color: '#fda4af' }}>
                 <Calendar size={14} />
-                <span>Today's Shift Balances ({todayStr})</span>
+                <span>Session: {formatSessionLabel(todayStr)}</span>
               </div>
               <button
                 type="button"
@@ -957,7 +957,7 @@ export const MobileCashierPortal: React.FC = () => {
                   Today's Desk Transactions
                 </h3>
                 <p className="m-card-subtitle">
-                  {todayStr} · Daily records automatically reset each day
+                  Session: {formatSessionLabel(todayStr)} (10:00 AM – 10:00 AM)
                 </p>
               </div>
             </div>

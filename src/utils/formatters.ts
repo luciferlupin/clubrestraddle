@@ -81,12 +81,64 @@ export const formatTimeOnly = (isoOrTime?: string): string => {
   return isoOrTime;
 };
 
-export const getTodayDateString = (): string => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
+/**
+ * Poker Club Business Gaming Day / Session (10:00 AM to 10:00 AM).
+ * - Hours 10:00 AM (inclusive) to 09:59 AM next morning belong to the starting date session.
+ * - e.g. 23 Aug 10:00 AM to 24 Aug 09:59 AM is session "2026-08-23".
+ */
+export const getClubSessionDate = (dateOrTimestamp?: Date | string | number): string => {
+  let d: Date;
+  if (!dateOrTimestamp) {
+    d = new Date();
+  } else if (dateOrTimestamp instanceof Date) {
+    d = dateOrTimestamp;
+  } else if (typeof dateOrTimestamp === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateOrTimestamp)) {
+    // Plain YYYY-MM-DD string already represents a session date
+    return dateOrTimestamp;
+  } else {
+    d = new Date(dateOrTimestamp);
+    if (isNaN(d.getTime())) {
+      d = new Date();
+    }
+  }
+
+  // If local time is before 10:00 AM, shift belongs to previous calendar day
+  const effectiveDate = new Date(d.getTime());
+  if (effectiveDate.getHours() < 10) {
+    effectiveDate.setDate(effectiveDate.getDate() - 1);
+  }
+
+  const year = effectiveDate.getFullYear();
+  const month = String(effectiveDate.getMonth() + 1).padStart(2, '0');
+  const day = String(effectiveDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+export const getTodayDateString = (): string => {
+  return getClubSessionDate(new Date());
+};
+
+export const isTimestampInCurrentSession = (
+  timestampOrDate?: Date | string | number,
+  targetSessionDate?: string
+): boolean => {
+  if (!timestampOrDate) return false;
+  const currentSession = targetSessionDate || getTodayDateString();
+  return getClubSessionDate(timestampOrDate) === currentSession;
+};
+
+export const formatSessionLabel = (sessionDateStr?: string): string => {
+  const sessionStr = sessionDateStr || getTodayDateString();
+  const [y, m, d] = sessionStr.split('-').map(Number);
+  if (!y || !m || !d) return sessionStr;
+
+  const startD = new Date(y, m - 1, d, 10, 0, 0);
+  const endD = new Date(y, m - 1, d + 1, 10, 0, 0);
+
+  const startFmt = startD.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  const endFmt = endD.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+  return `${startFmt} 10:00 AM – ${endFmt} 10:00 AM`;
 };
 
 export const generateId = (prefix: string): string => {
