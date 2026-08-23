@@ -18,7 +18,10 @@ import {
   Coins,
   Sparkles,
   Calendar,
-  CheckCircle
+  CheckCircle,
+  ArrowLeft,
+  Trophy,
+  Shield,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR, formatFullAadhaar, formatPlayerNumber } from '../../utils/formatters';
@@ -42,6 +45,7 @@ export const MobileAdminPortal: React.FC = () => {
     expenses,
     auditLogs,
     totalExpensesAmount,
+    staffUsers,
     reviewKYC,
     updatePlayer,
     deletePlayer,
@@ -874,6 +878,19 @@ export const MobileAdminPortal: React.FC = () => {
         {/* ── TAB 5: STAFF ACCESS MANAGER ─────────────────────────── */}
         {activeTab === 'staff' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setActiveTab('dashboard')}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', padding: '6px 12px', borderRadius: '8px' }}
+              >
+                <ArrowLeft size={14} /> Back to Overview
+              </button>
+              <span style={{ fontSize: '0.74rem', color: '#fda4af', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Staff Management
+              </span>
+            </div>
             <StaffManager />
           </div>
         )}
@@ -881,8 +898,23 @@ export const MobileAdminPortal: React.FC = () => {
         {/* ── TAB 6: AUDIT TRAIL ──────────────────────────────────── */}
         {activeTab === 'audit' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#ffffff', padding: '0 4px' }}>
-              Chronological Audit Trail ({auditLogs.length})
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setActiveTab('dashboard')}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', padding: '6px 12px', borderRadius: '8px' }}
+              >
+                <ArrowLeft size={14} /> Back to Overview
+              </button>
+              <span style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                System Audit Log
+              </span>
+            </div>
+
+            <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#ffffff', padding: '0 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Activity History</span>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{auditLogs.length} events</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1442,101 +1474,265 @@ export const MobileAdminPortal: React.FC = () => {
           setResetConfirm(false);
         }}
         title="Admin Management Tools"
-        subtitle="Staff accounts, audit trail and database controls"
+        subtitle="Staff accounts, audit trail, chip orders and system controls"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* 1. Staff Accounts */}
           <button
             type="button"
             onClick={() => { setActiveTab('staff'); setIsMoreOpen(false); }}
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'linear-gradient(135deg, rgba(225, 29, 72, 0.12) 0%, rgba(20, 6, 10, 0.9) 100%)',
+              border: '1px solid rgba(225, 29, 72, 0.35)',
               borderRadius: '14px',
-              padding: '14px',
+              padding: '14px 16px',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               gap: '12px',
               color: '#ffffff',
               cursor: 'pointer',
-              textAlign: 'left'
+              textAlign: 'left',
+              width: '100%',
             }}
           >
-            <ShieldCheck size={20} color="#f43f5e" />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Staff Accounts</div>
-              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Create, suspend or modify staff logins</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(225, 29, 72, 0.2)',
+                  border: '1px solid rgba(225, 29, 72, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <ShieldCheck size={20} color="#fb7185" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  Staff Accounts & Logins
+                  <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: '999px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                    {staffUsers?.length || 0} Staff
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '2px' }}>
+                  Create, edit, suspend or provision cashier & security logins
+                </div>
+              </div>
             </div>
+            <ChevronRight size={18} color="#94a3b8" />
           </button>
 
+          {/* 2. Audit Trail */}
           <button
             type="button"
             onClick={() => { setActiveTab('audit'); setIsMoreOpen(false); }}
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(20, 6, 10, 0.9) 100%)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
               borderRadius: '14px',
-              padding: '14px',
+              padding: '14px 16px',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               gap: '12px',
               color: '#ffffff',
               cursor: 'pointer',
-              textAlign: 'left'
+              textAlign: 'left',
+              width: '100%',
             }}
           >
-            <History size={20} color="#38bdf8" />
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Full Audit Trail</div>
-              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Review activity across all club stations</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(56, 189, 248, 0.2)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <History size={20} color="#38bdf8" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  System Audit Logs
+                  <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: '999px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                    {auditLogs?.length || 0} Events
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '2px' }}>
+                  Chronological action logs across all 4 software portals
+                </div>
+              </div>
             </div>
+            <ChevronRight size={18} color="#94a3b8" />
           </button>
 
-          {!isSupabaseConfigured && <div style={{
-            background: 'rgba(239, 68, 68, 0.08)',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
-            borderRadius: '14px',
-            padding: '14px',
-            marginTop: '8px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171', fontWeight: 700, fontSize: '0.88rem' }}>
-              <RotateCcw size={16} /> Reset Demo Data
-            </div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '4px 0 10px' }}>
-              Restores initial seed members and tournament records.
-            </div>
-
-            {!resetConfirm ? (
-              <button
-                type="button"
-                className="m-btn m-btn-secondary m-btn-sm"
-                onClick={() => setResetConfirm(true)}
+          {/* 3. Table Chip Requests */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMoreOpen(false);
+              setIsChipsDrawerOpen(true);
+            }}
+            style={{
+              background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(20, 6, 10, 0.9) 100%)',
+              border: '1px solid rgba(251, 191, 36, 0.35)',
+              borderRadius: '14px',
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              color: '#ffffff',
+              cursor: 'pointer',
+              textAlign: 'left',
+              width: '100%',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(251, 191, 36, 0.2)',
+                  border: '1px solid rgba(251, 191, 36, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
               >
-                Reset Controls
-              </button>
-            ) : (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  type="button"
-                  className="m-btn m-btn-danger m-btn-sm"
-                  style={{ flex: 1 }}
-                  onClick={() => {
-                    resetToDemoData();
-                    setResetConfirm(false);
-                    setIsMoreOpen(false);
-                  }}
-                >
-                  Confirm Reset
-                </button>
+                <Coins size={20} color="#fbbf24" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  Table Chip Orders
+                  {pendingChipOrdersCount > 0 && (
+                    <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: '999px', background: 'rgba(225, 29, 72, 0.2)', color: '#fda4af', border: '1px solid rgba(225, 29, 72, 0.4)' }}>
+                      {pendingChipOrdersCount} Pending
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '2px' }}>
+                  Monitor and fulfill live table player chip purchases
+                </div>
+              </div>
+            </div>
+            <ChevronRight size={18} color="#94a3b8" />
+          </button>
+
+          {/* 4. Tournament Events */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMoreOpen(false);
+              setIsTournamentsDrawerOpen(true);
+            }}
+            style={{
+              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.12) 0%, rgba(20, 6, 10, 0.9) 100%)',
+              border: '1px solid rgba(168, 85, 247, 0.35)',
+              borderRadius: '14px',
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              color: '#ffffff',
+              cursor: 'pointer',
+              textAlign: 'left',
+              width: '100%',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(168, 85, 247, 0.2)',
+                  border: '1px solid rgba(168, 85, 247, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Trophy size={20} color="#c084fc" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  Tournament Schedule
+                  <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: '999px', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                    {tournaments?.length || 0} Events
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '2px' }}>
+                  View scheduled poker tournaments and guaranteed pools
+                </div>
+              </div>
+            </div>
+            <ChevronRight size={18} color="#94a3b8" />
+          </button>
+
+          {!isSupabaseConfigured && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: '14px',
+              padding: '14px',
+              marginTop: '8px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171', fontWeight: 700, fontSize: '0.88rem' }}>
+                <RotateCcw size={16} /> Reset Demo Data
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '4px 0 10px' }}>
+                Restores initial seed members and tournament records.
+              </div>
+
+              {!resetConfirm ? (
                 <button
                   type="button"
                   className="m-btn m-btn-secondary m-btn-sm"
-                  onClick={() => setResetConfirm(false)}
+                  onClick={() => setResetConfirm(true)}
                 >
-                  Cancel
+                  Reset Controls
                 </button>
-              </div>
-            )}
-          </div>}
+              ) : (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="m-btn m-btn-danger m-btn-sm"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      resetToDemoData();
+                      setResetConfirm(false);
+                      setIsMoreOpen(false);
+                    }}
+                  >
+                    Confirm Reset
+                  </button>
+                  <button
+                    type="button"
+                    className="m-btn m-btn-secondary m-btn-sm"
+                    onClick={() => setResetConfirm(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </MobileBottomDrawer>
 

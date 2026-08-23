@@ -117,18 +117,23 @@ export const StaffManager: React.FC = () => {
   };
 
   return (
-    <div className="card">
-      <div className="card-header">
+    <div className="card" style={{ background: '#120508', border: '1px solid rgba(225, 29, 72, 0.35)', borderRadius: '16px' }}>
+      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '14px' }}>
         <div>
-          <h3 className="card-title">
+          <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff', fontSize: '1.05rem', fontWeight: 800 }}>
             <Shield size={20} color="#e11d48" />
             Staff Accounts & Access Management
           </h3>
-          <p className="card-subtitle">
-            Create and manage authorized login accounts for Cashier terminals and Security door staff.
+          <p className="card-subtitle" style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '3px' }}>
+            Provision and manage authorized login credentials for Cashier terminals and Security door stations.
           </p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => setIsCreateModalOpen(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, padding: '9px 16px', borderRadius: '10px' }}
+        >
           <UserPlus size={16} /> Create Staff Account
         </button>
       </div>
@@ -138,29 +143,30 @@ export const StaffManager: React.FC = () => {
           role="status"
           aria-live="polite"
           style={{
-            background: 'rgba(139, 0, 0, 0.25)',
-            border: '1px solid rgba(139, 0, 0, 0.6)',
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.25) 100%)',
+            border: '1px solid rgba(16, 185, 129, 0.5)',
             borderRadius: '10px',
             padding: '12px 16px',
-            color: '#ffffff',
+            color: '#34d399',
             fontSize: '0.85rem',
             fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
+            margin: '14px 0',
           }}
         >
-          <CheckCircle2 size={18} color="#ffffff" />
+          <CheckCircle2 size={18} color="#34d399" />
           <span>{success}</span>
         </div>
       )}
 
-      {/* Staff Accounts Table */}
-      <div className="table-container staff-desktop-table">
+      {/* Staff Accounts Table (Desktop) */}
+      <div className="table-container staff-desktop-table" style={{ marginTop: '14px' }}>
         <table className="custom-table">
           <thead>
             <tr>
-              <th>Staff Name</th>
+              <th>Staff Member</th>
               <th>Login Email</th>
               <th>Assigned Portal Role</th>
               <th>Account Status</th>
@@ -174,32 +180,33 @@ export const StaffManager: React.FC = () => {
               return (
                 <tr key={user.id}>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div
                         style={{
-                          width: '32px',
-                          height: '32px',
+                          width: '36px',
+                          height: '36px',
                           borderRadius: '50%',
-                          background: '#150508',
-                          border: '1px solid rgba(139, 0, 0, 0.5)',
+                          background: user.role === 'admin' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : user.role === 'cashier' ? 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontWeight: 800,
-                          fontSize: '0.85rem',
+                          fontWeight: 900,
+                          fontSize: '0.9rem',
                           color: '#ffffff',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                          flexShrink: 0,
                         }}
                       >
-                        {user.fullName.charAt(0)}
+                        {user.fullName.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 800 }}>{user.fullName}</div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>ID: {user.id}</div>
+                        <div style={{ fontWeight: 800, color: '#ffffff' }}>{user.fullName}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>ID: {user.id}</div>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem' }}>{user.email}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#cbd5e1' }}>{user.email}</span>
                   </td>
                   <td>{getRoleBadge(user.role)}</td>
                   <td>
@@ -208,18 +215,19 @@ export const StaffManager: React.FC = () => {
                     </span>
                   </td>
                   <td>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
                       {formatDateOnly(user.createdAt)}
                     </span>
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     {!isSuperAdmin && (
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
                           onClick={() => handleOpenEdit(user)}
                           title="Edit staff account"
+                          style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
                           <Edit3 size={12} />
                           <span>Edit</span>
@@ -230,6 +238,7 @@ export const StaffManager: React.FC = () => {
                           className={`btn btn-sm ${user.status === 'active' ? 'btn-secondary' : 'btn-emerald'}`}
                           onClick={() => toggleStaffStatus(user.id)}
                           title={user.status === 'active' ? 'Suspend staff account' : 'Reactivate account'}
+                          style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
                           {user.status === 'active' ? <Ban size={12} /> : <CheckCircle2 size={12} />}
                           <span>{user.status === 'active' ? 'Suspend' : 'Activate'}</span>
@@ -237,27 +246,29 @@ export const StaffManager: React.FC = () => {
 
                         <button
                           type="button"
-                          className="btn btn-danger btn-sm"
+                          className="btn btn-danger btn-sm btn-icon"
                           onClick={() => setPendingDeleteId(user.id)}
                           title="Delete staff account"
                           aria-label={`Delete ${user.fullName}`}
+                          style={{ padding: '6px 8px' }}
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     )}
                     {isSuperAdmin && (
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                      <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"
                           onClick={() => handleOpenEdit(user)}
                           title="Edit master admin profile"
+                          style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
                           <Edit3 size={12} />
                           <span>Edit</span>
                         </button>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--gold-light)', fontWeight: 700, padding: '4px 6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--gold-light)', fontWeight: 800, padding: '4px 8px', background: 'rgba(251, 191, 36, 0.12)', borderRadius: '6px', border: '1px solid rgba(251, 191, 36, 0.3)' }}>
                           Primary Admin
                         </span>
                       </div>
@@ -270,51 +281,128 @@ export const StaffManager: React.FC = () => {
         </table>
       </div>
 
-      <div className="staff-mobile-list" aria-label="Staff accounts">
+      {/* Staff Accounts Mobile Cards */}
+      <div className="staff-mobile-list" aria-label="Staff accounts" style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {staffUsers.map(user => {
           const isSuperAdmin = user.role === 'admin';
           return (
-            <article key={user.id} className="staff-account-card">
-              <div className="staff-account-topline">
-                <span className="staff-account-avatar" aria-hidden="true">{user.fullName.charAt(0)}</span>
-                <span className="staff-account-name">
-                  <strong>{user.fullName}</strong>
-                  <small>{user.id} · {formatDateOnly(user.createdAt)}</small>
-                </span>
-                {getRoleBadge(user.role)}
+            <article
+              key={user.id}
+              className="staff-account-card"
+              style={{
+                background: 'linear-gradient(145deg, #16060b 0%, #0c0305 100%)',
+                border: '1.5px solid rgba(225, 29, 72, 0.3)',
+                borderRadius: '14px',
+                padding: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '10px',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              {/* Topline: Avatar + Name + Role Badge */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                  <div
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      background: user.role === 'admin' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : user.role === 'cashier' ? 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 900,
+                      fontSize: '0.95rem',
+                      color: '#ffffff',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.6)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {user.fullName.charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <strong style={{ display: 'block', color: '#ffffff', fontSize: '0.92rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {user.fullName}
+                    </strong>
+                    <small style={{ color: '#94a3b8', fontSize: '0.72rem', fontFamily: 'var(--font-mono)' }}>
+                      {user.id} · {formatDateOnly(user.createdAt)}
+                    </small>
+                  </div>
+                </div>
+                <div>{getRoleBadge(user.role)}</div>
               </div>
-              <div className="staff-account-email"><Mail size={14} /> <span>{user.email}</span></div>
-              <div className="staff-account-actions">
-                <span className={`badge ${user.status === 'active' ? 'badge-success' : 'badge-danger'}`}>
+
+              {/* Login Email */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(0, 0, 0, 0.3)',
+                  padding: '7px 10px',
+                  borderRadius: '8px',
+                  fontSize: '0.78rem',
+                  color: '#cbd5e1',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
+                <Mail size={14} color="#e11d48" style={{ flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</span>
+              </div>
+
+              {/* Actions & Status Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                  paddingTop: '8px',
+                }}
+              >
+                <span className={`badge ${user.status === 'active' ? 'badge-success' : 'badge-danger'}`} style={{ fontSize: '0.72rem' }}>
                   <span className="badge-dot" /> {user.status}
                 </span>
-                <div style={{ display: 'inline-flex', gap: '6px' }}>
+
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     className="btn btn-secondary btn-sm"
                     onClick={() => handleOpenEdit(user)}
+                    style={{ padding: '5px 10px', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
-                    <Edit3 size={13} /> Edit
+                    <Edit3 size={12} /> Edit
                   </button>
-                  {!isSuperAdmin && (
+
+                  {!isSuperAdmin ? (
                     <>
                       <button
                         type="button"
                         className={`btn btn-sm ${user.status === 'active' ? 'btn-secondary' : 'btn-emerald'}`}
                         onClick={() => toggleStaffStatus(user.id)}
+                        style={{ padding: '5px 10px', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                       >
-                        {user.status === 'active' ? <Ban size={13} /> : <CheckCircle2 size={13} />}
-                        {user.status === 'active' ? 'Suspend' : 'Activate'}
+                        {user.status === 'active' ? <Ban size={12} /> : <CheckCircle2 size={12} />}
+                        <span>{user.status === 'active' ? 'Suspend' : 'Activate'}</span>
                       </button>
+
                       <button
                         type="button"
                         className="btn btn-danger btn-sm btn-icon"
                         aria-label={`Delete ${user.fullName}`}
                         onClick={() => setPendingDeleteId(user.id)}
+                        style={{ padding: '5px 8px' }}
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </>
+                  ) : (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)', fontWeight: 800 }}>
+                      Primary Admin
+                    </span>
                   )}
                 </div>
               </div>
