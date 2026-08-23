@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ArrowRight,
   CheckCircle2,
@@ -10,6 +10,8 @@ import {
   ShieldAlert,
   Trophy,
   UserRound,
+  FileText,
+  Eye,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { DailyCheckIn, Player, Tournament, TournamentEntry } from '../../types';
@@ -17,6 +19,9 @@ import { formatClubLabel, formatCurrency, formatDateTime, formatShortDateTime, f
 import { EntryBadge, KYCBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { GameTypeBadge, SuitWatermark, PokerChipStack, CardSuit } from '../common/PokerGraphics';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
+import { useClub } from '../../context/ClubContext';
 
 interface MobilePlayerHomeProps {
   player: Player;
@@ -45,6 +50,8 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
   onOpenPass,
   onClosePass,
 }) => {
+  const { staffName } = useClub();
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const isCheckedIn = Boolean(todayCheckIn);
   const verificationStatus = todayCheckIn?.verificationStatus;
   const playerEntries = entries.filter((entry) => entry.playerId === player.id);
@@ -105,17 +112,47 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
         </div>
 
         {isCheckedIn ? (
-          <button type="button" className="player-pass-preview" onClick={onOpenPass} aria-label="Open my full entrance pass">
-            <span className="player-pass-copy">
-              <span className="player-pass-label"><CreditCard size={15} /> Digital member pass</span>
-              <strong>{player.fullName}</strong>
-              <small>Player ID {formatPlayerNumber(player)} · Checked in {formatTimeOnly(todayCheckIn?.checkInTime)}</small>
-              <span className="player-pass-action">Tap to enlarge <ArrowRight size={15} /></span>
-            </span>
-            <span className="player-pass-qr" aria-hidden="true">
-              <QRCodeSVG value={verificationUrl} size={72} bgColor="#ffffff" fgColor="#0f172a" level="M" />
-            </span>
-          </button>
+          <>
+            <button type="button" className="player-pass-preview" onClick={onOpenPass} aria-label="Open my full entrance pass">
+              <span className="player-pass-copy">
+                <span className="player-pass-label"><CreditCard size={15} /> Digital member pass</span>
+                <strong>{player.fullName}</strong>
+                <small>Player ID {formatPlayerNumber(player)} · Checked in {formatTimeOnly(todayCheckIn?.checkInTime)}</small>
+                <span className="player-pass-action">Tap to enlarge <ArrowRight size={15} /></span>
+              </span>
+              <span className="player-pass-qr" aria-hidden="true">
+                <QRCodeSVG value={verificationUrl} size={72} bgColor="#ffffff" fgColor="#0f172a" level="M" />
+              </span>
+            </button>
+
+            {todayCheckIn && (
+              <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(225, 29, 72, 0.1)', border: '1px solid rgba(225, 29, 72, 0.3)', borderRadius: '10px', padding: '8px 12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#ffffff' }}>
+                  <FileText size={14} color="#e11d48" />
+                  <span>Gate Entry Fee: <strong style={{ color: '#34d399' }}>₹500 Paid</strong></span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsInvoiceOpen(true)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '6px',
+                    color: '#ffffff',
+                    padding: '4px 8px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Eye size={12} /> View Bill
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="player-checkin-form">
             <button type="button" className="m-btn m-btn-primary" onClick={onCheckIn} disabled={checkingIn} style={{ width: '100%' }}>
@@ -126,6 +163,15 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
 
         {todayCheckIn && <div className="player-status-meta"><EntryBadge status={todayCheckIn.verificationStatus} /></div>}
       </section>
+
+      {/* Entry Fee Invoice Modal */}
+      {todayCheckIn && (
+        <ClubTaxInvoiceModal
+          isOpen={isInvoiceOpen}
+          onClose={() => setIsInvoiceOpen(false)}
+          invoice={generateEntryFeeInvoice(player, todayCheckIn, staffName || 'Club Front Desk')}
+        />
+      )}
 
       <section aria-labelledby="player-actions-title">
         <div className="player-section-heading">

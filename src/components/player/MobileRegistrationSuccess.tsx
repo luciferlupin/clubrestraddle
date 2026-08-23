@@ -1,9 +1,11 @@
-import React from 'react';
-import { ArrowRight, Check, CheckCircle2, Clock3, QrCode, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight, Check, CheckCircle2, Clock3, QrCode, ShieldCheck, FileText, Receipt, Printer, Download, Eye } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Player, DailyCheckIn } from '../../types';
-import { formatPlayerNumber } from '../../utils/formatters';
-import { formatTimeOnly } from '../../utils/formatters';
+import { formatPlayerNumber, formatCurrency, formatTimeOnly, formatDateTime } from '../../utils/formatters';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
+import { useClub } from '../../context/ClubContext';
 
 interface MobileRegistrationSuccessProps {
   player: Player;
@@ -16,19 +18,102 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
   checkIn,
   onContinue,
 }) => {
+  const { staffName } = useClub();
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+
   const verificationUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/?portal=security&scan=${checkIn.id}&player=${player.id}`
     : `https://clubrestraddle.vercel.app/?portal=security&scan=${checkIn.id}&player=${player.id}`;
+
+  const entryInvoice: ClubInvoiceData = generateEntryFeeInvoice(player, checkIn, staffName || 'Club Front Desk');
 
   return (
     <section className="registration-success-screen" aria-labelledby="registration-success-title">
       <header className="registration-success-heading">
         <span className="registration-success-icon" aria-hidden="true"><CheckCircle2 size={32} /></span>
-        <span className="mobile-flow-eyebrow">Registration complete</span>
-        <h1 id="registration-success-title">Your player pass is ready</h1>
-        <p>Welcome, <strong>{player.fullName}</strong>. You are checked in and ready for door verification.</p>
+        <span className="mobile-flow-eyebrow">KYC & Registration Complete</span>
+        <h1 id="registration-success-title">Your Player Pass & Gate Bill Are Ready</h1>
+        <p>Welcome, <strong>{player.fullName}</strong>. Your entry gate fee has been recorded and your digital pass is active.</p>
       </header>
 
+      {/* Official Entry Gate Fee Invoice Card */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(24, 8, 12, 0.95) 0%, rgba(12, 4, 6, 0.98) 100%)',
+          border: '1.5px solid rgba(225, 29, 72, 0.45)',
+          borderRadius: '16px',
+          padding: '16px',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          textAlign: 'left',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileText size={18} color="#e11d48" />
+            <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.9rem' }}>Entry Gate Fee Tax Invoice</span>
+          </div>
+          <span
+            style={{
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              padding: '3px 8px',
+              borderRadius: '999px',
+              background: 'rgba(16, 185, 129, 0.15)',
+              color: '#34d399',
+              border: '1px solid rgba(16, 185, 129, 0.4)',
+            }}
+          >
+            ✓ Paid ₹500
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
+          <span>Invoice No:</span>
+          <strong style={{ color: 'var(--gold-light)', fontFamily: 'monospace' }}>{entryInvoice.invoiceNumber}</strong>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
+          <span>Taxable Value (SAC 999691):</span>
+          <span>{formatCurrency(entryInvoice.taxableAmount || 423.73)}</span>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
+          <span>GST @ 18% (CGST 9% + SGST 9%):</span>
+          <span>{formatCurrency(Math.round(((entryInvoice.totalAmount || 500) - (entryInvoice.taxableAmount || 423.73)) * 100) / 100)}</span>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem', fontWeight: 800, color: '#ffffff', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px' }}>
+          <span>Total Gate Entry Fee:</span>
+          <span style={{ color: '#34d399' }}>{formatCurrency(entryInvoice.totalAmount || 500)}</span>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{
+            background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
+            border: 'none',
+            color: '#ffffff',
+            fontWeight: 800,
+            padding: '10px 14px',
+            borderRadius: '10px',
+            fontSize: '0.82rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+          }}
+          onClick={() => setIsInvoiceModalOpen(true)}
+        >
+          <Eye size={15} /> View / Print Official Tax Invoice Bill
+        </button>
+      </div>
+
+      {/* Digital Member QR Pass */}
       <div className="registration-pass-card">
         <div className="registration-pass-topline">
           <span><QrCode size={17} /> Door clearance pass</span>
@@ -69,6 +154,13 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
       <button type="button" className="m-btn m-btn-primary registration-success-cta" onClick={onContinue}>
         Open my player home <ArrowRight size={18} />
       </button>
+
+      {/* Club Tax Invoice Modal */}
+      <ClubTaxInvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        invoice={entryInvoice}
+      />
     </section>
   );
 };

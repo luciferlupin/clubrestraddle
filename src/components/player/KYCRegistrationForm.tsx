@@ -18,10 +18,13 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatTimeOnly, formatDateOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
+import { formatTimeOnly, formatDateOnly, maskGovtId, formatPlayerNumber, formatCurrency } from '../../utils/formatters';
 import confetti from 'canvas-confetti';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 import { CARTOON_AVATARS } from '../../utils/cartoonAvatars';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
+import { Eye, Receipt } from 'lucide-react';
 
 interface KYCRegistrationFormProps {
   onSuccess: () => void;
@@ -31,8 +34,9 @@ interface KYCRegistrationFormProps {
 type FormWizardStep = 1 | 2 | 3 | 4;
 
 export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSuccess, onCancel }) => {
-  const { registerNewPlayer } = useClub();
+  const { registerNewPlayer, staffName } = useClub();
   const [currentStep, setCurrentStep] = useState<FormWizardStep>(1);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -188,17 +192,23 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     }, 400);
   };
 
-  // If Registration succeeded, show the Door Clearance QR Pass
+  // If Registration succeeded, show the Door Clearance QR Pass & Entry Gate Fee Bill
   if (registeredData) {
     const verificationUrl = typeof window !== 'undefined'
       ? `${window.location.origin}/?portal=security&scan=${registeredData.checkIn.id}&player=${registeredData.player.id}`
       : `https://clubrestraddle.vercel.app/?portal=security&scan=${registeredData.checkIn.id}&player=${registeredData.player.id}`;
 
+    const entryInvoice: ClubInvoiceData = generateEntryFeeInvoice(
+      registeredData.player,
+      registeredData.checkIn,
+      staffName || 'Club Front Desk'
+    );
+
     return (
       <div
         className="card"
         style={{
-          maxWidth: '580px',
+          maxWidth: '620px',
           margin: '0 auto',
           border: '1.5px solid #e11d48',
           boxShadow: '0 16px 48px rgba(0,0,0,0.8), 0 0 30px rgba(225,29,72,0.2)',
@@ -228,8 +238,84 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           KYC Registration Completed!
         </h2>
         <p style={{ fontSize: '0.86rem', color: '#cbd5e1', marginBottom: '20px' }}>
-          Welcome to Club Re Straddle, <strong>{registeredData.player.fullName}</strong>. Your membership pass has been generated with verified Aadhaar & PAN credentials.
+          Welcome to Club Re Straddle, <strong>{registeredData.player.fullName}</strong>. Your membership pass and entry fee bill have been generated.
         </p>
+
+        {/* Official Entry Gate Fee Tax Invoice Card */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(24, 8, 12, 0.95) 0%, rgba(12, 4, 6, 0.98) 100%)',
+            border: '1.5px solid rgba(225, 29, 72, 0.45)',
+            borderRadius: '14px',
+            padding: '16px 18px',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            textAlign: 'left',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileText size={18} color="#e11d48" />
+              <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.9rem' }}>Entry Gate Fee Tax Invoice (SAC 999691)</span>
+            </div>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                padding: '3px 8px',
+                borderRadius: '999px',
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: '#34d399',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+              }}
+            >
+              ✓ Paid ₹500
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#cbd5e1' }}>
+            <span>Invoice Number:</span>
+            <strong style={{ color: 'var(--gold-light)', fontFamily: 'var(--font-mono)' }}>{entryInvoice.invoiceNumber}</strong>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#cbd5e1' }}>
+            <span>Taxable Entry Amount:</span>
+            <span>{formatCurrency(entryInvoice.taxableAmount || 423.73)}</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#cbd5e1' }}>
+            <span>GST @ 18% (CGST 9% + SGST 9%):</span>
+            <span>{formatCurrency(Math.round(((entryInvoice.totalAmount || 500) - (entryInvoice.taxableAmount || 423.73)) * 100) / 100)}</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.94rem', fontWeight: 800, color: '#ffffff', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px' }}>
+            <span>Total Gate Fee Charged:</span>
+            <span style={{ color: '#34d399' }}>{formatCurrency(entryInvoice.totalAmount || 500)}</span>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{
+              marginTop: '4px',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              borderColor: 'rgba(225, 29, 72, 0.4)',
+              color: '#ffffff',
+            }}
+            onClick={() => setIsInvoiceModalOpen(true)}
+          >
+            <Eye size={14} color="#e11d48" /> View / Print Official Tax Invoice Bill
+          </button>
+        </div>
 
         {/* High-Contrast QR Clearance Pass */}
         <div
@@ -321,6 +407,13 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
           <span>Enter Member Lounge Dashboard</span>
           <ArrowRight size={16} />
         </button>
+
+        {/* Club Tax Invoice Modal */}
+        <ClubTaxInvoiceModal
+          isOpen={isInvoiceModalOpen}
+          onClose={() => setIsInvoiceModalOpen(false)}
+          invoice={entryInvoice}
+        />
       </div>
     );
   }
