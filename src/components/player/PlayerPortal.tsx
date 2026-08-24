@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ArrowLeft,
   Phone,
+  LogOut,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { KYCRegistrationForm } from './KYCRegistrationForm';
@@ -71,6 +72,14 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
     : [];
 
   const todayCheckIn = currentPlayer ? hasPlayerCheckedInToday(currentPlayer.id) : undefined;
+
+  const handleLogout = () => {
+    setSelectedPlayerId('');
+    setShowKYCForm(false);
+    setEntryView('welcome');
+    setLookupPhone('');
+    setPendingPlayer(null);
+  };
 
   const handleLookupMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,26 +181,36 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
           <>Complete KYC once to receive your digital pass and use club services.</>
         )}
         actions={
-          <>
-
-
-          {currentPlayer && (
-            <button
-              className="btn btn-secondary"
-              onClick={() => { setShowKYCForm(!showKYCForm); setEntryView('register'); }}
-            >
-              {showKYCForm ? (
-                <>
-                  <UserCheck size={16} /> View My Dashboard
-                </>
-              ) : (
-                <>
-                  <UserPlus size={16} /> Register member
-                </>
-              )}
-            </button>
-          )}
-          </>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {currentPlayer && (
+              <>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => { setShowKYCForm(!showKYCForm); setEntryView('register'); }}
+                >
+                  {showKYCForm ? (
+                    <>
+                      <UserCheck size={16} /> View My Dashboard
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={16} /> Register member
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ color: '#fda4af', borderColor: 'rgba(225, 29, 72, 0.4)' }}
+                  onClick={handleLogout}
+                  title="Log out of player pass"
+                >
+                  <LogOut size={15} />
+                  <span>Log out</span>
+                </button>
+              </>
+            )}
+          </div>
         }
       />
       )}
@@ -622,7 +641,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
             )}
 
             {/* TAB 4: PROFILE & KYC DETAILS */}
-            {activeTab === 'profile' && <PlayerProfile player={currentPlayer} />}
+            {activeTab === 'profile' && <PlayerProfile player={currentPlayer} onLogout={handleLogout} />}
 
             {/* TAB 5: VISIT HISTORY */}
             {activeTab === 'history' && <CheckInHistory checkIns={playerCheckIns} />}

@@ -106,6 +106,14 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
     }
   };
 
+  const handleLogout = () => {
+    setSelectedPlayerId('');
+    setEntryView('choice');
+    setActiveTab('home');
+    setLookupPhone('');
+    setPendingPlayer(null);
+  };
+
   const handleDailyCheckIn = () => {
     if (!currentPlayer) return;
     setCheckingIn(true);
@@ -156,61 +164,61 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
             setActiveTab('home');
           }}
         />
-      ) : (!currentPlayer || activeTab === 'new_kyc') ? (
-        <div className="mobile-player-entry">
-          {entryView === 'choice' && !currentPlayer ? (
+      ) : activeTab === 'new_kyc' ? (
+        <MobileKYCForm
+          onSuccess={handleKYCSuccess}
+          onCancel={closeRegistration}
+        />
+      ) : !currentPlayer ? (
+        <div className="mobile-player-landing">
+          <div className="mobile-player-brand-hero">
+            <AnimatedSuitsRow size={18} gap={12} />
+            <div className="mobile-player-brand-icon">
+              <CardDeckFan />
+            </div>
+            <span className="mobile-player-brand-badge">Premium Poker Club · Delhi NCR</span>
+            <h1 className="mobile-player-brand-title">Club Re Straddle</h1>
+            <p className="mobile-player-brand-tagline">High Stakes · Tournaments · Exclusive Lounge</p>
+          </div>
+
+          {entryView === 'choice' ? (
             <>
-              <section className="mobile-welcome-card" aria-labelledby="player-welcome-title">
-                {/* Card fan hero */}
-                <div className="welcome-card-fan-hero" aria-hidden="true">
-                  <CardDeckFan size={130} />
-                </div>
-                {/* Animated suit strip */}
-                <div className="mobile-welcome-suits" aria-hidden="true">
-                  <CardSuit suit="spade" size={20} color="#ffffff" className="suit-hover-anim" />
-                  <CardSuit suit="heart" size={20} color="#e11d48" className="suit-hover-anim suit-delay-1" />
-                  <CardSuit suit="diamond" size={20} color="#e11d48" className="suit-hover-anim suit-delay-2" />
-                  <CardSuit suit="club" size={20} color="#ffffff" className="suit-hover-anim suit-delay-3" />
-                </div>
-                <span className="mobile-flow-eyebrow">Player access</span>
-                <h1 id="player-welcome-title">Welcome to the club</h1>
-                <p>Load your member pass or register for your first visit.</p>
-                <div className="mobile-trust-row">
-                  <span><CardSuit suit="spade" size={13} color="#ffffff" /> Members only</span>
+              <section className="mobile-intro-hero" aria-labelledby="member-access-title">
+                <span className="mobile-flow-eyebrow">Player Portal</span>
+                <h2 id="member-access-title">Your poker night starts here</h2>
+                <p>Open your digital member pass or register in under 2 minutes.</p>
+
+                <div className="mobile-hero-features">
+                  <span><CardSuit suit="spade" size={13} color="#ffffff" /> Digital ID</span>
+                  <span><CardSuit suit="heart" size={13} color="#e11d48" /> Fast Check-In</span>
                   <span><CardSuit suit="club" size={13} color="#ffffff" /> Secure KYC</span>
                   <span><CardSuit suit="diamond" size={13} color="#e11d48" /> Under 2 min</span>
                 </div>
               </section>
 
-              <div className="mobile-start-options" aria-label="Choose how to continue">
-                <button type="button" className="mobile-start-option primary" onClick={() => setEntryView('lookup')}>
-                  <span className="mobile-start-icon"><CreditCard size={23} /></span>
-                  <span><strong>I&apos;m already a member</strong><small>Open my digital pass</small></span>
-                  <ChevronRight size={21} aria-hidden="true" />
+              <div className="mobile-start-options">
+                <button type="button" className="m-btn m-btn-primary" onClick={() => setEntryView('lookup')}>
+                  <CreditCard size={18} />
+                  <span>I'm a member</span>
                 </button>
-                <button type="button" className="mobile-start-option" onClick={() => setEntryView('register')}>
-                  <span className="mobile-start-icon"><UserPlus size={23} /></span>
-                  <span><strong>I&apos;m new here</strong><small>Create a pass and check in</small></span>
-                  <ChevronRight size={21} aria-hidden="true" />
+                <button type="button" className="m-btn m-btn-secondary" onClick={() => setEntryView('register')}>
+                  <UserPlus size={18} />
+                  <span>New registration</span>
                 </button>
               </div>
             </>
-          ) : entryView === 'lookup' && !currentPlayer ? (
+          ) : entryView === 'lookup' ? (
             <section className="mobile-lookup-flow" aria-labelledby="member-lookup-title">
               <div className="mobile-flow-heading">
                 <button
                   type="button"
                   className="mobile-icon-button"
                   onClick={() => { setEntryView('choice'); setLookupError(null); }}
-                  aria-label="Back to player options"
+                  aria-label="Back"
                 >
                   <ArrowLeft size={21} />
                 </button>
-                <div>
-                  <span className="mobile-flow-eyebrow">Existing member</span>
-                  <h1 id="member-lookup-title">Open your player pass</h1>
-                  <p>Use the mobile number linked to your membership.</p>
-                </div>
+                <h2 id="member-lookup-title">Verify your access</h2>
               </div>
 
               <form className="m-card mobile-lookup-card" onSubmit={handleLookupMember} noValidate>
@@ -227,24 +235,35 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                       placeholder="98765 43210"
                       value={lookupPhone}
                       aria-invalid={Boolean(lookupError)}
-                      aria-describedby={lookupError ? 'member-lookup-error' : undefined}
-                      onChange={(event) => { setLookupPhone(event.target.value); setLookupError(null); }}
+                      aria-describedby={lookupError ? 'lookup-phone-error' : undefined}
+                      onChange={(event) => setLookupPhone(event.target.value)}
                     />
                   </div>
-                  {lookupError && <span id="member-lookup-error" className="m-field-error" role="alert">{lookupError}</span>}
+                  {lookupError && (
+                    <span id="lookup-phone-error" className="m-field-error" role="alert">
+                      {lookupError}
+                    </span>
+                  )}
                 </div>
-                <button type="submit" className="m-btn m-btn-primary" disabled={isLookingUp}>
-                  <Phone size={18} /> {isLookingUp ? 'Finding your pass…' : 'Find my pass'}
+
+                <button
+                  type="submit"
+                  className="m-btn m-btn-primary"
+                  disabled={isLookingUp || !lookupPhone.trim()}
+                >
+                  <Smartphone size={17} />
+                  <span>{isLookingUp ? 'Searching...' : 'Send SMS OTP & Verify'}</span>
                 </button>
               </form>
 
-              <button type="button" className="mobile-secondary-link" onClick={() => { setEntryView('register'); setLookupError(null); }}>
-                New to the club? Create a member pass <ChevronRight size={17} />
-              </button>
+              <div className="mobile-lookup-help">
+                <p>New to Club Re Straddle?</p>
+                <button type="button" className="m-btn m-btn-secondary" onClick={openRegistration}>
+                  <UserPlus size={16} /> Register as a new member
+                </button>
+              </div>
             </section>
-          ) : (
-            <MobileKYCForm onSuccess={handleKYCSuccess} onCancel={closeRegistration} />
-          )}
+          ) : null}
         </div>
       ) : currentPlayer ? (
         <>
@@ -261,6 +280,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
               onOpenProfile={() => setActiveTab('profile')}
               onOpenPass={() => setIsPassOpen(true)}
               onClosePass={() => setIsPassOpen(false)}
+              onLogout={handleLogout}
             />
           )}
           {activeTab === 'history' && <MobilePlayerVisits player={currentPlayer} checkIns={playerCheckIns} />}
@@ -271,6 +291,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                 setIsPassOpen(true);
                 setActiveTab('home');
               }}
+              onLogout={handleLogout}
             />
           )}
         </>

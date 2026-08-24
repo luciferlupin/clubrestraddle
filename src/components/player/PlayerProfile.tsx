@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, ShieldCheck, Mail, Phone, MapPin, CreditCard, AlertTriangle, RefreshCw, Receipt, FileText, Eye, ZoomIn, X, Camera } from 'lucide-react';
+import { User, ShieldCheck, Mail, Phone, MapPin, CreditCard, AlertTriangle, RefreshCw, Receipt, FileText, Eye, ZoomIn, X, Camera, LogOut } from 'lucide-react';
 import { Player } from '../../types';
 import { formatDateOnly, formatDateTime, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
@@ -8,9 +8,10 @@ import { PlayerLedger } from './PlayerLedger';
 
 interface PlayerProfileProps {
   player: Player;
+  onLogout?: () => void;
 }
 
-export const PlayerProfile: React.FC<PlayerProfileProps> = ({ player }) => {
+export const PlayerProfile: React.FC<PlayerProfileProps> = ({ player, onLogout }) => {
   const { updatePlayerKYC } = useClub();
   const [activeTab, setActiveTab] = useState<'profile' | 'ledger'>('profile');
   const [editingId, setEditingId] = useState(false);
@@ -41,6 +42,17 @@ export const PlayerProfile: React.FC<PlayerProfileProps> = ({ player }) => {
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <TierBadge tier={player.membershipTier} />
           <KYCBadge status={player.kycStatus} />
+          {onLogout && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ color: '#fda4af', borderColor: 'rgba(225, 29, 72, 0.4)', marginLeft: '6px' }}
+              onClick={onLogout}
+              title="Log out of player portal"
+            >
+              <LogOut size={14} /> Log out
+            </button>
+          )}
         </div>
       </div>
 

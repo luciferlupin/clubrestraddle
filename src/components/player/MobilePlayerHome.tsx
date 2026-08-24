@@ -12,6 +12,8 @@ import {
   UserRound,
   FileText,
   Eye,
+  X,
+  LogOut,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { DailyCheckIn, Player, Tournament, TournamentEntry } from '../../types';
@@ -35,6 +37,7 @@ interface MobilePlayerHomeProps {
   onOpenProfile: () => void;
   onOpenPass: () => void;
   onClosePass: () => void;
+  onLogout?: () => void;
 }
 
 export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
@@ -49,6 +52,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
   onOpenProfile,
   onOpenPass,
   onClosePass,
+  onLogout,
 }) => {
   const { staffName } = useClub();
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
@@ -90,13 +94,37 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
             {player.membershipTier} member · {player.totalVisits} club visits
           </p>
         </div>
-        <button type="button" className="player-avatar-button" onClick={onOpenProfile} aria-label="Open my profile">
-          {player.kyc.photoUrl ? (
-            <img src={player.kyc.photoUrl} alt="" />
-          ) : (
-            <span>{player.fullName.charAt(0)}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onLogout && (
+            <button
+              type="button"
+              className="mobile-icon-button"
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: 'rgba(225, 29, 72, 0.12)',
+                border: '1px solid rgba(225, 29, 72, 0.35)',
+                color: '#fda4af',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onClick={onLogout}
+              aria-label="Log out of pass"
+              title="Log out"
+            >
+              <LogOut size={16} />
+            </button>
           )}
-        </button>
+          <button type="button" className="player-avatar-button" onClick={onOpenProfile} aria-label="Open my profile">
+            {player.kyc.photoUrl ? (
+              <img src={player.kyc.photoUrl} alt="" />
+            ) : (
+              <span>{player.fullName.charAt(0)}</span>
+            )}
+          </button>
+        </div>
       </header>
 
       <section className={`player-status-card ${verificationStatus || 'not-checked-in'}`} aria-labelledby="player-status-title">

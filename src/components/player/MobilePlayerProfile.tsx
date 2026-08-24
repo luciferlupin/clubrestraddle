@@ -12,6 +12,7 @@ import {
   UserRoundCheck,
   Eye,
   X,
+  LogOut,
 } from 'lucide-react';
 import { Player } from '../../types';
 import { formatDateOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
@@ -21,9 +22,10 @@ import { PlayerLedger } from './PlayerLedger';
 interface MobilePlayerProfileProps {
   player: Player;
   onOpenPass: () => void;
+  onLogout?: () => void;
 }
 
-export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player, onOpenPass }) => {
+export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player, onOpenPass, onLogout }) => {
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
 
   return (
@@ -153,6 +155,33 @@ export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player
         <Lock size={17} />
         <p><strong>Your information is protected.</strong> Ask the front desk if any membership detail needs to be updated.</p>
       </div>
+
+      {onLogout && (
+        <div style={{ marginTop: '20px', marginBottom: '32px' }}>
+          <button
+            type="button"
+            className="m-btn"
+            style={{
+              width: '100%',
+              background: 'rgba(225, 29, 72, 0.12)',
+              border: '1.5px solid rgba(225, 29, 72, 0.4)',
+              color: '#fda4af',
+              fontWeight: 700,
+              padding: '12px 16px',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+            }}
+            onClick={onLogout}
+          >
+            <LogOut size={16} />
+            <span>Log out of Player Pass</span>
+          </button>
+        </div>
+      )}
 
       {/* Mobile Photo Modal */}
       {viewingDoc && (
