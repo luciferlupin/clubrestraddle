@@ -146,10 +146,12 @@ export const generateId = (prefix: string): string => {
   return `${prefix}-${randomNum}`;
 };
 
-export const generateSequentialPlayerId = (existingPlayers: { id: string }[] = []): string => {
-  let maxSeq = existingPlayers.length;
+export const generateSequentialPlayerId = (existingPlayers: { id: string; memberNumber?: number }[] = []): string => {
+  let maxSeq = 0;
   for (const p of existingPlayers) {
-    // Legacy IDs remain immutable; new records use the next plain number.
+    if (typeof p.memberNumber === 'number' && p.memberNumber > maxSeq) {
+      maxSeq = p.memberNumber;
+    }
     if (/^\d+$/.test(p.id)) {
       const num = parseInt(p.id, 10);
       if (!isNaN(num) && num > maxSeq) {
@@ -160,8 +162,15 @@ export const generateSequentialPlayerId = (existingPlayers: { id: string }[] = [
   return String(maxSeq + 1);
 };
 
-export const formatPlayerNumber = (player: { id: string; memberNumber?: number }): string =>
-  String(player.memberNumber ?? (/^\d+$/.test(player.id) ? Number(player.id) : player.id));
+export const formatPlayerNumber = (player: { id: string; memberNumber?: number }): string => {
+  if (typeof player.memberNumber === 'number' && player.memberNumber > 0) {
+    return String(player.memberNumber);
+  }
+  if (/^\d+$/.test(player.id)) {
+    return String(parseInt(player.id, 10));
+  }
+  return player.id;
+};
 
 export const generateSequentialCheckInId = (existingCheckIns: { id: string }[] = []): string => {
   let maxSeq = 1000;

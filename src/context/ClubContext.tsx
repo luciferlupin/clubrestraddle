@@ -41,22 +41,32 @@ import {
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { cartoonAvatarForPlayer } from '../utils/cartoonAvatars';
 
-const ensureSequentialMemberNumbers = (players: Player[]): Player[] => {
-  const numberById = new Map(
-    [...players]
-      .sort((a, b) =>
-        String(a.registeredAt || '').localeCompare(String(b.registeredAt || '')) ||
-        String(a.id).localeCompare(String(b.id), undefined, { numeric: true })
-      )
-      .map((player, index) => [player.id, index + 1])
-  );
+const ensurePermanentMemberNumbers = (players: Player[]): Player[] => {
+  let maxNumber = 0;
+  for (const p of players) {
+    if (typeof p.memberNumber === 'number' && p.memberNumber > maxNumber) {
+      maxNumber = p.memberNumber;
+    } else if (/^\d+$/.test(p.id)) {
+      const num = parseInt(p.id, 10);
+      if (num > maxNumber) maxNumber = num;
+    }
+  }
 
   let changed = false;
   const normalized = players.map(player => {
-    const memberNumber = numberById.get(player.id)!;
-    if (player.memberNumber === memberNumber) return player;
+    if (typeof player.memberNumber === 'number' && player.memberNumber > 0) {
+      return player;
+    }
+    if (/^\d+$/.test(player.id)) {
+      const num = parseInt(player.id, 10);
+      if (num > 0) {
+        changed = true;
+        return { ...player, memberNumber: num };
+      }
+    }
+    maxNumber += 1;
     changed = true;
-    return { ...player, memberNumber };
+    return { ...player, memberNumber: maxNumber };
   });
   return changed ? normalized : players;
 };
@@ -374,7 +384,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [staffName, setStaffName] = useState<string>('Staff Officer');
 
   const [players, setPlayers] = useState<Player[]>(() =>
-    ensureSequentialMemberNumbers(loadFromStorage(STORAGE_KEYS.PLAYERS, initialPlayers))
+    ensurePermanentMemberNumbers(loadFromStorage(STORAGE_KEYS.PLAYERS, initialPlayers))
   );
   const [checkIns, setCheckIns] = useState<DailyCheckIn[]>(() =>
     loadFromStorage(STORAGE_KEYS.CHECK_INS, initialCheckIns)
@@ -415,11 +425,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => saveToStorage(STORAGE_KEYS.GATE_TRANSFERS, gateTransfers), [gateTransfers]);
   useEffect(() => saveToStorage(STORAGE_KEYS.ACTIVE_ROLE, activeRole), [activeRole]);
   useEffect(() => saveToStorage(STORAGE_KEYS.SELECTED_PLAYER, selectedPlayerId), [selectedPlayerId]);
-
-  // Repair stale/missing duplicate display IDs from cached or realtime records.
-  useEffect(() => {
-    setPlayers(current => ensureSequentialMemberNumbers(current));
-  }, [players]);
 
   // Adjust staff name when user logs in/out or switches role
   useEffect(() => {
@@ -592,11 +597,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { data: playersData, error: pErr } = await client.from('players').select('*').order('created_at', { ascending: false });
       if (!pErr && playersData) {
         if (playersData.length > 0) {
-          const memberNumberById = new Map(
-            [...playersData]
-              .sort((a: any, b: any) => String(a.created_at || '').localeCompare(String(b.created_at || '')) || String(a.id).localeCompare(String(b.id)))
-              .map((player: any, index: number) => [player.id, index + 1])
-          );
+          let maxExistingNumber = 0;
+          playersData.forEach((p: any) => {
+            if (typeof p.member_number === 'number' && p.member_number > maxExistingNumber) {
+              maxExistingNumber = p.member_number;
+            } else if (/^\d+$/.test(String(p.id))) {
+              const num = parseInt(String(p.id), 10);
+              if (num > maxExistingNumber) maxExistingNumber = num;
+            }
+          });
+
           const mappedPlayers: Player[] = playersData.map((p: any) => {
             const idNum = p.govt_id_number || '';
             let aadhaarParsed = '';
@@ -613,9 +623,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               aadhaarParsed = idNum.trim();
             }
 
-            const memberNumber = (typeof p.member_number === 'number' && p.member_number > 0)
-              ? p.member_number
-              : memberNumberById.get(p.id);
+            let memberNumber: number | undefined = undefined;
+            if (typeof p.member_number === 'number' && p.member_number > 0) {
+              memberNumber = p.member_number;
+            } else if (/^\d+$/.test(String(p.id))) {
+              memberNumber = parseInt(String(p.id), 10);
+            } else {
+              maxExistingNumber += 1;
+              memberNumber = maxExistingNumber;
+              client.from('players').update({ member_number: memberNumber }).eq('id', p.id).then(() => {});
+            }
 
             return {
               id: p.id,
@@ -656,17 +673,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               },
             };
           });
-
-          // Auto-sync missing member_number back to Supabase database so Supabase table editor displays the sequence
-          const missingMemberNumberRows = playersData.filter((p: any) => typeof p.member_number !== 'number' || !p.member_number);
-          if (missingMemberNumberRows.length > 0) {
-            missingMemberNumberRows.forEach((p: any) => {
-              const seqNum = memberNumberById.get(p.id);
-              if (seqNum) {
-                client.from('players').update({ member_number: seqNum }).eq('id', p.id).then(() => {});
-              }
-            });
-          }
 
           setPlayers(mappedPlayers);
         } else if (initialPlayers.length > 0) {
