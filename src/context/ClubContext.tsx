@@ -572,9 +572,16 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
+  const lastFetchTimeRef = useRef<number>(0);
+
   // Hydrate from Supabase & Subscribe to Realtime Changes
-  const fetchSupabaseData = useCallback(async () => {
+  const fetchSupabaseData = useCallback(async (force = false) => {
     if (!isSupabaseConfigured || !supabase) return;
+    const now = Date.now();
+    if (!force && now - lastFetchTimeRef.current < 15000) {
+      return; // Throttled: prevents rapid duplicate queries
+    }
+    lastFetchTimeRef.current = now;
     const client = supabase;
 
     try {
@@ -880,7 +887,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const syncNow = useCallback(async () => {
-    await fetchSupabaseData();
+    await fetchSupabaseData(true);
     broadcastUpdate('SYNC_ALL');
   }, [fetchSupabaseData, broadcastUpdate]);
 
