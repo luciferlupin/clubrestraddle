@@ -62,8 +62,14 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
 
     if (!targetStep || targetStep === 1) {
       if (!formData.fullName.trim()) nextErrors.fullName = 'Enter your name as it appears on your ID.';
-      if (!formData.phone.trim()) nextErrors.phone = 'Enter your mobile number.';
-      else if (formData.phone.replace(/\D/g, '').slice(-10).length !== 10) nextErrors.phone = 'Enter a valid 10-digit mobile number.';
+      const cleanDigits = formData.phone.replace(/\D/g, '').slice(-10);
+      if (!formData.phone.trim()) {
+        nextErrors.phone = 'Enter your mobile number.';
+      } else if (cleanDigits.length !== 10) {
+        nextErrors.phone = 'Enter a valid 10-digit mobile number.';
+      } else if (!isPhoneVerified || verifiedPhoneNumber !== formData.phone) {
+        nextErrors.phone = 'Mobile SMS verification is mandatory. Please verify your phone via OTP to proceed to Step 2.';
+      }
       if (!formData.email.trim() || !formData.email.includes('@')) nextErrors.email = 'Enter a valid email address.';
     }
 
@@ -74,16 +80,16 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
       } else if (cleanAadhaar.length !== 12) {
         nextErrors.aadhaarNumber = 'Aadhaar number must be exactly 12 digits.';
       }
-      if (!formData.aadhaarPhotoUrl) nextErrors.aadhaarPhotoUrl = 'Add Aadhaar Card Front photo.';
-      if (!formData.aadhaarBackPhotoUrl) nextErrors.aadhaarBackPhotoUrl = 'Add Aadhaar Card Back photo.';
+      if (!formData.aadhaarPhotoUrl) nextErrors.aadhaarPhotoUrl = 'Aadhaar Card Front photo upload is mandatory to proceed.';
+      if (!formData.aadhaarBackPhotoUrl) nextErrors.aadhaarBackPhotoUrl = 'Aadhaar Card Back photo upload is mandatory to proceed.';
 
       const cleanPan = formData.panNumber.trim().toUpperCase();
       if (!cleanPan) {
         nextErrors.panNumber = 'PAN Card number is required.';
       } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(cleanPan)) {
-        nextErrors.panNumber = 'Enter a valid PAN, for example ABCDE1234F.';
+        nextErrors.panNumber = 'Enter a valid 10-character PAN (e.g. ABCDE1234F).';
       }
-      if (!formData.panPhotoUrl) nextErrors.panPhotoUrl = 'Add a clear PAN Card photo.';
+      if (!formData.panPhotoUrl) nextErrors.panPhotoUrl = 'PAN Card photo upload is mandatory to proceed.';
     }
 
     if (!targetStep || targetStep === 3) {
@@ -94,6 +100,19 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
   };
 
   const goToStep = (nextStep: RegistrationStep) => {
+    // Validate all previous steps before allowing step jump
+    for (let s = 1; s < nextStep; s++) {
+      const prevErrors = getValidationErrors(s as RegistrationStep);
+      if (Object.keys(prevErrors).length > 0) {
+        setErrors(prevErrors);
+        setStep(s as RegistrationStep);
+        if (s === 1 && !isPhoneVerified && formData.phone.replace(/\D/g, '').length >= 10) {
+          setIsVerifyModalOpen(true);
+        }
+        return;
+      }
+    }
+
     setStep(nextStep);
     setErrors({});
     window.requestAnimationFrame(() => {
@@ -104,7 +123,12 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
   const handleNext = () => {
     const stepErrors = getValidationErrors(step);
     setErrors(stepErrors);
-    if (Object.keys(stepErrors).length > 0) return;
+    if (Object.keys(stepErrors).length > 0) {
+      if (step === 1 && (!isPhoneVerified || verifiedPhoneNumber !== formData.phone) && formData.phone.replace(/\D/g, '').length >= 10) {
+        setIsVerifyModalOpen(true);
+      }
+      return;
+    }
 
     goToStep((step + 1) as RegistrationStep);
   };

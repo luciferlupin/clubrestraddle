@@ -99,8 +99,15 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     const errs: Record<string, string> = {};
 
     if (step === 1) {
-      if (!formData.fullName.trim()) errs.fullName = 'Full Name is required';
-      if (!formData.phone.trim()) errs.phone = 'Phone number is required';
+      if (!formData.fullName.trim()) errs.fullName = 'Full Legal Name is required';
+      const cleanPhoneDigits = formData.phone.replace(/\D/g, '').slice(-10);
+      if (!formData.phone.trim()) {
+        errs.phone = 'Phone number is required';
+      } else if (cleanPhoneDigits.length !== 10) {
+        errs.phone = 'Enter a valid 10-digit mobile number';
+      } else if (!isPhoneVerified || verifiedPhoneNumber !== formData.phone) {
+        errs.phone = 'Mobile SMS verification is mandatory. Please verify your phone via OTP to proceed to Step 2.';
+      }
       if (!formData.email.trim() || !formData.email.includes('@')) errs.email = 'Valid email is required';
       if (!formData.address.trim()) errs.address = 'Residential address is required';
     }
@@ -116,18 +123,18 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
       const cleanPan = formData.panNumber.trim().toUpperCase();
       if (!cleanPan) {
         errs.panNumber = 'PAN Card number is required';
-      } else if (cleanPan.length !== 10) {
-        errs.panNumber = 'PAN must be exactly 10 alphanumeric characters (e.g. ABCDE1234F)';
+      } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(cleanPan)) {
+        errs.panNumber = 'Enter a valid 10-character PAN (e.g. ABCDE1234F)';
       }
 
       if (!formData.aadhaarPhotoUrl) {
-        errs.aadhaarPhotoUrl = 'Aadhaar Card Front photo is required';
+        errs.aadhaarPhotoUrl = 'Aadhaar Card Front photo upload is mandatory to proceed';
       }
       if (!formData.aadhaarBackPhotoUrl) {
-        errs.aadhaarBackPhotoUrl = 'Aadhaar Card Back photo is required';
+        errs.aadhaarBackPhotoUrl = 'Aadhaar Card Back photo upload is mandatory to proceed';
       }
       if (!formData.panPhotoUrl) {
-        errs.panPhotoUrl = 'PAN Card photo is required';
+        errs.panPhotoUrl = 'PAN Card photo upload is mandatory to proceed';
       }
     }
 
@@ -140,7 +147,12 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
   };
 
   const handleNextStep = () => {
-    if (!validateStep(currentStep)) return;
+    if (!validateStep(currentStep)) {
+      if (currentStep === 1 && (!isPhoneVerified || verifiedPhoneNumber !== formData.phone) && formData.phone.replace(/\D/g, '').length >= 10) {
+        setIsVerifyModalOpen(true);
+      }
+      return;
+    }
 
     if (currentStep < 4) {
       setCurrentStep((currentStep + 1) as FormWizardStep);
@@ -502,7 +514,16 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
                   onClick={() => {
                     if (s.num < currentStep) {
                       setCurrentStep(s.num);
-                    } else if (s.num === currentStep + 1 && validateStep(currentStep)) {
+                    } else {
+                      for (let stepIdx = 1; stepIdx < s.num; stepIdx++) {
+                        if (!validateStep(stepIdx as FormWizardStep)) {
+                          if (stepIdx === 1 && (!isPhoneVerified || verifiedPhoneNumber !== formData.phone) && formData.phone.replace(/\D/g, '').length >= 10) {
+                            setIsVerifyModalOpen(true);
+                          }
+                          setCurrentStep(stepIdx as FormWizardStep);
+                          return;
+                        }
+                      }
                       setCurrentStep(s.num);
                     }
                   }}
