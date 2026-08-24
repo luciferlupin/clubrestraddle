@@ -1225,8 +1225,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsRealtimeConnected(status === 'SUBSCRIBED');
       });
 
-    // Gentle backup sync (60 seconds) & instant refresh when tab becomes visible or focused
-    const interval = setInterval(fetchSupabaseData, 60000);
+    // Instant refresh when tab becomes visible or focused (Zero background polling)
     const handleFocus = () => fetchSupabaseData();
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -1237,7 +1236,6 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       client.removeChannel(realtimeChannel);
