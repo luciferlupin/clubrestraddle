@@ -963,27 +963,11 @@ export const MobileAdminPortal: React.FC = () => {
       </main>
 
       {/* ── Apple Style Floating Bottom Tab Bar ────────────────────── */}
-      <nav style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 30,
-        height: '66px',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        backgroundColor: 'rgba(18, 14, 20, 0.92)',
-        backdropFilter: 'blur(24px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-around',
-        boxSizing: 'content-box'
-      }}>
+      <nav className="mobile-bottom-nav" aria-label="Admin portal sections">
         {[
           { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-          { id: 'players', label: 'Members', icon: Users },
-          { id: 'attendance', label: 'Attendance', icon: CheckCircle2 },
+          { id: 'players', label: 'Members', icon: Users, badge: pendingKYCCount },
+          { id: 'attendance', label: 'Attendance', icon: CheckCircle2, badge: pendingEntryCount },
           { id: 'finance', label: 'Expenses', icon: Receipt },
         ].map(item => {
           const Icon = item.icon;
@@ -992,6 +976,7 @@ export const MobileAdminPortal: React.FC = () => {
             <button
               key={item.id}
               type="button"
+              className={`nav-tab-item ${isActive ? 'active' : ''}`}
               aria-current={isActive ? 'page' : undefined}
               aria-label={`Open ${item.label}`}
               onClick={() => {
@@ -999,26 +984,10 @@ export const MobileAdminPortal: React.FC = () => {
                 if (item.id === 'players') setPlayerView('all');
                 setSearchQuery('');
               }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '4px',
-                color: isActive ? '#f43f5e' : '#94a3b8',
-                cursor: 'pointer',
-                padding: '7px 10px',
-                minWidth: '60px',
-                minHeight: '48px',
-                position: 'relative',
-                transition: 'all 0.15s ease'
-              }}
             >
-              <Icon size={20} color={isActive ? '#f43f5e' : '#94a3b8'} />
-              {item.id === 'players' && pendingKYCCount > 0 && <span className="nav-badge">{pendingKYCCount}</span>}
-              {item.id === 'attendance' && pendingEntryCount > 0 && <span className="nav-badge">{pendingEntryCount}</span>}
-              <span style={{ fontSize: '0.68rem', fontWeight: isActive ? 700 : 500 }}>
+              <Icon size={20} />
+              {Boolean(item.badge && item.badge > 0) && <span className="nav-badge">{item.badge}</span>}
+              <span className="nav-tab-label">
                 {item.label}
               </span>
             </button>
@@ -1027,25 +996,13 @@ export const MobileAdminPortal: React.FC = () => {
 
         <button
           type="button"
+          className={`nav-tab-item ${activeTab === 'staff' || activeTab === 'audit' ? 'active' : ''}`}
           aria-label="Open admin tools"
           aria-current={activeTab === 'staff' || activeTab === 'audit' ? 'page' : undefined}
           onClick={() => setIsMoreOpen(true)}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            color: activeTab === 'staff' || activeTab === 'audit' ? '#f43f5e' : '#94a3b8',
-            cursor: 'pointer',
-            padding: '7px 10px',
-            minWidth: '60px',
-            minHeight: '48px'
-          }}
         >
-          <MoreHorizontal size={20} color={activeTab === 'staff' || activeTab === 'audit' ? '#f43f5e' : '#94a3b8'} />
-          <span style={{ fontSize: '0.68rem', fontWeight: 500 }}>
+          <MoreHorizontal size={20} />
+          <span className="nav-tab-label">
             Tools
           </span>
         </button>
