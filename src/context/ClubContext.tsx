@@ -601,7 +601,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setStaffUsers(mappedStaff);
       }
 
-      const { data: playersData, error: pErr } = await client.from('players').select('*').order('created_at', { ascending: false });
+      const { data: playersData, error: pErr } = await client.from('players').select('*').order('created_at', { ascending: false }).limit(250);
       if (!pErr && playersData) {
         if (playersData.length > 0) {
           let maxExistingNumber = 0;
@@ -713,7 +713,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      const { data: checkInsData, error: chkErr } = await client.from('daily_check_ins').select('*').order('created_at', { ascending: false });
+      const { data: checkInsData, error: chkErr } = await client.from('daily_check_ins').select('*').order('created_at', { ascending: false }).limit(200);
       if (!chkErr && checkInsData) {
         if (checkInsData.length > 0) {
           const mappedCheckIns: DailyCheckIn[] = checkInsData.map((c: any) => ({
@@ -756,7 +756,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      const { data: tournamentsData, error: trnErr } = await client.from('tournaments').select('*').order('created_at', { ascending: false });
+      const { data: tournamentsData, error: trnErr } = await client.from('tournaments').select('*').order('created_at', { ascending: false }).limit(50);
       if (!trnErr && tournamentsData) {
         if (tournamentsData.length > 0) {
           const mappedTournaments: Tournament[] = tournamentsData.map((t: any) => ({
@@ -783,7 +783,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      const { data: entriesData, error: entriesError } = await client.from('tournament_entries').select('*');
+      const { data: entriesData, error: entriesError } = await client.from('tournament_entries').select('*').order('registered_at', { ascending: false }).limit(250);
       if (entriesError) console.error('Supabase tournament entries fetch error:', entriesError.message);
       if (entriesData) {
         const mappedEntries: TournamentEntry[] = entriesData.map((e: any) => ({
@@ -807,7 +807,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setEntries(mappedEntries);
       }
 
-      const { data: cashData, error: cashError } = await client.from('cash_transactions').select('*').order('timestamp', { ascending: false });
+      const { data: cashData, error: cashError } = await client.from('cash_transactions').select('*').order('timestamp', { ascending: false }).limit(250);
       if (cashError) console.error('Supabase cash transactions fetch error:', cashError.message);
       if (cashData) {
         const mappedCash: CashTransaction[] = cashData.map((t: any) => ({
@@ -826,7 +826,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCashTransactions(mappedCash);
       }
 
-      const { data: expensesData, error: expensesError } = await client.from('expenses').select('*').order('date', { ascending: false });
+      const { data: expensesData, error: expensesError } = await client.from('expenses').select('*').order('date', { ascending: false }).limit(150);
       if (expensesError) console.error('Supabase expenses fetch error:', expensesError.message);
       if (expensesData) {
         const mappedExpenses: Expense[] = expensesData.map((exp: any) => ({
@@ -843,7 +843,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setExpenses(mappedExpenses);
       }
 
-      const { data: auditData, error: auditError } = await client.from('audit_logs').select('*').order('timestamp', { ascending: false });
+      const { data: auditData, error: auditError } = await client.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(100);
       if (auditError) console.error('Supabase audit logs fetch error:', auditError.message);
       if (auditData) {
         const mappedLogs: AuditLog[] = auditData.map((l: any) => ({
@@ -857,7 +857,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAuditLogs(mappedLogs);
       }
 
-      const { data: chipData, error: chipError } = await client.from('chip_requests').select('*').order('requested_at', { ascending: false });
+      const { data: chipData, error: chipError } = await client.from('chip_requests').select('*').order('requested_at', { ascending: false }).limit(150);
       if (chipError) console.error('Supabase chip requests fetch error:', chipError.message);
       if (chipData) {
         const mappedChips: ChipRequest[] = chipData.map((c: any) => ({
