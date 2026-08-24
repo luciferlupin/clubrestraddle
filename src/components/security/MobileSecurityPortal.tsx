@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -84,6 +84,16 @@ export const MobileSecurityPortal: React.FC = () => {
   const [isQRStandeeOpen, setIsQRStandeeOpen] = useState(false);
   const [pendingApproval, setPendingApproval] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
+
+  // Automatically deselect if player is deleted
+  useEffect(() => {
+    if (selectedPlayer && !players.some(p => p.id === selectedPlayer.id)) {
+      setSelectedPlayer(null);
+    }
+    if (pendingApproval && !players.some(p => p.id === pendingApproval.player.id)) {
+      setPendingApproval(null);
+    }
+  }, [players, selectedPlayer, pendingApproval]);
 
   const pendingQueuePlayers = players.filter(p => {
     const checkIn = todayCheckIns.find(c => c.playerId === p.id);

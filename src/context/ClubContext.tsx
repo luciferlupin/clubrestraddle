@@ -1456,8 +1456,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const today = getTodayDateString();
 
   const todayCheckIns = useMemo(() => {
-    return checkIns.filter(c => c.checkInDate === today || c.verificationStatus === 'pending');
-  }, [checkIns, today]);
+    const validPlayerIds = new Set(players.map(p => p.id));
+    return checkIns
+      .filter(c => validPlayerIds.has(c.playerId))
+      .filter(c => c.checkInDate === today || c.verificationStatus === 'pending');
+  }, [checkIns, players, today]);
 
   const totalCashInAmount = useMemo(() => {
     return cashTransactions
@@ -2459,7 +2462,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const deletePlayer = (playerId: string) => {
     const p = players.find(x => x.id === playerId);
-    const playerEntries = entries.filter(entry => entry.playerId === playerId);
+    const pName = p?.fullName?.trim().toLowerCase();
+    const pPhone = p?.phone?.trim();
+    const playerEntries = entries.filter(entry => entry.playerId === playerId || (pName && entry.playerName?.toLowerCase() === pName));
     const receiptNums = new Set(playerEntries.map(e => e.receiptNumber).filter(Boolean));
     const entryIds = new Set(playerEntries.map(e => e.id));
 
@@ -2470,28 +2475,40 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return next;
     });
     setCheckIns(prev => {
-      const next = prev.filter(c => c.playerId !== playerId);
+      const next = prev.filter(c => 
+        c.playerId !== playerId && 
+        c.id !== playerId &&
+        (!pName || c.playerName?.toLowerCase() !== pName) &&
+        (!pPhone || c.playerPhone !== pPhone)
+      );
       broadcastUpdate('CHECK_INS_UPDATED', next);
       saveToStorage(STORAGE_KEYS.CHECK_INS, next);
       return next;
     });
     setEntries(prev => {
-      const next = prev.filter(entry => entry.playerId !== playerId);
+      const next = prev.filter(entry => 
+        entry.playerId !== playerId &&
+        (!pName || entry.playerName?.toLowerCase() !== pName)
+      );
       broadcastUpdate('ENTRIES_UPDATED', next);
       saveToStorage(STORAGE_KEYS.ENTRIES, next);
       return next;
     });
     setChipRequests(prev => {
-      const next = prev.filter(request => request.playerId !== playerId);
+      const next = prev.filter(request => 
+        request.playerId !== playerId &&
+        (!pName || request.playerName?.toLowerCase() !== pName)
+      );
       broadcastUpdate('CHIP_REQUESTS_UPDATED', next);
       saveToStorage(STORAGE_KEYS.CHIP_REQUESTS, next);
       return next;
     });
     setCashTransactions(prev => {
       const next = prev.filter(t => 
-        (!p?.fullName || t.playerName?.toLowerCase() !== p.fullName.toLowerCase()) &&
+        (!pName || t.playerName?.toLowerCase() !== pName) &&
         (!receiptNums.has(t.referenceId || '')) &&
-        (!entryIds.has(t.referenceId || ''))
+        (!entryIds.has(t.referenceId || '')) &&
+        (t.referenceId !== playerId)
       );
       broadcastUpdate('CASH_TXNS_UPDATED', next);
       saveToStorage(STORAGE_KEYS.CASH_TXNS, next);
@@ -2509,9 +2526,18 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           client.from('tournament_entries').delete().eq('player_id', playerId),
           client.from('chip_requests').delete().eq('player_id', playerId),
         ]);
+        if (p?.fullName) {
+          client.from('daily_check_ins').delete().eq('player_name', p.fullName).then(() => {});
+          client.from('tournament_entries').delete().eq('player_name', p.fullName).then(() => {});
+          client.from('chip_requests').delete().eq('player_name', p.fullName).then(() => {});
+        }
+        if (pPhone) {
+          client.from('daily_check_ins').delete().eq('player_phone', pPhone).then(() => {});
+        }
         Array.from(receiptNums).forEach(rec => {
           client.from('cash_transactions').delete().eq('reference_id', rec).then(() => {});
         });
+        client.from('cash_transactions').delete().eq('reference_id', playerId).then(() => {});
         const { error } = await client.from('players').delete().eq('id', playerId);
         if (error) console.error('Supabase player delete error:', error.message);
       })();

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   Clock,
@@ -62,6 +62,13 @@ export const SecurityPortal: React.FC = () => {
     }
     return null;
   });
+
+  // Automatically deselect if the player is deleted
+  useEffect(() => {
+    if (selectedPlayer && !players.some(p => p.id === selectedPlayer.id)) {
+      setSelectedPlayer(null);
+    }
+  }, [players, selectedPlayer]);
 
   const selectedPlayerCheckIn = selectedPlayer
     ? todayCheckIns.find(c => c.playerId === selectedPlayer.id)
