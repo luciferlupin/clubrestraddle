@@ -57,12 +57,12 @@ export const DocumentPhotoUpload: React.FC<DocumentPhotoUploadProps> = ({
     setCompressing(true);
 
     try {
-      // Compress client-side to max 1200px and ~70KB to take minimum storage while maintaining crystal clear ID text
+      // Compress client-side to max 900px and ~50-65KB to take minimum storage while maintaining crystal clear ID text
       const result = await compressImageFile(file, file.name, {
-        maxWidth: 1200,
-        maxHeight: 1200,
-        quality: 0.72,
-        targetMaxKb: 100,
+        maxWidth: 900,
+        maxHeight: 900,
+        quality: 0.68,
+        targetMaxKb: 65,
       });
 
       setCompressionStats({

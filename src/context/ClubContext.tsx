@@ -1225,14 +1225,21 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsRealtimeConnected(status === 'SUBSCRIBED');
       });
 
-    // Secondary 6-second polling & window focus sync fallback
-    const interval = setInterval(fetchSupabaseData, 6000);
+    // Gentle backup sync (60 seconds) & instant refresh when tab becomes visible or focused
+    const interval = setInterval(fetchSupabaseData, 60000);
     const handleFocus = () => fetchSupabaseData();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchSupabaseData();
+      }
+    };
     window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       client.removeChannel(realtimeChannel);
     };
   }, [fetchSupabaseData]);
