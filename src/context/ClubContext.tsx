@@ -928,6 +928,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               email: p.email || '',
               membershipTier: p.membership_tier || 'Standard',
               kycStatus: p.kyc_status || 'pending',
+              phoneVerified: Boolean(p.phone_verified),
+              phoneVerifiedAt: p.phone_verified_at || undefined,
               registeredAt: p.created_at || new Date().toISOString(),
               totalVisits: p.total_visits || 1,
               notes: p.notes,
@@ -935,6 +937,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 fullName: p.full_name || 'Member Player',
                 phone: p.phone || '',
                 email: p.email || '',
+                phoneVerified: Boolean(p.phone_verified),
+                phoneVerifiedAt: p.phone_verified_at || undefined,
                 dateOfBirth: p.date_of_birth || '1995-01-01',
                 aadhaarNumber: p.aadhaar_number || aadhaarParsed,
                 panNumber: p.pan_number || panParsed,
@@ -1855,43 +1859,27 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       verificationStatus: 'pending',
     };
 
-    setPlayers(prev => [newPlayer, ...prev.filter(p => p.id !== newId)]);
-    setCheckIns(prev => [newCheckIn, ...prev.filter(c => c.id !== newCheckIn.id)]);
+    const nextPlayers = [newPlayer, ...players.filter(p => p.id !== newId)];
+    const nextCheckIns = [newCheckIn, ...checkIns.filter(c => c.id !== newCheckIn.id)];
+
+    setPlayers(nextPlayers);
+    setCheckIns(nextCheckIns);
     setSelectedPlayerIdState(newId);
+
+    saveToStorage(STORAGE_KEYS.PLAYERS, nextPlayers);
+    saveToStorage(STORAGE_KEYS.CHECK_INS, nextCheckIns);
+    broadcastUpdate('PLAYERS_UPDATED', nextPlayers);
+    broadcastUpdate('NEW_CHECK_IN', newCheckIn);
+    broadcastUpdate('CHECK_INS_UPDATED', nextCheckIns);
 
     // Sync to Supabase if connected
     if (isSupabaseConfigured && supabase) {
       supabase
         .from('players')
-        .insert({
-          id: newPlayer.id,
-          member_number: newPlayer.memberNumber,
-          full_name: newPlayer.fullName,
-          phone: newPlayer.phone,
-          email: newPlayer.email,
-          membership_tier: newPlayer.membershipTier,
-          kyc_status: newPlayer.kycStatus,
-          phone_verified: newPlayer.phoneVerified || false,
-          phone_verified_at: newPlayer.phoneVerifiedAt || null,
-          date_of_birth: completeKYC.dateOfBirth,
-          govt_id_type: completeKYC.govtIdType === 'Aadhaar & PAN Card' ? 'Aadhaar Card' : (completeKYC.govtIdType || 'Aadhaar Card'),
-          govt_id_number: completeKYC.govtIdNumber,
-          aadhaar_number: completeKYC.aadhaarNumber || null,
-          pan_number: completeKYC.panNumber || null,
-          aadhaar_photo_url: completeKYC.aadhaarPhotoUrl || null,
-          aadhaar_back_photo_url: completeKYC.aadhaarBackPhotoUrl || null,
-          pan_photo_url: completeKYC.panPhotoUrl || null,
-          address: completeKYC.address,
-          emergency_contact_name: completeKYC.emergencyContactName,
-          emergency_contact_phone: completeKYC.emergencyContactPhone,
-          photo_url: completeKYC.photoUrl,
-          agreed_to_rules: completeKYC.agreedToRules,
-          total_visits: 1,
-          created_at: nowIso,
-        })
+        .upsert(playerToDatabaseRow(newPlayer), { onConflict: 'id' })
         .then(({ error }) => {
           if (error) {
-            console.error('Supabase player insert error:', error.message);
+            console.error('Supabase player registration upsert error:', error.message);
           } else {
             console.log('Player registration synced to Supabase:', newPlayer.id);
           }
@@ -1899,7 +1887,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       supabase
         .from('daily_check_ins')
-        .insert({
+        .upsert({
           id: newCheckIn.id,
           player_id: newCheckIn.playerId,
           player_name: newCheckIn.playerName,
@@ -1907,10 +1895,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           check_in_date: newCheckIn.checkInDate,
           check_in_time: newCheckIn.checkInTime,
           verification_status: newCheckIn.verificationStatus,
-        })
+          created_at: nowIso,
+        }, { onConflict: 'id' })
         .then(({ error }) => {
           if (error) {
-            console.error('Supabase check-in insert error:', error.message);
+            console.error('Supabase check-in upsert error:', error.message);
           } else {
             console.log('Daily check-in synced to Supabase:', newCheckIn.id);
           }
@@ -2385,6 +2374,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return p;
       });
       broadcastUpdate('PLAYERS_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.PLAYERS, next);
       return next;
     });
 
@@ -3388,6 +3378,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return p;
       });
       broadcastUpdate('PLAYERS_UPDATED', next);
+      saveToStorage(STORAGE_KEYS.PLAYERS, next);
       return next;
     });
 

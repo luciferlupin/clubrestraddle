@@ -46,7 +46,14 @@ export const AdminPlayersView: React.FC = () => {
           p.id.toLowerCase().includes(search.toLowerCase()) ||
           p.email.toLowerCase().includes(search.toLowerCase())
       ))
-    .sort((a, b) => Number(formatPlayerNumber(a)) - Number(formatPlayerNumber(b)));
+    .sort((a, b) => {
+      if (a.kycStatus === 'pending' && b.kycStatus !== 'pending') return -1;
+      if (b.kycStatus === 'pending' && a.kycStatus !== 'pending') return 1;
+      const timeA = new Date(a.registeredAt || 0).getTime();
+      const timeB = new Date(b.registeredAt || 0).getTime();
+      if (timeA !== timeB) return timeB - timeA;
+      return Number(formatPlayerNumber(a)) - Number(formatPlayerNumber(b));
+    });
 
   const paginatedPlayers = filteredPlayers.slice((page - 1) * pageSize, page * pageSize);
 

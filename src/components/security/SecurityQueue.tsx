@@ -71,6 +71,13 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
         return !!checkIn || player.kycStatus === 'pending';
       }
       return true;
+    })
+    .sort((a, b) => {
+      const aPending = a.checkIn?.verificationStatus === 'pending' || a.player.kycStatus === 'pending';
+      const bPending = b.checkIn?.verificationStatus === 'pending' || b.player.kycStatus === 'pending';
+      if (aPending && !bPending) return -1;
+      if (!aPending && bPending) return 1;
+      return new Date(b.player.registeredAt || 0).getTime() - new Date(a.player.registeredAt || 0).getTime();
     });
 
   return (

@@ -64,16 +64,22 @@ export const AdminAttendanceView: React.FC = () => {
     setIsCreateModalOpen(false);
   };
 
-  const filteredCheckIns = checkIns.filter(c => {
-    const matchesSearch =
-      c.playerName.toLowerCase().includes(search.toLowerCase()) ||
-      c.playerPhone.includes(search) ||
-      c.id.toLowerCase().includes(search.toLowerCase());
+  const filteredCheckIns = checkIns
+    .filter(c => {
+      const matchesSearch =
+        c.playerName.toLowerCase().includes(search.toLowerCase()) ||
+        c.playerPhone.includes(search) ||
+        c.id.toLowerCase().includes(search.toLowerCase());
 
-    if (!matchesSearch) return false;
-    if (statusFilter !== 'all' && c.verificationStatus !== statusFilter) return false;
-    return true;
-  });
+      if (!matchesSearch) return false;
+      if (statusFilter !== 'all' && c.verificationStatus !== statusFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.verificationStatus === 'pending' && b.verificationStatus !== 'pending') return -1;
+      if (b.verificationStatus === 'pending' && a.verificationStatus !== 'pending') return 1;
+      return `${b.checkInDate} ${b.checkInTime}`.localeCompare(`${a.checkInDate} ${a.checkInTime}`);
+    });
 
   const paginatedCheckIns = filteredCheckIns.slice((page - 1) * pageSize, page * pageSize);
 

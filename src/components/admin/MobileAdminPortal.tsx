@@ -103,13 +103,26 @@ export const MobileAdminPortal: React.FC = () => {
         p.phone.includes(searchQuery) ||
         p.id.toLowerCase().includes(searchQuery.toLowerCase())
       ))
-    .sort((a, b) => Number(formatPlayerNumber(a)) - Number(formatPlayerNumber(b)));
+    .sort((a, b) => {
+      if (a.kycStatus === 'pending' && b.kycStatus !== 'pending') return -1;
+      if (b.kycStatus === 'pending' && a.kycStatus !== 'pending') return 1;
+      const timeA = new Date(a.registeredAt || 0).getTime();
+      const timeB = new Date(b.registeredAt || 0).getTime();
+      if (timeA !== timeB) return timeB - timeA;
+      return Number(formatPlayerNumber(a)) - Number(formatPlayerNumber(b));
+    });
 
-  const filteredCheckIns = checkIns.filter(c =>
-    c.playerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.playerPhone.includes(searchQuery) ||
-    c.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCheckIns = checkIns
+    .filter(c =>
+      c.playerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.playerPhone.includes(searchQuery) ||
+      c.id.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (a.verificationStatus === 'pending' && b.verificationStatus !== 'pending') return -1;
+      if (b.verificationStatus === 'pending' && a.verificationStatus !== 'pending') return 1;
+      return `${b.checkInDate} ${b.checkInTime}`.localeCompare(`${a.checkInDate} ${a.checkInTime}`);
+    });
 
   const handleExpenseSubmit = (e: React.FormEvent) => {
     e.preventDefault();

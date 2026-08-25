@@ -1051,12 +1051,12 @@ export const MobileCashierPortal: React.FC = () => {
           {/* Filter Pills */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {/* Category Pills */}
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '3px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
               <button
                 type="button"
                 className={`btn btn-sm ${ledgerTypeFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setLedgerTypeFilter('all')}
-                style={{ fontSize: '0.72rem', padding: '4px 8px', whiteSpace: 'nowrap' }}
+                style={{ fontSize: '0.72rem', padding: '4px 10px', whiteSpace: 'nowrap', flexShrink: 0 }}
               >
                 All ({unifiedTodayItems.length})
               </button>
@@ -1064,7 +1064,7 @@ export const MobileCashierPortal: React.FC = () => {
                 type="button"
                 className={`btn btn-sm ${ledgerTypeFilter === 'tournament' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setLedgerTypeFilter('tournament')}
-                style={{ fontSize: '0.72rem', padding: '4px 8px', whiteSpace: 'nowrap' }}
+                style={{ fontSize: '0.72rem', padding: '4px 10px', whiteSpace: 'nowrap', flexShrink: 0 }}
               >
                 🏆 Entries ({todayEntries.length})
               </button>
@@ -1072,7 +1072,7 @@ export const MobileCashierPortal: React.FC = () => {
                 type="button"
                 className={`btn btn-sm ${ledgerTypeFilter === 'cash_in' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setLedgerTypeFilter('cash_in')}
-                style={{ fontSize: '0.72rem', padding: '4px 8px', whiteSpace: 'nowrap', color: '#34d399' }}
+                style={{ fontSize: '0.72rem', padding: '4px 10px', whiteSpace: 'nowrap', color: '#34d399', flexShrink: 0 }}
               >
                 + Cash In
               </button>
@@ -1080,7 +1080,7 @@ export const MobileCashierPortal: React.FC = () => {
                 type="button"
                 className={`btn btn-sm ${ledgerTypeFilter === 'cash_out' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setLedgerTypeFilter('cash_out')}
-                style={{ fontSize: '0.72rem', padding: '4px 8px', whiteSpace: 'nowrap', color: '#f87171' }}
+                style={{ fontSize: '0.72rem', padding: '4px 10px', whiteSpace: 'nowrap', color: '#f87171', flexShrink: 0 }}
               >
                 - Payouts
               </button>
@@ -1088,19 +1088,19 @@ export const MobileCashierPortal: React.FC = () => {
                 type="button"
                 className={`btn btn-sm ${ledgerTypeFilter === 'expense' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setLedgerTypeFilter('expense')}
-                style={{ fontSize: '0.72rem', padding: '4px 8px', whiteSpace: 'nowrap', color: '#fda4af' }}
+                style={{ fontSize: '0.72rem', padding: '4px 10px', whiteSpace: 'nowrap', color: '#fda4af', flexShrink: 0 }}
               >
                 🧾 Expenses
               </button>
             </div>
 
             {/* Channel Pills */}
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '3px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
               <button
                 type="button"
                 className={`btn btn-sm ${ledgerChannelFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setLedgerChannelFilter('all')}
-                style={{ fontSize: '0.7rem', padding: '3px 7px', whiteSpace: 'nowrap' }}
+                style={{ fontSize: '0.7rem', padding: '4px 9px', whiteSpace: 'nowrap', flexShrink: 0 }}
               >
                 All Modes
               </button>
@@ -1108,7 +1108,7 @@ export const MobileCashierPortal: React.FC = () => {
                 type="button"
                 className={`btn btn-sm ${ledgerChannelFilter === 'Cash' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setLedgerChannelFilter('Cash')}
-                style={{ fontSize: '0.7rem', padding: '3px 7px', whiteSpace: 'nowrap', color: ledgerChannelFilter === 'Cash' ? undefined : '#fbbf24' }}
+                style={{ fontSize: '0.7rem', padding: '4px 9px', whiteSpace: 'nowrap', flexShrink: 0, color: ledgerChannelFilter === 'Cash' ? undefined : '#fbbf24' }}
               >
                 💵 Cash ({formatCurrency(todayPhysicalCashBalance)})
               </button>
@@ -1116,7 +1116,7 @@ export const MobileCashierPortal: React.FC = () => {
                 type="button"
                 className={`btn btn-sm ${ledgerChannelFilter === 'UPI/Digital' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setLedgerChannelFilter('UPI/Digital')}
-                style={{ fontSize: '0.7rem', padding: '3px 7px', whiteSpace: 'nowrap', color: ledgerChannelFilter === 'UPI/Digital' ? undefined : '#38bdf8' }}
+                style={{ fontSize: '0.7rem', padding: '4px 9px', whiteSpace: 'nowrap', flexShrink: 0, color: ledgerChannelFilter === 'UPI/Digital' ? undefined : '#38bdf8' }}
               >
                 📱 UPI ({formatCurrency(todayUpiBalance)})
               </button>
@@ -1124,7 +1124,7 @@ export const MobileCashierPortal: React.FC = () => {
                 type="button"
                 className={`btn btn-sm ${ledgerChannelFilter === 'Bank Transfer' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setLedgerChannelFilter('Bank Transfer')}
-                style={{ fontSize: '0.7rem', padding: '3px 7px', whiteSpace: 'nowrap', color: ledgerChannelFilter === 'Bank Transfer' ? undefined : '#c084fc' }}
+                style={{ fontSize: '0.7rem', padding: '4px 9px', whiteSpace: 'nowrap', flexShrink: 0, color: ledgerChannelFilter === 'Bank Transfer' ? undefined : '#c084fc' }}
               >
                 🏦 Bank ({formatCurrency(todayBankBalance)})
               </button>
@@ -1144,10 +1144,10 @@ export const MobileCashierPortal: React.FC = () => {
                   key={`${item.sourceType}-${item.id}`}
                   className="m-card"
                   style={{
-                    padding: '12px',
+                    padding: '12px 14px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px',
+                    gap: '10px',
                     borderLeft: `4px solid ${
                       item.sourceType === 'tournament_entry'
                         ? '#c084fc'
@@ -1159,36 +1159,39 @@ export const MobileCashierPortal: React.FC = () => {
                     }`,
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#ffffff' }}>{item.title}</div>
-                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>{item.description}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#ffffff', wordBreak: 'break-word', lineHeight: 1.3 }}>{item.title}</div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px', wordBreak: 'break-word', lineHeight: 1.35 }}>{item.description}</div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div
                         style={{
                           fontWeight: 900,
                           fontSize: '1rem',
                           color: (item.sourceType === 'tournament_entry' || item.sourceType === 'cash_in') ? '#34d399' : '#f87171',
+                          lineHeight: 1.2,
                         }}
                       >
                         {(item.sourceType === 'tournament_entry' || item.sourceType === 'cash_in') ? '+' : '-'}
                         {formatCurrency(item.amount)}
                       </div>
-                      <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', display: 'block', marginTop: '2px' }}>
                         {formatTimeOnly(item.timestamp)}
                       </span>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '6px', borderTop: '1px solid rgba(255,255,255,0.06)', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', minWidth: 0, flex: '1 1 auto', overflow: 'hidden' }}>
                       <span
                         style={{
                           fontSize: '0.68rem',
                           fontWeight: 700,
                           padding: '2px 6px',
                           borderRadius: '4px',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
                           background: item.paymentMethod === 'Cash' ? 'rgba(251, 191, 36, 0.15)' : item.paymentMethod === 'UPI/Digital' ? 'rgba(56, 189, 248, 0.15)' : item.paymentMethod === 'Bank Transfer' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(52, 211, 153, 0.15)',
                           color: item.paymentMethod === 'Cash' ? '#fbbf24' : item.paymentMethod === 'UPI/Digital' ? '#38bdf8' : item.paymentMethod === 'Bank Transfer' ? '#c084fc' : '#34d399',
                         }}
@@ -1196,76 +1199,78 @@ export const MobileCashierPortal: React.FC = () => {
                         {item.paymentMethod === 'Cash' ? '💵 Cash' : item.paymentMethod === 'UPI/Digital' ? '📱 UPI' : item.paymentMethod === 'Bank Transfer' ? '🏦 Bank' : '💳 Card'}
                       </span>
                       {item.playerName && (
-                        <span style={{ fontSize: '0.74rem', color: '#cbd5e1' }}>
+                        <span style={{ fontSize: '0.74rem', color: '#cbd5e1', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {item.playerName}
                         </span>
                       )}
                     </div>
 
-                    {(item.entryObj || item.cashTxnObj) && (
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                      {(item.entryObj || item.cashTxnObj) && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '3px 8px', fontSize: '0.70rem', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
+                          onClick={() => {
+                            if (item.entryObj) {
+                              const entry = item.entryObj;
+                              const playerObj = players.find(p => p.id === entry.playerId);
+                              const tournamentObj = tournaments.find(t => t.name === entry.tournamentName);
+                              setSelectedInvoice({
+                                invoiceNumber: entry.receiptNumber,
+                                invoiceDate: entry.registeredAt,
+                                category: 'Tournament Entry & Service Charge',
+                                playerId: playerObj ? formatPlayerNumber(playerObj) : entry.playerId,
+                                playerName: entry.playerName,
+                                playerPhone: entry.playerPhone || playerObj?.phone,
+                                playerEmail: playerObj?.email,
+                                govtIdType: playerObj?.kyc.govtIdType,
+                                govtIdNumber: playerObj?.kyc.govtIdNumber,
+                                membershipTier: playerObj?.membershipTier,
+                                tableLocation: `${entry.tableNumber || 'Assigned'} • ${entry.seatNumber || 'Assigned'}`,
+                                eventName: `${formatClubLabel(entry.tournamentName)}`,
+                                eventDate: `Texas • ${formatDateOnly(entry.registeredAt)} • ${formatTimeOnly(entry.registeredAt)}`,
+                                eventDetails: `Texas • MTC • Table ${entry.tableNumber || 'Assigned'} • Seat ${entry.seatNumber || 'Assigned'}`,
+                                items: [
+                                  {
+                                    description: `${formatClubLabel(entry.tournamentName)} - Player Entry Charge`,
+                                    details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Chips`,
+                                    chips: tournamentObj?.startingChips || 50000,
+                                    amount: entry.buyInAmount,
+                                  },
+                                  {
+                                    description: 'Club Service Charges & Tournament Organization',
+                                    details: 'Club tournament organization & dealer service fee',
+                                    amount: entry.rakeAmount,
+                                  },
+                                ],
+                                subtotal: entry.buyInAmount,
+                                serviceCharge: entry.rakeAmount,
+                                totalAmount: entry.buyInAmount + entry.rakeAmount,
+                                paymentMethod: entry.paymentMethod,
+                                paymentReference: entry.paymentReference,
+                                cashierName: entry.cashierName,
+                              });
+                            } else if (item.cashTxnObj) {
+                              const matchedPlayer = players.find(p => p.fullName.toLowerCase() === (item.cashTxnObj?.playerName || '').toLowerCase());
+                              const inv = generateCashTransactionInvoice(item.cashTxnObj, matchedPlayer, staffName);
+                              setSelectedInvoice(inv);
+                            }
+                          }}
+                        >
+                          <Eye size={12} /> View Bill
+                        </button>
+                      )}
                       <button
                         type="button"
-                        className="btn btn-secondary btn-sm"
-                        style={{ padding: '3px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                        onClick={() => {
-                          if (item.entryObj) {
-                            const entry = item.entryObj;
-                            const playerObj = players.find(p => p.id === entry.playerId);
-                            const tournamentObj = tournaments.find(t => t.name === entry.tournamentName);
-                            setSelectedInvoice({
-                              invoiceNumber: entry.receiptNumber,
-                              invoiceDate: entry.registeredAt,
-                              category: 'Tournament Entry & Service Charge',
-                              playerId: playerObj ? formatPlayerNumber(playerObj) : entry.playerId,
-                              playerName: entry.playerName,
-                              playerPhone: entry.playerPhone || playerObj?.phone,
-                              playerEmail: playerObj?.email,
-                              govtIdType: playerObj?.kyc.govtIdType,
-                              govtIdNumber: playerObj?.kyc.govtIdNumber,
-                              membershipTier: playerObj?.membershipTier,
-                              tableLocation: `${entry.tableNumber || 'Assigned'} • ${entry.seatNumber || 'Assigned'}`,
-                              eventName: `${formatClubLabel(entry.tournamentName)}`,
-                              eventDate: `Texas • ${formatDateOnly(entry.registeredAt)} • ${formatTimeOnly(entry.registeredAt)}`,
-                              eventDetails: `Texas • MTC • Table ${entry.tableNumber || 'Assigned'} • Seat ${entry.seatNumber || 'Assigned'}`,
-                              items: [
-                                {
-                                  description: `${formatClubLabel(entry.tournamentName)} - Player Entry Charge`,
-                                  details: `${tournamentObj?.startingChips?.toLocaleString() || '50,000'} Starting Chips`,
-                                  chips: tournamentObj?.startingChips || 50000,
-                                  amount: entry.buyInAmount,
-                                },
-                                {
-                                  description: 'Club Service Charges & Tournament Organization',
-                                  details: 'Club tournament organization & dealer service fee',
-                                  amount: entry.rakeAmount,
-                                },
-                              ],
-                              subtotal: entry.buyInAmount,
-                              serviceCharge: entry.rakeAmount,
-                              totalAmount: entry.buyInAmount + entry.rakeAmount,
-                              paymentMethod: entry.paymentMethod,
-                              paymentReference: entry.paymentReference,
-                              cashierName: entry.cashierName,
-                            });
-                          } else if (item.cashTxnObj) {
-                            const matchedPlayer = players.find(p => p.fullName.toLowerCase() === (item.cashTxnObj?.playerName || '').toLowerCase());
-                            const inv = generateCashTransactionInvoice(item.cashTxnObj, matchedPlayer, staffName);
-                            setSelectedInvoice(inv);
-                          }
-                        }}
+                        className="btn btn-danger btn-sm"
+                        style={{ padding: '3px 8px', fontSize: '0.70rem', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
+                        onClick={() => setItemToDelete(item)}
+                        title="Void or delete transaction"
                       >
-                        <Eye size={12} /> View Bill
+                        <Trash2 size={12} /> Void / Delete
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      style={{ padding: '3px 8px', fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      onClick={() => setItemToDelete(item)}
-                      title="Void or delete transaction"
-                    >
-                      <Trash2 size={12} /> Void / Delete
-                    </button>
+                    </div>
                   </div>
                 </div>
               ))

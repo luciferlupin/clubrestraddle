@@ -100,15 +100,19 @@ export const MobileSecurityPortal: React.FC = () => {
     }
   }, [players, selectedPlayer, pendingApproval]);
 
-  const pendingQueuePlayers = players.filter(p => {
-    const checkIn = todayCheckIns.find(c => c.playerId === p.id);
-    return checkIn?.verificationStatus === 'pending' || p.kycStatus === 'pending';
-  });
+  const pendingQueuePlayers = players
+    .filter(p => {
+      const checkIn = todayCheckIns.find(c => c.playerId === p.id);
+      return checkIn?.verificationStatus === 'pending' || p.kycStatus === 'pending';
+    })
+    .sort((a, b) => new Date(b.registeredAt || 0).getTime() - new Date(a.registeredAt || 0).getTime());
 
-  const rejectedQueuePlayers = players.filter(p => {
-    const checkIn = todayCheckIns.find(c => c.playerId === p.id);
-    return (checkIn?.verificationStatus === 'rejected' || p.kycStatus === 'rejected') && checkIn?.verificationStatus !== 'approved';
-  });
+  const rejectedQueuePlayers = players
+    .filter(p => {
+      const checkIn = todayCheckIns.find(c => c.playerId === p.id);
+      return (checkIn?.verificationStatus === 'rejected' || p.kycStatus === 'rejected') && checkIn?.verificationStatus !== 'approved';
+    })
+    .sort((a, b) => new Date(b.registeredAt || 0).getTime() - new Date(a.registeredAt || 0).getTime());
 
   // Search filter across ALL players
   const searchResults = search.trim()
