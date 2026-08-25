@@ -1283,6 +1283,14 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const setSelectedPlayerId = (id: string) => {
     setSelectedPlayerIdState(id);
+    if (id && isSupabaseConfigured && supabase) {
+      const p = players.find(x => x.id === id);
+      if (p) {
+        supabase.from('players').upsert(playerToDatabaseRow(p), { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.error('Supabase player login sync error:', error.message);
+        });
+      }
+    }
   };
 
   // Staff Login
@@ -1941,6 +1949,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     if (localMatch) {
+      if (isSupabaseConfigured && supabase) {
+        supabase.from('players').upsert(playerToDatabaseRow(localMatch), { onConflict: 'id' }).then(() => {});
+      }
       setSelectedPlayerId(localMatch.id);
       return localMatch;
     }
@@ -2124,7 +2135,12 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       );
     });
 
-    if (localMatch) return localMatch;
+    if (localMatch) {
+      if (isSupabaseConfigured && supabase) {
+        supabase.from('players').upsert(playerToDatabaseRow(localMatch), { onConflict: 'id' }).then(() => {});
+      }
+      return localMatch;
+    }
 
     // Check check-in match
     const checkInMatch = checkIns.find(c => c.id.toLowerCase() === cleanQuery.toLowerCase());
@@ -2432,35 +2448,14 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
 
     if (isSupabaseConfigured && supabase) {
-      const p = updates;
-      supabase.from('players').update({
-        ...(p.memberNumber !== undefined ? { member_number: p.memberNumber } : {}),
-        ...(p.fullName ? { full_name: p.fullName } : {}),
-        ...(p.phone ? { phone: p.phone } : {}),
-        ...(p.email ? { email: p.email } : {}),
-        ...(p.membershipTier ? { membership_tier: p.membershipTier } : {}),
-        ...(p.kycStatus ? { kyc_status: p.kycStatus } : {}),
-        ...(p.totalVisits !== undefined ? { total_visits: p.totalVisits } : {}),
-        ...(p.notes !== undefined ? { notes: p.notes } : {}),
-        ...(p.kyc?.dateOfBirth !== undefined ? { date_of_birth: p.kyc.dateOfBirth } : {}),
-        ...(p.kyc?.govtIdType !== undefined ? { govt_id_type: p.kyc.govtIdType === 'Aadhaar & PAN Card' ? 'Aadhaar Card' : p.kyc.govtIdType } : {}),
-        ...(p.kyc?.govtIdNumber !== undefined ? { govt_id_number: p.kyc.govtIdNumber } : {}),
-        ...(p.kyc?.aadhaarNumber !== undefined ? { aadhaar_number: p.kyc.aadhaarNumber || null } : {}),
-        ...(p.kyc?.panNumber !== undefined ? { pan_number: p.kyc.panNumber || null } : {}),
-        ...(p.kyc?.aadhaarPhotoUrl !== undefined ? { aadhaar_photo_url: p.kyc.aadhaarPhotoUrl || null } : {}),
-        ...(p.kyc?.aadhaarBackPhotoUrl !== undefined ? { aadhaar_back_photo_url: p.kyc.aadhaarBackPhotoUrl || null } : {}),
-        ...(p.kyc?.panPhotoUrl !== undefined ? { pan_photo_url: p.kyc.panPhotoUrl || null } : {}),
-        ...(p.kyc?.address !== undefined ? { address: p.kyc.address } : {}),
-        ...(p.kyc?.emergencyContactName !== undefined ? { emergency_contact_name: p.kyc.emergencyContactName || null } : {}),
-        ...(p.kyc?.emergencyContactPhone !== undefined ? { emergency_contact_phone: p.kyc.emergencyContactPhone || null } : {}),
-        ...(p.kyc?.photoUrl !== undefined ? { photo_url: p.kyc.photoUrl || null } : {}),
-        ...(p.kyc?.agreedToRules !== undefined ? { agreed_to_rules: p.kyc.agreedToRules } : {}),
-        ...(p.kyc?.verifiedAt !== undefined ? { verified_at: p.kyc.verifiedAt || null } : {}),
-        ...(p.kyc?.verifiedBy !== undefined ? { verified_by: p.kyc.verifiedBy || null } : {}),
-        ...(p.kyc?.rejectionReason !== undefined ? { rejection_reason: p.kyc.rejectionReason || null } : {}),
-      }).eq('id', playerId).then(({ error }) => {
-        if (error) console.error('Supabase player update error:', error.message);
-      });
+      const targetPlayer = players.find(x => x.id === playerId);
+      if (targetPlayer) {
+        const mergedPlayer = { ...targetPlayer, ...updates };
+        if (updates.kyc) mergedPlayer.kyc = { ...targetPlayer.kyc, ...updates.kyc };
+        supabase.from('players').upsert(playerToDatabaseRow(mergedPlayer), { onConflict: 'id' }).then(({ error }) => {
+          if (error) console.error('Supabase player update error:', error.message);
+        });
+      }
     }
 
     addAuditLog('Admin', 'Player Profile Updated', `Updated member profile for ${playerId}.`);
