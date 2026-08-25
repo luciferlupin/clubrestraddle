@@ -27,6 +27,7 @@ import {
   ArrowRight,
   Building2,
   History,
+  Printer,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn, PaymentMethod } from '../../types';
@@ -37,6 +38,8 @@ import { QRScannerModal } from './QRScannerModal';
 import { WalkInRegistrationModal } from './WalkInRegistrationModal';
 import { GateCashHandoverModal } from './GateCashHandoverModal';
 import { ClubQRModal } from '../common/ClubQRModal';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
 import confetti from 'canvas-confetti';
 
 export const MobileSecurityPortal: React.FC = () => {
@@ -82,6 +85,8 @@ export const MobileSecurityPortal: React.FC = () => {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
   const [isQRStandeeOpen, setIsQRStandeeOpen] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [entryInvoice, setEntryInvoice] = useState<ClubInvoiceData | null>(null);
   const [pendingApproval, setPendingApproval] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
 
@@ -753,6 +758,34 @@ export const MobileSecurityPortal: React.FC = () => {
                       {playerToInspectCheckIn?.verificationStatus === 'approved' ? 'Approved ✓' : 'Approve Entry'}
                     </button>
                   </div>
+
+                  {playerToInspectCheckIn?.verificationStatus === 'approved' && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{
+                        width: '100%',
+                        background: 'rgba(225, 29, 72, 0.16)',
+                        borderColor: 'rgba(225, 29, 72, 0.45)',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        padding: '11px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '7px',
+                        fontSize: '0.86rem',
+                        borderRadius: '10px',
+                      }}
+                      onClick={() => {
+                        setEntryInvoice(generateEntryFeeInvoice(playerToInspect, playerToInspectCheckIn, staffName));
+                        setIsInvoiceOpen(true);
+                      }}
+                    >
+                      <Printer size={16} color="#fb7185" />
+                      <span>Print / View Bill Receipt (₹500 · 5% GST)</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -877,7 +910,7 @@ export const MobileSecurityPortal: React.FC = () => {
                       <span>PAN: <strong style={{ color: '#fb7185' }}>{player.kyc.panNumber || 'On File'}</strong></span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       {player.kycStatus === 'pending' && (
                         <button
                           type="button"
@@ -899,6 +932,29 @@ export const MobileSecurityPortal: React.FC = () => {
                       >
                         Inspect ID
                       </button>
+                      {checkIn?.verificationStatus === 'approved' && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{
+                            padding: '8px 10px',
+                            fontSize: '0.74rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: 'rgba(225, 29, 72, 0.12)',
+                            borderColor: 'rgba(225, 29, 72, 0.35)',
+                            color: '#fda4af',
+                          }}
+                          onClick={() => {
+                            setEntryInvoice(generateEntryFeeInvoice(player, checkIn, staffName));
+                            setIsInvoiceOpen(true);
+                          }}
+                          title="Print / View ₹500 Bill Receipt"
+                        >
+                          <Printer size={13} /> Bill
+                        </button>
+                      )}
                       {(checkIn?.verificationStatus === 'pending' || (!checkIn && player.kycStatus === 'pending')) && (
                         <button
                           type="button"
@@ -1097,6 +1153,13 @@ export const MobileSecurityPortal: React.FC = () => {
       <GateCashHandoverModal
         isOpen={isGateCashModalOpen}
         onClose={() => setIsGateCashModalOpen(false)}
+      />
+
+      {/* Official ₹500 Thermal Tax Invoice Bill Modal */}
+      <ClubTaxInvoiceModal
+        isOpen={isInvoiceOpen}
+        onClose={() => setIsInvoiceOpen(false)}
+        invoice={entryInvoice}
       />
 
       {/* ── Fixed Bottom Navigation ────────────────────────── */}

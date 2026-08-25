@@ -186,7 +186,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
 
           <p style={{ fontSize: '0.78rem', color: '#cbd5e1', margin: 0 }}>
             {todayCheckIn?.verificationStatus === 'approved'
-              ? 'Your entrance pass is verified and ₹500 entry fee invoice is active.'
+              ? 'Your entrance pass is verified and ₹500 entry fee invoice (inclusive of 5% GST) is active.'
               : todayCheckIn?.verificationStatus === 'rejected'
               ? 'Access was denied by door security. No gate billing entry or invoice has been generated.'
               : 'The security officer will scan this QR to verify Aadhaar & PAN credentials and grant door entrance.'}
@@ -204,7 +204,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
                 }}
               >
                 <FileText size={15} color="#e11d48" />
-                <span>₹500 Entry Invoice</span>
+                <span>₹500 Bill (5% GST)</span>
               </button>
             )}
             <button className="btn btn-primary" onClick={() => setIsQRModalOpen(false)} style={{ flex: 1 }}>

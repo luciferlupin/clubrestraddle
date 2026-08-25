@@ -99,11 +99,11 @@ export const InvoiceRepositoryView: React.FC = () => {
         playerId: formatPlayerNumber(player),
         playerPhone: chk.playerPhone,
         panOrAadhaar: player.kyc?.panNumber || player.kyc?.aadhaarNumber || player.kyc?.govtIdNumber,
-        description: 'Club Door Entry & Facility Access Fee (SAC 999691)',
-        taxableAmount: 423.73,
-        gstAmount: 76.27,
+        description: 'Club Door Entry & Facility Access Fee (SAC 999691 • 5% GST)',
+        taxableAmount: 476.19,
+        gstAmount: 23.81,
         totalAmount: 500,
-        paymentMethod: 'Cash',
+        paymentMethod: chk.paymentMethod || 'Cash',
         paymentReference: `ENT-${chk.id}`,
         cashierOrStaff: chk.verifiedBy || staffName || 'Security Desk',
         invoiceData,
@@ -246,7 +246,7 @@ export const InvoiceRepositoryView: React.FC = () => {
             {formatCurrency(totalVolume)}
           </div>
           <div className="stat-subtext" style={{ color: '#34d399' }}>
-            GST @ 18%: {formatCurrency(totalGST)}
+            GST Total: {formatCurrency(totalGST)}
           </div>
         </div>
 
@@ -292,7 +292,7 @@ export const InvoiceRepositoryView: React.FC = () => {
               <span>Central Tax Invoice & Billing Records ({filteredInvoices.length})</span>
             </h3>
             <p className="card-subtitle">
-              Comprehensive ledger of all GST 18% Tax Invoices for player door entries, tournaments, chip transactions, and payouts.
+              Comprehensive ledger of official Tax Invoices (5% Door Entry & 18% Service Charges) for player door entries, tournaments, chip transactions, and payouts.
             </p>
           </div>
 
@@ -454,7 +454,7 @@ export const InvoiceRepositoryView: React.FC = () => {
                 <th>Member / Customer</th>
                 <th>Category / Supply Description</th>
                 <th style={{ textAlign: 'right' }}>Taxable Amt</th>
-                <th style={{ textAlign: 'right' }}>GST 18%</th>
+                <th style={{ textAlign: 'right' }}>GST Amt</th>
                 <th style={{ textAlign: 'right' }}>Total (₹)</th>
                 <th>Payment Ref</th>
                 <th>Cashier / Staff</th>

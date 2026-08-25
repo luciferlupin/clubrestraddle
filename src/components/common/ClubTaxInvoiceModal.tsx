@@ -43,6 +43,12 @@ export interface ClubInvoiceData {
   subtotal?: number;
   rakeOrFee?: number;
   totalAmount: number;
+  gstRate?: number;
+  cgstRate?: number;
+  sgstRate?: number;
+  gstAmount?: number;
+  cgstAmount?: number;
+  sgstAmount?: number;
   
   // Settlement
   paymentMethod: PaymentMethod | string;
@@ -84,23 +90,32 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
 
   if (!isOpen || !invoice) return null;
 
-  // Exact 18% GST Calculations based on Indian Tax Rules
+  // Determine GST Rate: 5% for Door Entry fees, or custom gstRate, or default 18% for tournament/other services
+  const isEntryFee =
+    invoice.category?.toLowerCase().includes('entry') ||
+    invoice.category?.toLowerCase().includes('door') ||
+    invoice.category?.toLowerCase().includes('gate') ||
+    invoice.invoiceNumber.includes('ENT');
+
+  const gstRate = invoice.gstRate ?? (isEntryFee ? 5 : 18);
+  const halfGstRate = invoice.cgstRate ?? Number((gstRate / 2).toFixed(1));
+
   const totalVal = Number(invoice.totalAmount) || 0;
   
-  // Taxable Service Charge = Total / 1.18
-  const taxableServiceCharge = Number((totalVal / 1.18).toFixed(2));
-  const totalGst = Number((totalVal - taxableServiceCharge).toFixed(2));
-  const cgst = Number((totalGst / 2).toFixed(2));
-  const sgst = Number((totalGst - cgst).toFixed(2));
+  // Taxable Service Charge = Total / (1 + gstRate / 100) (e.g. Total / 1.05 for 5% GST = 476.19)
+  const taxableServiceCharge = invoice.taxableAmount ?? Number((totalVal / (1 + gstRate / 100)).toFixed(2));
+  const totalGst = invoice.gstAmount ?? Number((totalVal - taxableServiceCharge).toFixed(2));
+  const cgst = invoice.cgstAmount ?? Number((totalGst / 2).toFixed(2));
+  const sgst = invoice.sgstAmount ?? Number((totalGst - cgst).toFixed(2));
 
   // Dates & Times
   const dateFormatted = invoice.invoiceDate ? formatDateOnly(invoice.invoiceDate) : '11 Jul 2026';
   const timeFormatted = invoice.invoiceDate ? formatTimeOnly(invoice.invoiceDate) : '12:31:04';
 
   // Event description
-  const eventTitle = invoice.eventName || invoice.tournamentName || invoice.items?.[0]?.description || 'MTT - 6,66,666 - Texas Holdem - 11th July';
-  const eventDetail1 = invoice.eventDate || `Texas • ${dateFormatted} • ${timeFormatted}`;
-  const eventDetail2 = invoice.eventDetails || `Texas • MTC • Table ${invoice.tableLocation || 'Main Floor'} • Prize ₹${totalVal.toLocaleString('en-IN')}`;
+  const eventTitle = invoice.eventName || invoice.tournamentName || invoice.items?.[0]?.description || (isEntryFee ? 'Club Door Entry & Facility Access' : 'MTT - 6,66,666 - Texas Holdem - 11th July');
+  const eventDetail1 = invoice.eventDate || `Gate Check-in • ${dateFormatted} • ${timeFormatted}`;
+  const eventDetail2 = invoice.eventDetails || (isEntryFee ? 'Daily door clearance (₹500 inclusive of 5% GST)' : `Texas • MTC • Table ${invoice.tableLocation || 'Main Floor'} • Prize ₹${totalVal.toLocaleString('en-IN')}`);
 
   const handlePrint = () => {
     window.print();
@@ -110,11 +125,12 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
     const summary = `CLUB RE STRADDLE • OFFICIAL RECEIPT & INVOICE
 Invoice No: ${invoice.invoiceNumber}
 Date: ${dateFormatted} ${timeFormatted}
-Cashier: ${invoice.cashierName}
+Cashier / Desk: ${invoice.cashierName}
 Player: ${invoice.playerName} (ID: ${invoice.playerId || 'Not assigned'})
 Venue: JB Complex, Sector 104, Noida, Uttar Pradesh - 201304
 Event / Item: ${eventTitle}
-Service Charges: ₹${taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+Service Charges (Taxable): ₹${taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+GST @ ${gstRate}% (CGST ${halfGstRate}% + SGST ${halfGstRate}%): ₹${totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 Total Amount: ₹${totalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 Payment Mode: ${invoice.paymentMethod}
 Place of Supply: 09 - Uttar Pradesh (Noida)`;
@@ -387,14 +403,16 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
               NATURE OF SUPPLY
             </div>
             <div>
-              Right to participate in the above-named skill-based poker tournament, by way of entry fee. This fee grants participation rights only and is entirely de-linked from the prize pool. Prize pool is fixed and pre-determined independently of entry fee collections.
+              {invoice.natureOfSupply || (isEntryFee
+                ? 'SERVICE CHARGES - CLUB ENTRY & FACILITY ACCESS (GST @ 5%). Door entrance clearance and gaming lounge amenities. Fee is inclusive of 5% GST.'
+                : 'Right to participate in the above-named skill-based poker tournament, by way of entry fee. This fee grants participation rights only and is entirely de-linked from the prize pool. Prize pool is fixed and pre-determined independently of entry fee collections.')}
             </div>
             <div style={{ marginTop: '4px', fontWeight: 800 }}>
-              SAC : 999691
+              SAC : {invoice.sacCode || '999691'}
             </div>
           </div>
 
-          {/* AMOUNT & 18% GST Breakdown (Exact user spec) */}
+          {/* AMOUNT & GST Breakdown */}
           <div style={{ borderTop: '1px dashed #000000', paddingTop: '6px', marginBottom: '8px', fontSize: '11px' }}>
             <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em', marginBottom: '4px' }}>
               AMOUNT
@@ -404,15 +422,15 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
               <span style={{ fontWeight: 700 }}>{taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 700 }}>GST @ 18%</span>
+              <span style={{ fontWeight: 700 }}>GST @ {gstRate}%</span>
               <span style={{ fontWeight: 700 }}>{totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '12px', fontSize: '10.5px' }}>
-              <span>CGST @ 9%</span>
+              <span>CGST @ {halfGstRate}%</span>
               <span>{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '12px', fontSize: '10.5px' }}>
-              <span>SGST @ 9%</span>
+              <span>SGST @ {halfGstRate}%</span>
               <span>{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
 
@@ -455,7 +473,9 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
             }}
           >
             <div>
-              Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.
+              {isEntryFee
+                ? 'Door entry fee of ₹500 is inclusive of 5% GST (SAC 999691). Entry fee is non-refundable once door access clearance is granted. Members must be 21 years or older and carry valid government-issued photo ID at all times.'
+                : 'Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.'}
             </div>
             <div>
               This invoice is for the right to participate only. The prize pool is fixed and pre-determined and bears no relation to entry fees collected. Participation is governed by Club Re Straddle Rules displayed at the venue.

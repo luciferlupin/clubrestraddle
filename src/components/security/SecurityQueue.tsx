@@ -7,11 +7,14 @@ import {
   Check,
   FileCheck2,
   Users,
+  Printer,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import { formatTimeOnly, formatDateOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, EntryBadge } from '../common/Badge';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
 import confetti from 'canvas-confetti';
 
 interface SecurityQueueProps {
@@ -23,9 +26,11 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
   selectedPlayerId,
   onSelectPlayer,
 }) => {
-  const { players, todayCheckIns, approvePlayerEntry, reviewKYC } = useClub();
+  const { players, todayCheckIns, approvePlayerEntry, reviewKYC, staffName } = useClub();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'pending' | 'rejected' | 'all'>('pending');
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [entryInvoice, setEntryInvoice] = useState<ClubInvoiceData | null>(null);
 
   const pendingCount = players.filter(p => {
     const chk = todayCheckIns.find(c => c.playerId === p.id);
@@ -287,6 +292,29 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
                             <FileCheck2 size={12} /> Verify KYC
                           </button>
                         )}
+                        {checkIn?.verificationStatus === 'approved' && (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{
+                              padding: '4px 9px',
+                              fontSize: '0.72rem',
+                              color: '#fda4af',
+                              borderColor: 'rgba(225, 29, 72, 0.4)',
+                              background: 'rgba(225, 29, 72, 0.12)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                            onClick={() => {
+                              setEntryInvoice(generateEntryFeeInvoice(player, checkIn, staffName));
+                              setIsInvoiceOpen(true);
+                            }}
+                            title="Print / View Official ₹500 Bill Receipt"
+                          >
+                            <Printer size={12} /> Bill
+                          </button>
+                        )}
                         {(checkIn?.verificationStatus === 'pending' || (!checkIn && player.kycStatus === 'pending')) && (
                           <button
                             type="button"
@@ -328,6 +356,13 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
           </table>
         </div>
       )}
+
+      {/* Official Tax Invoice Modal for Security Printing */}
+      <ClubTaxInvoiceModal
+        isOpen={isInvoiceOpen}
+        onClose={() => setIsInvoiceOpen(false)}
+        invoice={entryInvoice}
+      />
     </div>
   );
 };

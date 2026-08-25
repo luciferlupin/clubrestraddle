@@ -8,12 +8,16 @@ import {
   RefreshCw,
   Sparkles,
   Zap,
+  Printer,
+  FileText,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import { formatTimeOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
+import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
+import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
 import confetti from 'canvas-confetti';
 
 import jsQR from 'jsqr';
@@ -29,7 +33,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   onClose,
   onSelectPlayer,
 }) => {
-  const { players, todayCheckIns, approvePlayerEntry, rejectPlayerEntry, performDailyCheckIn, lookupMemberByPhone } = useClub();
+  const { players, todayCheckIns, approvePlayerEntry, rejectPlayerEntry, performDailyCheckIn, lookupMemberByPhone, staffName } = useClub();
   const [manualCode, setManualCode] = useState('');
   const [cameraActive, setCameraActive] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -39,6 +43,8 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   const [isVerifying, setIsVerifying] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [entryInvoice, setEntryInvoice] = useState<ClubInvoiceData | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -126,12 +132,6 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       }
 
       if (foundPlayer) {
-        if (foundCheckIn?.verificationStatus === 'approved') {
-          setScannedResult(null);
-          setManualCode('');
-          setScanError('This pass has already been approved. No further security action is required.');
-          return;
-        }
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
           try {
             navigator.vibrate(100);
@@ -504,6 +504,59 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                   </button>
                 </div>
               </div>
+            ) : scannedResult.checkIn?.verificationStatus === 'approved' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '10px', padding: '8px 12px', fontSize: '0.8rem', color: '#6ee7b7', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                  <CheckCircle2 size={15} /> Entrance Pass Approved & Verified
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{
+                      flex: 1,
+                      background: 'rgba(225, 29, 72, 0.16)',
+                      borderColor: 'rgba(225, 29, 72, 0.45)',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      padding: '10px',
+                    }}
+                    onClick={() => {
+                      setEntryInvoice(generateEntryFeeInvoice(scannedResult.player, scannedResult.checkIn!, staffName));
+                      setIsInvoiceOpen(true);
+                    }}
+                  >
+                    <Printer size={15} color="#fb7185" />
+                    <span>Print / View Bill (₹500 · 5% GST)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      onSelectPlayer(scannedResult.player, scannedResult.checkIn);
+                      onClose();
+                    }}
+                    style={{ padding: '10px 14px' }}
+                  >
+                    Inspect Profile
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setScannedResult(null)}
+                    style={{ padding: '10px 12px' }}
+                  >
+                    Scan Another
+                  </button>
+                </div>
+              </div>
             ) : (
               <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
                 <button
@@ -732,6 +785,13 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
           </>
         )}
       </div>
+
+      {/* Official Tax Invoice Modal for QR Screen Printing */}
+      <ClubTaxInvoiceModal
+        isOpen={isInvoiceOpen}
+        onClose={() => setIsInvoiceOpen(false)}
+        invoice={entryInvoice}
+      />
     </Modal>
   );
 };

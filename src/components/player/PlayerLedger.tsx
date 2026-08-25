@@ -58,8 +58,8 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
         id: `LED-ENT-${c.id}`,
         date: checkInDateTime,
         type: 'Entry Fee',
-        description: 'Club Door Entry & Facility Access Fee',
-        paymentMethod: 'Cash',
+        description: 'Club Door Entry & Facility Access Fee (5% GST Included)',
+        paymentMethod: c.paymentMethod || 'Cash',
         referenceId: c.id,
         debit: 500,
         invoiceData: inv,
@@ -88,53 +88,40 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
     const playerTxns = cashTransactions.filter(
       t => t.playerName && t.playerName.toLowerCase().trim() === player.fullName.toLowerCase().trim()
     );
-    playerTxns.forEach(t => {
-      const inv = generateCashTransactionInvoice(t, player, staffName);
-      if (t.type === 'in') {
-        // Player paid the club
-        items.push({
-          id: `LED-CSH-${t.id}`,
-          date: t.timestamp,
-          type: t.category.includes('Tournament') ? 'Tournament Entry' : t.category.includes('Chip') ? 'Chip Purchase' : 'Cash Game Buy-in',
-          description: `${t.category} - ${t.description}`,
-          paymentMethod: t.paymentMethod,
-          referenceId: t.referenceId || t.id,
-          debit: t.amount,
-          invoiceData: inv,
-        });
-      } else {
-        // Club paid the player (Payout / Cash-out)
-        items.push({
-          id: `LED-CSH-${t.id}`,
-          date: t.timestamp,
-          type: t.category.includes('Prize') ? 'Tournament Payout' : 'Cash Out',
-          description: `${t.category} - ${t.description}`,
-          paymentMethod: t.paymentMethod,
-          referenceId: t.referenceId || t.id,
-          credit: t.amount,
-          invoiceData: inv,
-        });
-      }
+    playerTxns.forEach(txn => {
+      const inv = generateCashTransactionInvoice(txn, player, staffName);
+      items.push({
+        id: `LED-CSH-${txn.id}`,
+        date: txn.timestamp,
+        type: txn.category.includes('Payout') ? 'Tournament Payout' : txn.category.includes('Chip') ? 'Chip Purchase' : txn.type === 'out' ? 'Cash Out' : 'Cash Game Buy-in',
+        description: `${txn.category} - ${txn.description}`,
+        paymentMethod: txn.paymentMethod,
+        referenceId: txn.referenceId || txn.id,
+        debit: txn.type === 'in' ? txn.amount : undefined,
+        credit: txn.type === 'out' ? txn.amount : undefined,
+        invoiceData: inv,
+      });
     });
 
-    // Sort descending by date
+    // Sort newest first
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [player, checkIns, entries, cashTransactions, tournaments, staffName]);
+  }, [player, checkIns, entries, tournaments, cashTransactions, staffName]);
 
-  // Compute Summary Totals
-  const totalDebits = ledgerItems.reduce((sum, item) => sum + (item.debit || 0), 0);
-  const totalCredits = ledgerItems.reduce((sum, item) => sum + (item.credit || 0), 0);
+  const totalSpent = useMemo(() => ledgerItems.reduce((sum, item) => sum + (item.debit || 0), 0), [ledgerItems]);
+  const totalReceived = useMemo(() => ledgerItems.reduce((sum, item) => sum + (item.credit || 0), 0), [ledgerItems]);
+
   const totalEntryFees = ledgerItems.filter(i => i.type === 'Entry Fee').reduce((sum, item) => sum + (item.debit || 0), 0);
   const totalTournamentSpent = ledgerItems.filter(i => i.type === 'Tournament Entry').reduce((sum, item) => sum + (item.debit || 0), 0);
 
-  // Filtered ledger items
-  const filteredItems = ledgerItems.filter(item => {
-    if (selectedCategory === 'all') return true;
-    if (selectedCategory === 'entry') return item.type === 'Entry Fee';
-    if (selectedCategory === 'tournament') return item.type === 'Tournament Entry' || item.type === 'Tournament Payout';
-    if (selectedCategory === 'cash') return item.type === 'Cash Game Buy-in' || item.type === 'Chip Purchase' || item.type === 'Cash Out';
-    return true;
-  });
+  const filteredItems = useMemo(() => {
+    return ledgerItems.filter(item => {
+      if (selectedCategory === 'all') return true;
+      if (selectedCategory === 'entry') return item.type === 'Entry Fee';
+      if (selectedCategory === 'tournament') return item.type === 'Tournament Entry' || item.type === 'Tournament Payout';
+      if (selectedCategory === 'cash') return item.type === 'Chip Purchase' || item.type === 'Cash Out' || item.type === 'Cash Game Buy-in';
+      return true;
+    });
+  }, [ledgerItems, selectedCategory]);
 
   const handleOpenInvoiceModal = (inv: ClubInvoiceData) => {
     if (onOpenInvoice) {
@@ -146,27 +133,28 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
   };
 
   return (
-    <div className="player-ledger-container" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Top Financial Overview Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-        <div style={{ background: 'rgba(225, 29, 72, 0.12)', border: '1px solid rgba(225, 29, 72, 0.35)', borderRadius: '12px', padding: '14px 16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      
+      {/* Top Financial Stat Summary */}
+      <div className="stats-grid" style={{ marginBottom: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+        <div className="stat-card" style={{ background: 'rgba(225, 29, 72, 0.12)', border: '1px solid rgba(225, 29, 72, 0.4)', borderRadius: '12px', padding: '14px 16px' }}>
           <span style={{ fontSize: '0.72rem', color: '#fda4af', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
-            Total Club Spend (Debits)
+            Total Inflows (Debited)
           </span>
           <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#ffffff', marginTop: '4px' }}>
-            {formatCurrency(totalDebits)}
+            {formatCurrency(totalSpent)}
           </div>
-          <span style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
-            {ledgerItems.length} recorded ledger movements
+          <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Entry fees, tournament buy-ins & chips
           </span>
         </div>
 
-        <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '12px', padding: '14px 16px' }}>
+        <div className="stat-card" style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '12px', padding: '14px 16px' }}>
           <span style={{ fontSize: '0.72rem', color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
-            Total Payouts Received
+            Total Cash-outs (Credited)
           </span>
-          <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#10b981', marginTop: '4px' }}>
-            {formatCurrency(totalCredits)}
+          <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#34d399', marginTop: '4px' }}>
+            {formatCurrency(totalReceived)}
           </div>
           <span style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
             Tournament winnings & cash-outs
@@ -175,13 +163,13 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
 
         <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '14px 16px' }}>
           <span style={{ fontSize: '0.72rem', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
-            Door Entry Fees (₹500/Visit)
+            Door Entry Fees (₹500/Visit · 5% GST)
           </span>
           <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#ffffff', marginTop: '4px' }}>
             {formatCurrency(totalEntryFees)}
           </div>
           <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-            {ledgerItems.filter(i => i.type === 'Entry Fee').length} verified club visits
+            {ledgerItems.filter(i => i.type === 'Entry Fee').length} verified visits (incl. 5% GST)
           </span>
         </div>
 
@@ -203,7 +191,7 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {[
             { id: 'all', label: 'All Transactions' },
-            { id: 'entry', label: '₹500 Entry Fees' },
+            { id: 'entry', label: '₹500 Entry (5% GST)' },
             { id: 'tournament', label: 'Tournaments' },
             { id: 'cash', label: 'Cash & Chips' },
           ].map(f => (

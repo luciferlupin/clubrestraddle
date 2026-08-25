@@ -12,6 +12,8 @@ import {
   FileX,
   Check,
   Image as ImageIcon,
+  Printer,
+  FileText,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn, PaymentMethod } from '../../types';
@@ -20,7 +22,6 @@ import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
-import { FileText } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface SecurityVerificationCardProps {
@@ -534,10 +535,21 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
                 setEntryInvoice(generateEntryFeeInvoice(player, checkIn, staffName));
                 setIsInvoiceOpen(true);
               }}
-              title="Print official ₹500 Door Entry Tax Invoice"
-              style={{ fontSize: '0.78rem', padding: '8px 12px' }}
+              title="Print official ₹500 Door Entry Tax Invoice Bill for Player"
+              style={{
+                fontSize: '0.8rem',
+                padding: '8px 14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(225, 29, 72, 0.15)',
+                borderColor: 'rgba(225, 29, 72, 0.45)',
+                color: '#ffffff',
+                fontWeight: 700,
+              }}
             >
-              <FileText size={14} color="#e11d48" /> ₹500 Tax Invoice
+              <Printer size={14} color="#fb7185" />
+              <span>Print / View Bill (₹500 · 5% GST)</span>
             </button>
           )}
 

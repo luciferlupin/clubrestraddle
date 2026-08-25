@@ -69,7 +69,7 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
             <span>Awaiting Door Security Approval</span>
           </div>
           <p style={{ fontSize: '0.78rem', color: '#cbd5e1', margin: 0, lineHeight: 1.45 }}>
-            Please present your QR code to the entrance security officer. Upon KYC verification and gate approval, your ₹500 entry fee will be processed and official tax invoice will be generated.
+            Please present your QR code to the entrance security officer. Upon KYC verification and gate approval, your ₹500 entry fee (inclusive of 5% GST) will be processed and official tax invoice will be generated.
           </p>
         </div>
       )}
@@ -92,7 +92,7 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <FileText size={18} color="#e11d48" />
-              <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.9rem' }}>Entry Gate Fee Tax Invoice</span>
+              <span style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.9rem' }}>Entry Gate Fee Tax Invoice (5% GST)</span>
             </div>
             <span
               style={{
@@ -116,16 +116,16 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
             <span>Taxable Value (SAC 999691):</span>
-            <span>{formatCurrency(entryInvoice.taxableAmount || 423.73)}</span>
+            <span>{formatCurrency(entryInvoice.taxableAmount || 476.19)}</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
-            <span>GST @ 18% (CGST 9% + SGST 9%):</span>
-            <span>{formatCurrency(Math.round(((entryInvoice.totalAmount || 500) - (entryInvoice.taxableAmount || 423.73)) * 100) / 100)}</span>
+            <span>GST @ 5% (CGST 2.5% + SGST 2.5%):</span>
+            <span>{formatCurrency(Math.round(((entryInvoice.totalAmount || 500) - (entryInvoice.taxableAmount || 476.19)) * 100) / 100)}</span>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem', fontWeight: 800, color: '#ffffff', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px' }}>
-            <span>Total Gate Entry Fee:</span>
+            <span>Total Gate Entry Fee (Incl. 5% GST):</span>
             <span style={{ color: '#34d399' }}>{formatCurrency(entryInvoice.totalAmount || 500)}</span>
           </div>
 
