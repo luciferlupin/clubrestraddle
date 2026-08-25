@@ -109,7 +109,7 @@ export const MobileAdminPortal: React.FC = () => {
       const timeA = new Date(a.registeredAt || 0).getTime();
       const timeB = new Date(b.registeredAt || 0).getTime();
       if (timeA !== timeB) return timeB - timeA;
-      return Number(formatPlayerNumber(a)) - Number(formatPlayerNumber(b));
+      return Number(formatPlayerNumber(b)) - Number(formatPlayerNumber(a));
     });
 
   const filteredCheckIns = checkIns

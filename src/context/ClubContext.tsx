@@ -681,7 +681,13 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             };
           });
 
-          setPlayers(mappedPlayers);
+          setPlayers(prev => {
+            const dbPlayerIds = new Set(mappedPlayers.map(p => p.id));
+            const localOnly = prev.filter(p => !dbPlayerIds.has(p.id));
+            const merged = [...mappedPlayers, ...localOnly];
+            saveToStorage(STORAGE_KEYS.PLAYERS, merged);
+            return merged;
+          });
         } else if (initialPlayers.length > 0) {
           const seedRows = initialPlayers.map(ip => ({
             id: ip.id,
@@ -729,7 +735,13 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             rejectionReason: c.rejection_reason,
           }));
           const reconciled = reconcileStalePendingCheckIns(mappedCheckIns);
-          setCheckIns(reconciled.checkIns);
+          setCheckIns(prev => {
+            const dbCheckInIds = new Set(reconciled.checkIns.map(c => c.id));
+            const localOnly = prev.filter(c => !dbCheckInIds.has(c.id));
+            const merged = [...reconciled.checkIns, ...localOnly];
+            saveToStorage(STORAGE_KEYS.CHECK_INS, merged);
+            return merged;
+          });
           if (reconciled.repaired.length > 0) {
             await Promise.all(reconciled.repaired.map(checkIn =>
               client.from('daily_check_ins').update({
@@ -1472,11 +1484,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const today = getTodayDateString();
 
   const todayCheckIns = useMemo(() => {
-    const validPlayerIds = new Set(players.map(p => p.id));
     return checkIns
-      .filter(c => validPlayerIds.has(c.playerId))
       .filter(c => c.checkInDate === today || c.verificationStatus === 'pending');
-  }, [checkIns, players, today]);
+  }, [checkIns, today]);
 
   const totalCashInAmount = useMemo(() => {
     return cashTransactions

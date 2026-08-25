@@ -316,7 +316,7 @@ export const SecurityPortal: React.FC = () => {
       <div className="security-layout-grid">
         {/* Left Column: Focused Player Verification Card */}
         <div className="security-col-main">
-          {focusedPlayer && focusedCheckIn ? (
+          {focusedPlayer ? (
             <SecurityVerificationCard player={focusedPlayer} checkIn={focusedCheckIn} />
           ) : (
             <div className="card" style={{ textAlign: 'center', padding: '48px 20px' }}>

@@ -847,7 +847,7 @@ export const MobileSecurityPortal: React.FC = () => {
               let items: Player[] = [];
               if (queueFilter === 'pending') items = pendingQueuePlayers;
               else if (queueFilter === 'rejected') items = rejectedQueuePlayers;
-              else items = players.filter(p => todayCheckIns.some(c => c.playerId === p.id));
+              else items = players.filter(p => todayCheckIns.some(c => c.playerId === p.id) || p.kycStatus === 'pending' || p.kycStatus === 'rejected').sort((a, b) => new Date(b.registeredAt || 0).getTime() - new Date(a.registeredAt || 0).getTime());
 
               if (items.length === 0) {
                 return (
