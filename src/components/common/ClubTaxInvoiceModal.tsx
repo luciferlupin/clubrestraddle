@@ -483,11 +483,11 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
               marginBottom: '10px',
             }}
           >
-            <div>
-              {isEntryFee
-                ? 'Door entry fee of ₹500 is inclusive of 5% GST (SAC 999691). Entry fee is non-refundable once door access clearance is granted. Members must be 21 years or older and carry valid government-issued photo ID at all times.'
-                : 'Tournament entry & service charges are inclusive of 18% GST (SAC 999691). Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.'}
-            </div>
+            {!isEntryFee && (
+              <div>
+                Tournament entry & service charges are inclusive of 18% GST (SAC 999691). Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.
+              </div>
+            )}
             <div>
               This invoice is for the right to participate only. The prize pool is fixed and pre-determined and bears no relation to entry fees collected. Participation is governed by Club Re Straddle Rules displayed at the venue.
             </div>
