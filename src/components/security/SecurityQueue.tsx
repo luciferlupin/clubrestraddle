@@ -8,10 +8,14 @@ import {
   FileCheck2,
   Users,
   Printer,
+  CreditCard,
+  BadgeCheck,
+  Eye,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatTimeOnly, formatDateOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
+import { formatTimeOnly, formatDateOnly, formatAadhaarNumber, formatPanNumber, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, EntryBadge } from '../common/Badge';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
@@ -56,7 +60,9 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
         player.fullName.toLowerCase().includes(search.toLowerCase()) ||
         player.phone.includes(search) ||
         player.id.toLowerCase().includes(search.toLowerCase()) ||
-        player.kyc.govtIdNumber.toLowerCase().includes(search.toLowerCase());
+        player.kyc.govtIdNumber.toLowerCase().includes(search.toLowerCase()) ||
+        (player.kyc.aadhaarNumber && player.kyc.aadhaarNumber.includes(search)) ||
+        (player.kyc.panNumber && player.kyc.panNumber.toLowerCase().includes(search.toLowerCase()));
 
       if (!matchesSearch) return false;
 
@@ -186,7 +192,7 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
             <thead>
               <tr>
                 <th>Member Profile</th>
-                <th>Government ID</th>
+                <th>Government ID (Aadhaar & PAN)</th>
                 <th>DOB / Age</th>
                 <th>KYC Status</th>
                 <th>Arrival Status</th>
@@ -197,6 +203,8 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
               {displayItems.map(({ player, checkIn }) => {
                 const isSelected = selectedPlayerId === player.id;
                 const isPending = checkIn?.verificationStatus === 'pending' || player.kycStatus === 'pending';
+                const aadhaarStr = formatAadhaarNumber(player.kyc.aadhaarNumber, player.kyc.govtIdNumber);
+                const panStr = formatPanNumber(player.kyc.panNumber, player.kyc.govtIdNumber);
 
                 return (
                   <tr
@@ -255,10 +263,33 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
                       </div>
                     </td>
 
-                    <td style={{ fontSize: '0.8rem' }}>
-                      <div style={{ fontWeight: 600, color: '#ffffff' }}>{player.kyc.govtIdType}</div>
-                      <div className="tabular-num" style={{ fontSize: '0.72rem', color: '#fb7185', fontFamily: 'var(--font-mono)' }}>
-                        {maskGovtId(player.kyc.govtIdNumber)}
+                    <td style={{ fontSize: '0.78rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <CreditCard size={12} color="#e11d48" />
+                          <span style={{ color: '#fda4af', fontWeight: 700 }}>Aadhaar:</span>
+                          <span className="tabular-num" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#ffffff' }}>
+                            {aadhaarStr || 'On File'}
+                          </span>
+                          {(player.kyc.aadhaarPhotoUrl || player.kyc.aadhaarBackPhotoUrl) && (
+                            <span style={{ fontSize: '0.64rem', background: 'rgba(16,185,129,0.15)', color: '#34d399', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(16,185,129,0.3)' }}>
+                              Photo Attached
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <BadgeCheck size={12} color="#38bdf8" />
+                          <span style={{ color: '#38bdf8', fontWeight: 700 }}>PAN:</span>
+                          <span className="tabular-num" style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#38bdf8' }}>
+                            {panStr || 'On File'}
+                          </span>
+                          {player.kyc.panPhotoUrl && (
+                            <span style={{ fontSize: '0.64rem', background: 'rgba(56,189,248,0.15)', color: '#38bdf8', padding: '1px 4px', borderRadius: '3px', border: '1px solid rgba(56,189,248,0.3)' }}>
+                              Photo Attached
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </td>
 

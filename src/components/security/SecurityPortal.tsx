@@ -36,12 +36,27 @@ export const SecurityPortal: React.FC = () => {
     todayGateCollected,
     todayGateTransferredAmount,
     todayGateCashInHand,
+    fetchMultiplePlayerKycDocs,
   } = useClub();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
   const [isQRStandeeOpen, setIsQRStandeeOpen] = useState(false);
   const [isGateCashModalOpen, setIsGateCashModalOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Automatically prefetch KYC docs for all pending check-in players and arrivals
+  useEffect(() => {
+    const pendingIds = todayCheckIns
+      .filter(c => c.verificationStatus === 'pending')
+      .map(c => c.playerId);
+    const kycPendingIds = players
+      .filter(p => p.kycStatus === 'pending')
+      .map(p => p.id);
+    const targetIds = Array.from(new Set([...pendingIds, ...kycPendingIds])).slice(0, 15);
+    if (targetIds.length > 0) {
+      fetchMultiplePlayerKycDocs(targetIds);
+    }
+  }, [todayCheckIns, players, fetchMultiplePlayerKycDocs]);
 
   // Prefer a scanned/deep-linked player, then the first pending arrival.
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => {

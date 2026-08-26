@@ -276,18 +276,64 @@ export const maskGovtId = (idNumber: string): string => {
   return `${masked}${visible}`;
 };
 
-export const formatFullAadhaar = (aadhaarNumber?: string, govtIdNumber?: string): string => {
-  const directNumber = aadhaarNumber?.trim();
-  if (directNumber) return directNumber;
+export const formatAadhaarNumber = (aadhaarNumber?: string, govtIdNumber?: string): string => {
+  if (aadhaarNumber && aadhaarNumber.trim()) {
+    const raw = aadhaarNumber.trim().replace(/\D/g, '');
+    if (raw.length === 12) {
+      return `${raw.slice(0, 4)} ${raw.slice(4, 8)} ${raw.slice(8, 12)}`;
+    }
+    if (raw.length > 0) return aadhaarNumber.trim();
+  }
 
-  const storedId = govtIdNumber?.trim();
-  if (!storedId) return 'Not provided';
+  const storedId = govtIdNumber?.trim() || '';
+  if (!storedId) return '';
 
-  const embeddedAadhaar = storedId.match(/Aadhaar:\s*([\d\s]{12,14})/i)?.[1]?.trim();
-  if (embeddedAadhaar) return embeddedAadhaar;
+  const embedded = storedId.match(/Aadhaar:\s*([\d\s]{12,16})/i)?.[1]?.trim();
+  if (embedded) {
+    const raw = embedded.replace(/\D/g, '');
+    if (raw.length === 12) {
+      return `${raw.slice(0, 4)} ${raw.slice(4, 8)} ${raw.slice(8, 12)}`;
+    }
+    return embedded;
+  }
 
   const digitsOnly = storedId.replace(/\D/g, '');
-  return digitsOnly.length === 12 ? storedId : 'Not provided';
+  if (digitsOnly.length === 12) {
+    return `${digitsOnly.slice(0, 4)} ${digitsOnly.slice(4, 8)} ${digitsOnly.slice(8, 12)}`;
+  }
+
+  return '';
+};
+
+export const formatPanNumber = (panNumber?: string, govtIdNumber?: string): string => {
+  if (panNumber && panNumber.trim()) {
+    return panNumber.trim().toUpperCase();
+  }
+
+  const storedId = govtIdNumber?.trim() || '';
+  if (!storedId) return '';
+
+  const embedded = storedId.match(/PAN:\s*([A-Z0-9]{10})/i)?.[1]?.trim();
+  if (embedded) {
+    return embedded.toUpperCase();
+  }
+
+  const match = storedId.match(/[A-Z]{5}[0-9]{4}[A-Z]/i);
+  if (match) {
+    return match[0].toUpperCase();
+  }
+
+  return '';
+};
+
+export const formatFullAadhaar = (aadhaarNumber?: string, govtIdNumber?: string): string => {
+  const formatted = formatAadhaarNumber(aadhaarNumber, govtIdNumber);
+  return formatted || 'Not provided';
+};
+
+export const formatFullPan = (panNumber?: string, govtIdNumber?: string): string => {
+  const formatted = formatPanNumber(panNumber, govtIdNumber);
+  return formatted || 'Not provided';
 };
 
 export const numberToINRWords = (num: number): string => {

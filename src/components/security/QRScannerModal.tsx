@@ -14,7 +14,7 @@ import {
 import { Modal } from '../common/Modal';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
-import { formatTimeOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
+import { formatTimeOnly, formatAadhaarNumber, formatPanNumber, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
@@ -458,9 +458,9 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 <div style={{ fontSize: '0.78rem', color: '#cbd5e1', fontFamily: 'var(--font-mono)' }}>
                   Player ID: {formatPlayerNumber(scannedResult.player)} • {scannedResult.player.phone}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '3px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <span>Aadhaar: <strong style={{ color: '#ffffff' }}>{scannedResult.player.kyc.aadhaarNumber ? maskGovtId(scannedResult.player.kyc.aadhaarNumber) : 'UIDAI Verified'}</strong></span>
-                  <span>PAN: <strong style={{ color: '#fb7185' }}>{scannedResult.player.kyc.panNumber || 'PAN Verified'}</strong></span>
+                <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <span>Aadhaar: <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{formatAadhaarNumber(scannedResult.player.kyc.aadhaarNumber, scannedResult.player.kyc.govtIdNumber) || 'UIDAI Verified'}</strong></span>
+                  <span>PAN: <strong style={{ color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>{formatPanNumber(scannedResult.player.kyc.panNumber, scannedResult.player.kyc.govtIdNumber) || 'PAN Verified'}</strong></span>
                 </div>
               </div>
             </div>

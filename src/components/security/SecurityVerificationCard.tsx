@@ -14,10 +14,13 @@ import {
   Image as ImageIcon,
   Printer,
   FileText,
+  Copy,
+  CreditCard,
+  BadgeCheck,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn, PaymentMethod } from '../../types';
-import { formatDateOnly, formatDateTime, formatTimeOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
+import { formatDateOnly, formatDateTime, formatTimeOnly, formatAadhaarNumber, formatPanNumber, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
@@ -49,6 +52,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
   const [rejectKycReason, setRejectKycReason] = useState('Govt ID photo is unclear or name does not match Aadhaar/PAN record.');
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const [entryPaymentMethod, setEntryPaymentMethod] = useState<PaymentMethod>('Cash');
 
@@ -56,6 +60,17 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  const handleCopy = (text: string, label: string) => {
+    if (!text) return;
+    navigator.clipboard?.writeText(text);
+    setCopiedField(label);
+    showToast(`Copied ${label}: ${text}`);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const cleanAadhaar = formatAadhaarNumber(player.kyc.aadhaarNumber, player.kyc.govtIdNumber);
+  const cleanPan = formatPanNumber(player.kyc.panNumber, player.kyc.govtIdNumber);
 
   const [printBillOnApproval, setPrintBillOnApproval] = useState(false);
 
@@ -291,115 +306,164 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
           gap: '12px',
         }}
       >
         {/* Aadhaar Card Box */}
         <div
           style={{
-            background: 'rgba(0, 0, 0, 0.35)',
-            padding: '12px 14px',
-            borderRadius: '12px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'linear-gradient(135deg, rgba(20, 10, 14, 0.9) 0%, rgba(10, 5, 8, 0.95) 100%)',
+            padding: '14px 16px',
+            borderRadius: '14px',
+            border: '1.5px solid rgba(225, 29, 72, 0.35)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
+            gap: '8px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
-              1. Aadhaar Card (UIDAI)
+            <span style={{ fontSize: '0.74rem', color: '#fda4af', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <CreditCard size={14} color="#e11d48" /> 1. Aadhaar Card (UIDAI)
             </span>
-            <div style={{ display: 'flex', gap: '4px' }}>
-              {player.kyc.aadhaarPhotoUrl ? (
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  onClick={() => setViewingDoc({ title: 'Aadhaar Card (Front Photo)', url: player.kyc.aadhaarPhotoUrl! })}
-                >
-                  <Eye size={11} /> Front
-                </button>
-              ) : (
-                <span style={{ fontSize: '0.66rem', color: '#fca5a5' }}>No Front Photo</span>
-              )}
-              {player.kyc.aadhaarBackPhotoUrl ? (
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  onClick={() => setViewingDoc({ title: 'Aadhaar Card (Back Photo)', url: player.kyc.aadhaarBackPhotoUrl! })}
-                >
-                  <Eye size={11} /> Back
-                </button>
-              ) : (
-                <span style={{ fontSize: '0.66rem', color: '#fca5a5' }}>No Back Photo</span>
-              )}
+            <span style={{ fontSize: '0.66rem', color: '#cbd5e1', background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+              12 Digits
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.4)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ fontWeight: 900, fontSize: '1.05rem', color: '#ffffff', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>
+              {cleanAadhaar || 'Aadhaar On File'}
             </div>
+            {cleanAadhaar && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '3px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '3px' }}
+                onClick={() => handleCopy(cleanAadhaar, 'Aadhaar ID')}
+                title="Copy Aadhaar Number"
+              >
+                {copiedField === 'Aadhaar ID' ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
+              </button>
+            )}
           </div>
-          <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff', fontFamily: 'var(--font-mono)' }}>
-            {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'Aadhaar On File')}
-          </div>
-          <div style={{ fontSize: '0.72rem', color: player.kyc.aadhaarPhotoUrl && player.kyc.aadhaarBackPhotoUrl ? '#10b981' : '#fbbf24' }}>
-            {player.kyc.aadhaarPhotoUrl && player.kyc.aadhaarBackPhotoUrl ? '✓ Front & Back Attached' : '⚠ Partial / Missing Uploads'}
+
+          {/* Attached Document Buttons */}
+          <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
+            {player.kyc.aadhaarPhotoUrl ? (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ flex: 1, padding: '5px 8px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'rgba(225,29,72,0.15)', borderColor: 'rgba(225,29,72,0.45)', color: '#ffffff', fontWeight: 700 }}
+                onClick={() => setViewingDoc({ title: `Aadhaar Front Photo - ${player.fullName}`, url: player.kyc.aadhaarPhotoUrl! })}
+              >
+                <Eye size={12} color="#fb7185" /> Front Photo
+              </button>
+            ) : (
+              <div style={{ flex: 1, padding: '5px 8px', fontSize: '0.7rem', color: '#fca5a5', background: 'rgba(239,68,68,0.1)', borderRadius: '6px', textAlign: 'center', border: '1px solid rgba(239,68,68,0.2)' }}>
+                No Front
+              </div>
+            )}
+            {player.kyc.aadhaarBackPhotoUrl ? (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ flex: 1, padding: '5px 8px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'rgba(225,29,72,0.15)', borderColor: 'rgba(225,29,72,0.45)', color: '#ffffff', fontWeight: 700 }}
+                onClick={() => setViewingDoc({ title: `Aadhaar Back Photo - ${player.fullName}`, url: player.kyc.aadhaarBackPhotoUrl! })}
+              >
+                <Eye size={12} color="#fb7185" /> Back Photo
+              </button>
+            ) : (
+              <div style={{ flex: 1, padding: '5px 8px', fontSize: '0.7rem', color: '#fca5a5', background: 'rgba(239,68,68,0.1)', borderRadius: '6px', textAlign: 'center', border: '1px solid rgba(239,68,68,0.2)' }}>
+                No Back
+              </div>
+            )}
           </div>
         </div>
 
         {/* PAN Card Box */}
         <div
           style={{
-            background: 'rgba(0, 0, 0, 0.35)',
-            padding: '12px 14px',
-            borderRadius: '12px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'linear-gradient(135deg, rgba(20, 10, 14, 0.9) 0%, rgba(10, 5, 8, 0.95) 100%)',
+            padding: '14px 16px',
+            borderRadius: '14px',
+            border: '1.5px solid rgba(56, 189, 248, 0.35)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
+            gap: '8px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
-              2. PAN Card (IT Dept)
+            <span style={{ fontSize: '0.74rem', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <BadgeCheck size={14} color="#38bdf8" /> 2. PAN Card (IT Dept)
             </span>
+            <span style={{ fontSize: '0.66rem', color: '#cbd5e1', background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+              10 Chars
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', background: 'rgba(0,0,0,0.4)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ fontWeight: 900, fontSize: '1.05rem', color: '#38bdf8', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>
+              {cleanPan || 'PAN On File'}
+            </div>
+            {cleanPan && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ padding: '3px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '3px' }}
+                onClick={() => handleCopy(cleanPan, 'PAN ID')}
+                title="Copy PAN Number"
+              >
+                {copiedField === 'PAN ID' ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
+              </button>
+            )}
+          </div>
+
+          {/* Attached PAN Document Button */}
+          <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
             {player.kyc.panPhotoUrl ? (
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
-                style={{ padding: '2px 6px', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                onClick={() => setViewingDoc({ title: 'PAN Card Photo', url: player.kyc.panPhotoUrl! })}
+                style={{ flex: 1, padding: '5px 8px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'rgba(56, 189, 248, 0.15)', borderColor: 'rgba(56, 189, 248, 0.45)', color: '#ffffff', fontWeight: 700 }}
+                onClick={() => setViewingDoc({ title: `PAN Card Photo - ${player.fullName}`, url: player.kyc.panPhotoUrl! })}
               >
-                <Eye size={11} /> Photo
+                <Eye size={12} color="#38bdf8" /> View PAN Photo
               </button>
             ) : (
-              <span style={{ fontSize: '0.66rem', color: '#fca5a5' }}>No Photo</span>
+              <div style={{ flex: 1, padding: '5px 8px', fontSize: '0.7rem', color: '#fca5a5', background: 'rgba(239,68,68,0.1)', borderRadius: '6px', textAlign: 'center', border: '1px solid rgba(239,68,68,0.2)' }}>
+                No PAN Photo
+              </div>
             )}
           </div>
-          <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#fb7185', fontFamily: 'var(--font-mono)' }}>
-            {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN On File')}
-          </div>
-          <div style={{ fontSize: '0.72rem', color: '#38bdf8' }}>✓ Income Tax PAN Record</div>
         </div>
 
         {/* DOB / Age Verification */}
         <div
           style={{
-            background: 'rgba(0, 0, 0, 0.35)',
-            padding: '12px 14px',
-            borderRadius: '12px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'linear-gradient(135deg, rgba(20, 10, 14, 0.9) 0%, rgba(10, 5, 8, 0.95) 100%)',
+            padding: '14px 16px',
+            borderRadius: '14px',
+            border: '1.5px solid rgba(16, 185, 129, 0.35)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
+            gap: '8px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
           }}
         >
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
+          <span style={{ fontSize: '0.74rem', color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 800 }}>
             Date of Birth / Age
           </span>
-          <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#ffffff' }}>
-            {formatDateOnly(player.kyc.dateOfBirth)}
+          <div style={{ background: 'rgba(0,0,0,0.4)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ fontWeight: 800, fontSize: '0.98rem', color: '#ffffff' }}>
+              {formatDateOnly(player.kyc.dateOfBirth)}
+            </div>
           </div>
-          <div style={{ fontSize: '0.72rem', color: '#10b981' }}>✓ 21+ Age Clearance</div>
+          <div style={{ fontSize: '0.74rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700 }}>
+            <CheckCircle size={13} /> 21+ Age Verified & Cleared
+          </div>
         </div>
       </div>
 
@@ -728,8 +792,8 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         <div className="security-confirm-summary">
           <div><span>Member</span><strong>{player.fullName}</strong></div>
           <div><span>Player ID</span><strong>{formatPlayerNumber(player)}</strong></div>
-          <div><span>Aadhaar</span><strong>{player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : 'UIDAI Verified'}</strong></div>
-          <div><span>PAN Card</span><strong style={{ color: '#fb7185' }}>{player.kyc.panNumber || 'PAN Verified'}</strong></div>
+          <div><span>Aadhaar</span><strong style={{ fontFamily: 'var(--font-mono)' }}>{formatAadhaarNumber(player.kyc.aadhaarNumber, player.kyc.govtIdNumber) || 'UIDAI Verified'}</strong></div>
+          <div><span>PAN Card</span><strong style={{ color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>{formatPanNumber(player.kyc.panNumber, player.kyc.govtIdNumber) || 'PAN Verified'}</strong></div>
           <div><span>KYC status</span><strong>{player.kycStatus}</strong></div>
           <div><span>Door Fee</span><strong>₹500 ({entryPaymentMethod})</strong></div>
         </div>

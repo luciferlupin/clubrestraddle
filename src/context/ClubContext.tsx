@@ -173,6 +173,7 @@ interface ClubContextType {
   isRealtimeConnected: boolean;
   syncNow: () => Promise<void>;
   fetchPlayerKycDocs: (playerId: string) => Promise<void>;
+  fetchMultiplePlayerKycDocs: (playerIds: string[]) => Promise<void>;
 
   // Staff Authentication & Users
   staffUsers: StaffUser[];
@@ -1297,7 +1298,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const { data, error } = await supabase
         .from('players')
-        .select('id,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,photo_url')
+        .select('id,aadhaar_number,pan_number,govt_id_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,photo_url')
         .eq('id', playerId)
         .limit(1);
 
@@ -1309,6 +1310,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             ...p,
             kyc: {
               ...p.kyc,
+              aadhaarNumber: row.aadhaar_number || p.kyc.aadhaarNumber,
+              panNumber: row.pan_number || p.kyc.panNumber,
+              govtIdNumber: row.govt_id_number || p.kyc.govtIdNumber,
               aadhaarPhotoUrl: row.aadhaar_photo_url || p.kyc.aadhaarPhotoUrl,
               aadhaarBackPhotoUrl: row.aadhaar_back_photo_url || p.kyc.aadhaarBackPhotoUrl,
               panPhotoUrl: row.pan_photo_url || p.kyc.panPhotoUrl,
@@ -1319,6 +1323,41 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     } catch (e) {
       console.warn('Could not fetch player KYC docs:', e);
+    }
+  }, [isSupabaseConfigured]);
+
+  const fetchMultiplePlayerKycDocs = useCallback(async (playerIds: string[]) => {
+    if (!isSupabaseConfigured || !supabase || !playerIds || playerIds.length === 0) return;
+    try {
+      const ids = Array.from(new Set(playerIds.filter(Boolean)));
+      if (ids.length === 0) return;
+      const { data, error } = await supabase
+        .from('players')
+        .select('id,aadhaar_number,pan_number,govt_id_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,photo_url')
+        .in('id', ids);
+
+      if (!error && data && data.length > 0) {
+        const docMap = new Map(data.map((r: any) => [r.id, r]));
+        setPlayers(prev => prev.map(p => {
+          const row = docMap.get(p.id);
+          if (!row) return p;
+          return {
+            ...p,
+            kyc: {
+              ...p.kyc,
+              aadhaarNumber: row.aadhaar_number || p.kyc.aadhaarNumber,
+              panNumber: row.pan_number || p.kyc.panNumber,
+              govtIdNumber: row.govt_id_number || p.kyc.govtIdNumber,
+              aadhaarPhotoUrl: row.aadhaar_photo_url || p.kyc.aadhaarPhotoUrl,
+              aadhaarBackPhotoUrl: row.aadhaar_back_photo_url || p.kyc.aadhaarBackPhotoUrl,
+              panPhotoUrl: row.pan_photo_url || p.kyc.panPhotoUrl,
+              photoUrl: row.photo_url || p.kyc.photoUrl,
+            },
+          };
+        }));
+      }
+    } catch (e) {
+      console.warn('Could not batch fetch player KYC docs:', e);
     }
   }, [isSupabaseConfigured]);
 
@@ -4075,6 +4114,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isRealtimeConnected,
         syncNow,
         fetchPlayerKycDocs,
+        fetchMultiplePlayerKycDocs,
         staffUsers,
         currentStaffUser,
         loginStaff,

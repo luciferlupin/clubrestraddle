@@ -28,10 +28,11 @@ import {
   Building2,
   History,
   Printer,
+  Copy,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn, PaymentMethod } from '../../types';
-import { formatTimeOnly, maskGovtId, formatPlayerNumber, formatCurrency, formatShortDateTime } from '../../utils/formatters';
+import { formatTimeOnly, formatAadhaarNumber, formatPanNumber, formatPlayerNumber, formatCurrency, formatShortDateTime } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { QRScannerModal } from './QRScannerModal';
@@ -59,6 +60,7 @@ export const MobileSecurityPortal: React.FC = () => {
     todayGateCashInHand,
     todayGateTransfers,
     fetchPlayerKycDocs,
+    fetchMultiplePlayerKycDocs,
   } = useClub();
 
   const [activeNav, setActiveNav] = useState<'scan' | 'queue' | 'gate-cash'>('scan');
@@ -90,6 +92,20 @@ export const MobileSecurityPortal: React.FC = () => {
   const [entryInvoice, setEntryInvoice] = useState<ClubInvoiceData | null>(null);
   const [pendingApproval, setPendingApproval] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
+
+  // Automatically prefetch KYC docs for all pending check-in players
+  useEffect(() => {
+    const pendingIds = todayCheckIns
+      .filter(c => c.verificationStatus === 'pending')
+      .map(c => c.playerId);
+    const kycPendingIds = players
+      .filter(p => p.kycStatus === 'pending')
+      .map(p => p.id);
+    const targetIds = Array.from(new Set([...pendingIds, ...kycPendingIds])).slice(0, 15);
+    if (targetIds.length > 0) {
+      fetchMultiplePlayerKycDocs(targetIds);
+    }
+  }, [todayCheckIns, players, fetchMultiplePlayerKycDocs]);
 
   // Automatically deselect if player is deleted and fetch KYC docs on-demand
   useEffect(() => {
@@ -555,21 +571,21 @@ export const MobileSecurityPortal: React.FC = () => {
                     fontSize: '0.8rem',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#cbd5e1' }}>
-                    <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <CreditCard size={13} color="#e11d48" /> Aadhaar UIDAI:
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#cbd5e1', background: 'rgba(0,0,0,0.35)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(225,29,72,0.2)' }}>
+                    <span style={{ color: '#fda4af', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 800 }}>
+                      <CreditCard size={14} color="#e11d48" /> 1. Aadhaar ID:
                     </span>
-                    <strong style={{ color: '#ffffff', fontFamily: 'monospace', letterSpacing: '0.04em' }}>
-                      {playerToInspect.kyc.aadhaarNumber ? maskGovtId(playerToInspect.kyc.aadhaarNumber) : (playerToInspect.kyc.govtIdNumber || 'Verified')}
+                    <strong style={{ color: '#ffffff', fontFamily: 'monospace', letterSpacing: '0.04em', fontSize: '0.92rem' }}>
+                      {formatAadhaarNumber(playerToInspect.kyc.aadhaarNumber, playerToInspect.kyc.govtIdNumber) || 'Aadhaar On File'}
                     </strong>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#cbd5e1' }}>
-                    <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <BadgeCheck size={13} color="#fb7185" /> Income Tax PAN:
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#cbd5e1', background: 'rgba(0,0,0,0.35)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(56,189,248,0.2)' }}>
+                    <span style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 800 }}>
+                      <BadgeCheck size={14} color="#38bdf8" /> 2. PAN ID:
                     </span>
-                    <strong style={{ color: '#fb7185', fontFamily: 'monospace', letterSpacing: '0.04em' }}>
-                      {playerToInspect.kyc.panNumber || 'PAN Verified'}
+                    <strong style={{ color: '#38bdf8', fontFamily: 'monospace', letterSpacing: '0.04em', fontSize: '0.92rem' }}>
+                      {formatPanNumber(playerToInspect.kyc.panNumber, playerToInspect.kyc.govtIdNumber) || 'PAN On File'}
                     </strong>
                   </div>
 
@@ -971,9 +987,29 @@ export const MobileSecurityPortal: React.FC = () => {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#cbd5e1', background: 'rgba(0,0,0,0.3)', padding: '6px 10px', borderRadius: '8px' }}>
-                      <span>Aadhaar: <strong>{player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : 'On File'}</strong></span>
-                      <span>PAN: <strong style={{ color: '#fb7185' }}>{player.kyc.panNumber || 'On File'}</strong></span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.76rem', color: '#cbd5e1', background: 'rgba(0,0,0,0.3)', padding: '6px 10px', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#fda4af', fontWeight: 700 }}>Aadhaar:</span>
+                        <strong style={{ color: '#ffffff', fontFamily: 'monospace' }}>
+                          {formatAadhaarNumber(player.kyc.aadhaarNumber, player.kyc.govtIdNumber) || 'On File'}
+                        </strong>
+                        {(player.kyc.aadhaarPhotoUrl || player.kyc.aadhaarBackPhotoUrl) && (
+                          <span style={{ fontSize: '0.62rem', background: 'rgba(16,185,129,0.2)', color: '#34d399', padding: '1px 4px', borderRadius: '3px' }}>
+                            Photo Attached
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#38bdf8', fontWeight: 700 }}>PAN Card:</span>
+                        <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>
+                          {formatPanNumber(player.kyc.panNumber, player.kyc.govtIdNumber) || 'On File'}
+                        </strong>
+                        {player.kyc.panPhotoUrl && (
+                          <span style={{ fontSize: '0.62rem', background: 'rgba(56,189,248,0.2)', color: '#38bdf8', padding: '1px 4px', borderRadius: '3px' }}>
+                            Photo Attached
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
