@@ -90,13 +90,25 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
 
   if (!isOpen || !invoice) return null;
 
-  // Determine GST Rate: 5% for Door Entry fees, or custom gstRate, or default 18% for tournament/other services
+  // Determine GST Rate: 5% strictly for Door/Gate Entry fees only, and 18% for tournaments and club services
+  const isTournament =
+    Boolean(
+      invoice.category?.toLowerCase().includes('tournament') ||
+      invoice.invoiceNumber?.includes('TRN') ||
+      invoice.eventName?.toLowerCase().includes('tournament') ||
+      invoice.tournamentName
+    );
+
   const isEntryFee =
-    invoice.category?.toLowerCase().includes('entry') ||
-    invoice.category?.toLowerCase().includes('door') ||
-    invoice.category?.toLowerCase().includes('gate') ||
-    invoice.invoiceNumber.includes('GATE') ||
-    invoice.invoiceNumber.includes('ENT');
+    !isTournament &&
+    Boolean(
+      invoice.category?.toLowerCase().includes('door') ||
+      invoice.category?.toLowerCase().includes('gate') ||
+      invoice.category?.toLowerCase().includes('daily entry') ||
+      invoice.category?.toLowerCase().includes('lounge access') ||
+      invoice.invoiceNumber?.includes('GATE') ||
+      invoice.invoiceNumber?.includes('ENT')
+    );
 
   const gstRate = invoice.gstRate ?? (isEntryFee ? 5 : 18);
   const halfGstRate = invoice.cgstRate ?? Number((gstRate / 2).toFixed(1));
@@ -303,7 +315,7 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
               JB Complex, Sector 104, Noida, Uttar Pradesh - 201304
             </div>
             <div style={{ fontSize: '9.5px' }}>
-              Tel: +91 98213 85001 • support@restraddle.club
+              Tel: +91 99589 49859 • Clubrestraddle@gmail.com
             </div>
           </div>
 
@@ -403,10 +415,8 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
             <div style={{ fontSize: '9px', fontWeight: 900, marginBottom: '2px' }}>
               NATURE OF SUPPLY
             </div>
-            <div>
-              {invoice.natureOfSupply || (isEntryFee
-                ? 'SERVICE CHARGES - CLUB ENTRY & FACILITY ACCESS (GST @ 5%). Door entrance clearance and gaming lounge amenities. Fee is inclusive of 5% GST.'
-                : 'Right to participate in the above-named skill-based poker tournament, by way of entry fee. This fee grants participation rights only and is entirely de-linked from the prize pool. Prize pool is fixed and pre-determined independently of entry fee collections.')}
+            <div style={{ minHeight: '14px' }}>
+              {invoice.natureOfSupply || ''}
             </div>
             <div style={{ marginTop: '4px', fontWeight: 800 }}>
               SAC : {invoice.sacCode || '999691'}
@@ -476,7 +486,7 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
             <div>
               {isEntryFee
                 ? 'Door entry fee of ₹500 is inclusive of 5% GST (SAC 999691). Entry fee is non-refundable once door access clearance is granted. Members must be 21 years or older and carry valid government-issued photo ID at all times.'
-                : 'Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.'}
+                : 'Tournament entry & service charges are inclusive of 18% GST (SAC 999691). Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.'}
             </div>
             <div>
               This invoice is for the right to participate only. The prize pool is fixed and pre-determined and bears no relation to entry fees collected. Participation is governed by Club Re Straddle Rules displayed at the venue.
@@ -495,7 +505,7 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
               Club Re Straddle — Play Responsibly.
             </div>
             <div style={{ fontSize: '8.5px' }}>
-              JB Complex, Sector 104, Noida | +91 98213 85001
+              JB Complex, Sector 104, Noida | +91 99589 49859
             </div>
           </div>
 
