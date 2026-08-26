@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { DollarSign, Receipt, ArrowRight, ArrowLeft, Users, Trophy, CreditCard } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { DollarSign, Receipt, ArrowRight, ArrowLeft, Users, Trophy, CreditCard, Info } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { PaymentMethod } from '../../types';
 import { formatClubLabel, formatCurrency, generateId, formatDateOnly, formatTimeOnly, formatPlayerNumber } from '../../utils/formatters';
@@ -31,26 +31,81 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
   const [quickPlayerId, setQuickPlayerId] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   const [paymentRef, setPaymentRef] = useState<string>('');
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [generatedInvoice, setGeneratedInvoice] = useState<ClubInvoiceData | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
 
-  const selectedTournament = tournaments.find(t => t.id === selectedTournamentId);
-  const selectedPlayer = players.find(p => p.id === selectedPlayerId);
+  // Keep tournament and player synchronized if data loads asynchronously
+  useEffect(() => {
+    if (initialTournamentId) {
+      setSelectedTournamentId(initialTournamentId);
+    } else if (!selectedTournamentId && tournaments.length > 0) {
+      setSelectedTournamentId(tournaments[0].id);
+    }
+  }, [initialTournamentId, tournaments, selectedTournamentId]);
+
+  useEffect(() => {
+    if (!selectedPlayerId && players.length > 0) {
+      setSelectedPlayerId(players[0].id);
+    }
+  }, [players, selectedPlayerId]);
+
+  const selectedTournament = tournaments.find(t => t.id === selectedTournamentId) || tournaments[0];
+  const selectedPlayer = players.find(p => p.id === selectedPlayerId) || players[0];
+
+  const effectiveTournamentId = selectedTournament?.id || selectedTournamentId;
+  const effectivePlayerId = selectedPlayer?.id || selectedPlayerId;
 
   const totalFee = selectedTournament
     ? selectedTournament.buyInFee + selectedTournament.clubRake
     : 0;
 
+  const handleContinueToPayment = (e?: React.MouseEvent | React.FormEvent) => {
+    if (e) e.preventDefault();
+    setFormError(null);
+
+    const tournamentIdToUse = effectiveTournamentId;
+    const playerIdToUse = effectivePlayerId;
+
+    if (!tournamentIdToUse) {
+      setFormError('Please select a tournament to proceed.');
+      return;
+    }
+    if (!playerIdToUse) {
+      setFormError('Please select a registered player to proceed.');
+      return;
+    }
+
+    if (!selectedTournamentId) setSelectedTournamentId(tournamentIdToUse);
+    if (!selectedPlayerId) setSelectedPlayerId(playerIdToUse);
+
+    setStep(2);
+  };
+
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTournamentId || !selectedPlayerId) return;
+    setFormError(null);
+
+    // If currently on step 1, advance to step 2 instead of registering immediately
+    if (step === 1) {
+      handleContinueToPayment(e);
+      return;
+    }
+
+    const tournamentIdToUse = effectiveTournamentId;
+    const playerIdToUse = effectivePlayerId;
+
+    if (!tournamentIdToUse || !playerIdToUse) {
+      setFormError('Missing tournament or player selection.');
+      return;
+    }
 
     const ref = paymentRef.trim() || generateId('TXN');
 
     const entry = registerPlayerForTournament({
-      tournamentId: selectedTournamentId,
-      playerId: selectedPlayerId,
+      tournamentId: tournamentIdToUse,
+      playerId: playerIdToUse,
       paymentMethod,
       paymentReference: ref,
     });
@@ -105,7 +160,6 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
     } catch {
       // Fallback
     }
-
   };
 
   return (
@@ -132,7 +186,10 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
         <button
           type="button"
           className={`wizard-step-item ${step === 1 ? 'active' : 'complete'}`}
-          onClick={() => setStep(1)}
+          onClick={() => {
+            setFormError(null);
+            setStep(1);
+          }}
         >
           <span className="wizard-step-badge">1</span>
           <div className="wizard-step-text">
@@ -146,9 +203,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
         <button
           type="button"
           className={`wizard-step-item ${step === 2 ? 'active' : ''}`}
-          onClick={() => {
-            if (selectedTournamentId && selectedPlayerId) setStep(2);
-          }}
+          onClick={handleContinueToPayment}
         >
           <span className="wizard-step-badge">2</span>
           <div className="wizard-step-text">
@@ -157,6 +212,27 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
           </div>
         </button>
       </div>
+
+      {formError && (
+        <div
+          style={{
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            color: '#fca5a5',
+            padding: '10px 14px',
+            borderRadius: '8px',
+            marginTop: '12px',
+            fontSize: '0.84rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+          role="alert"
+        >
+          <Info size={16} />
+          <span>{formError}</span>
+        </div>
+      )}
 
       <form onSubmit={handleRegister}>
         {/* STEP 1: EVENT & PLAYER SELECTION */}
@@ -168,7 +244,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
               <select
                 id="cashier-entry-tournament"
                 className="form-select"
-                value={selectedTournamentId}
+                value={effectiveTournamentId}
                 onChange={e => setSelectedTournamentId(e.target.value)}
                 required
               >
@@ -196,6 +272,12 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
                   const match = players.find(player => formatPlayerNumber(player) === value);
                   if (match) setSelectedPlayerId(match.id);
                 }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleContinueToPayment();
+                  }
+                }}
               />
               {quickPlayerId && (
                 <small style={{ color: players.some(player => formatPlayerNumber(player) === quickPlayerId) ? '#86efac' : '#fca5a5' }}>
@@ -210,7 +292,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
               <select
                 id="cashier-entry-player"
                 className="form-select"
-                value={selectedPlayerId}
+                value={effectivePlayerId}
                 onChange={e => {
                   const playerId = e.target.value;
                   const player = players.find(candidate => candidate.id === playerId);
@@ -315,7 +397,6 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
                 />
               </div>
             </div>
-
           </div>
         )}
 
@@ -326,7 +407,10 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
               <button
                 type="button"
                 className="wizard-prev-btn"
-                onClick={() => setStep(1)}
+                onClick={() => {
+                  setFormError(null);
+                  setStep(1);
+                }}
               >
                 <ArrowLeft size={16} /> Previous: Event Selection
               </button>
@@ -346,9 +430,7 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
               <button
                 type="button"
                 className="wizard-next-btn"
-                onClick={() => {
-                  if (selectedTournamentId && selectedPlayerId) setStep(2);
-                }}
+                onClick={handleContinueToPayment}
               >
                 <span>Continue to Payment</span>
                 <ArrowRight size={16} />
@@ -375,3 +457,4 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
     </div>
   );
 };
+
