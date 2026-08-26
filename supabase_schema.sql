@@ -377,20 +377,18 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- ------------------------------------------------------------------------------
--- 16. MIGRATION: ADD SEQUENTIAL MEMBER NUMBER COLUMN TO EXISTING PLAYERS TABLE
+-- 16. MIGRATION: SYNCHRONIZE MEMBER NUMBER TO MATCH PLAYER ID
 -- ------------------------------------------------------------------------------
--- Run this in Supabase SQL Editor if players table already exists:
+-- Run this in Supabase SQL Editor to make member_number exactly match player id:
 ALTER TABLE players ADD COLUMN IF NOT EXISTS member_number INTEGER;
 ALTER TABLE players ADD COLUMN IF NOT EXISTS aadhaar_back_photo_url TEXT;
 CREATE INDEX IF NOT EXISTS idx_players_member_number ON players(member_number);
 
--- Populate sequence numbers (1, 2, 3, ...) for all existing players by registration order
-WITH ordered_players AS (
-    SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS seq
-    FROM players
-)
+-- Set member_number to match numeric player ID (e.g., id '10' -> member_number 10)
 UPDATE players
-SET member_number = ordered_players.seq
-FROM ordered_players
-WHERE players.id = ordered_players.id;
+SET member_number = CASE 
+    WHEN id ~ '^[0-9]+$' THEN id::INTEGER
+    WHEN id ~ '[0-9]+' THEN (regexp_matches(id, '[0-9]+'))[1]::INTEGER
+    ELSE member_number
+END;
 
