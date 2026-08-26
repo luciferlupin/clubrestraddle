@@ -167,7 +167,12 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
         <div className="registration-pass-identity">
           <div>
             <strong>{player.fullName}</strong>
-            <span>Player ID {formatPlayerNumber(player)}</span>
+            <span>Player ID {formatPlayerNumber(player)} • {player.phone}</span>
+            <div style={{ fontSize: '0.72rem', color: '#fda4af', marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <span>Aadhaar: <strong style={{ color: '#ffffff', fontFamily: 'monospace' }}>{player.kyc.aadhaarNumber || 'UIDAI Verified'}</strong></span>
+              <span>•</span>
+              <span>PAN: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{player.kyc.panNumber || 'PAN Verified'}</strong></span>
+            </div>
           </div>
         </div>
       </div>

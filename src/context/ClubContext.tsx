@@ -2084,12 +2084,20 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const { data, error } = await supabase
           .from('players')
-          .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
+          .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
           .or(orConditions.join(','))
           .limit(1);
 
         if (!error && data && data.length > 0) {
           const p = data[0];
+          const idNum = p.govt_id_number || '';
+          let aadhaarParsed = '';
+          let panParsed = '';
+          const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
+          if (panMatch) panParsed = panMatch[1].toUpperCase();
+          const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
+          if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
+
           const mappedPlayer: Player = {
             id: p.id,
             fullName: p.full_name || 'Member Player',
@@ -2097,6 +2105,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             email: p.email || '',
             membershipTier: p.membership_tier || 'Standard',
             kycStatus: p.kyc_status || 'pending',
+            phoneVerified: Boolean(p.phone_verified),
+            phoneVerifiedAt: p.phone_verified_at || undefined,
             registeredAt: p.created_at || new Date().toISOString(),
             totalVisits: p.total_visits || 1,
             notes: p.notes,
@@ -2105,12 +2115,12 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               phone: p.phone || '',
               email: p.email || '',
               dateOfBirth: p.date_of_birth || '1995-01-01',
-              aadhaarNumber: p.aadhaar_number,
-              panNumber: p.pan_number,
-              aadhaarPhotoUrl: (p as any).aadhaar_photo_url,
-              aadhaarBackPhotoUrl: (p as any).aadhaar_back_photo_url,
-              panPhotoUrl: (p as any).pan_photo_url,
-              govtIdType: p.govt_id_type || 'Aadhaar Card',
+              aadhaarNumber: p.aadhaar_number || aadhaarParsed,
+              panNumber: p.pan_number || panParsed,
+              aadhaarPhotoUrl: p.aadhaar_photo_url,
+              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
+              panPhotoUrl: p.pan_photo_url,
+              govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
               govtIdNumber: p.govt_id_number || 'KYC-PENDING',
               address: p.address || 'Delhi NCR, India',
               emergencyContactName: p.emergency_contact_name || '',
@@ -2165,11 +2175,19 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // Fetch the player for this check-in
           const { data: pData } = await supabase
             .from('players')
-            .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
+            .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
             .eq('id', chk.player_id)
             .limit(1);
           if (pData && pData.length > 0) {
             const p = pData[0];
+            const idNum = p.govt_id_number || '';
+            let aadhaarParsed = '';
+            let panParsed = '';
+            const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
+            if (panMatch) panParsed = panMatch[1].toUpperCase();
+            const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
+            if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
+
             const mappedPlayer: Player = {
               id: p.id,
               fullName: p.full_name || 'Member Player',
@@ -2177,6 +2195,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               email: p.email || '',
               membershipTier: p.membership_tier || 'Standard',
               kycStatus: p.kyc_status || 'pending',
+              phoneVerified: Boolean(p.phone_verified),
+              phoneVerifiedAt: p.phone_verified_at || undefined,
               registeredAt: p.created_at || new Date().toISOString(),
               totalVisits: p.total_visits || 1,
               notes: p.notes,
@@ -2185,12 +2205,12 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 phone: p.phone || '',
                 email: p.email || '',
                 dateOfBirth: p.date_of_birth || '1995-01-01',
-                aadhaarNumber: p.aadhaar_number,
-                panNumber: p.pan_number,
-                aadhaarPhotoUrl: (p as any).aadhaar_photo_url,
-                aadhaarBackPhotoUrl: (p as any).aadhaar_back_photo_url,
-                panPhotoUrl: (p as any).pan_photo_url,
-                govtIdType: p.govt_id_type || 'Aadhaar Card',
+                aadhaarNumber: p.aadhaar_number || aadhaarParsed,
+                panNumber: p.pan_number || panParsed,
+                aadhaarPhotoUrl: p.aadhaar_photo_url,
+                aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
+                panPhotoUrl: p.pan_photo_url,
+                govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
                 govtIdNumber: p.govt_id_number || 'KYC-PENDING',
                 address: p.address || 'Delhi NCR, India',
                 emergencyContactName: p.emergency_contact_name || '',
@@ -2270,12 +2290,20 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const { data, error } = await supabase
           .from('players')
-          .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
+          .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
           .or(orConditions.join(','))
           .limit(1);
 
         if (!error && data && data.length > 0) {
           const p = data[0];
+          const idNum = p.govt_id_number || '';
+          let aadhaarParsed = '';
+          let panParsed = '';
+          const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
+          if (panMatch) panParsed = panMatch[1].toUpperCase();
+          const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
+          if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
+
           const mappedPlayer: Player = {
             id: p.id,
             fullName: p.full_name || 'Member Player',
@@ -2283,6 +2311,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             email: p.email || '',
             membershipTier: p.membership_tier || 'Standard',
             kycStatus: p.kyc_status || 'pending',
+            phoneVerified: Boolean(p.phone_verified),
+            phoneVerifiedAt: p.phone_verified_at || undefined,
             registeredAt: p.created_at || new Date().toISOString(),
             totalVisits: p.total_visits || 1,
             notes: p.notes,
@@ -2291,11 +2321,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               phone: p.phone || '',
               email: p.email || '',
               dateOfBirth: p.date_of_birth || '1995-01-01',
-              aadhaarNumber: p.aadhaar_number,
-              panNumber: p.pan_number,
-              aadhaarPhotoUrl: (p as any).aadhaar_photo_url,
-              aadhaarBackPhotoUrl: (p as any).aadhaar_back_photo_url,
-              panPhotoUrl: (p as any).pan_photo_url,
+              aadhaarNumber: p.aadhaar_number || aadhaarParsed,
+              panNumber: p.pan_number || panParsed,
+              aadhaarPhotoUrl: p.aadhaar_photo_url,
+              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
+              panPhotoUrl: p.pan_photo_url,
               govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
               govtIdNumber: p.govt_id_number || 'KYC-PENDING',
               address: p.address || 'Delhi NCR, India',
