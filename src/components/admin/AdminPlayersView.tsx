@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Search, ShieldCheck, CheckCircle, XCircle, Eye, Edit3, Trash2, UserCheck, Calendar, AlertTriangle, Wallet, Trophy, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, KYCStatus, MembershipTier } from '../../types';
-import { formatDateOnly, formatDateTime, maskGovtId, formatFullAadhaar, formatPlayerNumber, formatCurrency } from '../../utils/formatters';
+import { formatDateOnly, formatDateTime, maskGovtId, formatFullAadhaar, formatPanNumber, formatPlayerNumber, formatCurrency } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
@@ -346,8 +346,8 @@ export const AdminPlayersView: React.FC = () => {
                   </div>
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>PAN Card</span>
-                    <div style={{ fontWeight: 600, color: '#fb7185', fontFamily: 'monospace' }}>
-                      {selectedPlayer.kyc.panNumber || (selectedPlayer.kyc.govtIdNumber ? maskGovtId(selectedPlayer.kyc.govtIdNumber) : 'PAN Verified')}
+                    <div style={{ fontWeight: 600, color: '#38bdf8', fontFamily: 'monospace' }}>
+                      {formatPanNumber(selectedPlayer.kyc.panNumber, selectedPlayer.kyc.govtIdNumber) || 'PAN Verified'}
                     </div>
                   </div>
                 </div>

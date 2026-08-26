@@ -24,7 +24,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
-import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR, formatFullAadhaar, formatPlayerNumber } from '../../utils/formatters';
+import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR, formatFullAadhaar, formatPanNumber, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, EntryBadge, TierBadge } from '../common/Badge';
 import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { Player, ExpenseCategory, PaymentMethod } from '../../types';
@@ -1282,8 +1282,8 @@ export const MobileAdminPortal: React.FC = () => {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
                     <span style={{ color: '#94a3b8' }}>2. PAN Card</span>
-                    <span style={{ fontWeight: 700, color: '#fb7185', fontFamily: 'monospace' }}>
-                      {selectedPlayer.kyc.panNumber || (selectedPlayer.kyc.govtIdNumber ? maskGovtId(selectedPlayer.kyc.govtIdNumber) : 'PAN Verified')}
+                    <span style={{ fontWeight: 700, color: '#38bdf8', fontFamily: 'monospace' }}>
+                      {formatPanNumber(selectedPlayer.kyc.panNumber, selectedPlayer.kyc.govtIdNumber) || 'PAN Verified'}
                     </span>
                   </div>
 

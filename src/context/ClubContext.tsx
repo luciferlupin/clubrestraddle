@@ -83,6 +83,8 @@ const playerToDatabaseRow = (player: Player) => ({
   email: player.email,
   membership_tier: player.membershipTier,
   kyc_status: player.kycStatus,
+  phone_verified: Boolean(player.phoneVerified || player.kyc.phoneVerified),
+  phone_verified_at: player.phoneVerifiedAt || player.kyc.phoneVerifiedAt || null,
   date_of_birth: player.kyc.dateOfBirth || '2000-01-01',
   govt_id_type: player.kyc.govtIdType === 'Aadhaar & PAN Card' ? 'Aadhaar Card' : (player.kyc.govtIdType || 'Aadhaar Card'),
   govt_id_number: player.kyc.govtIdNumber || 'KYC-PENDING',
