@@ -323,28 +323,60 @@ export const SecurityQueue: React.FC<SecurityQueueProps> = ({
                           </button>
                         )}
                         {(checkIn?.verificationStatus === 'pending' || (!checkIn && player.kycStatus === 'pending')) && (
-                          <button
-                            type="button"
-                            className="btn btn-emerald btn-sm"
-                            style={{ padding: '4px 10px', fontSize: '0.74rem', gap: '4px' }}
-                            onClick={() => {
-                              if (player.kycStatus === 'pending') {
-                                reviewKYC(player.id, 'verified');
-                              }
-                              approvePlayerEntry(checkIn?.id || player.id);
-                              try {
-                                confetti({
-                                  particleCount: 40,
-                                  spread: 50,
-                                  origin: { y: 0.7 },
-                                  colors: ['#e11d48', '#ffffff', '#fb7185', '#10b981'],
-                                });
-                              } catch {}
-                            }}
-                            title="Quick Clear & Grant Entry"
-                          >
-                            <Check size={13} /> Clear Entry
-                          </button>
+                          <div style={{ display: 'inline-flex', gap: '4px' }}>
+                            <button
+                              type="button"
+                              className="btn btn-emerald btn-sm"
+                              style={{ padding: '4px 8px', fontSize: '0.72rem', gap: '3px' }}
+                              onClick={() => {
+                                if (player.kycStatus === 'pending') {
+                                  reviewKYC(player.id, 'verified');
+                                }
+                                approvePlayerEntry(checkIn?.id || player.id);
+                                try {
+                                  confetti({
+                                    particleCount: 40,
+                                    spread: 50,
+                                    origin: { y: 0.7 },
+                                    colors: ['#e11d48', '#ffffff', '#fb7185', '#10b981'],
+                                  });
+                                } catch {}
+                              }}
+                              title="Quick Clear Entry (No Bill)"
+                            >
+                              <Check size={12} /> Clear (No Bill)
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              style={{
+                                padding: '4px 8px',
+                                fontSize: '0.72rem',
+                                gap: '3px',
+                                background: 'linear-gradient(135deg, #e11d48, #be123c)',
+                                borderColor: '#fda4af',
+                              }}
+                              onClick={() => {
+                                if (player.kycStatus === 'pending') {
+                                  reviewKYC(player.id, 'verified');
+                                }
+                                approvePlayerEntry(checkIn?.id || player.id);
+                                setEntryInvoice(generateEntryFeeInvoice(player, checkIn, staffName));
+                                setIsInvoiceOpen(true);
+                                try {
+                                  confetti({
+                                    particleCount: 50,
+                                    spread: 60,
+                                    origin: { y: 0.7 },
+                                    colors: ['#e11d48', '#ffffff', '#fb7185', '#10b981'],
+                                  });
+                                } catch {}
+                              }}
+                              title="Clear Entry & Print ₹500 Gate Bill"
+                            >
+                              <Printer size={12} /> Clear & Bill
+                            </button>
+                          </div>
                         )}
                         <button
                           type="button"

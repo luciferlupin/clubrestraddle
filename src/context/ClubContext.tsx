@@ -172,6 +172,7 @@ interface ClubContextType {
   // Realtime & Multi-Device Sync
   isRealtimeConnected: boolean;
   syncNow: () => Promise<void>;
+  fetchPlayerKycDocs: (playerId: string) => Promise<void>;
 
   // Staff Authentication & Users
   staffUsers: StaffUser[];
@@ -620,7 +621,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setStaffUsers(mappedStaff);
       }
 
-      const { data: playersData, error: pErr } = await client.from('players').select('*').order('created_at', { ascending: false }).limit(250);
+      const { data: playersData, error: pErr } = await client
+        .from('players')
+        .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
+        .order('created_at', { ascending: false })
+        .limit(250);
       if (!pErr && playersData) {
         if (playersData.length > 0) {
           let maxExistingNumber = 0;
@@ -682,9 +687,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 dateOfBirth: p.date_of_birth || '1995-01-01',
                 aadhaarNumber: p.aadhaar_number || aadhaarParsed,
                 panNumber: p.pan_number || panParsed,
-                aadhaarPhotoUrl: p.aadhaar_photo_url,
-                aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
-                panPhotoUrl: p.pan_photo_url,
+                aadhaarPhotoUrl: p.aadhaar_photo_url || undefined,
+                aadhaarBackPhotoUrl: p.aadhaar_back_photo_url || undefined,
+                panPhotoUrl: p.pan_photo_url || undefined,
                 govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
                 govtIdNumber: p.govt_id_number || 'KYC-PENDING',
                 address: p.address || 'Delhi NCR, India',
@@ -701,9 +706,23 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
 
           setPlayers(prev => {
+            const prevMap = new Map(prev.map(p => [p.id, p]));
+            const mergedDbPlayers = mappedPlayers.map(mp => {
+              const existing = prevMap.get(mp.id);
+              if (!existing) return mp;
+              return {
+                ...mp,
+                kyc: {
+                  ...mp.kyc,
+                  aadhaarPhotoUrl: mp.kyc.aadhaarPhotoUrl || existing.kyc.aadhaarPhotoUrl,
+                  aadhaarBackPhotoUrl: mp.kyc.aadhaarBackPhotoUrl || existing.kyc.aadhaarBackPhotoUrl,
+                  panPhotoUrl: mp.kyc.panPhotoUrl || existing.kyc.panPhotoUrl,
+                },
+              };
+            });
             const dbPlayerIds = new Set(mappedPlayers.map(p => p.id));
             const localOnly = prev.filter(p => !dbPlayerIds.has(p.id));
-            const merged = [...mappedPlayers, ...localOnly];
+            const merged = [...mergedDbPlayers, ...localOnly];
             saveToStorage(STORAGE_KEYS.PLAYERS, merged);
             return merged;
           });
@@ -1267,22 +1286,41 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsRealtimeConnected(status === 'SUBSCRIBED');
       });
 
-    // Instant refresh when tab becomes visible or focused (Zero background polling)
-    const handleFocus = () => fetchSupabaseData();
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchSupabaseData();
-      }
-    };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       client.removeChannel(realtimeChannel);
     };
   }, [fetchSupabaseData]);
+
+  // On-demand KYC document photo fetcher (reduces egress by >99% by not loading heavy photos in bulk)
+  const fetchPlayerKycDocs = useCallback(async (playerId: string) => {
+    if (!isSupabaseConfigured || !supabase || !playerId) return;
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .select('id,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,photo_url')
+        .eq('id', playerId)
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        const row = data[0];
+        setPlayers(prev => prev.map(p => {
+          if (p.id !== playerId) return p;
+          return {
+            ...p,
+            kyc: {
+              ...p.kyc,
+              aadhaarPhotoUrl: row.aadhaar_photo_url || p.kyc.aadhaarPhotoUrl,
+              aadhaarBackPhotoUrl: row.aadhaar_back_photo_url || p.kyc.aadhaarBackPhotoUrl,
+              panPhotoUrl: row.pan_photo_url || p.kyc.panPhotoUrl,
+              photoUrl: row.photo_url || p.kyc.photoUrl,
+            },
+          };
+        }));
+      }
+    } catch (e) {
+      console.warn('Could not fetch player KYC docs:', e);
+    }
+  }, [isSupabaseConfigured]);
 
   const setActiveRole = useCallback((role: UserRole) => {
     setActiveRoleState(role);
@@ -1304,12 +1342,15 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const setSelectedPlayerId = (id: string) => {
     setSelectedPlayerIdState(id);
-    if (id && isSupabaseConfigured && supabase) {
-      const p = players.find(x => x.id === id);
-      if (p) {
-        supabase.from('players').upsert(playerToDatabaseRow(p), { onConflict: 'id' }).then(({ error }) => {
-          if (error) console.error('Supabase player login sync error:', error.message);
-        });
+    if (id) {
+      fetchPlayerKycDocs(id);
+      if (isSupabaseConfigured && supabase) {
+        const p = players.find(x => x.id === id);
+        if (p) {
+          supabase.from('players').upsert(playerToDatabaseRow(p), { onConflict: 'id' }).then(({ error }) => {
+            if (error) console.error('Supabase player login sync error:', error.message);
+          });
+        }
       }
     }
   };
@@ -2004,7 +2045,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const { data, error } = await supabase
           .from('players')
-          .select('*')
+          .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
           .or(orConditions.join(','))
           .limit(1);
 
@@ -2027,9 +2068,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               dateOfBirth: p.date_of_birth || '1995-01-01',
               aadhaarNumber: p.aadhaar_number,
               panNumber: p.pan_number,
-              aadhaarPhotoUrl: p.aadhaar_photo_url,
-              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
-              panPhotoUrl: p.pan_photo_url,
+              aadhaarPhotoUrl: (p as any).aadhaar_photo_url,
+              aadhaarBackPhotoUrl: (p as any).aadhaar_back_photo_url,
+              panPhotoUrl: (p as any).pan_photo_url,
               govtIdType: p.govt_id_type || 'Aadhaar Card',
               govtIdNumber: p.govt_id_number || 'KYC-PENDING',
               address: p.address || 'Delhi NCR, India',
@@ -2083,7 +2124,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
 
           // Fetch the player for this check-in
-          const { data: pData } = await supabase.from('players').select('*').eq('id', chk.player_id).limit(1);
+          const { data: pData } = await supabase
+            .from('players')
+            .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
+            .eq('id', chk.player_id)
+            .limit(1);
           if (pData && pData.length > 0) {
             const p = pData[0];
             const mappedPlayer: Player = {
@@ -2103,9 +2148,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 dateOfBirth: p.date_of_birth || '1995-01-01',
                 aadhaarNumber: p.aadhaar_number,
                 panNumber: p.pan_number,
-                aadhaarPhotoUrl: p.aadhaar_photo_url,
-                aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
-                panPhotoUrl: p.pan_photo_url,
+                aadhaarPhotoUrl: (p as any).aadhaar_photo_url,
+                aadhaarBackPhotoUrl: (p as any).aadhaar_back_photo_url,
+                panPhotoUrl: (p as any).pan_photo_url,
                 govtIdType: p.govt_id_type || 'Aadhaar Card',
                 govtIdNumber: p.govt_id_number || 'KYC-PENDING',
                 address: p.address || 'Delhi NCR, India',
@@ -2186,7 +2231,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const { data, error } = await supabase
           .from('players')
-          .select('*')
+          .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
           .or(orConditions.join(','))
           .limit(1);
 
@@ -2209,9 +2254,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               dateOfBirth: p.date_of_birth || '1995-01-01',
               aadhaarNumber: p.aadhaar_number,
               panNumber: p.pan_number,
-              aadhaarPhotoUrl: p.aadhaar_photo_url,
-              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
-              panPhotoUrl: p.pan_photo_url,
+              aadhaarPhotoUrl: (p as any).aadhaar_photo_url,
+              aadhaarBackPhotoUrl: (p as any).aadhaar_back_photo_url,
+              panPhotoUrl: (p as any).pan_photo_url,
               govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
               govtIdNumber: p.govt_id_number || 'KYC-PENDING',
               address: p.address || 'Delhi NCR, India',
@@ -4029,6 +4074,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setStaffName,
         isRealtimeConnected,
         syncNow,
+        fetchPlayerKycDocs,
         staffUsers,
         currentStaffUser,
         loginStaff,

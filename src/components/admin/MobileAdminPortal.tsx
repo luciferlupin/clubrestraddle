@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -54,10 +54,19 @@ export const MobileAdminPortal: React.FC = () => {
     fulfillChipRequest,
     cancelChipRequest,
     resetToDemoData,
+    fetchPlayerKycDocs,
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'players' | 'attendance' | 'finance' | 'staff' | 'audit'>('dashboard');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+
+  useEffect(() => {
+    if (selectedPlayer?.id) {
+      fetchPlayerKycDocs(selectedPlayer.id);
+    }
+  }, [selectedPlayer?.id, fetchPlayerKycDocs]);
+
+  const activeSelectedPlayer = selectedPlayer ? (players.find(p => p.id === selectedPlayer.id) || selectedPlayer) : null;
   const [playerDrawerTab, setPlayerDrawerTab] = useState<'info' | 'ledger'>('info');
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
@@ -1294,9 +1303,9 @@ export const MobileAdminPortal: React.FC = () => {
                   </div>
 
                   <AdminKycDocumentPhotos
-                    aadhaarPhotoUrl={selectedPlayer.kyc.aadhaarPhotoUrl}
-                    aadhaarBackPhotoUrl={selectedPlayer.kyc.aadhaarBackPhotoUrl}
-                    panPhotoUrl={selectedPlayer.kyc.panPhotoUrl}
+                    aadhaarPhotoUrl={activeSelectedPlayer?.kyc.aadhaarPhotoUrl || selectedPlayer.kyc.aadhaarPhotoUrl}
+                    aadhaarBackPhotoUrl={activeSelectedPlayer?.kyc.aadhaarBackPhotoUrl || selectedPlayer.kyc.aadhaarBackPhotoUrl}
+                    panPhotoUrl={activeSelectedPlayer?.kyc.panPhotoUrl || selectedPlayer.kyc.panPhotoUrl}
                     onAadhaarChange={(url) => {
                       const updated = { ...selectedPlayer, kyc: { ...selectedPlayer.kyc, aadhaarPhotoUrl: url || '' } };
                       setSelectedPlayer(updated);

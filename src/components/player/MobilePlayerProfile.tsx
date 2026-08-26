@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BadgeCheck,
   CalendarDays,
@@ -17,6 +17,7 @@ import {
 import { Player } from '../../types';
 import { formatDateOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
+import { useClub } from '../../context/ClubContext';
 import { PlayerLedger } from './PlayerLedger';
 
 interface MobilePlayerProfileProps {
@@ -26,7 +27,14 @@ interface MobilePlayerProfileProps {
 }
 
 export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player, onOpenPass, onLogout }) => {
+  const { fetchPlayerKycDocs } = useClub();
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
+
+  useEffect(() => {
+    if (player?.id) {
+      fetchPlayerKycDocs(player.id);
+    }
+  }, [player?.id, fetchPlayerKycDocs]);
 
   return (
     <section className="player-subscreen player-profile-screen" aria-labelledby="player-profile-title">

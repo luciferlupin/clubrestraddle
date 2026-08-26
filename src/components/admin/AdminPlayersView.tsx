@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Search, ShieldCheck, CheckCircle, XCircle, Eye, Edit3, Trash2, UserCheck, Calendar, AlertTriangle, Wallet, Trophy, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, KYCStatus, MembershipTier } from '../../types';
@@ -11,9 +11,17 @@ import { AdminKycDocumentPhotos } from './AdminKycDocumentPhotos';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 
 export const AdminPlayersView: React.FC = () => {
-  const { players, reviewKYC, updatePlayer, deletePlayer, checkIns, depositToPlayerWallet, withdrawFromPlayerWallet } = useClub();
+  const { players, reviewKYC, updatePlayer, deletePlayer, checkIns, depositToPlayerWallet, withdrawFromPlayerWallet, fetchPlayerKycDocs } = useClub();
   const [search, setSearch] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+
+  useEffect(() => {
+    if (selectedPlayer?.id) {
+      fetchPlayerKycDocs(selectedPlayer.id);
+    }
+  }, [selectedPlayer?.id, fetchPlayerKycDocs]);
+
+  const activeSelectedPlayer = selectedPlayer ? (players.find(p => p.id === selectedPlayer.id) || selectedPlayer) : null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [inspectTab, setInspectTab] = useState<'details' | 'wallet' | 'ledger'>('details');
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -344,9 +352,9 @@ export const AdminPlayersView: React.FC = () => {
                   </div>
                 </div>
                 <AdminKycDocumentPhotos
-                  aadhaarPhotoUrl={selectedPlayer.kyc.aadhaarPhotoUrl}
-                  aadhaarBackPhotoUrl={selectedPlayer.kyc.aadhaarBackPhotoUrl}
-                  panPhotoUrl={selectedPlayer.kyc.panPhotoUrl}
+                  aadhaarPhotoUrl={activeSelectedPlayer?.kyc.aadhaarPhotoUrl || selectedPlayer.kyc.aadhaarPhotoUrl}
+                  aadhaarBackPhotoUrl={activeSelectedPlayer?.kyc.aadhaarBackPhotoUrl || selectedPlayer.kyc.aadhaarBackPhotoUrl}
+                  panPhotoUrl={activeSelectedPlayer?.kyc.panPhotoUrl || selectedPlayer.kyc.panPhotoUrl}
                 />
                 <div style={{ marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Residential Address</span>

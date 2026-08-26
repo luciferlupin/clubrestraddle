@@ -13,15 +13,16 @@ import {
  */
 export const generateEntryFeeInvoice = (
   player: Player,
-  checkIn: DailyCheckIn,
+  checkIn?: DailyCheckIn,
   staffName: string = 'Security / Front Desk'
 ): ClubInvoiceData => {
-  const checkInDateTime = checkIn.checkInDate && checkIn.checkInTime
+  const checkInId = checkIn?.id || `CHK-${player.id}-${Date.now().toString().slice(-4)}`;
+  const checkInDateTime = checkIn?.checkInDate && checkIn?.checkInTime
     ? `${checkIn.checkInDate}T${checkIn.checkInTime}`
     : new Date().toISOString();
 
   return {
-    invoiceNumber: generateGateInvoiceNumber(checkIn.id),
+    invoiceNumber: generateGateInvoiceNumber(checkInId),
     invoiceDate: checkInDateTime,
     category: 'Club Door Entry & Lounge Access Fee',
     playerId: formatPlayerNumber(player),
@@ -47,9 +48,9 @@ export const generateEntryFeeInvoice = (
     cgstAmount: 11.90,
     sgstAmount: 11.91,
     totalAmount: 500,
-    paymentMethod: checkIn.paymentMethod || 'Cash',
-    paymentReference: `ENT-${checkIn.id}`,
-    cashierName: checkIn.verifiedBy || staffName,
+    paymentMethod: checkIn?.paymentMethod || 'Cash',
+    paymentReference: `ENT-${checkInId}`,
+    cashierName: checkIn?.verifiedBy || staffName,
     items: [
       {
         description: 'Club Door Entry & Facility Access Fee (5% Service Charge Included)',

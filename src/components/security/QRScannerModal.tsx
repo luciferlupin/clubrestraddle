@@ -350,12 +350,17 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     void processScanCode(manualCode);
   };
 
-  const handleApproveScanned = () => {
+  const handleApproveScanned = (shouldPrint = false) => {
     if (!scannedResult) return;
     setIsVerifying(true);
 
     const targetId = scannedResult.checkIn?.id || scannedResult.player.id;
     approvePlayerEntry(targetId);
+
+    if (shouldPrint) {
+      setEntryInvoice(generateEntryFeeInvoice(scannedResult.player, scannedResult.checkIn!, staffName));
+      setIsInvoiceOpen(true);
+    }
 
     try {
       confetti({
@@ -370,8 +375,10 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
     setTimeout(() => {
       setIsVerifying(false);
-      setScannedResult(null);
-      onClose();
+      if (!shouldPrint) {
+        setScannedResult(null);
+        onClose();
+      }
     }, 350);
   };
 
@@ -560,25 +567,47 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             ) : (
               <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
                 <button
-                  className="btn btn-primary"
-                  onClick={handleApproveScanned}
+                  type="button"
+                  className="btn btn-emerald"
+                  onClick={() => handleApproveScanned(false)}
                   disabled={isVerifying}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, padding: '10px 8px', fontWeight: 800 }}
+                  title="Approve entry without opening printable bill"
                 >
-                  <CheckCircle2 size={18} />
-                  <span>{isVerifying ? 'Approving...' : 'Approve & Grant Entry'}</span>
+                  <CheckCircle2 size={16} />
+                  <span>{isVerifying ? 'Approving...' : 'Approve (No Bill)'}</span>
                 </button>
 
                 <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => handleApproveScanned(true)}
+                  disabled={isVerifying}
+                  style={{
+                    flex: 1,
+                    background: 'linear-gradient(135deg, #e11d48, #be123c)',
+                    borderColor: '#fda4af',
+                    padding: '10px 8px',
+                    fontWeight: 800,
+                  }}
+                  title="Approve entry and open printable ₹500 gate bill"
+                >
+                  <Printer size={15} />
+                  <span>Approve & Print Bill</span>
+                </button>
+
+                <button
+                  type="button"
                   className="btn btn-danger"
                   onClick={() => setIsRejecting(true)}
                   disabled={isVerifying}
-                  style={{ padding: '8px 14px' }}
+                  style={{ padding: '8px 12px' }}
                 >
                   Deny Entry
                 </button>
 
                 <button
+                  type="button"
                   className="btn btn-secondary"
                   onClick={() => setScannedResult(null)}
                   style={{ width: 'auto', padding: '8px 12px' }}

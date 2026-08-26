@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -33,7 +33,13 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
   player,
   checkIn,
 }) => {
-  const { approvePlayerEntry, rejectPlayerEntry, reviewKYC, staffName } = useClub();
+  const { approvePlayerEntry, rejectPlayerEntry, reviewKYC, staffName, fetchPlayerKycDocs } = useClub();
+
+  useEffect(() => {
+    if (player?.id) {
+      fetchPlayerKycDocs(player.id);
+    }
+  }, [player?.id, fetchPlayerKycDocs]);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isRejectKycModalOpen, setIsRejectKycModalOpen] = useState(false);
@@ -51,10 +57,17 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleApproveEntry = () => {
+  const [printBillOnApproval, setPrintBillOnApproval] = useState(false);
+
+  const handleApproveEntry = (shouldPrint = printBillOnApproval) => {
     approvePlayerEntry(checkIn?.id || player.id, entryPaymentMethod);
     setIsApproveModalOpen(false);
     showToast(`Entry cleared for ${player.fullName} (${entryPaymentMethod})!`);
+
+    if (shouldPrint) {
+      setEntryInvoice(generateEntryFeeInvoice(player, checkIn, staffName));
+      setIsInvoiceOpen(true);
+    }
 
     try {
       confetti({
@@ -81,11 +94,16 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
     } catch {}
   };
 
-  const handleVerifyKycAndApproveEntry = () => {
+  const handleVerifyKycAndApproveEntry = (shouldPrint = printBillOnApproval) => {
     reviewKYC(player.id, 'verified');
     approvePlayerEntry(checkIn?.id || player.id, entryPaymentMethod);
     setIsApproveModalOpen(false);
     showToast(`KYC Verified & Entry Approved for ${player.fullName} (${entryPaymentMethod})!`);
+
+    if (shouldPrint) {
+      setEntryInvoice(generateEntryFeeInvoice(player, checkIn, staffName));
+      setIsInvoiceOpen(true);
+    }
 
     try {
       confetti({
@@ -597,8 +615,9 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
 
           {player.kycStatus === 'pending' && (
             <button
+              type="button"
               className="btn btn-emerald btn-sm"
-              onClick={handleVerifyKycAndApproveEntry}
+              onClick={() => setIsApproveModalOpen(true)}
               style={{
                 fontSize: '0.82rem',
                 fontWeight: 800,
@@ -615,8 +634,9 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
 
           {player.kycStatus === 'verified' && (
             <button
+              type="button"
               className="btn btn-emerald btn-sm"
-              onClick={handleApproveEntry}
+              onClick={() => setIsApproveModalOpen(true)}
               disabled={checkIn?.verificationStatus === 'approved'}
               style={{
                 fontSize: '0.82rem',
@@ -681,14 +701,28 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
         subtitle={`Confirm Aadhaar & PAN KYC clearance for ${player.fullName}`}
         size="sm"
         footer={
-          <>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', width: '100%' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsApproveModalOpen(false)}>
-              Review again
+              Cancel
             </button>
-            <button type="button" className="btn btn-emerald" onClick={handleApproveEntry}>
-              <CheckCircle size={16} /> Confirm entry
+            <button
+              type="button"
+              className="btn btn-emerald"
+              onClick={() => handleApproveEntry(false)}
+              title="Grant entry without opening printable bill"
+            >
+              <CheckCircle size={16} /> Approve (No Bill)
             </button>
-          </>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ background: 'linear-gradient(135deg, #e11d48, #be123c)', borderColor: '#fda4af' }}
+              onClick={() => handleApproveEntry(true)}
+              title="Grant entry and immediately open printable ₹500 gate tax invoice bill"
+            >
+              <Printer size={15} /> Approve & Print Bill
+            </button>
+          </div>
         }
       >
         <div className="security-confirm-summary">
@@ -697,6 +731,19 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
           <div><span>Aadhaar</span><strong>{player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : 'UIDAI Verified'}</strong></div>
           <div><span>PAN Card</span><strong style={{ color: '#fb7185' }}>{player.kyc.panNumber || 'PAN Verified'}</strong></div>
           <div><span>KYC status</span><strong>{player.kycStatus}</strong></div>
+          <div><span>Door Fee</span><strong>₹500 ({entryPaymentMethod})</strong></div>
+        </div>
+
+        <div style={{ marginTop: '12px', padding: '10px 12px', background: 'rgba(225, 29, 72, 0.08)', borderRadius: '10px', border: '1px solid rgba(225, 29, 72, 0.25)' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#f1f5f9', cursor: 'pointer', fontWeight: 600 }}>
+            <input
+              type="checkbox"
+              checked={printBillOnApproval}
+              onChange={(e) => setPrintBillOnApproval(e.target.checked)}
+              style={{ width: '16px', height: '16px', accentColor: '#e11d48', cursor: 'pointer' }}
+            />
+            <span>Auto-open printable Tax Invoice Bill (₹500 · 5% Service Charge)</span>
+          </label>
         </div>
       </Modal>
 

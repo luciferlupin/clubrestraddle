@@ -58,6 +58,7 @@ export const MobileSecurityPortal: React.FC = () => {
     todayGateTransferredAmount,
     todayGateCashInHand,
     todayGateTransfers,
+    fetchPlayerKycDocs,
   } = useClub();
 
   const [activeNav, setActiveNav] = useState<'scan' | 'queue' | 'gate-cash'>('scan');
@@ -90,15 +91,19 @@ export const MobileSecurityPortal: React.FC = () => {
   const [pendingApproval, setPendingApproval] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
 
-  // Automatically deselect if player is deleted
+  // Automatically deselect if player is deleted and fetch KYC docs on-demand
   useEffect(() => {
     if (selectedPlayer && !players.some(p => p.id === selectedPlayer.id)) {
       setSelectedPlayer(null);
+    } else if (selectedPlayer?.id) {
+      fetchPlayerKycDocs(selectedPlayer.id);
     }
     if (pendingApproval && !players.some(p => p.id === pendingApproval.player.id)) {
       setPendingApproval(null);
+    } else if (pendingApproval?.player?.id) {
+      fetchPlayerKycDocs(pendingApproval.player.id);
     }
-  }, [players, selectedPlayer, pendingApproval]);
+  }, [players, selectedPlayer, pendingApproval, fetchPlayerKycDocs]);
 
   const pendingQueuePlayers = players
     .filter(p => {
@@ -131,12 +136,17 @@ export const MobileSecurityPortal: React.FC = () => {
 
   const [doorPaymentMethod, setDoorPaymentMethod] = useState<PaymentMethod>('Cash');
 
-  const handleApprove = (player: Player, checkIn?: DailyCheckIn) => {
+  const handleApprove = (player: Player, checkIn?: DailyCheckIn, shouldPrint = false) => {
     approvePlayerEntry(checkIn?.id || player.id, doorPaymentMethod);
     setPendingApproval(null);
 
     setVerificationSuccessToast(`Entry approved for ${player.fullName} (${doorPaymentMethod})!`);
     setTimeout(() => setVerificationSuccessToast(null), 3000);
+
+    if (shouldPrint) {
+      setEntryInvoice(generateEntryFeeInvoice(player, checkIn, staffName));
+      setIsInvoiceOpen(true);
+    }
 
     try {
       confetti({
@@ -164,13 +174,18 @@ export const MobileSecurityPortal: React.FC = () => {
     } catch {}
   };
 
-  const handleVerifyKycAndApprove = (player: Player, checkIn?: DailyCheckIn) => {
+  const handleVerifyKycAndApprove = (player: Player, checkIn?: DailyCheckIn, shouldPrint = false) => {
     reviewKYC(player.id, 'verified');
     approvePlayerEntry(checkIn?.id || player.id, doorPaymentMethod);
     setPendingApproval(null);
 
     setVerificationSuccessToast(`KYC Verified & Entry Approved for ${player.fullName} (${doorPaymentMethod})!`);
     setTimeout(() => setVerificationSuccessToast(null), 3000);
+
+    if (shouldPrint) {
+      setEntryInvoice(generateEntryFeeInvoice(player, checkIn, staffName));
+      setIsInvoiceOpen(true);
+    }
 
     try {
       confetti({
@@ -709,58 +724,105 @@ export const MobileSecurityPortal: React.FC = () => {
                   )}
 
                   {playerToInspect.kycStatus === 'pending' && (
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      style={{
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                        border: 'none',
-                        color: '#ffffff',
-                        fontWeight: 900,
-                        padding: '12px',
-                        fontSize: '0.92rem',
-                        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                      }}
-                      onClick={() => handleVerifyKycAndApprove(playerToInspect, playerToInspectCheckIn)}
-                    >
-                      <CheckCircle2 size={18} /> Verify KYC & Approve Entry
-                    </button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-emerald"
+                        style={{
+                          padding: '11px 8px',
+                          fontSize: '0.82rem',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px',
+                        }}
+                        onClick={() => handleVerifyKycAndApprove(playerToInspect, playerToInspectCheckIn, false)}
+                        title="Verify KYC and grant entrance without opening bill"
+                      >
+                        <CheckCircle2 size={15} /> Verify (No Bill)
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{
+                          background: 'linear-gradient(135deg, #e11d48, #be123c)',
+                          borderColor: '#fda4af',
+                          padding: '11px 8px',
+                          fontSize: '0.82rem',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px',
+                        }}
+                        onClick={() => handleVerifyKycAndApprove(playerToInspect, playerToInspectCheckIn, true)}
+                        title="Verify KYC and instantly print/view ₹500 bill"
+                      >
+                        <Printer size={15} /> Verify & Print Bill
+                      </button>
+                    </div>
                   )}
 
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ flex: 1, color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.4)', padding: '10px' }}
-                      onClick={() => {
-                        setSelectedPlayer(playerToInspect);
-                        setIsRejectOpen(true);
-                      }}
-                    >
-                      <XCircle size={15} /> Deny Entry
-                    </button>
+                  <div style={{ display: 'grid', gridTemplateColumns: playerToInspectCheckIn?.verificationStatus === 'approved' ? '1fr' : '1fr 1.3fr 1.3fr', gap: '6px' }}>
+                    {playerToInspectCheckIn?.verificationStatus !== 'approved' && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.4)', padding: '10px 6px', fontSize: '0.78rem' }}
+                        onClick={() => {
+                          setSelectedPlayer(playerToInspect);
+                          setIsRejectOpen(true);
+                        }}
+                      >
+                        <XCircle size={14} /> Deny
+                      </button>
+                    )}
 
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      style={{
-                        flex: 1,
-                        background: playerToInspectCheckIn?.verificationStatus === 'approved' ? '#334155' : '#10b981',
-                        borderColor: playerToInspectCheckIn?.verificationStatus === 'approved' ? '#475569' : '#10b981',
-                        color: playerToInspectCheckIn?.verificationStatus === 'approved' ? '#ffffff' : '#000000',
-                        fontWeight: 900,
-                        padding: '10px',
-                      }}
-                      disabled={playerToInspectCheckIn?.verificationStatus === 'approved'}
-                      onClick={() => handleApprove(playerToInspect, playerToInspectCheckIn)}
-                    >
-                      <Check size={15} />
-                      {playerToInspectCheckIn?.verificationStatus === 'approved' ? 'Approved ✓' : 'Approve Entry'}
-                    </button>
+                    {playerToInspectCheckIn?.verificationStatus !== 'approved' && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          style={{
+                            background: '#10b981',
+                            borderColor: '#10b981',
+                            color: '#000000',
+                            fontWeight: 900,
+                            padding: '10px 6px',
+                            fontSize: '0.78rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                          }}
+                          onClick={() => handleApprove(playerToInspect, playerToInspectCheckIn, false)}
+                          title="Approve entry without opening printable bill"
+                        >
+                          <Check size={14} /> No Bill
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          style={{
+                            background: 'linear-gradient(135deg, #e11d48, #be123c)',
+                            borderColor: '#fda4af',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            padding: '10px 6px',
+                            fontSize: '0.78rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                          }}
+                          onClick={() => handleApprove(playerToInspect, playerToInspectCheckIn, true)}
+                          title="Approve entry and open printable ₹500 bill"
+                        >
+                          <Printer size={14} /> Print Bill
+                        </button>
+                      </>
+                    )}
                   </div>
 
                   {playerToInspectCheckIn?.verificationStatus === 'approved' && (

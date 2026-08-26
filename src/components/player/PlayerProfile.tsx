@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, ShieldCheck, Mail, Phone, MapPin, CreditCard, AlertTriangle, RefreshCw, Receipt, FileText, Eye, ZoomIn, X, Camera, LogOut } from 'lucide-react';
 import { Player } from '../../types';
 import { formatDateOnly, formatDateTime, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
@@ -12,7 +12,14 @@ interface PlayerProfileProps {
 }
 
 export const PlayerProfile: React.FC<PlayerProfileProps> = ({ player, onLogout }) => {
-  const { updatePlayerKYC } = useClub();
+  const { updatePlayerKYC, fetchPlayerKycDocs } = useClub();
+
+  useEffect(() => {
+    if (player?.id) {
+      fetchPlayerKycDocs(player.id);
+    }
+  }, [player?.id, fetchPlayerKycDocs]);
+
   const [activeTab, setActiveTab] = useState<'profile' | 'ledger'>('profile');
   const [editingId, setEditingId] = useState(false);
   const [newIdNumber, setNewIdNumber] = useState(player.kyc.govtIdNumber);
