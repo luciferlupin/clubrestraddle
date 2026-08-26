@@ -787,7 +787,7 @@ export const MobileSecurityPortal: React.FC = () => {
                       }}
                     >
                       <Printer size={16} color="#fb7185" />
-                      <span>Print / View Bill Receipt (₹500 · 5% GST)</span>
+                      <span>Print / View Bill Receipt (₹500 · 5% Service Charge)</span>
                     </button>
                   )}
                 </div>

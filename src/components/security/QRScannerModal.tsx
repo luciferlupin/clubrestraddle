@@ -532,7 +532,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                     }}
                   >
                     <Printer size={15} color="#fb7185" />
-                    <span>Print / View Bill (₹500 · 5% GST)</span>
+                    <span>Print / View Bill (₹500 · 5% Service Charge)</span>
                   </button>
 
                   <button

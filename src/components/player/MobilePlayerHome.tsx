@@ -202,7 +202,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
               <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(225, 29, 72, 0.1)', border: '1px solid rgba(225, 29, 72, 0.3)', borderRadius: '10px', padding: '8px 12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#ffffff' }}>
                   <FileText size={14} color="#e11d48" />
-                  <span>Gate Entry Fee: <strong style={{ color: '#34d399' }}>₹500 Paid (incl. 5% GST)</strong></span>
+                  <span>Gate Entry Fee: <strong style={{ color: '#34d399' }}>₹500 Paid (incl. 5% Service Charge)</strong></span>
                 </div>
                 <button
                   type="button"

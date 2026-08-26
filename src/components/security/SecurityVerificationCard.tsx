@@ -549,7 +549,7 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
               }}
             >
               <Printer size={14} color="#fb7185" />
-              <span>Print / View Bill (₹500 · 5% GST)</span>
+              <span>Print / View Bill (₹500 · 5% Service Charge)</span>
             </button>
           )}
 

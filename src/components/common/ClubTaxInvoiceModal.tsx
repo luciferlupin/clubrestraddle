@@ -128,7 +128,7 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
   // Event description
   const eventTitle = invoice.eventName || invoice.tournamentName || invoice.items?.[0]?.description || (isEntryFee ? 'Club Door Entry & Facility Access' : 'MTT - 6,66,666 - Texas Holdem - 11th July');
   const eventDetail1 = invoice.eventDate || `Gate Check-in • ${dateFormatted} • ${timeFormatted}`;
-  const eventDetail2 = invoice.eventDetails || (isEntryFee ? 'Daily door clearance (₹500 inclusive of 5% GST)' : `Texas • MTC • Table ${invoice.tableLocation || 'Main Floor'} • Prize ₹${totalVal.toLocaleString('en-IN')}`);
+  const eventDetail2 = invoice.eventDetails || (isEntryFee ? 'Daily door clearance (₹500 inclusive of 5% Service Charge)' : `Texas • MTC • Table ${invoice.tableLocation || 'Main Floor'} • Prize ₹${totalVal.toLocaleString('en-IN')}`);
 
   const handlePrint = () => {
     window.print();
@@ -142,8 +142,8 @@ Cashier / Desk: ${invoice.cashierName}
 Player: ${invoice.playerName} (ID: ${invoice.playerId || 'Not assigned'})
 Venue: JB Complex, Sector 104, Noida, Uttar Pradesh - 201304
 Event / Item: ${eventTitle}
-Service Charges (Taxable): ₹${taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-GST @ ${gstRate}% (CGST ${halfGstRate}% + SGST ${halfGstRate}%): ₹${totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+Taxable Service Charge: ₹${taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+Service Charge @ ${gstRate}% (CGST ${halfGstRate}% + SGST ${halfGstRate}%): ₹${totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 Total Amount: ₹${totalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 Payment Mode: ${invoice.paymentMethod}
 Place of Supply: 09 - Uttar Pradesh (Noida)`;
@@ -423,17 +423,17 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
             </div>
           </div>
 
-          {/* AMOUNT & GST Breakdown */}
+          {/* AMOUNT & Service Charge Breakdown */}
           <div style={{ borderTop: '1px dashed #000000', paddingTop: '6px', marginBottom: '8px', fontSize: '11px' }}>
             <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '0.05em', marginBottom: '4px' }}>
               AMOUNT
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Service Charges (Taxable)</span>
+              <span>Taxable Value</span>
               <span style={{ fontWeight: 700 }}>{taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 700 }}>GST @ {gstRate}%</span>
+              <span style={{ fontWeight: 700 }}>Service Charge @ {gstRate}%</span>
               <span style={{ fontWeight: 700 }}>{totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '12px', fontSize: '10.5px' }}>
@@ -485,7 +485,7 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
           >
             {!isEntryFee && (
               <div>
-                Tournament entry & service charges are inclusive of 18% GST (SAC 999691). Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.
+                Tournament entry & service charges are inclusive of 18% Service Charge (SAC 999691). Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.
               </div>
             )}
             <div>

@@ -9,7 +9,7 @@ import {
 } from './formatters';
 
 /**
- * Generates official ₹500 Door Entry & Lounge Access Tax Invoice (Inclusive of 5% GST)
+ * Generates official ₹500 Door Entry & Lounge Access Tax Invoice (Inclusive of 5% Service Charge)
  */
 export const generateEntryFeeInvoice = (
   player: Player,
@@ -34,7 +34,7 @@ export const generateEntryFeeInvoice = (
     tableLocation: 'Club entrance',
     eventName: 'Club Daily Entry & Facility Access',
     eventDate: `Check-in • ${formatDateOnly(checkInDateTime)} • ${formatTimeOnly(checkInDateTime)}`,
-    eventDetails: 'Daily entrance clearance (₹500 inclusive of 5% GST)',
+    eventDetails: 'Daily entrance clearance (₹500 inclusive of 5% Service Charge)',
     natureOfSupply: '',
     sacCode: '999691',
     gstRate: 5,
@@ -52,7 +52,7 @@ export const generateEntryFeeInvoice = (
     cashierName: checkIn.verifiedBy || staffName,
     items: [
       {
-        description: 'Club Door Entry & Facility Access Fee (5% GST Included)',
+        description: 'Club Door Entry & Facility Access Fee (5% Service Charge Included)',
         details: 'Daily entrance clearance, refreshments & gaming lounge amenities',
         amount: 500,
       },
@@ -115,7 +115,7 @@ export const generateTournamentInvoice = (
         amount: entry.buyInAmount || (tournament ? tournament.buyInFee : 4500),
       },
       {
-        description: 'Tournament Service Charges & Organization Fee (18% GST Included)',
+        description: 'Tournament Service Charges & Organization Fee (18% Service Charge Included)',
         details: 'Floor supervision, dealers, table service & club facilitation',
         amount: entry.rakeAmount || (tournament ? tournament.clubRake : 500),
       },

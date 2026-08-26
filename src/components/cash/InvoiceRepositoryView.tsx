@@ -99,7 +99,7 @@ export const InvoiceRepositoryView: React.FC = () => {
         playerId: formatPlayerNumber(player),
         playerPhone: chk.playerPhone,
         panOrAadhaar: player.kyc?.panNumber || player.kyc?.aadhaarNumber || player.kyc?.govtIdNumber,
-        description: 'Club Door Entry & Facility Access Fee (SAC 999691 • 5% GST)',
+        description: 'Club Door Entry & Facility Access Fee (SAC 999691 • 5% Service Charge)',
         taxableAmount: 476.19,
         gstAmount: 23.81,
         totalAmount: 500,
@@ -249,7 +249,7 @@ export const InvoiceRepositoryView: React.FC = () => {
             {formatCurrency(totalVolume)}
           </div>
           <div className="stat-subtext" style={{ color: '#34d399' }}>
-            GST Total: {formatCurrency(totalGST)}
+            Service Charge Total: {formatCurrency(totalGST)}
           </div>
         </div>
 
@@ -421,7 +421,7 @@ export const InvoiceRepositoryView: React.FC = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '2px' }}>
                   <div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>
-                      Taxable {formatCurrency(inv.taxableAmount)} + GST {formatCurrency(inv.gstAmount)}
+                      Taxable {formatCurrency(inv.taxableAmount)} + Service Charge {formatCurrency(inv.gstAmount)}
                     </div>
                     <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#ffffff', fontFamily: 'var(--font-mono)', marginTop: '1px' }}>
                       {formatCurrency(inv.totalAmount)}
@@ -452,7 +452,7 @@ export const InvoiceRepositoryView: React.FC = () => {
                 <th>Member / Customer</th>
                 <th>Category / Supply Description</th>
                 <th style={{ textAlign: 'right' }}>Taxable Amt</th>
-                <th style={{ textAlign: 'right' }}>GST Amt</th>
+                <th style={{ textAlign: 'right' }}>Service Charge</th>
                 <th style={{ textAlign: 'right' }}>Total (₹)</th>
                 <th>Payment Ref</th>
                 <th>Cashier / Staff</th>
@@ -551,7 +551,7 @@ export const InvoiceRepositoryView: React.FC = () => {
                         className="btn btn-secondary btn-sm"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', padding: '4px 10px' }}
                         onClick={() => handleOpenInvoice(inv.invoiceData)}
-                        title="View Official GST Thermal Tax Invoice"
+                        title="View Official Thermal Tax Invoice"
                       >
                         <Eye size={13} color="#f43f5e" />
                         <span>Print Bill</span>

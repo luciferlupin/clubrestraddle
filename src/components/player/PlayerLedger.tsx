@@ -58,7 +58,7 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
         id: `LED-ENT-${c.id}`,
         date: checkInDateTime,
         type: 'Entry Fee',
-        description: 'Club Door Entry & Facility Access Fee (5% GST Included)',
+        description: 'Club Door Entry & Facility Access Fee (5% Service Charge Included)',
         paymentMethod: c.paymentMethod || 'Cash',
         referenceId: c.id,
         debit: 500,
@@ -182,13 +182,13 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
 
         <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '14px 16px' }}>
           <span style={{ fontSize: '0.72rem', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
-            Door Entry Fees (₹500/Visit · 5% GST)
+            Door Entry Fees (₹500/Visit · 5% Service Charge)
           </span>
           <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#ffffff', marginTop: '4px' }}>
             {formatCurrency(totalEntryFees)}
           </div>
           <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-            {ledgerItems.filter(i => i.type === 'Entry Fee').length} verified visits (incl. 5% GST)
+            {ledgerItems.filter(i => i.type === 'Entry Fee').length} verified visits (incl. 5% Service Charge)
           </span>
         </div>
 
@@ -200,7 +200,7 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
             {formatCurrency(totalTournamentSpent)}
           </div>
           <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-            Including 18% GST Service Fee
+            Including 18% Service Charge
           </span>
         </div>
       </div>
@@ -210,7 +210,7 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {[
             { id: 'all', label: 'All Transactions' },
-            { id: 'entry', label: '₹500 Entry (5% GST)' },
+            { id: 'entry', label: '₹500 Entry (5% Service Charge)' },
             { id: 'tournament', label: 'Tournaments' },
             { id: 'cash', label: 'Cash & Chips' },
           ].map(f => (
@@ -312,7 +312,7 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
                         className="btn btn-secondary btn-sm"
                         style={{ fontSize: '0.72rem', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         onClick={() => handleOpenInvoiceModal(item.invoiceData!)}
-                        title="View Official GST Tax Invoice"
+                        title="View Official Tax Invoice"
                       >
                         <FileText size={13} color="#e11d48" />
                         <span>View Invoice</span>
