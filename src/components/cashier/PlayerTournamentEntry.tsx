@@ -110,17 +110,20 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       paymentReference: ref,
     });
 
+    const playerToUse = players.find(p => p.id === playerIdToUse) || selectedPlayer;
+    const tournamentToUse = tournaments.find(t => t.id === tournamentIdToUse) || selectedTournament;
+
     const invoiceData: ClubInvoiceData = {
       invoiceNumber: entry.receiptNumber,
       invoiceDate: entry.registeredAt,
       category: 'Tournament Entry & Service Charge',
-      playerId: selectedPlayer ? formatPlayerNumber(selectedPlayer) : undefined,
+      playerId: playerToUse ? formatPlayerNumber(playerToUse) : undefined,
       playerName: entry.playerName,
-      playerPhone: selectedPlayer?.phone,
-      playerEmail: selectedPlayer?.email,
-      govtIdType: selectedPlayer?.kyc.govtIdType,
-      govtIdNumber: selectedPlayer?.kyc.govtIdNumber,
-      membershipTier: selectedPlayer?.membershipTier,
+      playerPhone: playerToUse?.phone,
+      playerEmail: playerToUse?.email,
+      govtIdType: playerToUse?.kyc.govtIdType,
+      govtIdNumber: playerToUse?.kyc.govtIdNumber,
+      membershipTier: playerToUse?.membershipTier,
       tableLocation: 'Tournament entry',
       eventName: `${formatClubLabel(entry.tournamentName)}`,
       eventDate: `Texas • ${formatDateOnly(entry.registeredAt)} • ${formatTimeOnly(entry.registeredAt)}`,
@@ -128,8 +131,8 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
       items: [
         {
           description: `${formatClubLabel(entry.tournamentName)} - Tournament Entry Charge`,
-          details: `${selectedTournament?.startingChips?.toLocaleString()} Starting Chips`,
-          chips: selectedTournament?.startingChips,
+          details: `${tournamentToUse?.startingChips?.toLocaleString()} Starting Chips`,
+          chips: tournamentToUse?.startingChips,
           amount: entry.buyInAmount,
         },
         {
