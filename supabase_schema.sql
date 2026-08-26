@@ -388,7 +388,7 @@ CREATE INDEX IF NOT EXISTS idx_players_member_number ON players(member_number);
 UPDATE players
 SET member_number = CASE 
     WHEN id ~ '^[0-9]+$' THEN id::INTEGER
-    WHEN id ~ '[0-9]+' THEN (regexp_matches(id, '[0-9]+'))[1]::INTEGER
+    WHEN substring(id from '[0-9]+') IS NOT NULL THEN substring(id from '[0-9]+')::INTEGER
     ELSE member_number
 END;
 
