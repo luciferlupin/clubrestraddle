@@ -605,26 +605,52 @@ export const MobileCashierPortal: React.FC = () => {
             </div>
 
             <div className="m-form-group">
-              <label className="m-form-label" htmlFor="entry-player-id">Quick Player ID</label>
+              <label className="m-form-label" htmlFor="entry-player-id">Search by Player ID, Name, or Phone</label>
               <input
                 id="entry-player-id"
                 type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
                 className="m-input"
-                placeholder="Type Player ID, e.g. 7"
+                placeholder="Type Player ID (e.g. 7 or MEM-001), phone, or name..."
                 value={quickPlayerId}
                 onChange={e => {
-                  const value = e.target.value.replace(/\D/g, '');
-                  setQuickPlayerId(value);
-                  const match = players.find(player => formatPlayerNumber(player) === value);
+                  const raw = e.target.value;
+                  setQuickPlayerId(raw);
+                  const val = raw.trim().toLowerCase();
+                  if (!val) return;
+                  const cleanDigits = val.replace(/\D/g, '');
+                  const match = players.find(p =>
+                    p.id.toLowerCase() === val ||
+                    formatPlayerNumber(p).toLowerCase() === val ||
+                    (cleanDigits && formatPlayerNumber(p) === cleanDigits) ||
+                    (cleanDigits.length >= 4 && p.phone.replace(/\D/g, '').includes(cleanDigits)) ||
+                    p.fullName.toLowerCase().includes(val)
+                  );
                   if (match) setEntryFormData(current => ({ ...current, playerId: match.id }));
                 }}
               />
               {quickPlayerId && (
-                <small style={{ color: players.some(player => formatPlayerNumber(player) === quickPlayerId) ? '#86efac' : '#fca5a5' }}>
-                  {players.find(player => formatPlayerNumber(player) === quickPlayerId)?.fullName || 'No player found with this ID'}
-                </small>
+                <div style={{ marginTop: '4px', fontSize: '0.76rem' }}>
+                  {(() => {
+                    const val = quickPlayerId.trim().toLowerCase();
+                    const cleanDigits = val.replace(/\D/g, '');
+                    const match = players.find(p =>
+                      p.id.toLowerCase() === val ||
+                      formatPlayerNumber(p).toLowerCase() === val ||
+                      (cleanDigits && formatPlayerNumber(p) === cleanDigits) ||
+                      (cleanDigits.length >= 4 && p.phone.replace(/\D/g, '').includes(cleanDigits)) ||
+                      p.fullName.toLowerCase().includes(val)
+                    );
+                    return match ? (
+                      <span style={{ color: '#86efac', fontWeight: 600 }}>
+                        ✓ Found: {match.fullName} (Player ID {formatPlayerNumber(match)})
+                      </span>
+                    ) : (
+                      <span style={{ color: '#fca5a5' }}>
+                        No player found matching "{quickPlayerId}"
+                      </span>
+                    );
+                  })()}
+                </div>
               )}
             </div>
 

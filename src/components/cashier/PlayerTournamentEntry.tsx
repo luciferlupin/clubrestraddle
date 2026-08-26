@@ -257,19 +257,26 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="cashier-entry-player-id">Quick Player ID</label>
+              <label className="form-label" htmlFor="cashier-entry-player-id">Search by Player ID, Name, or Phone</label>
               <input
                 id="cashier-entry-player-id"
                 type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
                 className="form-input"
-                placeholder="Type Player ID, e.g. 7"
+                placeholder="Type Player ID (e.g. 7 or MEM-001), phone, or name..."
                 value={quickPlayerId}
                 onChange={e => {
-                  const value = e.target.value.replace(/\D/g, '');
-                  setQuickPlayerId(value);
-                  const match = players.find(player => formatPlayerNumber(player) === value);
+                  const raw = e.target.value;
+                  setQuickPlayerId(raw);
+                  const val = raw.trim().toLowerCase();
+                  if (!val) return;
+                  const cleanDigits = val.replace(/\D/g, '');
+                  const match = players.find(p =>
+                    p.id.toLowerCase() === val ||
+                    formatPlayerNumber(p).toLowerCase() === val ||
+                    (cleanDigits && formatPlayerNumber(p) === cleanDigits) ||
+                    (cleanDigits.length >= 4 && p.phone.replace(/\D/g, '').includes(cleanDigits)) ||
+                    p.fullName.toLowerCase().includes(val)
+                  );
                   if (match) setSelectedPlayerId(match.id);
                 }}
                 onKeyDown={e => {
@@ -280,9 +287,28 @@ export const PlayerTournamentEntry: React.FC<PlayerTournamentEntryProps> = ({
                 }}
               />
               {quickPlayerId && (
-                <small style={{ color: players.some(player => formatPlayerNumber(player) === quickPlayerId) ? '#86efac' : '#fca5a5' }}>
-                  {players.find(player => formatPlayerNumber(player) === quickPlayerId)?.fullName || 'No player found with this ID'}
-                </small>
+                <div style={{ marginTop: '4px', fontSize: '0.78rem' }}>
+                  {(() => {
+                    const val = quickPlayerId.trim().toLowerCase();
+                    const cleanDigits = val.replace(/\D/g, '');
+                    const match = players.find(p =>
+                      p.id.toLowerCase() === val ||
+                      formatPlayerNumber(p).toLowerCase() === val ||
+                      (cleanDigits && formatPlayerNumber(p) === cleanDigits) ||
+                      (cleanDigits.length >= 4 && p.phone.replace(/\D/g, '').includes(cleanDigits)) ||
+                      p.fullName.toLowerCase().includes(val)
+                    );
+                    return match ? (
+                      <span style={{ color: '#86efac', fontWeight: 600 }}>
+                        ✓ Found: {match.fullName} (Player ID {formatPlayerNumber(match)} · {match.phone})
+                      </span>
+                    ) : (
+                      <span style={{ color: '#fca5a5' }}>
+                        No player found matching "{quickPlayerId}"
+                      </span>
+                    );
+                  })()}
+                </div>
               )}
             </div>
 
