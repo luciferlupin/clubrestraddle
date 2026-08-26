@@ -298,7 +298,9 @@ CREATE POLICY "Public Read/Write Chip Requests" ON chip_requests FOR ALL USING (
 -- ------------------------------------------------------------------------------
 -- 14. HELPER REPORTING VIEWS
 -- ------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW v_active_door_queue AS
+-- 14. HELPER VIEWS FOR DASHBOARDS & REPORTING (WITH SECURITY INVOKER)
+-- ------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW v_active_door_queue WITH (security_invoker = true) AS
 SELECT 
     c.id AS checkin_id,
     c.player_id,
@@ -317,7 +319,7 @@ JOIN players p ON c.player_id = p.id
 WHERE c.check_in_date = CURRENT_DATE
 ORDER BY c.check_in_time DESC;
 
-CREATE OR REPLACE VIEW v_tournament_summary AS
+CREATE OR REPLACE VIEW v_tournament_summary WITH (security_invoker = true) AS
 SELECT 
     t.id,
     t.name,
@@ -332,7 +334,7 @@ FROM tournaments t
 LEFT JOIN tournament_entries e ON t.id = e.tournament_id
 GROUP BY t.id, t.name, t.buy_in_fee, t.club_rake, t.status, t.max_seats;
 
-CREATE OR REPLACE VIEW v_treasury_summary AS
+CREATE OR REPLACE VIEW v_treasury_summary WITH (security_invoker = true) AS
 SELECT 
     COALESCE(SUM(CASE WHEN type = 'in' THEN amount ELSE 0 END), 0) AS total_cash_in,
     COALESCE(SUM(CASE WHEN type = 'out' THEN amount ELSE 0 END), 0) AS total_cash_out,
