@@ -334,7 +334,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#cbd5e1' }}>
-              <span>Service Charge @ 5% (CGST 2.5% + SGST 2.5%):</span>
+              <span>Service Charge @ 5%:</span>
               <span>{formatCurrency(Math.round(((entryInvoice.totalAmount || 500) - (entryInvoice.taxableAmount || 476.19)) * 100) / 100)}</span>
             </div>
 

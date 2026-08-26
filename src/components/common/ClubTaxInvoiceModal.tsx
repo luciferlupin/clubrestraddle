@@ -143,7 +143,7 @@ Player: ${invoice.playerName} (ID: ${invoice.playerId || 'Not assigned'})
 Venue: JB Complex, Sector 104, Noida, Uttar Pradesh - 201304
 Event / Item: ${eventTitle}
 Taxable Service Charge: ₹${taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-Service Charge @ ${gstRate}% (CGST ${halfGstRate}% + SGST ${halfGstRate}%): ₹${totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+Service Charge @ ${gstRate}%: ₹${totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 Total Amount: ₹${totalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 Payment Mode: ${invoice.paymentMethod}
 Place of Supply: 09 - Uttar Pradesh (Noida)`;
@@ -436,14 +436,6 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
               <span style={{ fontWeight: 700 }}>Service Charge @ {gstRate}%</span>
               <span style={{ fontWeight: 700 }}>{totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '12px', fontSize: '10.5px' }}>
-              <span>CGST @ {halfGstRate}%</span>
-              <span>{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '12px', fontSize: '10.5px' }}>
-              <span>SGST @ {halfGstRate}%</span>
-              <span>{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
 
             <div style={{ borderTop: '1.5px solid #000000', marginTop: '6px', paddingTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', fontWeight: 900 }}>
               <span>TOTAL (₹)</span>
@@ -466,36 +458,6 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5px' }}>
               <span>Ref / UTR</span>
               <span style={{ fontFamily: 'monospace' }}>{invoice.paymentReference || 'TXN-58192'}</span>
-            </div>
-          </div>
-
-          {/* Legal Disclaimers (Exact text from thermal bill) */}
-          <div
-            style={{
-              borderTop: '1px solid #000000',
-              paddingTop: '6px',
-              fontSize: '8.5px',
-              lineHeight: 1.25,
-              textAlign: 'justify',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px',
-              marginBottom: '10px',
-            }}
-          >
-            {!isEntryFee && (
-              <div>
-                Tournament entry & service charges are inclusive of 18% Service Charge (SAC 999691). Entry fee is non-refundable once registration is confirmed. Players must be 21 years or older and carry valid government-issued photo ID at all times.
-              </div>
-            )}
-            <div>
-              This invoice is for the right to participate only. The prize pool is fixed and pre-determined and bears no relation to entry fees collected. Participation is governed by Club Re Straddle Rules displayed at the venue.
-            </div>
-            <div>
-              TDS under Section 194BA of the Income Tax Act applies on net winnings at the time of cash-out. PAN is mandatory for prize collection above ₹10,000.
-            </div>
-            <div>
-              This is a computer-generated tax invoice and is valid without a physical signature.
             </div>
           </div>
 
