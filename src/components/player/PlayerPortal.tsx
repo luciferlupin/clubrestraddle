@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Phone,
   LogOut,
+  Wallet,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { KYCRegistrationForm } from './KYCRegistrationForm';
@@ -20,6 +21,7 @@ import { DailyCheckInCard } from './DailyCheckInCard';
 import { PlayerPass } from './PlayerPass';
 import { CheckInHistory } from './CheckInHistory';
 import { PlayerProfile } from './PlayerProfile';
+import { PlayerWalletView } from './PlayerWalletView';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { formatClubLabel, formatCurrency, formatDateTime, formatDateOnly, formatTimeOnly, formatINR, formatPlayerNumber } from '../../utils/formatters';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
@@ -30,7 +32,7 @@ import { Pagination } from '../common/Pagination';
 import { PhoneVerificationModal } from '../common/PhoneVerificationModal';
 import { Player } from '../../types';
 
-type PlayerTab = 'pass' | 'tournaments' | 'billing' | 'profile' | 'history';
+type PlayerTab = 'pass' | 'wallet' | 'tournaments' | 'billing' | 'profile' | 'history';
 
 interface PlayerPortalProps {
   showNewPlayerFormInitially?: boolean;
@@ -117,6 +119,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
 
   const playerSections: DesktopSectionNavItem<PlayerTab>[] = [
     { id: 'pass', label: 'Overview', icon: <CheckCircle size={16} /> },
+    { id: 'wallet', label: `Wallet (${formatCurrency(currentPlayer?.walletBalance ?? 0)})`, icon: <Wallet size={16} /> },
     { id: 'tournaments', label: `Events (${tournaments.length})`, icon: <Trophy size={16} /> },
     { id: 'billing', label: `Receipts (${playerEntries.length})`, icon: <Receipt size={16} /> },
     { id: 'profile', label: 'My profile', icon: <User size={16} /> },
@@ -434,7 +437,15 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
               </div>
             )}
 
-            {/* TAB 2: TOURNAMENTS & EVENTS */}
+            {/* TAB 2: VAULT WALLET & WINNINGS */}
+            {activeTab === 'wallet' && (
+              <PlayerWalletView
+                player={currentPlayer}
+                onOpenTournaments={() => setActiveTab('tournaments')}
+              />
+            )}
+
+            {/* TAB 3: TOURNAMENTS & EVENTS */}
             {activeTab === 'tournaments' && (
               <div className="card">
                 <div className="card-header">

@@ -14,6 +14,8 @@ import {
   Eye,
   X,
   LogOut,
+  Wallet,
+  Sparkles,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { DailyCheckIn, Player, Tournament, TournamentEntry } from '../../types';
@@ -23,6 +25,7 @@ import { MobileBottomDrawer } from '../common/MobileBottomDrawer';
 import { GameTypeBadge, SuitWatermark, PokerChipStack, CardSuit } from '../common/PokerGraphics';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
+import { PlayerWalletView } from './PlayerWalletView';
 import { useClub } from '../../context/ClubContext';
 
 interface MobilePlayerHomeProps {
@@ -56,9 +59,11 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
 }) => {
   const { staffName } = useClub();
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
   const isCheckedIn = Boolean(todayCheckIn);
   const verificationStatus = todayCheckIn?.verificationStatus;
   const playerEntries = entries.filter((entry) => entry.playerId === player.id);
+  const walletBalance = player.walletBalance ?? 0;
 
   const verificationUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`
@@ -126,6 +131,46 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
           </button>
         </div>
       </header>
+
+      {/* Mobile Player Wallet Card */}
+      <section
+        style={{
+          background: 'linear-gradient(135deg, rgba(30, 20, 10, 0.9) 0%, rgba(15, 8, 4, 0.98) 100%)',
+          border: '1.5px solid rgba(245, 158, 11, 0.45)',
+          borderRadius: '16px',
+          padding: '16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+        }}
+      >
+        <div>
+          <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)', textTransform: 'uppercase', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Wallet size={13} /> Vault Wallet & Prizes
+          </span>
+          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', marginTop: '2px' }}>
+            {formatCurrency(walletBalance)}
+          </div>
+          <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Winnings, buy-ins & instant cashouts
+          </span>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          style={{
+            background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
+            fontSize: '0.78rem',
+            padding: '7px 12px',
+            fontWeight: 700,
+          }}
+          onClick={() => setIsWalletOpen(true)}
+        >
+          Manage Wallet
+        </button>
+      </section>
 
       <section className={`player-status-card ${verificationStatus || 'not-checked-in'}`} aria-labelledby="player-status-title">
         <div className="player-status-heading">
@@ -217,6 +262,10 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
           </div>
         </div>
         <div className="player-action-grid">
+          <button type="button" onClick={() => setIsWalletOpen(true)}>
+            <span className="player-action-icon" style={{ color: '#fbbf24' }}><Wallet size={22} /></span>
+            <span><strong>My Wallet</strong><small>{formatCurrency(walletBalance)}</small></span>
+          </button>
           <button type="button" onClick={onOpenPass}>
             <span className="player-action-icon"><QrCode size={22} /></span>
             <span><strong>Show pass</strong><small>Entrance and cashier QR</small></span>
@@ -311,6 +360,18 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
           </div>
           <p>{todayCheckIn ? `Checked in ${formatTimeOnly(todayCheckIn.checkInTime)}` : 'Member pass ready. Complete today’s check-in for door clearance.'}</p>
           <button type="button" className="m-btn m-btn-primary" onClick={onClosePass}>Done</button>
+        </div>
+      </MobileBottomDrawer>
+
+      {/* Mobile Player Wallet Drawer */}
+      <MobileBottomDrawer
+        isOpen={isWalletOpen}
+        onClose={() => setIsWalletOpen(false)}
+        title="Player Digital Vault Wallet"
+        subtitle={`Available Balance: ${formatCurrency(walletBalance)}`}
+      >
+        <div style={{ padding: '4px 0 20px' }}>
+          <PlayerWalletView player={player} />
         </div>
       </MobileBottomDrawer>
     </div>

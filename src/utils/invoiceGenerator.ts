@@ -1,6 +1,12 @@
 import type { ClubInvoiceData } from '../components/common/ClubTaxInvoiceModal';
 import type { Player, DailyCheckIn, Tournament, TournamentEntry, CashTransaction } from '../types';
-import { formatClubLabel, formatDateOnly, formatTimeOnly, formatPlayerNumber } from './formatters';
+import {
+  formatClubLabel,
+  formatDateOnly,
+  formatTimeOnly,
+  formatPlayerNumber,
+  generateGateInvoiceNumber,
+} from './formatters';
 
 /**
  * Generates official ₹500 Door Entry & Lounge Access Tax Invoice (Inclusive of 5% GST)
@@ -15,7 +21,7 @@ export const generateEntryFeeInvoice = (
     : new Date().toISOString();
 
   return {
-    invoiceNumber: `INV-ENT-${checkIn.id.replace('CHK-', '')}`,
+    invoiceNumber: generateGateInvoiceNumber(checkIn.id),
     invoiceDate: checkInDateTime,
     category: 'Club Door Entry & Lounge Access Fee',
     playerId: formatPlayerNumber(player),
@@ -63,10 +69,20 @@ export const generateTournamentInvoice = (
   player?: Player,
   staffName: string = 'Tournament Director'
 ): ClubInvoiceData => {
+  let invoiceNumber = entry.receiptNumber;
+  if (!invoiceNumber || !invoiceNumber.startsWith('CRS/')) {
+    const trnId = entry.tournamentId || tournament?.id || 'TRN-2026-01';
+    const trnMatch = trnId.match(/TRN-(?:2026-)?(\d+)/i) || trnId.match(/(\d+)$/);
+    const seriesCode = trnMatch ? `TRN-${trnMatch[1].padStart(2, '0')}` : 'TRN-01';
+    const entrySeqMatch = entry.id.match(/\d+$/);
+    const seq = entrySeqMatch ? entrySeqMatch[0].padStart(4, '0') : '0001';
+    invoiceNumber = `CRS/${seriesCode}/26-27/${seq}`;
+  }
+
   const totalAmount = (entry.buyInAmount || 0) + (entry.rakeAmount || 0);
 
   return {
-    invoiceNumber: entry.receiptNumber || `INV-TRN-${entry.id.replace('ENT-', '')}`,
+    invoiceNumber,
     invoiceDate: entry.registeredAt || new Date().toISOString(),
     category: 'Tournament Entry & Service Charge',
     playerId: player ? formatPlayerNumber(player) : entry.playerId,
@@ -105,15 +121,18 @@ export const generateTournamentInvoice = (
 };
 
 /**
- * Generates official Cashier Settlement / Service Charge Tax Invoice
+ * Generates official Cashier Receipt / Service Charge Tax Invoice for incoming collections (excludes payouts)
  */
 export const generateCashTransactionInvoice = (
   txn: CashTransaction,
   player?: Player,
   staffName: string = 'Cashier Desk'
 ): ClubInvoiceData => {
+  const cshMatch = txn.id.match(/\d+$/);
+  const cshSeq = cshMatch ? cshMatch[0].padStart(4, '0') : '0001';
+
   return {
-    invoiceNumber: `INV-CSH-${txn.id.replace('CSH-', '')}`,
+    invoiceNumber: `CRS/CSH/26-27/${cshSeq}`,
     invoiceDate: txn.timestamp || new Date().toISOString(),
     category: `${txn.category} Tax Invoice`,
     playerId: player ? formatPlayerNumber(player) : undefined,

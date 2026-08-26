@@ -234,7 +234,7 @@ export const BillingHistory: React.FC = () => {
       };
 
       setSelectedInvoice(invoiceData);
-    } else if (item.cashTxnObj) {
+    } else if (item.cashTxnObj && item.cashTxnObj.type === 'in') {
       const matchedPlayer = players.find(p => p.fullName.toLowerCase() === (item.cashTxnObj?.playerName || '').toLowerCase());
       const invoice = generateCashTransactionInvoice(item.cashTxnObj, matchedPlayer, staffName);
       setSelectedInvoice(invoice);
@@ -347,7 +347,11 @@ export const BillingHistory: React.FC = () => {
                   <td>{formatTimeOnly(item.timestamp)}</td>
                   <td style={{ textAlign: 'right' }}>
                     <div style={{ display: 'inline-flex', gap: '5px' }}>
-                      {(item.entryObj || item.cashTxnObj) && <button className="btn btn-secondary btn-sm" onClick={() => handleViewReceipt(item)}><Eye size={12} /></button>}
+                      {(item.entryObj || (item.cashTxnObj && item.cashTxnObj.type === 'in')) && (
+                        <button className="btn btn-secondary btn-sm" onClick={() => handleViewReceipt(item)} title="View Tax Invoice">
+                          <Eye size={12} />
+                        </button>
+                      )}
                       {item.entryObj && (
                         <>
                           <button className="btn btn-secondary btn-sm" onClick={() => handleOpenEdit(item.entryObj!)}><Edit3 size={12} /></button>

@@ -95,6 +95,7 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
     invoice.category?.toLowerCase().includes('entry') ||
     invoice.category?.toLowerCase().includes('door') ||
     invoice.category?.toLowerCase().includes('gate') ||
+    invoice.invoiceNumber.includes('GATE') ||
     invoice.invoiceNumber.includes('ENT');
 
   const gstRate = invoice.gstRate ?? (isEntryFee ? 5 : 18);
@@ -326,7 +327,7 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
           <div style={{ marginBottom: '10px', fontSize: '11px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 600 }}>Invoice No.</span>
-              <span style={{ fontWeight: 800, fontFamily: 'monospace' }}>{invoice.invoiceNumber || 'CSD/NOIDA/TN/559'}</span>
+              <span style={{ fontWeight: 800, fontFamily: 'monospace' }}>{invoice.invoiceNumber || 'CRS/GATE/26-27/0001'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: 600 }}>Date</span>

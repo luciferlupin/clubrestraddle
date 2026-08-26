@@ -1206,7 +1206,7 @@ export const MobileCashierPortal: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-                      {(item.entryObj || item.cashTxnObj) && (
+                      {(item.entryObj || (item.cashTxnObj && item.cashTxnObj.type === 'in')) && (
                         <button
                           type="button"
                           className="btn btn-secondary btn-sm"

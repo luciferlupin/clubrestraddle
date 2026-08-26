@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Users, Search, ShieldCheck, CheckCircle, XCircle, Eye, Edit3, Trash2, UserCheck, Calendar, AlertTriangle } from 'lucide-react';
+import { Users, Search, ShieldCheck, CheckCircle, XCircle, Eye, Edit3, Trash2, UserCheck, Calendar, AlertTriangle, Wallet, Trophy, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, KYCStatus, MembershipTier } from '../../types';
-import { formatDateOnly, formatDateTime, maskGovtId, formatFullAadhaar, formatPlayerNumber } from '../../utils/formatters';
+import { formatDateOnly, formatDateTime, maskGovtId, formatFullAadhaar, formatPlayerNumber, formatCurrency } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
@@ -11,13 +11,17 @@ import { AdminKycDocumentPhotos } from './AdminKycDocumentPhotos';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 
 export const AdminPlayersView: React.FC = () => {
-  const { players, reviewKYC, updatePlayer, deletePlayer, checkIns } = useClub();
+  const { players, reviewKYC, updatePlayer, deletePlayer, checkIns, depositToPlayerWallet, withdrawFromPlayerWallet } = useClub();
   const [search, setSearch] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [inspectTab, setInspectTab] = useState<'details' | 'ledger'>('details');
+  const [inspectTab, setInspectTab] = useState<'details' | 'wallet' | 'ledger'>('details');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [adminWalletAction, setAdminWalletAction] = useState<'deposit' | 'cashout' | null>(null);
+  const [adminWalletAmount, setAdminWalletAmount] = useState<number | ''>(5000);
+  const [adminWalletNotes, setAdminWalletNotes] = useState('');
+  const [adminWalletMsg, setAdminWalletMsg] = useState<string | null>(null);
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -148,6 +152,7 @@ export const AdminPlayersView: React.FC = () => {
               <th>Contact Phone</th>
               <th>Full Aadhaar Number</th>
               <th>KYC Status</th>
+              <th>Wallet Balance</th>
               <th>Visits</th>
               <th>Registration Date</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
@@ -203,6 +208,9 @@ export const AdminPlayersView: React.FC = () => {
                   </td>
                   <td>
                     <KYCBadge status={p.kycStatus} />
+                  </td>
+                  <td className="tabular-num" style={{ fontWeight: 800, color: (p.walletBalance ?? 0) > 0 ? '#34d399' : 'var(--text-muted)' }}>
+                    {formatCurrency(p.walletBalance ?? 0)}
                   </td>
                   <td className="tabular-num" style={{ fontWeight: 700 }}>
                     {p.totalVisits}
@@ -284,6 +292,15 @@ export const AdminPlayersView: React.FC = () => {
               </button>
               <button
                 type="button"
+                className={`btn btn-sm ${inspectTab === 'wallet' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                onClick={() => setInspectTab('wallet')}
+              >
+                <Wallet size={13} />
+                <span>Wallet ({formatCurrency(selectedPlayer.walletBalance ?? 0)})</span>
+              </button>
+              <button
+                type="button"
                 className={`btn btn-sm ${inspectTab === 'ledger' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setInspectTab('ledger')}
               >
@@ -341,6 +358,168 @@ export const AdminPlayersView: React.FC = () => {
                     <div style={{ fontSize: '0.84rem', color: '#cbd5e1' }}>{selectedPlayer.notes}</div>
                   </div>
                 )}
+              </div>
+            ) : inspectTab === 'wallet' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Admin Wallet Status Card */}
+                <div style={{ background: 'linear-gradient(135deg, rgba(30, 20, 10, 0.8) 0%, rgba(15, 8, 4, 0.95) 100%)', border: '1.5px solid rgba(245, 158, 11, 0.4)', borderRadius: '12px', padding: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--gold-light)', textTransform: 'uppercase', fontWeight: 700 }}>Current Digital Wallet Balance</span>
+                      <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', marginTop: '2px' }}>
+                        {formatCurrency(selectedPlayer.walletBalance ?? 0)}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#34d399', borderColor: 'rgba(52, 211, 153, 0.3)' }}
+                        onClick={() => {
+                          setAdminWalletAction('deposit');
+                          setAdminWalletMsg(null);
+                        }}
+                      >
+                        <ArrowDownLeft size={14} /> + Credit Deposit
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                        onClick={() => {
+                          setAdminWalletAction('cashout');
+                          setAdminWalletMsg(null);
+                        }}
+                      >
+                        <ArrowUpRight size={14} /> - Debit Payout
+                      </button>
+                    </div>
+                  </div>
+
+                  {adminWalletMsg && (
+                    <div style={{ marginTop: '10px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', fontSize: '0.8rem', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                      {adminWalletMsg}
+                    </div>
+                  )}
+
+                  {/* Admin Wallet Adjustment Form */}
+                  {adminWalletAction && (
+                    <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: adminWalletAction === 'deposit' ? '#34d399' : '#f87171' }}>
+                        {adminWalletAction === 'deposit' ? 'Credit / Deposit to Player Wallet' : 'Debit / Payout from Player Wallet'}
+                      </span>
+                      <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr auto auto', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
+                        <input
+                          type="number"
+                          className="form-input"
+                          style={{ fontSize: '0.82rem' }}
+                          placeholder="Amount (₹)"
+                          value={adminWalletAmount}
+                          onChange={e => setAdminWalletAmount(e.target.value ? Number(e.target.value) : '')}
+                          min={1}
+                        />
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ fontSize: '0.82rem' }}
+                          placeholder="Reason / Reference (e.g. Table payout)"
+                          value={adminWalletNotes}
+                          onChange={e => setAdminWalletNotes(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          style={{ fontSize: '0.78rem', background: adminWalletAction === 'deposit' ? '#10b981' : '#e11d48' }}
+                          onClick={() => {
+                            if (!adminWalletAmount || Number(adminWalletAmount) <= 0) return;
+                            try {
+                              if (adminWalletAction === 'deposit') {
+                                depositToPlayerWallet({
+                                  playerId: selectedPlayer.id,
+                                  amount: Number(adminWalletAmount),
+                                  description: adminWalletNotes || 'Admin manual credit',
+                                });
+                                setAdminWalletMsg(`Successfully credited ₹${Number(adminWalletAmount).toLocaleString('en-IN')}.`);
+                              } else {
+                                withdrawFromPlayerWallet({
+                                  playerId: selectedPlayer.id,
+                                  amount: Number(adminWalletAmount),
+                                  description: adminWalletNotes || 'Admin manual debit',
+                                });
+                                setAdminWalletMsg(`Successfully debited ₹${Number(adminWalletAmount).toLocaleString('en-IN')}.`);
+                              }
+                              setAdminWalletAction(null);
+                              setAdminWalletNotes('');
+                            } catch (err: any) {
+                              setAdminWalletMsg(`Error: ${err.message}`);
+                            }
+                          }}
+                        >
+                          Execute
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          style={{ fontSize: '0.78rem' }}
+                          onClick={() => setAdminWalletAction(null)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Wallet History List */}
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Wallet Transaction History ({(selectedPlayer.walletHistory || []).length})
+                  </span>
+
+                  {(selectedPlayer.walletHistory || []).length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-dim)', fontSize: '0.84rem' }}>
+                      No wallet transactions recorded for this player yet.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px', maxHeight: '250px', overflowY: 'auto' }}>
+                      {(selectedPlayer.walletHistory || []).map(txn => {
+                        const isCredit = txn.direction === 'credit';
+                        return (
+                          <div
+                            key={txn.id}
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.03)',
+                              border: '1px solid rgba(255, 255, 255, 0.06)',
+                              borderRadius: '8px',
+                              padding: '10px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: '0.84rem', color: '#ffffff' }}>
+                                {txn.description}
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                                {formatDateTime(txn.timestamp)} • Ref: {txn.referenceId || txn.id}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontWeight: 800, fontSize: '0.9rem', color: isCredit ? '#34d399' : '#f87171' }}>
+                                {isCredit ? '+' : '-'}{formatCurrency(txn.amount)}
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--gold-light)' }}>
+                                Bal: {formatCurrency(txn.balanceAfter)}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <PlayerLedger player={selectedPlayer} />

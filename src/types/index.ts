@@ -87,6 +87,18 @@ export interface PlayerKYC {
   rejectionReason?: string;
 }
 
+export interface PlayerWalletTransaction {
+  id: string; // e.g. 'WLT-TXN-1001'
+  type: 'tournament_winnings' | 'deposit' | 'cashout' | 'tournament_buyin' | 'chip_purchase' | 'adjustment';
+  amount: number;
+  direction: 'credit' | 'debit';
+  description: string;
+  referenceId?: string; // Links to tournament ID, cash txn ID, etc.
+  timestamp: string;
+  performedBy?: string;
+  balanceAfter: number;
+}
+
 export interface Player {
   id: string; // e.g., 'PLR-1001'
   memberNumber?: number; // User-facing sequential player ID: 1, 2, 3, ...
@@ -101,6 +113,8 @@ export interface Player {
   registeredAt: string;
   totalVisits: number;
   notes?: string;
+  walletBalance?: number; // Real-time wallet balance in INR
+  walletHistory?: PlayerWalletTransaction[]; // List of financial wallet transactions
 }
 
 export interface DailyCheckIn {
@@ -117,6 +131,17 @@ export interface DailyCheckIn {
   rejectionReason?: string;
 }
 
+export interface TournamentWinnerRank {
+  rank: number; // 1 for 1st Place / Winner, 2 for 2nd, etc.
+  playerId: string;
+  playerName: string;
+  playerPhone?: string;
+  prizeAmount: number;
+  awardedAt: string;
+  awardedBy?: string;
+  notes?: string;
+}
+
 export interface Tournament {
   id: string; // e.g., 'TRN-501'
   name: string;
@@ -130,6 +155,9 @@ export interface Tournament {
   status: TournamentStatus;
   createdAt: string;
   createdBy: string;
+  winners?: TournamentWinnerRank[];
+  completedAt?: string;
+  totalPrizeDistributed?: number;
 }
 
 export interface TournamentEntry {

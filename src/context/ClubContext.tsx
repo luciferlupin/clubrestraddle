@@ -15,6 +15,8 @@ import {
   StaffUser,
   ChipRequest,
   GateCashTransfer,
+  PlayerWalletTransaction,
+  TournamentWinnerRank,
 } from '../types';
 import {
   initialStaffUsers,
@@ -33,6 +35,8 @@ import {
   generateSequentialCheckInId,
   generateSequentialChipId,
   generateSequentialGateTransferId,
+  generateTournamentInvoiceNumber,
+  generateChipInvoiceNumber,
   generateReceiptNumber,
   getTodayDateString,
   isTimestampInCurrentSession,
@@ -265,10 +269,27 @@ interface ClubContextType {
   findMemberByPhone: (phoneOrId: string) => Promise<Player | null>;
   requestBuyChips: (params: { playerId: string; amount: number; tableNumber: string; seatNumber: string; paymentMethod: PaymentMethod; notes?: string }) => ChipRequest;
 
-  // Cashier & Tournament CRUD Actions
   createTournament: (tournamentData: Omit<Tournament, 'id' | 'createdAt' | 'createdBy'>) => Tournament;
   updateTournament: (tournamentId: string, updates: Partial<Tournament>) => void;
   deleteTournament: (tournamentId: string) => void;
+  recordTournamentWinners: (
+    tournamentId: string,
+    ranks: { rank: number; playerId: string; prizeAmount: number; notes?: string }[]
+  ) => void;
+  depositToPlayerWallet: (params: {
+    playerId: string;
+    amount: number;
+    paymentMethod?: PaymentMethod;
+    description?: string;
+    referenceId?: string;
+  }) => PlayerWalletTransaction;
+  withdrawFromPlayerWallet: (params: {
+    playerId: string;
+    amount: number;
+    paymentMethod?: PaymentMethod;
+    description?: string;
+    referenceId?: string;
+  }) => PlayerWalletTransaction;
   registerPlayerForTournament: (params: {
     tournamentId: string;
     playerId: string;
@@ -2695,7 +2716,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!tournament) throw new Error('Tournament not found');
     if (!player) throw new Error('Player not found');
 
-    const receiptNum = generateReceiptNumber();
+    const receiptNum = generateTournamentInvoiceNumber(tournament.id, entries);
     const nowIso = new Date().toISOString();
     const totalAmount = tournament.buyInFee + tournament.clubRake;
 
@@ -2954,6 +2975,210 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     addAuditLog('Cashier', 'Tournament Status Updated', `Updated tournament ${tournamentId} status to ${status}.`);
   };
 
+  const recordTournamentWinners = (
+    tournamentId: string,
+    ranks: { rank: number; playerId: string; prizeAmount: number; notes?: string }[]
+  ) => {
+    const tournament = tournaments.find(t => t.id === tournamentId);
+    if (!tournament) return;
+
+    const nowIso = new Date().toISOString();
+    const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
+
+    // Filter valid ranks & map details
+    const winnerRanks: TournamentWinnerRank[] = ranks
+      .filter(r => r.playerId && r.prizeAmount >= 0)
+      .map(r => {
+        const p = players.find(player => player.id === r.playerId);
+        return {
+          rank: r.rank,
+          playerId: r.playerId,
+          playerName: p?.fullName || r.playerId,
+          playerPhone: p?.phone,
+          prizeAmount: Number(r.prizeAmount),
+          awardedAt: nowIso,
+          awardedBy: staff,
+          notes: r.notes,
+        };
+      })
+      .sort((a, b) => a.rank - b.rank);
+
+    const totalDistributed = winnerRanks.reduce((sum, w) => sum + w.prizeAmount, 0);
+
+    // 1. Update Tournament State
+    const updatedTournament: Tournament = {
+      ...tournament,
+      status: 'Completed',
+      winners: winnerRanks,
+      completedAt: nowIso,
+      totalPrizeDistributed: totalDistributed,
+    };
+
+    setTournaments(prev => {
+      const next = prev.map(t => (t.id === tournamentId ? updatedTournament : t));
+      broadcastUpdate('TOURNAMENTS_UPDATED', next);
+      return next;
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      supabase.from('tournaments').update({
+        status: 'Completed',
+      }).eq('id', tournamentId).then(({ error }) => {
+        if (error) console.error('Supabase tournament winners update error:', error.message);
+      });
+    }
+
+    // 2. Deposit prize money directly into each winner's player wallet
+    setPlayers(prev => {
+      const next = prev.map(player => {
+        const winningRank = winnerRanks.find(w => w.playerId === player.id);
+        if (!winningRank || winningRank.prizeAmount <= 0) return player;
+
+        const currentBalance = player.walletBalance ?? 0;
+        const newBalance = currentBalance + winningRank.prizeAmount;
+        const rankLabel =
+          winningRank.rank === 1
+            ? '1st Place Champion'
+            : winningRank.rank === 2
+            ? '2nd Place Runner-up'
+            : winningRank.rank === 3
+            ? '3rd Place'
+            : `Rank #${winningRank.rank}`;
+
+        const walletTxn: PlayerWalletTransaction = {
+          id: generateId('WLT'),
+          type: 'tournament_winnings',
+          amount: winningRank.prizeAmount,
+          direction: 'credit',
+          description: `🏆 ${rankLabel} Prize - ${tournament.name}`,
+          referenceId: tournament.id,
+          timestamp: nowIso,
+          performedBy: staff,
+          balanceAfter: newBalance,
+        };
+
+        return {
+          ...player,
+          walletBalance: newBalance,
+          walletHistory: [walletTxn, ...(player.walletHistory || [])],
+        };
+      });
+
+      broadcastUpdate('PLAYERS_UPDATED', next);
+      return next;
+    });
+
+    addAuditLog(
+      'Admin',
+      'Tournament Finalized & Prize Settled',
+      `Finalized ${tournament.name}. Distributed ₹${totalDistributed.toLocaleString('en-IN')} prize pool across ${winnerRanks.length} ranked winner(s) directly to member wallets.`
+    );
+  };
+
+  const depositToPlayerWallet = (params: {
+    playerId: string;
+    amount: number;
+    paymentMethod?: PaymentMethod;
+    description?: string;
+    referenceId?: string;
+  }): PlayerWalletTransaction => {
+    const player = players.find(p => p.id === params.playerId);
+    if (!player) throw new Error('Player not found');
+
+    const nowIso = new Date().toISOString();
+    const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
+    const currentBalance = player.walletBalance ?? 0;
+    const newBalance = currentBalance + params.amount;
+
+    const txn: PlayerWalletTransaction = {
+      id: generateId('WLT'),
+      type: 'deposit',
+      amount: params.amount,
+      direction: 'credit',
+      description: params.description || `Wallet Deposit (${params.paymentMethod || 'Cash'})`,
+      referenceId: params.referenceId,
+      timestamp: nowIso,
+      performedBy: staff,
+      balanceAfter: newBalance,
+    };
+
+    setPlayers(prev => {
+      const next = prev.map(p =>
+        p.id === params.playerId
+          ? {
+              ...p,
+              walletBalance: newBalance,
+              walletHistory: [txn, ...(p.walletHistory || [])],
+            }
+          : p
+      );
+      broadcastUpdate('PLAYERS_UPDATED', next);
+      return next;
+    });
+
+    addAuditLog('Admin', 'Player Wallet Deposit', `Deposited ₹${params.amount.toLocaleString('en-IN')} into ${player.fullName}'s wallet.`);
+    return txn;
+  };
+
+  const withdrawFromPlayerWallet = (params: {
+    playerId: string;
+    amount: number;
+    paymentMethod?: PaymentMethod;
+    description?: string;
+    referenceId?: string;
+  }): PlayerWalletTransaction => {
+    const player = players.find(p => p.id === params.playerId);
+    if (!player) throw new Error('Player not found');
+
+    const currentBalance = player.walletBalance ?? 0;
+    if (currentBalance < params.amount) {
+      throw new Error(`Insufficient wallet balance. Available: ₹${currentBalance.toLocaleString('en-IN')}`);
+    }
+
+    const nowIso = new Date().toISOString();
+    const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
+    const newBalance = currentBalance - params.amount;
+
+    const txn: PlayerWalletTransaction = {
+      id: generateId('WLT'),
+      type: 'cashout',
+      amount: params.amount,
+      direction: 'debit',
+      description: params.description || `Wallet Payout / Cashout (${params.paymentMethod || 'Cash'})`,
+      referenceId: params.referenceId,
+      timestamp: nowIso,
+      performedBy: staff,
+      balanceAfter: newBalance,
+    };
+
+    setPlayers(prev => {
+      const next = prev.map(p =>
+        p.id === params.playerId
+          ? {
+              ...p,
+              walletBalance: newBalance,
+              walletHistory: [txn, ...(p.walletHistory || [])],
+            }
+          : p
+      );
+      broadcastUpdate('PLAYERS_UPDATED', next);
+      return next;
+    });
+
+    // Record cash out from vault drawer
+    addCashGiven({
+      category: 'Player Cash Withdrawal',
+      amount: params.amount,
+      description: `Player Wallet Payout: ${player.fullName}`,
+      paymentMethod: params.paymentMethod || 'Cash',
+      playerName: player.fullName,
+      referenceId: txn.id,
+    });
+
+    addAuditLog('Cashier', 'Player Wallet Withdrawal', `Paid out ₹${params.amount.toLocaleString('en-IN')} to ${player.fullName} from wallet.`);
+    return txn;
+  };
+
   const fulfillChipRequest = (requestId: string): ChipRequest | undefined => {
     const req = chipRequests.find(r => r.id === requestId);
     // A stale screen or a double click must never charge the same order twice.
@@ -2961,7 +3186,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const nowIso = new Date().toISOString();
     const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
-    const receiptNum = generateReceiptNumber();
+    const receiptNum = generateChipInvoiceNumber(chipRequests);
 
     const fulfilledRequest: ChipRequest = {
       ...req,
@@ -3411,7 +3636,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const todayStr = getTodayDateString();
     const staff = currentStaffUser ? currentStaffUser.fullName : staffName;
     const transferId = generateSequentialGateTransferId(gateTransfers);
-    const receiptNum = generateReceiptNumber();
+    const receiptNum = `CRS/GTR/26-27/${String(gateTransfers.length + 1).padStart(4, '0')}`;
 
     const newTransfer: GateCashTransfer = {
       id: transferId,
@@ -3899,6 +4124,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updateCashTransaction,
         deleteCashTransaction,
         updateTournamentStatus,
+        recordTournamentWinners,
+        depositToPlayerWallet,
+        withdrawFromPlayerWallet,
         approvePlayerEntry,
         rejectPlayerEntry,
         updateCheckIn,

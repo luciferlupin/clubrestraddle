@@ -639,14 +639,18 @@ export const CashPortal: React.FC = () => {
                         {formatDateTime(txn.timestamp)}
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: '3px 8px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                          onClick={() => handleViewTxnInvoice(txn)}
-                        >
-                          <Eye size={12} /> Invoice
-                        </button>
+                        {txn.type === 'in' ? (
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '3px 8px', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleViewTxnInvoice(txn)}
+                          >
+                            <Eye size={12} /> Invoice
+                          </button>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -837,15 +841,17 @@ export const CashPortal: React.FC = () => {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: '5px' }}>
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            style={{ padding: '3px 7px', fontSize: '0.74rem' }}
-                            title="View Tax Invoice"
-                            onClick={() => handleViewTxnInvoice(txn)}
-                          >
-                            <Eye size={12} />
-                          </button>
+                          {txn.type === 'in' && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: '3px 7px', fontSize: '0.74rem' }}
+                              title="View Tax Invoice"
+                              onClick={() => handleViewTxnInvoice(txn)}
+                            >
+                              <Eye size={12} />
+                            </button>
+                          )}
                           <button
                             type="button"
                             className="btn btn-secondary btn-sm"

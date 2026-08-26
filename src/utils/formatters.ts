@@ -214,9 +214,49 @@ export const generateSequentialGateTransferId = (existingTransfers: { id: string
   return `GTR-${maxSeq + 1}`;
 };
 
-export const generateReceiptNumber = (): string => {
+export const generateGateInvoiceNumber = (checkInIdOrSeq: string | number): string => {
+  if (typeof checkInIdOrSeq === 'number') {
+    return `CRS/GATE/26-27/${String(checkInIdOrSeq).padStart(4, '0')}`;
+  }
+  const match = checkInIdOrSeq.match(/\d+$/);
+  const seq = match ? match[0].padStart(4, '0') : '0001';
+  return `CRS/GATE/26-27/${seq}`;
+};
+
+export const generateTournamentInvoiceNumber = (
+  tournamentId: string,
+  existingEntries: { tournamentId?: string; receiptNumber?: string; id?: string }[] = []
+): string => {
+  let seriesCode = 'TRN-01';
+  const trnMatch = tournamentId.match(/TRN-(?:2026-)?(\d+)/i) || tournamentId.match(/(\d+)$/);
+  if (trnMatch) {
+    seriesCode = `TRN-${trnMatch[1].padStart(2, '0')}`;
+  } else {
+    seriesCode = tournamentId.replace(/[^A-Za-z0-9]/g, '').slice(0, 8).toUpperCase() || 'TRN-01';
+  }
+
+  const currentTrnEntries = existingEntries.filter(e => e.tournamentId === tournamentId);
+  const seq = currentTrnEntries.length + 1;
+  return `CRS/${seriesCode}/26-27/${String(seq).padStart(4, '0')}`;
+};
+
+export const generateChipInvoiceNumber = (existingRequests: { id: string }[] = []): string => {
+  let maxSeq = 1000;
+  for (const r of existingRequests) {
+    const match = r.id.match(/\d+$/);
+    if (match) {
+      const num = parseInt(match[0], 10);
+      if (!isNaN(num) && num > maxSeq) {
+        maxSeq = num;
+      }
+    }
+  }
+  return `CRS/CHP/26-27/${maxSeq + 1}`;
+};
+
+export const generateReceiptNumber = (prefix: string = 'REC'): string => {
   const timestamp = Date.now().toString().slice(-6);
-  return `REC-${timestamp}`;
+  return `CRS/${prefix}/26-27/${timestamp}`;
 };
 
 export const maskGovtId = (idNumber: string): string => {

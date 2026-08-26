@@ -31,7 +31,7 @@ export interface AggregatedInvoiceRecord {
   id: string;
   invoiceNumber: string;
   date: string;
-  category: 'Door Entry' | 'Tournament' | 'Cash Buy-in' | 'Chip Purchase' | 'Payout' | 'Settlement';
+  category: 'Door Entry' | 'Tournament' | 'Cash Buy-in' | 'Chip Purchase' | 'Settlement';
   playerName: string;
   playerId?: string;
   playerPhone?: string;
@@ -140,8 +140,13 @@ export const InvoiceRepositoryView: React.FC = () => {
       });
     });
 
-    // 3. Cash Game Buy-ins, Chip Purchases, and Settlements
+    // 3. Cash Game Buy-ins, Chip Purchases, and Inflow Collections (Excludes Payouts/Cash Outs)
     cashTransactions.forEach(txn => {
+      // Cash payouts / cash outs are disbursements to players and do not generate tax invoices
+      if (txn.type === 'out' || txn.category.includes('Payout') || txn.category.includes('Cash Out')) {
+        return;
+      }
+
       const player = players.find(p => p.fullName === txn.playerName || p.id === txn.referenceId);
       const invoiceData = generateCashTransactionInvoice(txn, player, staffName);
 
@@ -149,7 +154,6 @@ export const InvoiceRepositoryView: React.FC = () => {
       if (txn.category.includes('Tournament')) cat = 'Tournament';
       else if (txn.category.includes('Chip')) cat = 'Chip Purchase';
       else if (txn.category.includes('Buy-in') || txn.category.includes('Cash In')) cat = 'Cash Buy-in';
-      else if (txn.category.includes('Payout') || txn.category.includes('Cash Out')) cat = 'Payout';
 
       list.push({
         id: `INV-REC-CSH-${txn.id}`,
@@ -192,7 +196,6 @@ export const InvoiceRepositoryView: React.FC = () => {
       if (categoryFilter === 'entry') return inv.category === 'Door Entry';
       if (categoryFilter === 'tournament') return inv.category === 'Tournament';
       if (categoryFilter === 'cash') return inv.category === 'Cash Buy-in' || inv.category === 'Chip Purchase';
-      if (categoryFilter === 'payout') return inv.category === 'Payout';
 
       return true;
     });
@@ -292,7 +295,7 @@ export const InvoiceRepositoryView: React.FC = () => {
               <span>Central Tax Invoice & Billing Records ({filteredInvoices.length})</span>
             </h3>
             <p className="card-subtitle">
-              Comprehensive ledger of official Tax Invoices (5% Door Entry & 18% Service Charges) for player door entries, tournaments, chip transactions, and payouts.
+              Comprehensive ledger of official Tax Invoices (5% Door Entry & 18% Service Charges) for player door entries, tournaments, and chip transactions.
             </p>
           </div>
 
@@ -304,7 +307,6 @@ export const InvoiceRepositoryView: React.FC = () => {
                 { id: 'entry', label: '₹500 Entry' },
                 { id: 'tournament', label: 'Tournaments' },
                 { id: 'cash', label: 'Cash & Chips' },
-                { id: 'payout', label: 'Payouts' },
               ].map(f => (
                 <button
                   key={f.id}
@@ -382,16 +384,12 @@ export const InvoiceRepositoryView: React.FC = () => {
                           ? 'rgba(225, 29, 72, 0.18)'
                           : inv.category === 'Tournament'
                           ? 'rgba(168, 85, 247, 0.18)'
-                          : inv.category === 'Payout'
-                          ? 'rgba(239, 68, 68, 0.18)'
                           : 'rgba(16, 185, 129, 0.18)',
                       color:
                         inv.category === 'Door Entry'
                           ? '#fda4af'
                           : inv.category === 'Tournament'
                           ? '#c084fc'
-                          : inv.category === 'Payout'
-                          ? '#fca5a5'
                           : '#6ee7b7',
                       border: '1px solid rgba(255,255,255,0.12)',
                       whiteSpace: 'nowrap',
@@ -502,16 +500,12 @@ export const InvoiceRepositoryView: React.FC = () => {
                                 ? 'rgba(225, 29, 72, 0.15)'
                                 : inv.category === 'Tournament'
                                 ? 'rgba(168, 85, 247, 0.15)'
-                                : inv.category === 'Payout'
-                                ? 'rgba(239, 68, 68, 0.15)'
                                 : 'rgba(16, 185, 129, 0.15)',
                             color:
                               inv.category === 'Door Entry'
                                 ? '#fda4af'
                                 : inv.category === 'Tournament'
                                 ? '#c084fc'
-                                : inv.category === 'Payout'
-                                ? '#fca5a5'
                                 : '#6ee7b7',
                             border: '1px solid rgba(255,255,255,0.1)'
                           }}

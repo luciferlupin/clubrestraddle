@@ -89,7 +89,8 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
       t => t.playerName && t.playerName.toLowerCase().trim() === player.fullName.toLowerCase().trim()
     );
     playerTxns.forEach(txn => {
-      const inv = generateCashTransactionInvoice(txn, player, staffName);
+      const isPayoutOrCashOut = txn.type === 'out' || txn.category.includes('Payout') || txn.category.includes('Cash Out');
+      const inv = !isPayoutOrCashOut ? generateCashTransactionInvoice(txn, player, staffName) : undefined;
       items.push({
         id: `LED-CSH-${txn.id}`,
         date: txn.timestamp,
@@ -101,6 +102,24 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
         credit: txn.type === 'out' ? txn.amount : undefined,
         invoiceData: inv,
       });
+    });
+
+    // 4. Tournament Prize Winnings from Settled Tournaments
+    tournaments.forEach(trn => {
+      if (trn.winners && trn.winners.length > 0) {
+        const winningRank = trn.winners.find(w => w.playerId === player.id);
+        if (winningRank) {
+          items.push({
+            id: `LED-WIN-${trn.id}-${winningRank.rank}`,
+            date: winningRank.awardedAt || trn.completedAt || trn.createdAt,
+            type: 'Tournament Payout',
+            description: `🏆 ${winningRank.rank === 1 ? '1st Place Champion' : winningRank.rank === 2 ? '2nd Place Runner-up' : winningRank.rank === 3 ? '3rd Place Finalist' : `Rank #${winningRank.rank}`} Prize - ${trn.name}`,
+            paymentMethod: 'Vault Wallet Credit',
+            referenceId: trn.id,
+            credit: winningRank.prizeAmount,
+          });
+        }
+      }
     });
 
     // Sort newest first
