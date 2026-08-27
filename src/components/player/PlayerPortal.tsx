@@ -392,22 +392,16 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
              KYC REGISTRATION FORM
              ───────────────────────────────────────────────── */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button
-              type="button"
-              className="mobile-icon-button"
-              style={{ alignSelf: 'flex-start' }}
-              onClick={() => setEntryView(currentPlayer ? 'welcome' : 'welcome')}
-              aria-label="Back"
-            >
-              <ArrowLeft size={21} /> <span style={{ fontSize: '0.85rem', color: '#94a3b8', marginLeft: '4px' }}>Back</span>
-            </button>
             <KYCRegistrationForm
               onSuccess={() => {
                 setShowKYCForm(false);
                 setEntryView('welcome');
                 onRegistrationFlowComplete?.();
               }}
-              onCancel={currentPlayer ? () => { setShowKYCForm(false); setEntryView('welcome'); } : undefined}
+              onCancel={() => {
+                setShowKYCForm(false);
+                setEntryView('welcome');
+              }}
             />
           </div>
         )

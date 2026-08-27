@@ -553,17 +553,41 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
     <div className="card wizard-container" style={{ maxWidth: '780px', margin: '0 auto', border: '1px solid rgba(225, 29, 72, 0.45)', position: 'relative' }}>
       <form onSubmit={handleSubmit}>
         {/* Header with Title & Quick Autofill */}
-        <div className="card-header" style={{ marginBottom: '14px' }}>
-          <div>
-            <h3 className="card-title">
-              <UserPlus size={18} color="#e11d48" />
-              Member KYC Registration (Aadhaar & PAN)
-            </h3>
-            <p className="card-subtitle">
-              Step {currentStep} of 4 · Complete KYC verification with Aadhaar & PAN to obtain your digital pass.
-            </p>
+        <div className="card-header" style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {(currentStep > 1 || onCancel) && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={currentStep > 1 ? handlePrevStep : onCancel}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  borderColor: 'rgba(225, 29, 72, 0.4)',
+                  background: 'rgba(225, 29, 72, 0.1)',
+                  color: '#fda4af',
+                  fontWeight: 600,
+                }}
+                title={currentStep > 1 ? `Back to Step ${currentStep - 1} (${steps.find(s => s.num === currentStep - 1)?.title})` : 'Back to Lounge'}
+              >
+                <ArrowLeft size={15} />
+                <span>{currentStep > 1 ? `Back to Step ${currentStep - 1}` : 'Back'}</span>
+              </button>
+            )}
+            <div>
+              <h3 className="card-title" style={{ margin: 0 }}>
+                <UserPlus size={18} color="#e11d48" />
+                Member KYC Registration (Aadhaar & PAN)
+              </h3>
+              <p className="card-subtitle" style={{ margin: '2px 0 0' }}>
+                Step {currentStep} of 4 · {steps.find(s => s.num === currentStep)?.title} ({steps.find(s => s.num === currentStep)?.desc})
+              </p>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {hasDraftRestored && (
               <button
                 type="button"
@@ -582,7 +606,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             >
               <Sparkles size={14} /> Quick Demo Fill
             </button>
-            {onCancel && (
+            {onCancel && currentStep === 1 && (
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
@@ -1030,15 +1054,26 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
         )}
 
         {/* Wizard Footer Controls */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', flexWrap: 'wrap', gap: '12px' }}>
           {currentStep > 1 ? (
             <button
               type="button"
               className="btn btn-secondary"
               onClick={handlePrevStep}
               disabled={submitting}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <ArrowLeft size={16} /> Back
+              <ArrowLeft size={16} /> <span>Back to Step {currentStep - 1} ({steps.find(s => s.num === currentStep - 1)?.title})</span>
+            </button>
+          ) : onCancel ? (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onCancel}
+              disabled={submitting}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <ArrowLeft size={16} /> <span>Back to Lounge</span>
             </button>
           ) : <div />}
 
@@ -1047,8 +1082,9 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
               type="button"
               className="btn btn-primary"
               onClick={handleNextStep}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <span>Continue</span>
+              <span>Continue to Step {currentStep + 1}</span>
               <ArrowRight size={16} />
             </button>
           ) : (

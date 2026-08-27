@@ -273,15 +273,31 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
     }, 300);
   };
 
+  const handleHeaderBack = () => {
+    if (step > 1) {
+      goToStep((step - 1) as RegistrationStep);
+    } else if (onCancel) {
+      onCancel();
+    }
+  };
+
   return (
     <section className="mobile-kyc-flow" ref={formTopRef} aria-labelledby="mobile-kyc-title">
       <div className="mobile-flow-heading" style={{ justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button type="button" className="mobile-icon-button" onClick={onCancel} aria-label="Back to player options">
+          <button
+            type="button"
+            className="mobile-icon-button"
+            onClick={handleHeaderBack}
+            aria-label={step > 1 ? `Back to Step ${step - 1}` : 'Back to player options'}
+            title={step > 1 ? `Back to Step ${step - 1}` : 'Back'}
+          >
             <ArrowLeft size={21} />
           </button>
           <div>
-            <span className="mobile-flow-eyebrow">New member check-in</span>
+            <span className="mobile-flow-eyebrow">
+              {step > 1 ? `Step ${step} of 3 · ${stepDetails.find(d => d.number === step)?.label}` : 'New member check-in'}
+            </span>
             <h1 id="mobile-kyc-title">Create your player pass</h1>
           </div>
         </div>
@@ -565,7 +581,16 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
               onClick={() => goToStep((step - 1) as RegistrationStep)}
               disabled={submitting}
             >
-              <ArrowLeft size={18} /> Back
+              <ArrowLeft size={18} /> Back to Step {step - 1}
+            </button>
+          ) : onCancel ? (
+            <button
+              type="button"
+              className="m-btn m-btn-secondary"
+              onClick={onCancel}
+              disabled={submitting}
+            >
+              <ArrowLeft size={18} /> Cancel
             </button>
           ) : (
             <span />
