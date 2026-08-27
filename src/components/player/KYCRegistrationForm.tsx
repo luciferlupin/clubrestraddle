@@ -29,6 +29,8 @@ import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceMo
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
 import { Eye, Receipt } from 'lucide-react';
 import { PhoneVerificationModal } from '../common/PhoneVerificationModal';
+import { getKycDraft, saveKycDraft, clearKycDraft, KycFormData } from '../../utils/kycDraftStorage';
+import { RotateCcw } from 'lucide-react';
 
 interface KYCRegistrationFormProps {
   onSuccess: () => void;
@@ -39,31 +41,110 @@ type FormWizardStep = 1 | 2 | 3 | 4;
 
 export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSuccess, onCancel }) => {
   const { registerNewPlayer, staffName } = useClub();
-  const [currentStep, setCurrentStep] = useState<FormWizardStep>(1);
-  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState('');
-  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  
+  // Load saved draft if present (e.g. returning after choosing photo from gallery or app switch)
+  const initialDraft = getKycDraft();
 
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    email: '',
-    aadhaarNumber: '',
-    panNumber: '',
-    aadhaarPhotoUrl: '',
-    aadhaarBackPhotoUrl: '',
-    panPhotoUrl: '',
-    address: '',
-    emergencyContactName: '',
-    emergencyContactPhone: '',
-    photoUrl: CARTOON_AVATARS[0].url,
-    agreedToRules: false,
+  const [currentStep, setCurrentStep] = useState<FormWizardStep>(() => {
+    if (initialDraft && initialDraft.step >= 1 && initialDraft.step <= 4) {
+      return initialDraft.step as FormWizardStep;
+    }
+    return 1;
+  });
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState<boolean>(() => {
+    return Boolean(initialDraft?.isPhoneVerified);
+  });
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string>(() => {
+    return initialDraft?.verifiedPhoneNumber || '';
+  });
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [hasDraftRestored, setHasDraftRestored] = useState<boolean>(() => {
+    return Boolean(initialDraft && (initialDraft.step > 1 || initialDraft.formData?.fullName || initialDraft.formData?.aadhaarNumber));
+  });
+
+  const [formData, setFormData] = useState<KycFormData>(() => {
+    if (initialDraft && initialDraft.formData) {
+      return {
+        fullName: initialDraft.formData.fullName || '',
+        phone: initialDraft.formData.phone || '',
+        email: initialDraft.formData.email || '',
+        aadhaarNumber: initialDraft.formData.aadhaarNumber || '',
+        panNumber: initialDraft.formData.panNumber || '',
+        aadhaarPhotoUrl: initialDraft.formData.aadhaarPhotoUrl || '',
+        aadhaarBackPhotoUrl: initialDraft.formData.aadhaarBackPhotoUrl || '',
+        panPhotoUrl: initialDraft.formData.panPhotoUrl || '',
+        address: initialDraft.formData.address || '',
+        emergencyContactName: initialDraft.formData.emergencyContactName || '',
+        emergencyContactPhone: initialDraft.formData.emergencyContactPhone || '',
+        photoUrl: initialDraft.formData.photoUrl || CARTOON_AVATARS[0].url,
+        agreedToRules: Boolean(initialDraft.formData.agreedToRules),
+      };
+    }
+    return {
+      fullName: '',
+      phone: '',
+      email: '',
+      aadhaarNumber: '',
+      panNumber: '',
+      aadhaarPhotoUrl: '',
+      aadhaarBackPhotoUrl: '',
+      panPhotoUrl: '',
+      address: '',
+      emergencyContactName: '',
+      emergencyContactPhone: '',
+      photoUrl: CARTOON_AVATARS[0].url,
+      agreedToRules: false,
+    };
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [registeredData, setRegisteredData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
+
+  // Auto-save form draft whenever form fields, step, or phone verification status change
+  React.useEffect(() => {
+    const hasContent = Boolean(
+      formData.fullName ||
+      formData.phone ||
+      formData.aadhaarNumber ||
+      formData.aadhaarPhotoUrl ||
+      formData.panPhotoUrl ||
+      currentStep > 1
+    );
+    if (hasContent) {
+      saveKycDraft({
+        formData,
+        step: currentStep,
+        isPhoneVerified,
+        verifiedPhoneNumber,
+      });
+    }
+  }, [formData, currentStep, isPhoneVerified, verifiedPhoneNumber]);
+
+  const handleResetForm = () => {
+    clearKycDraft();
+    setFormData({
+      fullName: '',
+      phone: '',
+      email: '',
+      aadhaarNumber: '',
+      panNumber: '',
+      aadhaarPhotoUrl: '',
+      aadhaarBackPhotoUrl: '',
+      panPhotoUrl: '',
+      address: '',
+      emergencyContactName: '',
+      emergencyContactPhone: '',
+      photoUrl: CARTOON_AVATARS[0].url,
+      agreedToRules: false,
+    });
+    setCurrentStep(1);
+    setIsPhoneVerified(false);
+    setVerifiedPhoneNumber('');
+    setHasDraftRestored(false);
+    setErrors({});
+  };
 
   const samplePhotos = CARTOON_AVATARS;
 
@@ -210,6 +291,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
         // Fallback
       }
 
+      clearKycDraft();
       setSubmitting(false);
       setRegisteredData(result);
     }, 400);
@@ -482,6 +564,17 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
+            {hasDraftRestored && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5' }}
+                onClick={handleResetForm}
+                title="Clear saved draft and start from Step 1"
+              >
+                <RotateCcw size={14} /> Reset Form
+              </button>
+            )}
             <button
               type="button"
               className="btn btn-secondary btn-sm"
@@ -500,6 +593,37 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             )}
           </div>
         </div>
+
+        {hasDraftRestored && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(90deg, rgba(225, 29, 72, 0.18), rgba(244, 63, 94, 0.08))',
+              border: '1px solid rgba(225, 29, 72, 0.35)',
+              borderRadius: '8px',
+              padding: '8px 14px',
+              marginBottom: '14px',
+              fontSize: '0.82rem',
+              color: '#fda4af',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CheckCircle2 size={15} color="#34d399" />
+              <span>
+                <strong>Progress Restored:</strong> Continuing KYC registration at <strong>Step {currentStep} ({steps.find(s => s.num === currentStep)?.title})</strong>. Your entered details and photos are preserved.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setHasDraftRestored(false)}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem', textDecoration: 'underline' }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* 4-Step Interactive Stepper Tracker */}
         <div className="wizard-step-tracker" role="navigation" aria-label="Registration Steps">

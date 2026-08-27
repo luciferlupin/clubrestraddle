@@ -15,6 +15,8 @@ import confetti from 'canvas-confetti';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
 import { PhoneVerificationModal } from '../common/PhoneVerificationModal';
 import { CARTOON_AVATARS } from '../../utils/cartoonAvatars';
+import { getKycDraft, saveKycDraft, clearKycDraft, KycFormData } from '../../utils/kycDraftStorage';
+import { RotateCcw } from 'lucide-react';
 
 interface MobileKYCFormProps {
   onSuccess: (result: { player: Player; checkIn: DailyCheckIn }) => void;
@@ -32,28 +34,107 @@ const stepDetails = [
 export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCancel }) => {
   const { registerNewPlayer } = useClub();
   const formTopRef = useRef<HTMLDivElement>(null);
-  const [step, setStep] = useState<RegistrationStep>(1);
 
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    email: '',
-    aadhaarNumber: '',
-    panNumber: '',
-    aadhaarPhotoUrl: '',
-    aadhaarBackPhotoUrl: '',
-    panPhotoUrl: '',
-    address: '',
-    emergencyContactName: '',
-    emergencyContactPhone: '',
-    photoUrl: CARTOON_AVATARS[0].url,
-    agreedToRules: false,
+  // Load saved draft if present (e.g. returning after choosing photo from gallery or app switch)
+  const initialDraft = getKycDraft();
+
+  const [step, setStep] = useState<RegistrationStep>(() => {
+    if (initialDraft && initialDraft.step >= 1 && initialDraft.step <= 3) {
+      return initialDraft.step as RegistrationStep;
+    }
+    return 1;
+  });
+
+  const [formData, setFormData] = useState<KycFormData>(() => {
+    if (initialDraft && initialDraft.formData) {
+      return {
+        fullName: initialDraft.formData.fullName || '',
+        phone: initialDraft.formData.phone || '',
+        email: initialDraft.formData.email || '',
+        aadhaarNumber: initialDraft.formData.aadhaarNumber || '',
+        panNumber: initialDraft.formData.panNumber || '',
+        aadhaarPhotoUrl: initialDraft.formData.aadhaarPhotoUrl || '',
+        aadhaarBackPhotoUrl: initialDraft.formData.aadhaarBackPhotoUrl || '',
+        panPhotoUrl: initialDraft.formData.panPhotoUrl || '',
+        address: initialDraft.formData.address || '',
+        emergencyContactName: initialDraft.formData.emergencyContactName || '',
+        emergencyContactPhone: initialDraft.formData.emergencyContactPhone || '',
+        photoUrl: initialDraft.formData.photoUrl || CARTOON_AVATARS[0].url,
+        agreedToRules: Boolean(initialDraft.formData.agreedToRules),
+      };
+    }
+    return {
+      fullName: '',
+      phone: '',
+      email: '',
+      aadhaarNumber: '',
+      panNumber: '',
+      aadhaarPhotoUrl: '',
+      aadhaarBackPhotoUrl: '',
+      panPhotoUrl: '',
+      address: '',
+      emergencyContactName: '',
+      emergencyContactPhone: '',
+      photoUrl: CARTOON_AVATARS[0].url,
+      agreedToRules: false,
+    };
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState('');
+  const [isPhoneVerified, setIsPhoneVerified] = useState<boolean>(() => {
+    return Boolean(initialDraft?.isPhoneVerified);
+  });
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState<string>(() => {
+    return initialDraft?.verifiedPhoneNumber || '';
+  });
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+  const [hasDraftRestored, setHasDraftRestored] = useState<boolean>(() => {
+    return Boolean(initialDraft && (initialDraft.step > 1 || initialDraft.formData?.fullName || initialDraft.formData?.aadhaarNumber));
+  });
+
+  // Auto-save form draft whenever form fields, step, or phone verification status change
+  React.useEffect(() => {
+    const hasContent = Boolean(
+      formData.fullName ||
+      formData.phone ||
+      formData.aadhaarNumber ||
+      formData.aadhaarPhotoUrl ||
+      formData.panPhotoUrl ||
+      step > 1
+    );
+    if (hasContent) {
+      saveKycDraft({
+        formData,
+        step,
+        isPhoneVerified,
+        verifiedPhoneNumber,
+      });
+    }
+  }, [formData, step, isPhoneVerified, verifiedPhoneNumber]);
+
+  const handleResetForm = () => {
+    clearKycDraft();
+    setFormData({
+      fullName: '',
+      phone: '',
+      email: '',
+      aadhaarNumber: '',
+      panNumber: '',
+      aadhaarPhotoUrl: '',
+      aadhaarBackPhotoUrl: '',
+      panPhotoUrl: '',
+      address: '',
+      emergencyContactName: '',
+      emergencyContactPhone: '',
+      photoUrl: CARTOON_AVATARS[0].url,
+      agreedToRules: false,
+    });
+    setStep(1);
+    setIsPhoneVerified(false);
+    setVerifiedPhoneNumber('');
+    setHasDraftRestored(false);
+    setErrors({});
+  };
 
   const sampleAvatars = CARTOON_AVATARS.map(avatar => avatar.url);
 
@@ -186,6 +267,7 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
         // Fallback
       }
 
+      clearKycDraft();
       setSubmitting(false);
       onSuccess(result);
     }, 300);
@@ -193,15 +275,59 @@ export const MobileKYCForm: React.FC<MobileKYCFormProps> = ({ onSuccess, onCance
 
   return (
     <section className="mobile-kyc-flow" ref={formTopRef} aria-labelledby="mobile-kyc-title">
-      <div className="mobile-flow-heading">
-        <button type="button" className="mobile-icon-button" onClick={onCancel} aria-label="Back to player options">
-          <ArrowLeft size={21} />
-        </button>
-        <div>
-          <span className="mobile-flow-eyebrow">New member check-in</span>
-          <h1 id="mobile-kyc-title">Create your player pass</h1>
+      <div className="mobile-flow-heading" style={{ justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button type="button" className="mobile-icon-button" onClick={onCancel} aria-label="Back to player options">
+            <ArrowLeft size={21} />
+          </button>
+          <div>
+            <span className="mobile-flow-eyebrow">New member check-in</span>
+            <h1 id="mobile-kyc-title">Create your player pass</h1>
+          </div>
         </div>
+        {hasDraftRestored && (
+          <button
+            type="button"
+            className="mobile-icon-button"
+            style={{ fontSize: '0.75rem', color: '#fca5a5', width: 'auto', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.4)', gap: '4px', display: 'flex', alignItems: 'center' }}
+            onClick={handleResetForm}
+            title="Reset form"
+          >
+            <RotateCcw size={13} /> <span>Reset</span>
+          </button>
+        )}
       </div>
+
+      {hasDraftRestored && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'linear-gradient(90deg, rgba(225, 29, 72, 0.18), rgba(244, 63, 94, 0.08))',
+            border: '1px solid rgba(225, 29, 72, 0.35)',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            marginBottom: '12px',
+            fontSize: '0.78rem',
+            color: '#fda4af',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle2 size={14} color="#34d399" />
+            <span>
+              <strong>Draft Restored:</strong> Continuing at <strong>Step {step} ({stepDetails.find(d => d.number === step)?.label})</strong>.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setHasDraftRestored(false)}
+            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.72rem', textDecoration: 'underline' }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <nav className="mobile-stepper" aria-label="Registration progress">
         {stepDetails.map((detail) => {
