@@ -451,6 +451,40 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => saveToStorage(STORAGE_KEYS.ACTIVE_ROLE, activeRole), [activeRole]);
   useEffect(() => saveToStorage(STORAGE_KEYS.SELECTED_PLAYER, selectedPlayerId), [selectedPlayerId]);
 
+  // Auto-reconcile any security-approved check-ins that are missing a door entry fee transaction record
+  useEffect(() => {
+    const approvedCheckIns = checkIns.filter(c => c.verificationStatus === 'approved');
+    const missingCheckIns = approvedCheckIns.filter(
+      chk => !cashTransactions.some(t => t.referenceId === chk.id)
+    );
+
+    if (missingCheckIns.length > 0) {
+      const nowIso = new Date().toISOString();
+      const newTxns: CashTransaction[] = missingCheckIns.map(chk => {
+        const method = chk.paymentMethod || 'Cash';
+        return {
+          id: generateId('CSH'),
+          type: 'in' as const,
+          category: 'Gate Entry Fee Transfer' as const,
+          amount: 500,
+          description: `Door entry fee collected at Gate via ${method} for ${chk.playerName}`,
+          paymentMethod: method,
+          playerName: chk.playerName,
+          referenceId: chk.id,
+          cashierName: chk.verifiedBy || staffName || 'Security Desk',
+          timestamp: chk.verifiedAt || (chk.checkInDate && chk.checkInTime ? `${chk.checkInDate}T${chk.checkInTime}` : nowIso),
+          balanceAfter: 500,
+        };
+      });
+
+      setCashTransactions(prev => {
+        const next = [...newTxns, ...prev];
+        saveToStorage(STORAGE_KEYS.CASH_TXNS, next);
+        return next;
+      });
+    }
+  }, [checkIns, cashTransactions, staffName]);
+
   // Adjust staff name when user logs in/out or switches role
   useEffect(() => {
     if (currentStaffUser) {
@@ -3462,8 +3496,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       nextCheckIns = [updatedCheckIn, ...checkIns];
     }
 
-    // If payment method is UPI or Bank, credit the common club treasury balance directly!
-    if (paymentMethod === 'UPI/Digital' || paymentMethod === 'Bank Transfer') {
+    // Record Gate Entry Fee collection for ALL payment channels (Cash, UPI/Digital, Bank Transfer)
+    const alreadyHasEntryTxn = cashTransactions.some(t => t.referenceId === targetCheckInId);
+    if (!alreadyHasEntryTxn) {
       addCashReceived({
         category: 'Gate Entry Fee Transfer',
         amount: 500,
