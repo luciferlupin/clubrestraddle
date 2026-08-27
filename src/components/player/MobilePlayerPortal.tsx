@@ -48,7 +48,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<PlayerTab>(
-    (!currentPlayer || showNewPlayerFormInitially) ? 'new_kyc' : 'home',
+    showNewPlayerFormInitially ? 'new_kyc' : 'home',
   );
   const [entryView, setEntryView] = useState<EntryView>(showNewPlayerFormInitially ? 'register' : 'choice');
   const [lookupPhone, setLookupPhone] = useState('');
@@ -146,11 +146,8 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   };
 
   const closeRegistration = () => {
-    if (currentPlayer) {
-      setActiveTab('home');
-    } else {
-      setEntryView('choice');
-    }
+    setActiveTab('home');
+    setEntryView('choice');
   };
 
   return (
@@ -201,7 +198,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                   <CreditCard size={18} />
                   <span>I'm a member</span>
                 </button>
-                <button type="button" className="m-btn m-btn-secondary" onClick={() => setEntryView('register')}>
+                <button type="button" className="m-btn m-btn-secondary" onClick={openRegistration}>
                   <UserPlus size={18} />
                   <span>New registration</span>
                 </button>
