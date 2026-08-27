@@ -30,6 +30,7 @@ export const SecurityPortal: React.FC = () => {
     staffName,
     players,
     todayCheckIns,
+    checkIns,
     isRealtimeConnected,
     syncNow,
     todayApprovedDoorCount,
@@ -62,9 +63,9 @@ export const SecurityPortal: React.FC = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      const scanId = params.get('scan');
+      const scanId = params.get('scan') || params.get('scanId');
       const playerId = params.get('player') || params.get('playerId');
-      const linkedCheckIn = scanId ? todayCheckIns.find(c => c.id === scanId) : undefined;
+      const linkedCheckIn = scanId ? (todayCheckIns.find(c => c.id === scanId) || checkIns.find(c => c.id === scanId)) : undefined;
       const linkedPlayerId = linkedCheckIn?.playerId || playerId;
       const linkedPlayer = linkedPlayerId ? players.find(p => p.id === linkedPlayerId) : undefined;
       if (linkedPlayer) return linkedPlayer;
@@ -77,6 +78,24 @@ export const SecurityPortal: React.FC = () => {
     }
     return null;
   });
+
+  // Reactive URL parameter listener for scanned / deep linked passes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const scanId = params.get('scan') || params.get('scanId');
+    const playerId = params.get('player') || params.get('playerId');
+    if (scanId || playerId) {
+      const linkedCheckIn = scanId ? (todayCheckIns.find(c => c.id === scanId) || checkIns.find(c => c.id === scanId)) : undefined;
+      const targetPlayerId = linkedCheckIn?.playerId || playerId;
+      if (targetPlayerId) {
+        const found = players.find(p => p.id === targetPlayerId);
+        if (found) {
+          setSelectedPlayer(found);
+        }
+      }
+    }
+  }, [players, todayCheckIns, checkIns]);
 
   // Automatically deselect if the player is deleted
   useEffect(() => {

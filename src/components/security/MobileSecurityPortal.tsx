@@ -49,6 +49,7 @@ export const MobileSecurityPortal: React.FC = () => {
     logoutStaff,
     players,
     todayCheckIns,
+    checkIns,
     approvePlayerEntry,
     rejectPlayerEntry,
     reviewKYC,
@@ -71,14 +72,32 @@ export const MobileSecurityPortal: React.FC = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => {
     if (typeof window === 'undefined') return null;
     const params = new URLSearchParams(window.location.search);
-    const scanId = params.get('scan');
+    const scanId = params.get('scan') || params.get('scanId');
     const playerId = params.get('player') || params.get('playerId');
     if (scanId) {
-      const foundCheckIn = todayCheckIns.find(c => c.id === scanId);
+      const foundCheckIn = todayCheckIns.find(c => c.id === scanId) || checkIns.find(c => c.id === scanId);
       return players.find(p => p.id === foundCheckIn?.playerId) || null;
     }
     return players.find(p => p.id === playerId) || null;
   });
+
+  // Reactive URL query parameter listener
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const scanId = params.get('scan') || params.get('scanId');
+    const playerId = params.get('player') || params.get('playerId');
+    if (scanId || playerId) {
+      const linkedCheckIn = scanId ? (todayCheckIns.find(c => c.id === scanId) || checkIns.find(c => c.id === scanId)) : undefined;
+      const targetPlayerId = linkedCheckIn?.playerId || playerId;
+      if (targetPlayerId) {
+        const found = players.find(p => p.id === targetPlayerId);
+        if (found) {
+          setSelectedPlayer(found);
+        }
+      }
+    }
+  }, [players, todayCheckIns, checkIns]);
 
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [isRejectKycOpen, setIsRejectKycOpen] = useState(false);
