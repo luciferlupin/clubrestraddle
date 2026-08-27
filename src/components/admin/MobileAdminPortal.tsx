@@ -1276,14 +1276,14 @@ export const MobileAdminPortal: React.FC = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
                     <span style={{ color: '#94a3b8' }}>1. Aadhaar Card</span>
                     <span style={{ fontWeight: 600, color: '#ffffff', fontFamily: 'monospace' }}>
-                      {formatFullAadhaar(selectedPlayer.kyc.aadhaarNumber, selectedPlayer.kyc.govtIdNumber)}
+                      {formatFullAadhaar(activeSelectedPlayer?.kyc.aadhaarNumber || selectedPlayer.kyc.aadhaarNumber, activeSelectedPlayer?.kyc.govtIdNumber || selectedPlayer.kyc.govtIdNumber)}
                     </span>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem' }}>
                     <span style={{ color: '#94a3b8' }}>2. PAN Card</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8', fontFamily: 'monospace' }}>
-                      {formatPanNumber(selectedPlayer.kyc.panNumber, selectedPlayer.kyc.govtIdNumber) || 'PAN Verified'}
+                      {formatPanNumber(activeSelectedPlayer?.kyc.panNumber || selectedPlayer.kyc.panNumber, activeSelectedPlayer?.kyc.govtIdNumber || selectedPlayer.kyc.govtIdNumber) || 'PAN Verified'}
                     </span>
                   </div>
 

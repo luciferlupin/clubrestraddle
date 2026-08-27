@@ -41,6 +41,8 @@ import {
   getTodayDateString,
   isTimestampInCurrentSession,
   formatSessionLabel,
+  formatAadhaarNumber,
+  formatPanNumber,
 } from '../utils/formatters';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { cartoonAvatarForPlayer } from '../utils/cartoonAvatars';
@@ -626,7 +628,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       const { data: playersData, error: pErr } = await client
         .from('players')
-        .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
+        .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
         .order('created_at', { ascending: false })
         .limit(250);
       if (!pErr && playersData) {
@@ -642,20 +644,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           });
 
           const mappedPlayers: Player[] = playersData.map((p: any) => {
-            const idNum = p.govt_id_number || '';
-            let aadhaarParsed = '';
-            let panParsed = '';
-            const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
-            if (panMatch) panParsed = panMatch[1].toUpperCase();
-            const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
-            if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
-
-            if (!panParsed && /^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(idNum.trim())) {
-              panParsed = idNum.trim().toUpperCase();
-            }
-            if (!aadhaarParsed && /^\d{12}$/.test(idNum.replace(/\s/g, ''))) {
-              aadhaarParsed = idNum.trim();
-            }
+            const aadhaarParsed = formatAadhaarNumber(p.aadhaar_number, p.govt_id_number);
+            const panParsed = formatPanNumber(p.pan_number, p.govt_id_number);
 
             let memberNumber: number | undefined = undefined;
             if (typeof p.member_number === 'number' && p.member_number > 0) {
@@ -694,7 +684,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 aadhaarBackPhotoUrl: p.aadhaar_back_photo_url || undefined,
                 panPhotoUrl: p.pan_photo_url || undefined,
                 govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
-                govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+                govtIdNumber: p.govt_id_number || (panParsed && aadhaarParsed ? `PAN: ${panParsed} | Aadhaar: ${aadhaarParsed}` : 'KYC-PENDING'),
                 address: p.address || 'Delhi NCR, India',
                 emergencyContactName: p.emergency_contact_name || '',
                 emergencyContactPhone: p.emergency_contact_phone || '',
@@ -2042,12 +2032,17 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // 1. Check local in-memory players state
     const localMatch = players.find(p => {
       const pDigits = p.phone.replace(/\D/g, '');
+      const pAadhaar = (p.kyc?.aadhaarNumber || '').replace(/\D/g, '');
+      const pPan = (p.kyc?.panNumber || '').toUpperCase();
       return (
         p.id.toLowerCase() === cleanQuery.toLowerCase() ||
         String(p.memberNumber || '') === cleanQuery ||
         (cleanDigits.length >= 4 && pDigits.includes(cleanDigits)) ||
+        (cleanDigits.length >= 4 && pAadhaar.includes(cleanDigits)) ||
+        (cleanQuery.length >= 4 && pPan.includes(cleanQuery.toUpperCase())) ||
         p.fullName.toLowerCase().includes(cleanQuery.toLowerCase()) ||
-        p.email.toLowerCase() === cleanQuery.toLowerCase()
+        p.email.toLowerCase() === cleanQuery.toLowerCase() ||
+        (p.kyc?.govtIdNumber || '').toLowerCase().includes(cleanQuery.toLowerCase())
       );
     });
 
@@ -2079,6 +2074,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           `full_name.ilike.%${cleanQuery}%`,
           `email.ilike.%${cleanQuery}%`,
           `govt_id_number.ilike.%${cleanQuery}%`,
+          `aadhaar_number.ilike.%${cleanQuery}%`,
+          `pan_number.ilike.%${cleanQuery}%`,
         ];
         if (tenDigits.length >= 4 && tenDigits !== cleanQuery) {
           orConditions.push(`phone.ilike.%${tenDigits}%`);
@@ -2092,13 +2089,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (!error && data && data.length > 0) {
           const p = data[0];
-          const idNum = p.govt_id_number || '';
-          let aadhaarParsed = '';
-          let panParsed = '';
-          const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
-          if (panMatch) panParsed = panMatch[1].toUpperCase();
-          const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
-          if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
+          const aadhaarParsed = formatAadhaarNumber(p.aadhaar_number, p.govt_id_number);
+          const panParsed = formatPanNumber(p.pan_number, p.govt_id_number);
 
           const mappedPlayer: Player = {
             id: p.id,
@@ -2119,11 +2111,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               dateOfBirth: p.date_of_birth || '1995-01-01',
               aadhaarNumber: p.aadhaar_number || aadhaarParsed,
               panNumber: p.pan_number || panParsed,
-              aadhaarPhotoUrl: p.aadhaar_photo_url,
-              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
-              panPhotoUrl: p.pan_photo_url,
+              aadhaarPhotoUrl: p.aadhaar_photo_url || undefined,
+              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url || undefined,
+              panPhotoUrl: p.pan_photo_url || undefined,
               govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
-              govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+              govtIdNumber: p.govt_id_number || (panParsed && aadhaarParsed ? `PAN: ${panParsed} | Aadhaar: ${aadhaarParsed}` : 'KYC-PENDING'),
               address: p.address || 'Delhi NCR, India',
               emergencyContactName: p.emergency_contact_name || '',
               emergencyContactPhone: p.emergency_contact_phone || '',
@@ -2182,13 +2174,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             .limit(1);
           if (pData && pData.length > 0) {
             const p = pData[0];
-            const idNum = p.govt_id_number || '';
-            let aadhaarParsed = '';
-            let panParsed = '';
-            const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
-            if (panMatch) panParsed = panMatch[1].toUpperCase();
-            const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
-            if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
+            const aadhaarParsed = formatAadhaarNumber(p.aadhaar_number, p.govt_id_number);
+            const panParsed = formatPanNumber(p.pan_number, p.govt_id_number);
 
             const mappedPlayer: Player = {
               id: p.id,
@@ -2209,11 +2196,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 dateOfBirth: p.date_of_birth || '1995-01-01',
                 aadhaarNumber: p.aadhaar_number || aadhaarParsed,
                 panNumber: p.pan_number || panParsed,
-                aadhaarPhotoUrl: p.aadhaar_photo_url,
-                aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
-                panPhotoUrl: p.pan_photo_url,
+                aadhaarPhotoUrl: p.aadhaar_photo_url || undefined,
+                aadhaarBackPhotoUrl: p.aadhaar_back_photo_url || undefined,
+                panPhotoUrl: p.pan_photo_url || undefined,
                 govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
-                govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+                govtIdNumber: p.govt_id_number || (panParsed && aadhaarParsed ? `PAN: ${panParsed} | Aadhaar: ${aadhaarParsed}` : 'KYC-PENDING'),
                 address: p.address || 'Delhi NCR, India',
                 emergencyContactName: p.emergency_contact_name || '',
                 emergencyContactPhone: p.emergency_contact_phone || '',
@@ -2254,11 +2241,17 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // 1. Check local in-memory players
     const localMatch = players.find(p => {
       const pDigits = p.phone.replace(/\D/g, '');
+      const pAadhaar = (p.kyc?.aadhaarNumber || '').replace(/\D/g, '');
+      const pPan = (p.kyc?.panNumber || '').toUpperCase();
       return (
         p.id.toLowerCase() === cleanQuery.toLowerCase() ||
+        String(p.memberNumber || '') === cleanQuery ||
         (cleanDigits.length >= 4 && pDigits.includes(cleanDigits)) ||
+        (cleanDigits.length >= 4 && pAadhaar.includes(cleanDigits)) ||
+        (cleanQuery.length >= 4 && pPan.includes(cleanQuery.toUpperCase())) ||
         p.fullName.toLowerCase().includes(cleanQuery.toLowerCase()) ||
-        p.email.toLowerCase() === cleanQuery.toLowerCase()
+        p.email.toLowerCase() === cleanQuery.toLowerCase() ||
+        (p.kyc?.govtIdNumber || '').toLowerCase().includes(cleanQuery.toLowerCase())
       );
     });
 
@@ -2285,6 +2278,9 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           `phone.ilike.%${cleanQuery}%`,
           `full_name.ilike.%${cleanQuery}%`,
           `email.ilike.%${cleanQuery}%`,
+          `govt_id_number.ilike.%${cleanQuery}%`,
+          `aadhaar_number.ilike.%${cleanQuery}%`,
+          `pan_number.ilike.%${cleanQuery}%`,
         ];
         if (tenDigits.length >= 4 && tenDigits !== cleanQuery) {
           orConditions.push(`phone.ilike.%${tenDigits}%`);
@@ -2298,13 +2294,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (!error && data && data.length > 0) {
           const p = data[0];
-          const idNum = p.govt_id_number || '';
-          let aadhaarParsed = '';
-          let panParsed = '';
-          const panMatch = idNum.match(/PAN:\s*([A-Z0-9]{10})/i);
-          if (panMatch) panParsed = panMatch[1].toUpperCase();
-          const aadhaarMatch = idNum.match(/Aadhaar:\s*([\d\s]{12,14})/i);
-          if (aadhaarMatch) aadhaarParsed = aadhaarMatch[1].trim();
+          const aadhaarParsed = formatAadhaarNumber(p.aadhaar_number, p.govt_id_number);
+          const panParsed = formatPanNumber(p.pan_number, p.govt_id_number);
 
           const mappedPlayer: Player = {
             id: p.id,
@@ -2325,11 +2316,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               dateOfBirth: p.date_of_birth || '1995-01-01',
               aadhaarNumber: p.aadhaar_number || aadhaarParsed,
               panNumber: p.pan_number || panParsed,
-              aadhaarPhotoUrl: p.aadhaar_photo_url,
-              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url,
-              panPhotoUrl: p.pan_photo_url,
+              aadhaarPhotoUrl: p.aadhaar_photo_url || undefined,
+              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url || undefined,
+              panPhotoUrl: p.pan_photo_url || undefined,
               govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
-              govtIdNumber: p.govt_id_number || 'KYC-PENDING',
+              govtIdNumber: p.govt_id_number || (panParsed && aadhaarParsed ? `PAN: ${panParsed} | Aadhaar: ${aadhaarParsed}` : 'KYC-PENDING'),
               address: p.address || 'Delhi NCR, India',
               emergencyContactName: p.emergency_contact_name || '',
               emergencyContactPhone: p.emergency_contact_phone || '',

@@ -15,7 +15,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { Player } from '../../types';
-import { formatDateOnly, maskGovtId, formatPlayerNumber } from '../../utils/formatters';
+import { formatDateOnly, maskGovtId, formatPlayerNumber, formatAadhaarNumber, formatPanNumber } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { useClub } from '../../context/ClubContext';
 import { PlayerLedger } from './PlayerLedger';
@@ -27,14 +27,16 @@ interface MobilePlayerProfileProps {
 }
 
 export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player, onOpenPass, onLogout }) => {
-  const { fetchPlayerKycDocs } = useClub();
+  const { fetchPlayerKycDocs, players } = useClub();
+  const activePlayer = players.find(p => p.id === player.id) || player;
+
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
 
   useEffect(() => {
-    if (player?.id) {
-      fetchPlayerKycDocs(player.id);
+    if (activePlayer?.id) {
+      fetchPlayerKycDocs(activePlayer.id);
     }
-  }, [player?.id, fetchPlayerKycDocs]);
+  }, [activePlayer?.id, fetchPlayerKycDocs]);
 
   return (
     <section className="player-subscreen player-profile-screen" aria-labelledby="player-profile-title">
@@ -89,25 +91,28 @@ export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player
             <dt><IdCard size={17} /> 1. Aadhaar Card</dt>
             <dd style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
               <span style={{ fontFamily: 'monospace' }}>
-                {player.kyc.aadhaarNumber ? maskGovtId(player.kyc.aadhaarNumber) : (player.kyc.govtIdNumber || 'UIDAI Verified')}
+                {(() => {
+                  const aadh = formatAadhaarNumber(activePlayer.kyc.aadhaarNumber, activePlayer.kyc.govtIdNumber);
+                  return aadh ? maskGovtId(aadh) : 'UIDAI Verified';
+                })()}
               </span>
               <div style={{ display: 'flex', gap: '4px' }}>
-                {player.kyc.aadhaarPhotoUrl && (
+                {activePlayer.kyc.aadhaarPhotoUrl && (
                   <button
                     type="button"
                     className="btn btn-secondary btn-sm"
                     style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    onClick={() => setViewingDoc({ title: 'Aadhaar Card (Front)', url: player.kyc.aadhaarPhotoUrl! })}
+                    onClick={() => setViewingDoc({ title: 'Aadhaar Card (Front)', url: activePlayer.kyc.aadhaarPhotoUrl! })}
                   >
                     <Eye size={12} /> Front
                   </button>
                 )}
-                {player.kyc.aadhaarBackPhotoUrl && (
+                {activePlayer.kyc.aadhaarBackPhotoUrl && (
                   <button
                     type="button"
                     className="btn btn-secondary btn-sm"
                     style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    onClick={() => setViewingDoc({ title: 'Aadhaar Card (Back)', url: player.kyc.aadhaarBackPhotoUrl! })}
+                    onClick={() => setViewingDoc({ title: 'Aadhaar Card (Back)', url: activePlayer.kyc.aadhaarBackPhotoUrl! })}
                   >
                     <Eye size={12} /> Back
                   </button>
@@ -119,14 +124,17 @@ export const MobilePlayerProfile: React.FC<MobilePlayerProfileProps> = ({ player
             <dt><CreditCard size={17} /> 2. PAN Card</dt>
             <dd style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
               <span style={{ fontFamily: 'monospace', color: '#fb7185' }}>
-                {player.kyc.panNumber || (player.kyc.govtIdNumber ? maskGovtId(player.kyc.govtIdNumber) : 'PAN Verified')}
+                {(() => {
+                  const pan = formatPanNumber(activePlayer.kyc.panNumber, activePlayer.kyc.govtIdNumber);
+                  return pan ? maskGovtId(pan) : 'PAN Verified';
+                })()}
               </span>
-              {player.kyc.panPhotoUrl && (
+              {activePlayer.kyc.panPhotoUrl && (
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   style={{ padding: '2px 8px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  onClick={() => setViewingDoc({ title: 'PAN Card Photo', url: player.kyc.panPhotoUrl! })}
+                  onClick={() => setViewingDoc({ title: 'PAN Card Photo', url: activePlayer.kyc.panPhotoUrl! })}
                 >
                   <Eye size={12} /> View Photo
                 </button>

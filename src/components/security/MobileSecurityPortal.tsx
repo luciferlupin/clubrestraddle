@@ -111,13 +111,13 @@ export const MobileSecurityPortal: React.FC = () => {
   useEffect(() => {
     if (selectedPlayer && !players.some(p => p.id === selectedPlayer.id)) {
       setSelectedPlayer(null);
-    } else if (selectedPlayer?.id) {
-      fetchPlayerKycDocs(selectedPlayer.id);
     }
     if (pendingApproval && !players.some(p => p.id === pendingApproval.player.id)) {
       setPendingApproval(null);
-    } else if (pendingApproval?.player?.id) {
-      fetchPlayerKycDocs(pendingApproval.player.id);
+    }
+    const targetId = selectedPlayer?.id || pendingApproval?.player?.id || (pendingQueuePlayers.length > 0 ? pendingQueuePlayers[0]?.id : players[0]?.id);
+    if (targetId) {
+      fetchPlayerKycDocs(targetId);
     }
   }, [players, selectedPlayer, pendingApproval, fetchPlayerKycDocs]);
 
@@ -142,7 +142,10 @@ export const MobileSecurityPortal: React.FC = () => {
           p.fullName.toLowerCase().includes(search.toLowerCase()) ||
           p.phone.includes(search) ||
           p.id.toLowerCase().includes(search.toLowerCase()) ||
-          p.kyc.govtIdNumber.toLowerCase().includes(search.toLowerCase())
+          String(p.memberNumber || '').includes(search) ||
+          (p.kyc?.aadhaarNumber || '').replace(/\s/g, '').includes(search.replace(/\s/g, '')) ||
+          (p.kyc?.panNumber || '').toLowerCase().includes(search.toLowerCase()) ||
+          (p.kyc?.govtIdNumber || '').toLowerCase().includes(search.toLowerCase())
       )
     : [];
 
@@ -243,10 +246,13 @@ export const MobileSecurityPortal: React.FC = () => {
     }
   };
 
-  const playerToInspect =
+  const rawPlayerToInspect =
     selectedPlayer ||
-    (pendingQueuePlayers.length > 0 ? pendingQueuePlayers[0] : null) ||
-    (players.length > 0 ? players[0] : null);
+    (pendingQueuePlayers.length > 0 ? pendingQueuePlayers[0] : null);
+
+  const playerToInspect = rawPlayerToInspect
+    ? players.find(p => p.id === rawPlayerToInspect.id) || rawPlayerToInspect
+    : null;
 
   const playerToInspectCheckIn = playerToInspect
     ? todayCheckIns.find(c => c.playerId === playerToInspect.id)
@@ -502,10 +508,31 @@ export const MobileSecurityPortal: React.FC = () => {
                   <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <ShieldCheck size={15} color="#10b981" /> Member Clearance Card
                   </span>
-                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <TierBadge tier={playerToInspect.membershipTier} />
                     <KYCBadge status={playerToInspect.kycStatus} />
                     {playerToInspectCheckIn && <EntryBadge status={playerToInspectCheckIn.verificationStatus} />}
+                    {selectedPlayer && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlayer(null)}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          borderRadius: '6px',
+                          color: '#cbd5e1',
+                          padding: '2px 8px',
+                          fontSize: '0.7rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                        }}
+                        title="Deselect Player"
+                      >
+                        <X size={12} /> Clear
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -591,15 +618,15 @@ export const MobileSecurityPortal: React.FC = () => {
 
                   {/* Attached Document Buttons */}
                   <div style={{ display: 'flex', gap: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', flexWrap: 'wrap' }}>
-                    {playerToInspect.kyc.aadhaarPhotoUrl && (
+                    {playerToInspect.kyc.aadhaarPhotoUrl ? (
                       <button
                         type="button"
                         onClick={() => setViewingDoc({ title: `${playerToInspect.fullName} - Aadhaar Front`, url: playerToInspect.kyc.aadhaarPhotoUrl! })}
                         style={{
                           flex: 1,
                           minWidth: '95px',
-                          background: 'rgba(225, 29, 72, 0.12)',
-                          border: '1px solid rgba(225, 29, 72, 0.35)',
+                          background: 'rgba(225, 29, 72, 0.18)',
+                          border: '1px solid rgba(225, 29, 72, 0.45)',
                           borderRadius: '8px',
                           padding: '6px 8px',
                           display: 'flex',
@@ -607,23 +634,42 @@ export const MobileSecurityPortal: React.FC = () => {
                           justifyContent: 'center',
                           gap: '4px',
                           color: '#ffffff',
-                          fontSize: '0.7rem',
+                          fontSize: '0.72rem',
                           fontWeight: 700,
                           cursor: 'pointer',
                         }}
                       >
                         <Eye size={12} color="#fb7185" /> Aadhaar Front
                       </button>
+                    ) : (
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: '95px',
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px dashed rgba(225, 29, 72, 0.25)',
+                          borderRadius: '8px',
+                          padding: '6px 8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fda4af',
+                          fontSize: '0.68rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        No Front Photo
+                      </div>
                     )}
-                    {playerToInspect.kyc.aadhaarBackPhotoUrl && (
+                    {playerToInspect.kyc.aadhaarBackPhotoUrl ? (
                       <button
                         type="button"
                         onClick={() => setViewingDoc({ title: `${playerToInspect.fullName} - Aadhaar Back`, url: playerToInspect.kyc.aadhaarBackPhotoUrl! })}
                         style={{
                           flex: 1,
                           minWidth: '95px',
-                          background: 'rgba(225, 29, 72, 0.12)',
-                          border: '1px solid rgba(225, 29, 72, 0.35)',
+                          background: 'rgba(225, 29, 72, 0.18)',
+                          border: '1px solid rgba(225, 29, 72, 0.45)',
                           borderRadius: '8px',
                           padding: '6px 8px',
                           display: 'flex',
@@ -631,23 +677,42 @@ export const MobileSecurityPortal: React.FC = () => {
                           justifyContent: 'center',
                           gap: '4px',
                           color: '#ffffff',
-                          fontSize: '0.7rem',
+                          fontSize: '0.72rem',
                           fontWeight: 700,
                           cursor: 'pointer',
                         }}
                       >
                         <Eye size={12} color="#fb7185" /> Aadhaar Back
                       </button>
+                    ) : (
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: '95px',
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px dashed rgba(225, 29, 72, 0.25)',
+                          borderRadius: '8px',
+                          padding: '6px 8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fda4af',
+                          fontSize: '0.68rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        No Back Photo
+                      </div>
                     )}
-                    {playerToInspect.kyc.panPhotoUrl && (
+                    {playerToInspect.kyc.panPhotoUrl ? (
                       <button
                         type="button"
                         onClick={() => setViewingDoc({ title: `${playerToInspect.fullName} - PAN Card Photo`, url: playerToInspect.kyc.panPhotoUrl! })}
                         style={{
                           flex: 1,
                           minWidth: '95px',
-                          background: 'rgba(56, 189, 248, 0.12)',
-                          border: '1px solid rgba(56, 189, 248, 0.35)',
+                          background: 'rgba(56, 189, 248, 0.18)',
+                          border: '1px solid rgba(56, 189, 248, 0.45)',
                           borderRadius: '8px',
                           padding: '6px 8px',
                           display: 'flex',
@@ -655,13 +720,32 @@ export const MobileSecurityPortal: React.FC = () => {
                           justifyContent: 'center',
                           gap: '4px',
                           color: '#ffffff',
-                          fontSize: '0.7rem',
+                          fontSize: '0.72rem',
                           fontWeight: 700,
                           cursor: 'pointer',
                         }}
                       >
                         <Eye size={12} color="#38bdf8" /> PAN Photo
                       </button>
+                    ) : (
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: '95px',
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px dashed rgba(56, 189, 248, 0.25)',
+                          borderRadius: '8px',
+                          padding: '6px 8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#7dd3fc',
+                          fontSize: '0.68rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        No PAN Photo
+                      </div>
                     )}
                   </div>
 

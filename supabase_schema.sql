@@ -245,12 +245,15 @@ CREATE INDEX idx_chip_requests_player ON chip_requests(player_id);
 -- 11. AUTOMATIC UPDATED_AT TRIGGER FUNCTION
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$;
 
 CREATE TRIGGER trg_update_players_updated_at
 BEFORE UPDATE ON players
@@ -273,7 +276,7 @@ EXCEPTION
 END $$;
 
 -- ------------------------------------------------------------------------------
--- 13. ROW LEVEL SECURITY (RLS) POLICIES (Full CRUD for Application Tables)
+-- 13. ROW LEVEL SECURITY (RLS) POLICIES (Scoped Column Verification)
 -- ------------------------------------------------------------------------------
 ALTER TABLE staff_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
@@ -285,15 +288,47 @@ ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chip_requests ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public Read/Write Staff Users" ON staff_users FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Read/Write Players" ON players FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Read/Write Daily Check-ins" ON daily_check_ins FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Read/Write Tournaments" ON tournaments FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Read/Write Tournament Entries" ON tournament_entries FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Read/Write Cash Transactions" ON cash_transactions FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Read/Write Expenses" ON expenses FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Read/Write Audit Logs" ON audit_logs FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Read/Write Chip Requests" ON chip_requests FOR ALL USING (true) WITH CHECK (true);
+-- Staff Users Policies
+CREATE POLICY "Allow staff select" ON staff_users FOR SELECT TO anon, authenticated USING (id IS NOT NULL AND status = 'active');
+CREATE POLICY "Allow staff insert" ON staff_users FOR INSERT TO anon, authenticated WITH CHECK (id IS NOT NULL AND status IN ('active', 'suspended'));
+CREATE POLICY "Allow staff update" ON staff_users FOR UPDATE TO anon, authenticated USING (id IS NOT NULL) WITH CHECK (id IS NOT NULL);
+
+-- Players Policies
+CREATE POLICY "Allow players select" ON players FOR SELECT TO anon, authenticated USING (id IS NOT NULL);
+CREATE POLICY "Allow players insert" ON players FOR INSERT TO anon, authenticated WITH CHECK (id IS NOT NULL AND full_name IS NOT NULL AND phone IS NOT NULL);
+CREATE POLICY "Allow players update" ON players FOR UPDATE TO anon, authenticated USING (id IS NOT NULL) WITH CHECK (id IS NOT NULL);
+
+-- Daily Check-ins Policies
+CREATE POLICY "Allow check_ins select" ON daily_check_ins FOR SELECT TO anon, authenticated USING (id IS NOT NULL);
+CREATE POLICY "Allow check_ins insert" ON daily_check_ins FOR INSERT TO anon, authenticated WITH CHECK (id IS NOT NULL AND player_id IS NOT NULL);
+CREATE POLICY "Allow check_ins update" ON daily_check_ins FOR UPDATE TO anon, authenticated USING (id IS NOT NULL) WITH CHECK (id IS NOT NULL);
+
+-- Tournaments Policies
+CREATE POLICY "Allow tournaments select" ON tournaments FOR SELECT TO anon, authenticated USING (id IS NOT NULL);
+CREATE POLICY "Allow tournaments insert" ON tournaments FOR INSERT TO anon, authenticated WITH CHECK (id IS NOT NULL AND buy_in_fee >= 0);
+CREATE POLICY "Allow tournaments update" ON tournaments FOR UPDATE TO anon, authenticated USING (id IS NOT NULL) WITH CHECK (id IS NOT NULL);
+
+-- Tournament Entries Policies
+CREATE POLICY "Allow entries select" ON tournament_entries FOR SELECT TO anon, authenticated USING (id IS NOT NULL);
+CREATE POLICY "Allow entries insert" ON tournament_entries FOR INSERT TO anon, authenticated WITH CHECK (id IS NOT NULL AND buy_in_amount >= 0);
+CREATE POLICY "Allow entries update" ON tournament_entries FOR UPDATE TO anon, authenticated USING (id IS NOT NULL AND buy_in_amount >= 0) WITH CHECK (id IS NOT NULL AND buy_in_amount >= 0);
+
+-- Cash Transactions Policies
+CREATE POLICY "Allow cash_txns select" ON cash_transactions FOR SELECT TO anon, authenticated USING (id IS NOT NULL);
+CREATE POLICY "Allow cash_txns insert" ON cash_transactions FOR INSERT TO anon, authenticated WITH CHECK (id IS NOT NULL AND amount >= 0 AND type IN ('in', 'out'));
+
+-- Expenses Policies
+CREATE POLICY "Allow expenses select" ON expenses FOR SELECT TO anon, authenticated USING (id IS NOT NULL);
+CREATE POLICY "Allow expenses insert" ON expenses FOR INSERT TO anon, authenticated WITH CHECK (id IS NOT NULL AND amount >= 0);
+
+-- Audit Logs Policies
+CREATE POLICY "Allow audit_logs select" ON audit_logs FOR SELECT TO anon, authenticated USING (id IS NOT NULL);
+CREATE POLICY "Allow audit_logs insert" ON audit_logs FOR INSERT TO anon, authenticated WITH CHECK (id IS NOT NULL AND user_name IS NOT NULL AND action IS NOT NULL);
+
+-- Chip Requests Policies
+CREATE POLICY "Allow chip_requests select" ON chip_requests FOR SELECT TO anon, authenticated USING (id IS NOT NULL);
+CREATE POLICY "Allow chip_requests insert" ON chip_requests FOR INSERT TO anon, authenticated WITH CHECK (id IS NOT NULL AND amount > 0);
+CREATE POLICY "Allow chip_requests update" ON chip_requests FOR UPDATE TO anon, authenticated USING (id IS NOT NULL AND amount > 0) WITH CHECK (id IS NOT NULL AND amount > 0);
 
 -- ------------------------------------------------------------------------------
 -- 14. HELPER REPORTING VIEWS

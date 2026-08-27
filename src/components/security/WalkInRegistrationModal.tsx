@@ -50,18 +50,14 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
     if (!fullName.trim()) errs.fullName = 'Full Name is required.';
     if (!phone.trim()) errs.phone = 'Mobile Number is required.';
 
-    const cleanAadhaar = aadhaarNumber.replace(/\D/g, '');
-    if (!cleanAadhaar) {
-      errs.aadhaarNumber = 'Aadhaar Card number is required.';
-    } else if (cleanAadhaar.length !== 12) {
-      errs.aadhaarNumber = 'Aadhaar must be 12 digits.';
+    const rawAadhaar = aadhaarNumber.replace(/\D/g, '');
+    if (rawAadhaar && rawAadhaar.length !== 12) {
+      errs.aadhaarNumber = 'Aadhaar must be 12 digits (or leave empty).';
     }
 
     const cleanPan = panNumber.trim().toUpperCase();
-    if (!cleanPan) {
-      errs.panNumber = 'PAN Card number is required.';
-    } else if (cleanPan.length !== 10) {
-      errs.panNumber = 'PAN must be 10 characters.';
+    if (cleanPan && cleanPan.length !== 10) {
+      errs.panNumber = 'PAN must be 10 characters (or leave empty).';
     }
 
     if (Object.keys(errs).length > 0) {
@@ -72,18 +68,24 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
     setSubmitting(true);
 
     try {
+      const cleanAadhaar = aadhaarNumber.trim();
+      const hasId = cleanAadhaar || cleanPan;
+      const combinedGovtId = (cleanPan && cleanAadhaar)
+        ? `PAN: ${cleanPan} | Aadhaar: ${cleanAadhaar}`
+        : (cleanPan ? `PAN: ${cleanPan}` : (cleanAadhaar ? `Aadhaar: ${cleanAadhaar}` : 'Walk-in Check-in'));
+
       const result = registerNewPlayer(
         {
           fullName: fullName.trim(),
           phone: phone.trim(),
           email: email.trim() || `member.${Date.now().toString().slice(-4)}@club-restraddle.com`,
-          aadhaarNumber: aadhaarNumber.trim(),
-          panNumber: cleanPan,
+          aadhaarNumber: cleanAadhaar || undefined,
+          panNumber: cleanPan || undefined,
           aadhaarPhotoUrl: aadhaarPhotoUrl || undefined,
           aadhaarBackPhotoUrl: aadhaarBackPhotoUrl || undefined,
           panPhotoUrl: panPhotoUrl || undefined,
-          govtIdType: 'Aadhaar & PAN Card',
-          govtIdNumber: `PAN: ${cleanPan} | Aadhaar: ${aadhaarNumber.trim()}`,
+          govtIdType: hasId ? 'Aadhaar & PAN Card' : 'Walk-in Guest',
+          govtIdNumber: combinedGovtId,
           address: address.trim() || 'Delhi NCR, India',
           emergencyContactName: '',
           emergencyContactPhone: '',
@@ -168,33 +170,32 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
           {errors.phone && <span style={{ color: '#f87171', fontSize: '0.75rem' }}>{errors.phone}</span>}
         </div>
 
-        {/* Two ID Proofs Grid (Aadhaar + PAN) */}
+        {/* Two ID Proofs Grid (Aadhaar + PAN) - Optional for rapid walk-in */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CreditCard size={14} color="#f43f5e" /> 1. Aadhaar Number *
+              <CreditCard size={14} color="#f43f5e" /> 1. Aadhaar Number <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400 }}>(Optional)</span>
             </label>
             <input
               type="text"
               className="form-input"
-              placeholder="12 digits (5432...)"
+              placeholder="12 digits (optional for walk-in)"
               value={aadhaarNumber}
               maxLength={14}
               onChange={e => setAadhaarNumber(e.target.value)}
-              required
             />
             {errors.aadhaarNumber && <span style={{ color: '#f87171', fontSize: '0.75rem' }}>{errors.aadhaarNumber}</span>}
             <DocumentPhotoUpload
               id="walkin-aadhaar-doc"
               label="Aadhaar Card (Front)"
-              subLabel="Choose front photo from gallery or camera"
+              subLabel="Optional photo from camera/gallery"
               value={aadhaarPhotoUrl}
               onChange={(url) => setAadhaarPhotoUrl(url || '')}
             />
             <DocumentPhotoUpload
               id="walkin-aadhaar-back-doc"
               label="Aadhaar Card (Back)"
-              subLabel="Choose back photo with address from gallery or camera"
+              subLabel="Optional back photo"
               value={aadhaarBackPhotoUrl}
               onChange={(url) => setAadhaarBackPhotoUrl(url || '')}
             />
@@ -202,23 +203,22 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
 
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <BadgeCheck size={14} color="#f43f5e" /> 2. PAN Card *
+              <BadgeCheck size={14} color="#f43f5e" /> 2. PAN Card <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400 }}>(Optional)</span>
             </label>
             <input
               type="text"
               className="form-input"
-              placeholder="ABCDE1234F"
+              placeholder="10 chars (e.g. ABCDE1234F)"
               value={panNumber}
               maxLength={10}
               style={{ textTransform: 'uppercase', fontFamily: 'monospace' }}
               onChange={e => setPanNumber(e.target.value.toUpperCase())}
-              required
             />
             {errors.panNumber && <span style={{ color: '#f87171', fontSize: '0.75rem' }}>{errors.panNumber}</span>}
             <DocumentPhotoUpload
               id="walkin-pan-doc"
               label="PAN Card"
-              subLabel="Auto-compressed photo"
+              subLabel="Optional photo from camera/gallery"
               value={panPhotoUrl}
               onChange={(url) => setPanPhotoUrl(url || '')}
             />
@@ -242,7 +242,7 @@ export const WalkInRegistrationModal: React.FC<WalkInRegistrationModalProps> = (
               Instant KYC & Door Entry Clearance
             </div>
             <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
-              Directly verify Aadhaar & PAN and clear player for gaming floor
+              Clear player immediately, or uncheck to review manually in entrance queue
             </div>
           </div>
           <input

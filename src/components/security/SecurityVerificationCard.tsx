@@ -36,13 +36,15 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
   player,
   checkIn,
 }) => {
-  const { approvePlayerEntry, rejectPlayerEntry, reviewKYC, staffName, fetchPlayerKycDocs } = useClub();
+  const { approvePlayerEntry, rejectPlayerEntry, reviewKYC, staffName, fetchPlayerKycDocs, players } = useClub();
+
+  const activePlayer = players.find(p => p.id === player.id) || player;
 
   useEffect(() => {
-    if (player?.id) {
-      fetchPlayerKycDocs(player.id);
+    if (activePlayer?.id) {
+      fetchPlayerKycDocs(activePlayer.id);
     }
-  }, [player?.id, fetchPlayerKycDocs]);
+  }, [activePlayer?.id, fetchPlayerKycDocs]);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isRejectKycModalOpen, setIsRejectKycModalOpen] = useState(false);
@@ -69,8 +71,8 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const cleanAadhaar = formatAadhaarNumber(player.kyc.aadhaarNumber, player.kyc.govtIdNumber);
-  const cleanPan = formatPanNumber(player.kyc.panNumber, player.kyc.govtIdNumber);
+  const cleanAadhaar = formatAadhaarNumber(activePlayer.kyc.aadhaarNumber, activePlayer.kyc.govtIdNumber);
+  const cleanPan = formatPanNumber(activePlayer.kyc.panNumber, activePlayer.kyc.govtIdNumber);
 
   const [printBillOnApproval, setPrintBillOnApproval] = useState(false);
 
@@ -351,12 +353,12 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
 
           {/* Attached Document Buttons */}
           <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
-            {player.kyc.aadhaarPhotoUrl ? (
+            {activePlayer.kyc.aadhaarPhotoUrl ? (
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 style={{ flex: 1, padding: '5px 8px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'rgba(225,29,72,0.15)', borderColor: 'rgba(225,29,72,0.45)', color: '#ffffff', fontWeight: 700 }}
-                onClick={() => setViewingDoc({ title: `Aadhaar Front Photo - ${player.fullName}`, url: player.kyc.aadhaarPhotoUrl! })}
+                onClick={() => setViewingDoc({ title: `Aadhaar Front Photo - ${activePlayer.fullName}`, url: activePlayer.kyc.aadhaarPhotoUrl! })}
               >
                 <Eye size={12} color="#fb7185" /> Front Photo
               </button>
@@ -365,12 +367,12 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
                 No Front
               </div>
             )}
-            {player.kyc.aadhaarBackPhotoUrl ? (
+            {activePlayer.kyc.aadhaarBackPhotoUrl ? (
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 style={{ flex: 1, padding: '5px 8px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'rgba(225,29,72,0.15)', borderColor: 'rgba(225,29,72,0.45)', color: '#ffffff', fontWeight: 700 }}
-                onClick={() => setViewingDoc({ title: `Aadhaar Back Photo - ${player.fullName}`, url: player.kyc.aadhaarBackPhotoUrl! })}
+                onClick={() => setViewingDoc({ title: `Aadhaar Back Photo - ${activePlayer.fullName}`, url: activePlayer.kyc.aadhaarBackPhotoUrl! })}
               >
                 <Eye size={12} color="#fb7185" /> Back Photo
               </button>
@@ -423,12 +425,12 @@ export const SecurityVerificationCard: React.FC<SecurityVerificationCardProps> =
 
           {/* Attached PAN Document Button */}
           <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
-            {player.kyc.panPhotoUrl ? (
+            {activePlayer.kyc.panPhotoUrl ? (
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
                 style={{ flex: 1, padding: '5px 8px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', background: 'rgba(56, 189, 248, 0.15)', borderColor: 'rgba(56, 189, 248, 0.45)', color: '#ffffff', fontWeight: 700 }}
-                onClick={() => setViewingDoc({ title: `PAN Card Photo - ${player.fullName}`, url: player.kyc.panPhotoUrl! })}
+                onClick={() => setViewingDoc({ title: `PAN Card Photo - ${activePlayer.fullName}`, url: activePlayer.kyc.panPhotoUrl! })}
               >
                 <Eye size={12} color="#38bdf8" /> View PAN Photo
               </button>

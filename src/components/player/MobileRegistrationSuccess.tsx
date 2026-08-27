@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, Check, CheckCircle2, Clock3, QrCode, ShieldCheck, FileText, ShieldAlert, Eye } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Player, DailyCheckIn } from '../../types';
-import { formatPlayerNumber, formatCurrency, formatTimeOnly } from '../../utils/formatters';
+import { formatPlayerNumber, formatCurrency, formatTimeOnly, formatAadhaarNumber, formatPanNumber } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
 import { useClub } from '../../context/ClubContext';
@@ -169,9 +169,9 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
             <strong>{player.fullName}</strong>
             <span>Player ID {formatPlayerNumber(player)} • {player.phone}</span>
             <div style={{ fontSize: '0.72rem', color: '#fda4af', marginTop: '4px', display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <span>Aadhaar: <strong style={{ color: '#ffffff', fontFamily: 'monospace' }}>{player.kyc.aadhaarNumber || 'UIDAI Verified'}</strong></span>
+              <span>Aadhaar: <strong style={{ color: '#ffffff', fontFamily: 'monospace' }}>{formatAadhaarNumber(player.kyc.aadhaarNumber, player.kyc.govtIdNumber) || 'UIDAI Verified'}</strong></span>
               <span>•</span>
-              <span>PAN: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{player.kyc.panNumber || 'PAN Verified'}</strong></span>
+              <span>PAN: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{formatPanNumber(player.kyc.panNumber, player.kyc.govtIdNumber) || 'PAN Verified'}</strong></span>
             </div>
           </div>
         </div>

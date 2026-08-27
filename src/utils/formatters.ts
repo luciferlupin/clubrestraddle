@@ -261,18 +261,31 @@ export const generateReceiptNumber = (prefix: string = 'REC'): string => {
 
 export const maskGovtId = (idNumber: string): string => {
   if (!idNumber) return '';
-  const clean = idNumber.replace(/\s+/g, '');
+  const clean = idNumber.trim();
+  
+  // If combined ID string (e.g. "PAN: ... | Aadhaar: ..."), try extracting and masking PAN or Aadhaar
+  if (clean.includes('|') || clean.toUpperCase().includes('AADHAAR') || clean.toUpperCase().includes('PAN:')) {
+    const aadhaarPart = formatAadhaarNumber(undefined, clean);
+    const panPart = formatPanNumber(undefined, clean);
+    if (panPart && aadhaarPart) {
+      return `PAN: •••••${panPart.slice(-4)} | Aadhaar: •••• •••• ${aadhaarPart.replace(/\s/g, '').slice(-4)}`;
+    }
+    if (panPart) return `•••••${panPart.slice(-4)}`;
+    if (aadhaarPart) return `•••• •••• ${aadhaarPart.replace(/\s/g, '').slice(-4)}`;
+  }
+
+  const digitsOrChars = clean.replace(/\s+/g, '');
   // Aadhaar 12-digit format
-  if (clean.length === 12 && /^\d+$/.test(clean)) {
-    return `•••• •••• ${clean.slice(-4)}`;
+  if (digitsOrChars.length === 12 && /^\d+$/.test(digitsOrChars)) {
+    return `•••• •••• ${digitsOrChars.slice(-4)}`;
   }
   // PAN 10-character format (ABCDE1234F)
-  if (clean.length === 10 && /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(clean)) {
-    return `•••••${clean.slice(5).toUpperCase()}`;
+  if (digitsOrChars.length === 10 && /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(digitsOrChars)) {
+    return `•••••${digitsOrChars.slice(5).toUpperCase()}`;
   }
-  if (clean.length <= 4) return clean;
-  const visible = clean.slice(-4);
-  const masked = '•'.repeat(Math.min(clean.length - 4, 8));
+  if (digitsOrChars.length <= 4) return digitsOrChars;
+  const visible = digitsOrChars.slice(-4);
+  const masked = '•'.repeat(Math.min(digitsOrChars.length - 4, 8));
   return `${masked}${visible}`;
 };
 
@@ -288,13 +301,23 @@ export const formatAadhaarNumber = (aadhaarNumber?: string, govtIdNumber?: strin
   const storedId = govtIdNumber?.trim() || '';
   if (!storedId) return '';
 
-  const embedded = storedId.match(/Aadhaar:\s*([\d\s]{12,16})/i)?.[1]?.trim();
+  // Match Aadhaar/Aadhar/UID/UIDAI prefix with 12 digits or formatted 12 digits
+  const embedded = storedId.match(/(?:Aadha?ar|UIDAI|UID)[:\s\-]+([\d\s]{12,16})/i)?.[1]?.trim();
   if (embedded) {
     const raw = embedded.replace(/\D/g, '');
     if (raw.length === 12) {
       return `${raw.slice(0, 4)} ${raw.slice(4, 8)} ${raw.slice(8, 12)}`;
     }
     return embedded;
+  }
+
+  // Check if there is any 12 digit block in storedId
+  const match12 = storedId.match(/\b(\d{4}\s?\d{4}\s?\d{4})\b/);
+  if (match12) {
+    const raw = match12[1].replace(/\D/g, '');
+    if (raw.length === 12) {
+      return `${raw.slice(0, 4)} ${raw.slice(4, 8)} ${raw.slice(8, 12)}`;
+    }
   }
 
   const digitsOnly = storedId.replace(/\D/g, '');
@@ -307,13 +330,16 @@ export const formatAadhaarNumber = (aadhaarNumber?: string, govtIdNumber?: strin
 
 export const formatPanNumber = (panNumber?: string, govtIdNumber?: string): string => {
   if (panNumber && panNumber.trim()) {
-    return panNumber.trim().toUpperCase();
+    const clean = panNumber.trim().toUpperCase();
+    const panMatch = clean.match(/[A-Z]{5}[0-9]{4}[A-Z]/);
+    if (panMatch) return panMatch[0];
+    return clean;
   }
 
   const storedId = govtIdNumber?.trim() || '';
   if (!storedId) return '';
 
-  const embedded = storedId.match(/PAN:\s*([A-Z0-9]{10})/i)?.[1]?.trim();
+  const embedded = storedId.match(/PAN[:\s\-]+([A-Z0-9]{10})/i)?.[1]?.trim();
   if (embedded) {
     return embedded.toUpperCase();
   }

@@ -92,9 +92,12 @@ export const SecurityPortal: React.FC = () => {
   const pendingCheckIn = todayCheckIns.find(c => c.verificationStatus === 'pending');
   const firstPendingPlayer = pendingCheckIn
     ? players.find(p => p.id === pendingCheckIn.playerId) || null
-    : players.find(p => p.kycStatus === 'pending') || null;
+    : null;
 
-  const focusedPlayer = selectedPlayer || firstPendingPlayer;
+  const rawFocusedPlayer = selectedPlayer || firstPendingPlayer;
+  const focusedPlayer = rawFocusedPlayer
+    ? players.find(p => p.id === rawFocusedPlayer.id) || rawFocusedPlayer
+    : null;
   const focusedCheckIn = focusedPlayer
     ? todayCheckIns.find(c => c.playerId === focusedPlayer.id)
     : undefined;

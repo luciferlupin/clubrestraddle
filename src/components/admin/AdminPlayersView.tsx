@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Search, ShieldCheck, CheckCircle, XCircle, Eye, Edit3, Trash2, UserCheck, Calendar, AlertTriangle, Wallet, Trophy, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, KYCStatus, MembershipTier } from '../../types';
-import { formatDateOnly, formatDateTime, maskGovtId, formatFullAadhaar, formatPanNumber, formatPlayerNumber, formatCurrency } from '../../utils/formatters';
+import { formatDateOnly, formatDateTime, maskGovtId, formatFullAadhaar, formatAadhaarNumber, formatPanNumber, formatPlayerNumber, formatCurrency } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
@@ -39,6 +39,8 @@ export const AdminPlayersView: React.FC = () => {
   const [editFullName, setEditFullName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  const [editAadhaarNumber, setEditAadhaarNumber] = useState('');
+  const [editPanNumber, setEditPanNumber] = useState('');
   const [editTier, setEditTier] = useState<MembershipTier>('Standard');
   const [editAddress, setEditAddress] = useState('');
   const [editAadhaarPhotoUrl, setEditAadhaarPhotoUrl] = useState('');
@@ -56,7 +58,10 @@ export const AdminPlayersView: React.FC = () => {
           p.fullName.toLowerCase().includes(search.toLowerCase()) ||
           p.phone.includes(search) ||
           p.id.toLowerCase().includes(search.toLowerCase()) ||
-          p.email.toLowerCase().includes(search.toLowerCase())
+          p.email.toLowerCase().includes(search.toLowerCase()) ||
+          (p.kyc?.aadhaarNumber || '').replace(/\s/g, '').includes(search.replace(/\s/g, '')) ||
+          (p.kyc?.panNumber || '').toLowerCase().includes(search.toLowerCase()) ||
+          (p.kyc?.govtIdNumber || '').toLowerCase().includes(search.toLowerCase())
       ))
     .sort((a, b) => {
       if (a.kycStatus === 'pending' && b.kycStatus !== 'pending') return -1;
@@ -79,6 +84,8 @@ export const AdminPlayersView: React.FC = () => {
     setEditFullName(player.fullName);
     setEditPhone(player.phone);
     setEditEmail(player.email);
+    setEditAadhaarNumber(player.kyc?.aadhaarNumber || formatAadhaarNumber(undefined, player.kyc?.govtIdNumber));
+    setEditPanNumber(player.kyc?.panNumber || formatPanNumber(undefined, player.kyc?.govtIdNumber));
     setEditTier(player.membershipTier);
     setEditAddress(player.kyc?.address || '');
     setEditAadhaarPhotoUrl(player.kyc?.aadhaarPhotoUrl || '');
@@ -92,6 +99,12 @@ export const AdminPlayersView: React.FC = () => {
     e.preventDefault();
     if (!selectedPlayer) return;
 
+    const cleanAadhaar = editAadhaarNumber.trim();
+    const cleanPan = editPanNumber.trim().toUpperCase();
+    const combinedGovtId = cleanPan && cleanAadhaar
+      ? `PAN: ${cleanPan} | Aadhaar: ${cleanAadhaar}`
+      : (cleanPan || cleanAadhaar || selectedPlayer.kyc.govtIdNumber || 'KYC-PENDING');
+
     updatePlayer(selectedPlayer.id, {
       fullName: editFullName,
       phone: editPhone,
@@ -103,6 +116,9 @@ export const AdminPlayersView: React.FC = () => {
         fullName: editFullName,
         phone: editPhone,
         email: editEmail,
+        aadhaarNumber: cleanAadhaar,
+        panNumber: cleanPan,
+        govtIdNumber: combinedGovtId,
         address: editAddress,
         aadhaarPhotoUrl: editAadhaarPhotoUrl,
         aadhaarBackPhotoUrl: editAadhaarBackPhotoUrl,
@@ -158,7 +174,7 @@ export const AdminPlayersView: React.FC = () => {
               <th>Member</th>
               <th>Tier</th>
               <th>Contact Phone</th>
-              <th>Full Aadhaar Number</th>
+              <th>Govt ID (Aadhaar & PAN)</th>
               <th>KYC Status</th>
               <th>Wallet Balance</th>
               <th>Visits</th>
@@ -169,7 +185,7 @@ export const AdminPlayersView: React.FC = () => {
           <tbody>
             {paginatedPlayers.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                <td colSpan={9} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
                   No members found matching your search.
                 </td>
               </tr>
@@ -212,7 +228,16 @@ export const AdminPlayersView: React.FC = () => {
                   </td>
                   <td style={{ fontSize: '0.82rem' }}>{p.phone}</td>
                   <td style={{ fontSize: '0.8rem' }}>
-                    <span className="tabular-num">{formatFullAadhaar(p.kyc.aadhaarNumber, p.kyc.govtIdNumber)}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span style={{ fontSize: '0.66rem', color: '#fda4af', fontWeight: 700 }}>Aadhaar:</span>
+                        <span className="tabular-num" style={{ fontFamily: 'monospace', fontWeight: 600 }}>{formatFullAadhaar(p.kyc.aadhaarNumber, p.kyc.govtIdNumber)}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span style={{ fontSize: '0.66rem', color: '#38bdf8', fontWeight: 700 }}>PAN:</span>
+                        <span className="tabular-num" style={{ fontFamily: 'monospace', fontWeight: 600, color: '#38bdf8' }}>{formatPanNumber(p.kyc.panNumber, p.kyc.govtIdNumber) || '—'}</span>
+                      </div>
+                    </div>
                   </td>
                   <td>
                     <KYCBadge status={p.kycStatus} />
@@ -341,13 +366,13 @@ export const AdminPlayersView: React.FC = () => {
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Aadhaar Card</span>
                     <div style={{ fontWeight: 600, color: '#ffffff', fontFamily: 'monospace' }}>
-                      {formatFullAadhaar(selectedPlayer.kyc.aadhaarNumber, selectedPlayer.kyc.govtIdNumber)}
+                      {formatFullAadhaar(activeSelectedPlayer?.kyc.aadhaarNumber || selectedPlayer.kyc.aadhaarNumber, activeSelectedPlayer?.kyc.govtIdNumber || selectedPlayer.kyc.govtIdNumber)}
                     </div>
                   </div>
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>PAN Card</span>
                     <div style={{ fontWeight: 600, color: '#38bdf8', fontFamily: 'monospace' }}>
-                      {formatPanNumber(selectedPlayer.kyc.panNumber, selectedPlayer.kyc.govtIdNumber) || 'PAN Verified'}
+                      {formatPanNumber(activeSelectedPlayer?.kyc.panNumber || selectedPlayer.kyc.panNumber, activeSelectedPlayer?.kyc.govtIdNumber || selectedPlayer.kyc.govtIdNumber) || 'PAN Verified'}
                     </div>
                   </div>
                 </div>
@@ -629,6 +654,29 @@ export const AdminPlayersView: React.FC = () => {
                   <option value="Platinum">Platinum</option>
                   <option value="VIP">VIP</option>
                 </select>
+              </div>
+            </div>
+
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label className="form-label">1. Aadhaar Card Number</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editAadhaarNumber}
+                  onChange={e => setEditAadhaarNumber(e.target.value)}
+                  placeholder="12-digit Aadhaar number"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">2. PAN Card Number</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editPanNumber}
+                  onChange={e => setEditPanNumber(e.target.value.toUpperCase())}
+                  placeholder="10-char PAN (e.g. ABCDE1234F)"
+                />
               </div>
             </div>
 
