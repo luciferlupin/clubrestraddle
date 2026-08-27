@@ -385,6 +385,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
             bgColor="#ffffff"
             fgColor="#0f172a"
             level="H"
+            includeMargin={true}
           />
           <span style={{ color: '#0f172a', fontSize: '0.74rem', fontWeight: 800, marginTop: '8px', letterSpacing: '0.04em' }}>
             DOOR CLEARANCE QR PASS • PLAYER ID {formatPlayerNumber(registeredData.player)}

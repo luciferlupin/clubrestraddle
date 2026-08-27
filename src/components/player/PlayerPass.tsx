@@ -133,6 +133,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
               bgColor="#ffffff"
               fgColor="#0f172a"
               level="M"
+              includeMargin={true}
             />
           </div>
         </button>
@@ -165,6 +166,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
               bgColor="#ffffff"
               fgColor="#0f172a"
               level="H"
+              includeMargin={true}
             />
             <span style={{ color: '#0f172a', fontSize: '0.76rem', fontWeight: 800, marginTop: '10px', letterSpacing: '0.04em' }}>
               {formatPlayerNumber(player)} • {player.fullName}

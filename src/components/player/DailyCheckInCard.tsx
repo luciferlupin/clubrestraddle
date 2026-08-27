@@ -120,6 +120,7 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
                       bgColor="#ffffff"
                       fgColor="#0f172a"
                       level="H"
+                      includeMargin={true}
                     />
                     <span style={{ color: '#0f172a', fontSize: '0.68rem', fontWeight: 800, marginTop: '6px', letterSpacing: '0.04em' }}>
                       DOOR CLEARANCE QR PASS

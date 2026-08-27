@@ -162,7 +162,7 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
           </span>
         </div>
         <div className="registration-pass-qr">
-          <QRCodeSVG value={verificationUrl} size={190} bgColor="#ffffff" fgColor="#0f172a" level="H" />
+          <QRCodeSVG value={verificationUrl} size={190} bgColor="#ffffff" fgColor="#0f172a" level="H" includeMargin={true} />
         </div>
         <div className="registration-pass-identity">
           <div>

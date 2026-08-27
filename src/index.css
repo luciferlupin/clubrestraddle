@@ -6623,3 +6623,18 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   border-color: #f43f5e;
 }
 
+/* QR Scanner Viewfinder Laser Animation */
+@keyframes scannerLaser {
+  0% {
+    top: 10%;
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 90%;
+    opacity: 0.85;
+  }
+}
+

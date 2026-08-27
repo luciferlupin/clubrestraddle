@@ -67,7 +67,7 @@ export const ClubQRModal: React.FC<ClubQRModalProps> = ({
               bgColor="#ffffff"
               fgColor="#0f172a"
               level="H"
-              includeMargin={false}
+              includeMargin={true}
             />
           </div>
           <span style={{ color: '#0f172a', fontSize: '0.72rem', fontWeight: 800, marginTop: '10px', letterSpacing: '0.05em' }}>

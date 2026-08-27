@@ -6,20 +6,23 @@ import {
   ChevronRight,
   Upload,
   RefreshCw,
-  Sparkles,
   Zap,
+  ZapOff,
   Printer,
   FileText,
+  SwitchCamera,
+  Check,
+  X,
+  AlertCircle,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { useClub } from '../../context/ClubContext';
-import { Player, DailyCheckIn } from '../../types';
+import { Player, DailyCheckIn, PaymentMethod } from '../../types';
 import { formatTimeOnly, formatAadhaarNumber, formatPanNumber, formatPlayerNumber } from '../../utils/formatters';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
 import confetti from 'canvas-confetti';
-
 import jsQR from 'jsqr';
 
 interface QRScannerModalProps {
@@ -28,12 +31,54 @@ interface QRScannerModalProps {
   onSelectPlayer: (player: Player, checkIn?: DailyCheckIn) => void;
 }
 
+/** Play short cheerful verification chime via Web Audio API */
+const playScanChime = () => {
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.08); // A6
+    gain.gain.setValueAtTime(0.22, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.005, ctx.currentTime + 0.12);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch {
+    // AudioContext blocked or not supported
+  }
+};
+
+/** Trigger device haptic vibration if supported */
+const triggerHaptic = () => {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([80, 40, 80]);
+    } catch {
+      // Ignore
+    }
+  }
+};
+
 export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   isOpen,
   onClose,
   onSelectPlayer,
 }) => {
-  const { players, todayCheckIns, approvePlayerEntry, rejectPlayerEntry, performDailyCheckIn, lookupMemberByPhone, staffName } = useClub();
+  const {
+    players,
+    todayCheckIns,
+    checkIns,
+    approvePlayerEntry,
+    rejectPlayerEntry,
+    lookupMemberByPhone,
+    staffName,
+  } = useClub();
+
   const [manualCode, setManualCode] = useState('');
   const [cameraActive, setCameraActive] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -45,54 +90,98 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   const [rejectReason, setRejectReason] = useState('Govt ID details mismatch or expired identification.');
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [entryInvoice, setEntryInvoice] = useState<ClubInvoiceData | null>(null);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [hasTorch, setHasTorch] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  const [scanSuccessFlash, setScanSuccessFlash] = useState(false);
+  const [doorPaymentMethod, setDoorPaymentMethod] = useState<PaymentMethod>('Cash');
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanLoopRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const lastScannedCodeRef = useRef<string | null>(null);
+  const lastScanTimestampRef = useRef<number>(0);
 
   const pendingCheckIns = todayCheckIns.filter(c => c.verificationStatus === 'pending');
 
+  // Reset states on modal close / open
   useEffect(() => {
-    if (isOpen) return;
-    setScannedResult(null);
-    setScanError(null);
-    setCameraError(null);
-    setManualCode('');
-    setIsSearching(false);
-    setIsVerifying(false);
-    setIsRejecting(false);
+    if (!isOpen) {
+      setScannedResult(null);
+      setScanError(null);
+      setCameraError(null);
+      setManualCode('');
+      setIsSearching(false);
+      setIsVerifying(false);
+      setIsRejecting(false);
+      setTorchOn(false);
+      setScanSuccessFlash(false);
+      lastScannedCodeRef.current = null;
+      lastScanTimestampRef.current = 0;
+    } else {
+      setCameraActive(true);
+    }
   }, [isOpen]);
 
-  const processScanCode = useCallback(async (code: string) => {
+  // Robust scan processor that handles URLs, JSON, IDs, phone numbers, and check-in tokens
+  const processScanCode = useCallback(async (code: string): Promise<boolean> => {
     const trimmed = code.trim();
-    if (!trimmed) return;
+    if (!trimmed) return false;
+
+    // Cooldown check (skip repeated attempts for identical string within 1.2s)
+    const now = Date.now();
+    if (trimmed === lastScannedCodeRef.current && now - lastScanTimestampRef.current < 1200) {
+      return false;
+    }
+    lastScannedCodeRef.current = trimmed;
+    lastScanTimestampRef.current = now;
+
     setScanError(null);
     setIsSearching(true);
 
     try {
       let extractedPlayerId: string | null = null;
       let extractedScanId: string | null = null;
+      let extractedPhone: string | null = null;
 
-      // 1. Try URL parsing if it looks like a URL or query string
+      // 1. Try URL / Query string parsing
       if (trimmed.includes('?') || trimmed.includes('/') || trimmed.startsWith('http')) {
         try {
-          const urlStr = trimmed.startsWith('http') ? trimmed : `https://clubrestraddle.vercel.app/${trimmed.startsWith('?') ? trimmed : `?${trimmed}`}`;
+          const urlStr = trimmed.startsWith('http')
+            ? trimmed
+            : `https://clubrestraddle.vercel.app/${trimmed.startsWith('?') ? trimmed : `?${trimmed}`}`;
           const urlObj = new URL(urlStr);
-          extractedPlayerId = urlObj.searchParams.get('player') || urlObj.searchParams.get('playerId');
-          extractedScanId = urlObj.searchParams.get('scan') || urlObj.searchParams.get('checkInId');
+          extractedPlayerId =
+            urlObj.searchParams.get('player') ||
+            urlObj.searchParams.get('playerId') ||
+            urlObj.searchParams.get('p') ||
+            urlObj.searchParams.get('id') ||
+            urlObj.searchParams.get('member');
+
+          extractedScanId =
+            urlObj.searchParams.get('scan') ||
+            urlObj.searchParams.get('scanId') ||
+            urlObj.searchParams.get('checkInId') ||
+            urlObj.searchParams.get('c');
+
+          extractedPhone =
+            urlObj.searchParams.get('phone') ||
+            urlObj.searchParams.get('mobile') ||
+            urlObj.searchParams.get('m');
         } catch {
-          // Fallback
+          // Fallback if URL parsing failed
         }
       }
 
       // 2. Try JSON parsing
-      if (!extractedPlayerId && trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      if (!extractedPlayerId && !extractedScanId && trimmed.startsWith('{') && trimmed.endsWith('}')) {
         try {
           const parsed = JSON.parse(trimmed);
-          extractedPlayerId = parsed.playerId || parsed.player || parsed.id;
-          extractedScanId = parsed.scan || parsed.checkInId;
+          extractedPlayerId = parsed.playerId || parsed.player || parsed.id || parsed.memberId;
+          extractedScanId = parsed.scan || parsed.checkInId || parsed.scanId;
+          extractedPhone = parsed.phone || parsed.mobile;
         } catch {
           // Fallback
         }
@@ -102,57 +191,92 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       let foundPlayer: Player | undefined;
       let foundCheckIn: DailyCheckIn | undefined;
 
+      // Try finding by Check-In ID
       const searchScanId = extractedScanId || trimmed;
-      foundCheckIn = todayCheckIns.find(
-        c => c.id.toLowerCase() === searchScanId.toLowerCase() || (searchScanId.length > 5 && trimmed.includes(c.id))
-      );
-
-      if (foundCheckIn) {
-        foundPlayer = players.find(p => p.id === foundCheckIn!.playerId);
-      }
-
-      if (!foundPlayer) {
-        const searchPlayerId = extractedPlayerId || trimmed;
-        foundPlayer = players.find(
-          p => p.id.toLowerCase() === searchPlayerId.toLowerCase() || (searchPlayerId.length > 4 && trimmed.includes(p.id))
+      if (searchScanId) {
+        foundCheckIn = todayCheckIns.find(
+          c =>
+            c.id.toLowerCase() === searchScanId.toLowerCase() ||
+            (searchScanId.length > 5 && trimmed.includes(c.id))
         );
-        if (foundPlayer) {
-          foundCheckIn = todayCheckIns.find(c => c.playerId === foundPlayer!.id);
+
+        if (!foundCheckIn) {
+          foundCheckIn = checkIns.find(
+            c =>
+              c.id.toLowerCase() === searchScanId.toLowerCase() ||
+              (searchScanId.length > 5 && trimmed.includes(c.id))
+          );
+        }
+
+        if (foundCheckIn) {
+          foundPlayer = players.find(p => p.id === foundCheckIn!.playerId);
         }
       }
 
-      // 4. If not found in local memory, perform async Supabase live lookup!
+      // Try finding by Player ID / phone / member number in memory
       if (!foundPlayer) {
-        const lookupTarget = extractedPlayerId || extractedScanId || trimmed;
+        const searchPlayerId = extractedPlayerId || extractedPhone || trimmed;
+        const cleanDigits = searchPlayerId.replace(/\D/g, '');
+
+        foundPlayer = players.find(p => {
+          const pDigits = p.phone.replace(/\D/g, '');
+          const pAadhaar = (p.kyc?.aadhaarNumber || '').replace(/\D/g, '');
+          const pPan = (p.kyc?.panNumber || '').toUpperCase();
+          const pGovtId = (p.kyc?.govtIdNumber || '').toLowerCase();
+
+          return (
+            p.id.toLowerCase() === searchPlayerId.toLowerCase() ||
+            (searchPlayerId.length > 3 && trimmed.toLowerCase().includes(p.id.toLowerCase())) ||
+            String(p.memberNumber || '') === searchPlayerId ||
+            (cleanDigits.length >= 10 && pDigits.includes(cleanDigits.slice(-10))) ||
+            (cleanDigits.length === 12 && pAadhaar === cleanDigits) ||
+            (searchPlayerId.length >= 8 && pPan === searchPlayerId.toUpperCase()) ||
+            (searchPlayerId.length >= 6 && pGovtId === searchPlayerId.toLowerCase())
+          );
+        });
+
+        if (foundPlayer) {
+          foundCheckIn =
+            todayCheckIns.find(c => c.playerId === foundPlayer!.id) ||
+            checkIns.find(c => c.playerId === foundPlayer!.id);
+        }
+      }
+
+      // 4. If not found in local memory, perform live async Supabase lookup
+      if (!foundPlayer) {
+        const lookupTarget = extractedPlayerId || extractedScanId || extractedPhone || trimmed;
         const livePlayer = await lookupMemberByPhone(lookupTarget);
         if (livePlayer) {
           foundPlayer = livePlayer;
-          foundCheckIn = todayCheckIns.find(c => c.playerId === livePlayer.id);
+          foundCheckIn =
+            todayCheckIns.find(c => c.playerId === livePlayer.id) ||
+            checkIns.find(c => c.playerId === livePlayer.id);
         }
       }
 
       if (foundPlayer) {
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-          try {
-            navigator.vibrate(100);
-          } catch {
-            // ignore
-          }
-        }
+        playScanChime();
+        triggerHaptic();
+        setScanSuccessFlash(true);
+        setTimeout(() => setScanSuccessFlash(false), 500);
+
         setScannedResult({ player: foundPlayer, checkIn: foundCheckIn });
         setManualCode('');
+        return true;
       } else {
         setScanError(`No player record found for "${trimmed}". Verify the QR pass or register the walk-in player.`);
+        return false;
       }
     } catch (err) {
       console.error('Scan processing error:', err);
       setScanError('Failed to parse scan code. Please try manual entry or photo upload.');
+      return false;
     } finally {
       setIsSearching(false);
     }
-  }, [players, todayCheckIns, lookupMemberByPhone]);
+  }, [players, todayCheckIns, checkIns, lookupMemberByPhone]);
 
-  // Continuous frame scanner using BarcodeDetector + jsQR on video element
+  // Video Frame Scanning Loop with Native BarcodeDetector + Aspect-Preserving jsQR
   useEffect(() => {
     if (!isOpen || !cameraActive || scannedResult) {
       if (scanLoopRef.current) {
@@ -162,16 +286,16 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       return;
     }
 
-    let detector: any = null;
+    let detector: { detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>> } | null = null;
     if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
       try {
-        detector = new (window as any).BarcodeDetector({ formats: ['qr_code', 'code_128', 'ean_13', 'data_matrix'] });
+        const BarcodeDetectorClass = (window as unknown as { BarcodeDetector: new (opts?: { formats: string[] }) => typeof detector }).BarcodeDetector;
+        detector = new BarcodeDetectorClass({ formats: ['qr_code', 'code_128', 'ean_13', 'data_matrix'] });
       } catch (e) {
-        console.warn('BarcodeDetector initialization warning:', e);
+        console.warn('BarcodeDetector warning:', e);
       }
     }
 
-    // Lazy create off-screen canvas for jsQR
     if (!canvasRef.current && typeof document !== 'undefined') {
       canvasRef.current = document.createElement('canvas');
     }
@@ -183,13 +307,14 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       if (!isScanning) return;
 
       const video = videoRef.current;
-      if (video && video.readyState >= 2 && video.videoWidth > 0) {
+      if (video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
         frameSkip++;
-        // Scan every 2nd frame to keep UI responsive and butter smooth
+
+        // Process every 2nd animation frame to ensure high responsiveness
         if (frameSkip % 2 === 0) {
           let detectedCode: string | null = null;
 
-          // Attempt 1: Native BarcodeDetector if available
+          // Attempt 1: Native BarcodeDetector (fastest on Chromium/Android)
           if (detector) {
             try {
               const barcodes = await detector.detect(video);
@@ -197,38 +322,72 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 detectedCode = barcodes[0].rawValue;
               }
             } catch {
-              // Frame skip
+              // Frame detector fallback
             }
           }
 
-          // Attempt 2: High-accuracy jsQR canvas fallback (works on iOS Safari & everywhere)
+          // Attempt 2: High-accuracy jsQR with Aspect Ratio Preservation
           if (!detectedCode && canvasRef.current) {
             try {
               const canvas = canvasRef.current;
               const ctx = canvas.getContext('2d', { willReadFrequently: true });
               if (ctx) {
-                const width = Math.min(video.videoWidth, 640);
-                const height = Math.min(video.videoHeight, 480);
-                canvas.width = width;
-                canvas.height = height;
-                ctx.drawImage(video, 0, 0, width, height);
-                const imageData = ctx.getImageData(0, 0, width, height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                // Pass 2A: Full-frame proportional scale (preserves exact aspect ratio!)
+                const maxDim = 960;
+                let w = video.videoWidth;
+                let h = video.videoHeight;
+                if (w > maxDim || h > maxDim) {
+                  if (w > h) {
+                    h = Math.round((h * maxDim) / w);
+                    w = maxDim;
+                  } else {
+                    w = Math.round((w * maxDim) / h);
+                    h = maxDim;
+                  }
+                }
+
+                canvas.width = w;
+                canvas.height = h;
+                ctx.drawImage(video, 0, 0, w, h);
+                const fullImgData = ctx.getImageData(0, 0, w, h);
+                const code = jsQR(fullImgData.data, w, h, {
                   inversionAttempts: 'attemptBoth',
                 });
+
                 if (code && code.data) {
                   detectedCode = code.data;
                 }
+
+                // Pass 2B: Center Crop Focus (if full frame didn't catch small/distant QR)
+                if (!detectedCode) {
+                  const cropSize = Math.round(Math.min(video.videoWidth, video.videoHeight) * 0.72);
+                  const cropX = Math.round((video.videoWidth - cropSize) / 2);
+                  const cropY = Math.round((video.videoHeight - cropSize) / 2);
+
+                  canvas.width = 480;
+                  canvas.height = 480;
+                  ctx.drawImage(video, cropX, cropY, cropSize, cropSize, 0, 0, 480, 480);
+                  const cropImgData = ctx.getImageData(0, 0, 480, 480);
+                  const cropCode = jsQR(cropImgData.data, 480, 480, {
+                    inversionAttempts: 'attemptBoth',
+                  });
+
+                  if (cropCode && cropCode.data) {
+                    detectedCode = cropCode.data;
+                  }
+                }
               }
             } catch {
-              // Ignore canvas read errors
+              // Ignore frame canvas read errors
             }
           }
 
           if (detectedCode) {
-            isScanning = false;
-            await processScanCode(detectedCode);
-            return;
+            const success = await processScanCode(detectedCode);
+            if (success) {
+              isScanning = false;
+              return;
+            }
           }
         }
       }
@@ -249,11 +408,15 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     };
   }, [isOpen, cameraActive, scannedResult, processScanCode]);
 
-  // Start / stop camera stream
+  // Start & configure camera stream with fallback constraints
   useEffect(() => {
     const stopCurrentStream = () => {
-      streamRef.current?.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+        });
+        streamRef.current = null;
+      }
     };
 
     if (!isOpen || !cameraActive) {
@@ -262,37 +425,115 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     }
 
     let cancelled = false;
+
     const startCamera = async () => {
       setCameraError(null);
+      setHasTorch(false);
+      setTorchOn(false);
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false,
-        });
+        let stream: MediaStream;
+
+        // Try ideal resolution with facingMode first
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: facingMode },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          });
+        } catch {
+          // Fallback to basic facingMode constraint
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode },
+              audio: false,
+            });
+          } catch {
+            // Final fallback to any video device
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false,
+            });
+          }
+        }
+
         if (cancelled) {
           stream.getTracks().forEach(track => track.stop());
           return;
         }
+
         streamRef.current = stream;
+
+        // Detect torch / flashlight capability
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack && 'getCapabilities' in videoTrack) {
+          try {
+            const capabilities = (videoTrack as unknown as { getCapabilities: () => { torch?: boolean } }).getCapabilities();
+            if (capabilities && capabilities.torch) {
+              setHasTorch(true);
+            }
+          } catch {
+            // Torch check ignored
+          }
+        }
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.setAttribute('playsinline', 'true');
           await videoRef.current.play().catch(() => {});
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Camera permission was denied or camera is unavailable.';
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Camera permission was denied or camera hardware is unavailable.';
         setCameraError(message);
         setCameraActive(false);
       }
     };
 
     void startCamera();
+
     return () => {
       cancelled = true;
       stopCurrentStream();
     };
-  }, [isOpen, cameraActive]);
+  }, [isOpen, cameraActive, facingMode]);
 
-  // Scan from photo upload using jsQR + canvas
+  // Re-attach video stream if videoRef re-mounts after closing a player card
+  useEffect(() => {
+    if (cameraActive && streamRef.current && videoRef.current && !videoRef.current.srcObject) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.setAttribute('playsinline', 'true');
+      videoRef.current.play().catch(() => {});
+    }
+  }, [cameraActive, scannedResult]);
+
+  // Toggle Torch / Flashlight
+  const toggleTorch = async () => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+
+    const nextState = !torchOn;
+    try {
+      await (track as unknown as { applyConstraints: (c: { advanced: Array<{ torch?: boolean }> }) => Promise<void> }).applyConstraints({
+        advanced: [{ torch: nextState }],
+      });
+      setTorchOn(nextState);
+    } catch (e) {
+      console.warn('Torch toggle error:', e);
+    }
+  };
+
+  // Flip Camera between Rear and Front
+  const handleFlipCamera = () => {
+    setFacingMode(prev => (prev === 'environment' ? 'user' : 'environment'));
+  };
+
+  // Photo upload decoder with high-contrast scaling
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -308,31 +549,47 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             setScanError('Canvas context unavailable.');
             return;
           }
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height, {
+
+          // Preserve exact image dimensions up to 1600px
+          const maxDim = 1600;
+          let w = img.naturalWidth || img.width;
+          let h = img.naturalHeight || img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+
+          canvas.width = w;
+          canvas.height = h;
+          ctx.drawImage(img, 0, 0, w, h);
+          const imageData = ctx.getImageData(0, 0, w, h);
+          const code = jsQR(imageData.data, w, h, {
             inversionAttempts: 'attemptBoth',
           });
 
           if (code && code.data) {
             await processScanCode(code.data);
           } else {
-            // Attempt BarcodeDetector as second chance
+            // Attempt BarcodeDetector as fallback
             if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
               try {
-                const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+                const BarcodeDetectorClass = (window as unknown as { BarcodeDetector: new (opts?: { formats: string[] }) => { detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>> } }).BarcodeDetector;
+                const detector = new BarcodeDetectorClass({ formats: ['qr_code'] });
                 const barcodes = await detector.detect(img);
                 if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
                   await processScanCode(barcodes[0].rawValue);
                   return;
                 }
               } catch {
-                // fall through
+                // Fall through
               }
             }
-            setScanError('No QR code detected in the uploaded image. Please try a clearer photo or manual search.');
+            setScanError('No QR code detected in the uploaded image. Please ensure the QR pass is clear and well-lit.');
           }
         } catch (readErr) {
           console.error('Image decode error:', readErr);
@@ -355,19 +612,19 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     setIsVerifying(true);
 
     const targetId = scannedResult.checkIn?.id || scannedResult.player.id;
-    approvePlayerEntry(targetId);
+    approvePlayerEntry(targetId, doorPaymentMethod);
 
     if (shouldPrint) {
-      setEntryInvoice(generateEntryFeeInvoice(scannedResult.player, scannedResult.checkIn!, staffName));
+      setEntryInvoice(generateEntryFeeInvoice(scannedResult.player, scannedResult.checkIn, staffName));
       setIsInvoiceOpen(true);
     }
 
     try {
       confetti({
-        particleCount: 80,
-        spread: 70,
+        particleCount: 70,
+        spread: 60,
         origin: { y: 0.6 },
-        colors: ['#e11d48', '#ffffff', '#fb7185', '#be123c'],
+        colors: ['#e11d48', '#ffffff', '#10b981', '#fb7185'],
       });
     } catch {
       // Fallback
@@ -407,10 +664,11 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         setCameraActive(false);
         setManualCode('');
         setIsRejecting(false);
+        setTorchOn(false);
         onClose();
       }}
       title="Entrance QR Scanner & Verification"
-      subtitle="Scan digital member pass QR or select from arrival queue"
+      subtitle="Scan player door pass QR or search member credentials"
       size="md"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -428,9 +686,28 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               boxShadow: '0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(225, 29, 72, 0.3)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '10px' }}>
-              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <CheckCircle2 size={15} color="#10b981" /> QR Pass Verified
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                paddingBottom: '10px',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  color: '#fb7185',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <CheckCircle2 size={16} color="#10b981" /> QR Pass Scanned & Verified
               </span>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <TierBadge tier={scannedResult.player.membershipTier} />
@@ -443,39 +720,124 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 <img
                   src={scannedResult.player.kyc.photoUrl}
                   alt={scannedResult.player.fullName}
-                  style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #ffffff' }}
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '2.5px solid #ffffff',
+                    boxShadow: '0 0 15px rgba(0,0,0,0.8)',
+                    flexShrink: 0,
+                  }}
                 />
               ) : (
-                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#e11d48', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.4rem' }}>
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #e11d48, #881337)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 900,
+                    fontSize: '1.5rem',
+                    border: '2.5px solid #ffffff',
+                    flexShrink: 0,
+                  }}
+                >
                   {scannedResult.player.fullName.charAt(0)}
                 </div>
               )}
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '1.18rem', fontWeight: 800, color: '#ffffff' }}>
+                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.2 }}>
                   {scannedResult.player.fullName}
                 </div>
-                <div style={{ fontSize: '0.78rem', color: '#cbd5e1', fontFamily: 'var(--font-mono)' }}>
-                  Player ID: {formatPlayerNumber(scannedResult.player)} • {scannedResult.player.phone}
+                <div style={{ fontSize: '0.8rem', color: '#cbd5e1', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
+                  Player ID {formatPlayerNumber(scannedResult.player)} • {scannedResult.player.phone}
                 </div>
-                <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <span>Aadhaar: <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{formatAadhaarNumber(scannedResult.player.kyc.aadhaarNumber, scannedResult.player.kyc.govtIdNumber) || 'UIDAI Verified'}</strong></span>
-                  <span>PAN: <strong style={{ color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>{formatPanNumber(scannedResult.player.kyc.panNumber, scannedResult.player.kyc.govtIdNumber) || 'PAN Verified'}</strong></span>
+                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <span>
+                    Aadhaar: <strong style={{ color: '#ffffff', fontFamily: 'var(--font-mono)' }}>{formatAadhaarNumber(scannedResult.player.kyc.aadhaarNumber, scannedResult.player.kyc.govtIdNumber) || 'UIDAI Verified'}</strong>
+                  </span>
+                  <span>
+                    PAN: <strong style={{ color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>{formatPanNumber(scannedResult.player.kyc.panNumber, scannedResult.player.kyc.govtIdNumber) || 'PAN Verified'}</strong>
+                  </span>
                 </div>
               </div>
             </div>
 
             {scannedResult.checkIn && (
-              <div style={{ background: '#120508', padding: '10px 12px', borderRadius: '10px', fontSize: '0.8rem', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
+              <div
+                style={{
+                  background: '#120508',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
+                  border: '1px solid rgba(225, 29, 72, 0.3)',
+                }}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#cbd5e1' }}>
-                  <span>Check-In Time:</span>
+                  <span>Check-In Timestamp:</span>
                   <strong style={{ color: '#ffffff' }}>Today at {formatTimeOnly(scannedResult.checkIn.checkInTime)}</strong>
                 </div>
               </div>
             )}
 
+            {/* Payment Method Selector for ₹500 Door Fee */}
+            {scannedResult.checkIn?.verificationStatus !== 'approved' && (
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.4)',
+                  padding: '8px 12px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ fontSize: '0.76rem', color: '#cbd5e1', fontWeight: 700 }}>
+                  ₹500 Entry Fee Mode:
+                </span>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  {(['Cash', 'UPI', 'Card'] as PaymentMethod[]).map(pm => (
+                    <button
+                      key={pm}
+                      type="button"
+                      onClick={() => setDoorPaymentMethod(pm)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        border: doorPaymentMethod === pm ? '1px solid #fb7185' : '1px solid rgba(255,255,255,0.15)',
+                        background: doorPaymentMethod === pm ? 'rgba(225,29,72,0.3)' : 'transparent',
+                        color: doorPaymentMethod === pm ? '#ffffff' : '#94a3b8',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {pm}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {isRejecting ? (
-              <div style={{ background: 'rgba(159, 18, 57, 0.25)', border: '1.5px solid #e11d48', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div
+                style={{
+                  background: 'rgba(159, 18, 57, 0.25)',
+                  border: '1.5px solid #e11d48',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
                 <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fca5a5' }}>
                   Reason for Entry Denial:
                 </label>
@@ -513,7 +875,20 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               </div>
             ) : scannedResult.checkIn?.verificationStatus === 'approved' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-                <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '10px', padding: '8px 12px', fontSize: '0.8rem', color: '#6ee7b7', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                <div
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '10px',
+                    padding: '8px 12px',
+                    fontSize: '0.8rem',
+                    color: '#6ee7b7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontWeight: 700,
+                  }}
+                >
                   <CheckCircle2 size={15} /> Entrance Pass Approved & Verified
                 </div>
 
@@ -534,12 +909,12 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                       padding: '10px',
                     }}
                     onClick={() => {
-                      setEntryInvoice(generateEntryFeeInvoice(scannedResult.player, scannedResult.checkIn!, staffName));
+                      setEntryInvoice(generateEntryFeeInvoice(scannedResult.player, scannedResult.checkIn, staffName));
                       setIsInvoiceOpen(true);
                     }}
                   >
                     <Printer size={15} color="#fb7185" />
-                    <span>Print / View Bill (₹500 · 5% Service Charge)</span>
+                    <span>Print / View Bill (₹500)</span>
                   </button>
 
                   <button
@@ -575,7 +950,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                   title="Approve entry without opening printable bill"
                 >
                   <CheckCircle2 size={16} />
-                  <span>{isVerifying ? 'Approving...' : 'Approve (No Bill)'}</span>
+                  <span>{isVerifying ? 'Approving...' : `Approve (${doorPaymentMethod})`}</span>
                 </button>
 
                 <button
@@ -593,7 +968,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                   title="Approve entry and open printable ₹500 gate bill"
                 >
                   <Printer size={15} />
-                  <span>Approve & Print Bill</span>
+                  <span>Approve & Bill</span>
                 </button>
 
                 <button
@@ -603,7 +978,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                   disabled={isVerifying}
                   style={{ padding: '8px 12px' }}
                 >
-                  Deny Entry
+                  Deny
                 </button>
 
                 <button
@@ -623,50 +998,144 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             <div
               style={{
                 background: '#120508',
-                border: '1.5px solid rgba(225, 29, 72, 0.45)',
+                border: scanSuccessFlash ? '2px solid #10b981' : '1.5px solid rgba(225, 29, 72, 0.45)',
                 borderRadius: '16px',
-                padding: '14px',
+                padding: '12px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 textAlign: 'center',
                 gap: '10px',
+                transition: 'border-color 0.2s ease',
               }}
             >
               {cameraActive ? (
-                <div style={{ width: '100%', position: 'relative', overflow: 'hidden', borderRadius: '12px', background: '#000000', height: '220px' }}>
-                  <video ref={videoRef} playsInline autoPlay muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  
-                  {/* Viewfinder Reticle with animated scanning line */}
+                <div
+                  style={{
+                    width: '100%',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    borderRadius: '12px',
+                    background: '#000000',
+                    height: '240px',
+                  }}
+                >
+                  <video
+                    ref={videoRef}
+                    playsInline
+                    autoPlay
+                    muted
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+
+                  {/* Viewfinder Reticle with animated scanning laser line */}
                   <div
                     style={{
                       position: 'absolute',
-                      inset: '24px',
-                      border: '2px solid rgba(244, 63, 94, 0.85)',
-                      borderRadius: '16px',
+                      inset: '20px',
+                      border: scanSuccessFlash ? '2.5px solid #10b981' : '2px solid rgba(244, 63, 94, 0.9)',
+                      borderRadius: '14px',
                       pointerEvents: 'none',
-                      boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)',
+                      boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.42)',
+                      transition: 'border-color 0.2s ease',
                     }}
-                  />
-                  
+                  >
+                    {/* Animated scanning laser line */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        height: '2px',
+                        background: 'linear-gradient(90deg, transparent 0%, #fb7185 50%, transparent 100%)',
+                        boxShadow: '0 0 8px #f43f5e',
+                        animation: 'scannerLaser 2s ease-in-out infinite alternate',
+                        top: '50%',
+                      }}
+                    />
+                  </div>
+
+                  {/* Top bar controls on camera */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '10px',
+                      right: '10px',
+                      display: 'flex',
+                      gap: '6px',
+                      zIndex: 2,
+                    }}
+                  >
+                    {hasTorch && (
+                      <button
+                        type="button"
+                        onClick={toggleTorch}
+                        style={{
+                          background: torchOn ? '#e11d48' : 'rgba(0,0,0,0.65)',
+                          border: '1px solid rgba(255,255,255,0.3)',
+                          borderRadius: '8px',
+                          color: '#ffffff',
+                          padding: '6px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title={torchOn ? 'Turn off light' : 'Turn on flashlight'}
+                      >
+                        {torchOn ? <Zap size={14} /> : <ZapOff size={14} />}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleFlipCamera}
+                      style={{
+                        background: 'rgba(0,0,0,0.65)',
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        borderRadius: '8px',
+                        color: '#ffffff',
+                        padding: '6px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      title="Flip camera (front / back)"
+                    >
+                      <SwitchCamera size={14} />
+                    </button>
+                  </div>
+
+                  {/* Status pill bottom center */}
                   <div
                     style={{
                       position: 'absolute',
                       bottom: '10px',
                       left: '50%',
                       transform: 'translateX(-50%)',
-                      background: 'rgba(0,0,0,0.75)',
-                      padding: '5px 12px',
+                      background: 'rgba(0,0,0,0.8)',
+                      backdropFilter: 'blur(6px)',
+                      padding: '4px 12px',
                       borderRadius: '20px',
                       fontSize: '0.72rem',
                       color: '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px',
+                      border: '1px solid rgba(244, 63, 94, 0.4)',
                     }}
                   >
-                    <Zap size={12} color="#fb7185" />
-                    <span>Point at Player Door Pass QR</span>
+                    <span
+                      style={{
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        background: '#10b981',
+                        boxShadow: '0 0 6px #10b981',
+                      }}
+                    />
+                    <span>Align Player Pass QR in Frame</span>
                   </div>
                 </div>
               ) : (
@@ -688,7 +1157,19 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               )}
 
               {cameraError && (
-                <span role="alert" style={{ fontSize: '0.75rem', color: '#fb7185' }}>{cameraError}</span>
+                <div
+                  role="alert"
+                  style={{
+                    fontSize: '0.75rem',
+                    color: '#fb7185',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <AlertCircle size={14} />
+                  <span>{cameraError}</span>
+                </div>
               )}
 
               <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
@@ -731,7 +1212,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 aria-label="Player QR code, ID or phone"
                 type="text"
                 className="form-input"
-                placeholder="Scan, paste QR link, Player ID (for example 1), or Phone..."
+                placeholder="Scan, paste QR link, Player ID (e.g. 1), or Phone..."
                 value={manualCode}
                 onChange={e => setManualCode(e.target.value)}
                 style={{ flex: 1 }}
@@ -751,20 +1232,40 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                   borderRadius: '10px',
                   color: '#fca5a5',
                   fontSize: '0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
                 }}
               >
-                {scanError}
+                <AlertCircle size={15} color="#ef4444" style={{ flexShrink: 0 }} />
+                <span>{scanError}</span>
               </div>
             )}
 
             {/* Quick 1-Tap Queue Selector */}
             {pendingCheckIns.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fb7185', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    color: '#fb7185',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
                   Awaiting Door Clearance ({pendingCheckIns.length})
                 </span>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                  }}
+                >
                   {pendingCheckIns.map(c => {
                     const p = players.find(x => x.id === c.playerId);
                     if (!p) return null;
@@ -790,15 +1291,34 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           {p.kyc.photoUrl ? (
-                            <img src={p.kyc.photoUrl} alt={p.fullName} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                            <img
+                              src={p.kyc.photoUrl}
+                              alt={p.fullName}
+                              style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+                            />
                           ) : (
-                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#e11d48', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800 }}>
+                            <div
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                background: '#e11d48',
+                                color: '#fff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                              }}
+                            >
                               {p.fullName.charAt(0)}
                             </div>
                           )}
                           <div>
                             <div style={{ fontWeight: 800, fontSize: '0.86rem', color: '#ffffff' }}>{p.fullName}</div>
-                            <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Checked in at {formatTimeOnly(c.checkInTime)}</div>
+                            <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                              Checked in at {formatTimeOnly(c.checkInTime)}
+                            </div>
                           </div>
                         </div>
 

@@ -194,7 +194,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
                 <span className="player-pass-action">Tap to enlarge <ArrowRight size={15} /></span>
               </span>
               <span className="player-pass-qr" aria-hidden="true">
-                <QRCodeSVG value={verificationUrl} size={72} bgColor="#ffffff" fgColor="#0f172a" level="M" />
+                <QRCodeSVG value={verificationUrl} size={72} bgColor="#ffffff" fgColor="#0f172a" level="M" includeMargin={true} />
               </span>
             </button>
 
@@ -344,7 +344,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
       >
         <div className="expanded-player-pass">
           <div className="expanded-player-qr">
-            <QRCodeSVG value={verificationUrl} size={210} bgColor="#ffffff" fgColor="#0f172a" level="H" />
+            <QRCodeSVG value={verificationUrl} size={210} bgColor="#ffffff" fgColor="#0f172a" level="H" includeMargin={true} />
           </div>
           <div className="expanded-player-identity">
             {player.kyc.photoUrl && <img src={player.kyc.photoUrl} alt="" />}
