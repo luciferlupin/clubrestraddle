@@ -169,41 +169,61 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
       ) : !currentPlayer ? (
         <div className="mobile-player-landing">
           <div className="mobile-player-brand-hero">
-            <AnimatedSuitsRow size={18} gap={12} />
-            <div className="mobile-player-brand-icon">
-              <CardDeckFan />
+            <div className="mobile-player-hero-glow" aria-hidden="true" />
+            <div className="mobile-player-brand-badge">
+              <span className="badge-live-pulse" />
+              <span>PREMIUM POKER CLUB · DELHI NCR</span>
             </div>
-            <span className="mobile-player-brand-badge">Premium Poker Club · Delhi NCR</span>
+            <div className="mobile-player-brand-icon">
+              <CardDeckFan size={110} />
+            </div>
             <h1 className="mobile-player-brand-title">Club Re Straddle</h1>
-            <p className="mobile-player-brand-tagline">High Stakes · Tournaments · Exclusive Lounge</p>
+            <p className="mobile-player-brand-tagline">High Stakes · Tournaments · Private VIP Lounge</p>
+            <div className="mobile-player-suits-wrapper">
+              <AnimatedSuitsRow size={16} gap={10} />
+            </div>
           </div>
 
           {entryView === 'choice' ? (
-            <>
+            <div className="mobile-player-entry-card">
               <section className="mobile-intro-hero" aria-labelledby="member-access-title">
-                <span className="mobile-flow-eyebrow">Player Portal</span>
+                <span className="mobile-flow-eyebrow">Digital Player Portal</span>
                 <h2 id="member-access-title">Your poker night starts here</h2>
-                <p>Open your digital member pass or register in under 2 minutes.</p>
+                <p>Access your digital pass, verify today's check-in, or register as a VIP member.</p>
 
                 <div className="mobile-hero-features">
-                  <span><CardSuit suit="spade" size={13} color="#ffffff" /> Digital ID</span>
-                  <span><CardSuit suit="heart" size={13} color="#e11d48" /> Fast Check-In</span>
-                  <span><CardSuit suit="club" size={13} color="#ffffff" /> Secure KYC</span>
-                  <span><CardSuit suit="diamond" size={13} color="#e11d48" /> Under 2 min</span>
+                  <span className="feature-pill"><CardSuit suit="spade" size={12} color="#ffffff" /> Digital ID</span>
+                  <span className="feature-pill"><CardSuit suit="heart" size={12} color="#f43f5e" /> Fast Check-In</span>
+                  <span className="feature-pill"><CardSuit suit="club" size={12} color="#ffffff" /> Secure KYC</span>
+                  <span className="feature-pill"><CardSuit suit="diamond" size={12} color="#f43f5e" /> Under 2 min</span>
                 </div>
               </section>
 
               <div className="mobile-start-options">
-                <button type="button" className="m-btn m-btn-primary" onClick={() => setEntryView('lookup')}>
-                  <CreditCard size={18} />
-                  <span>I'm a member</span>
+                <button
+                  type="button"
+                  className="m-btn m-btn-primary m-btn-landing"
+                  onClick={() => setEntryView('lookup')}
+                >
+                  <CreditCard size={19} />
+                  <span>I'm a Member</span>
+                  <ChevronRight size={18} className="btn-end-arrow" />
                 </button>
-                <button type="button" className="m-btn m-btn-secondary" onClick={openRegistration}>
-                  <UserPlus size={18} />
-                  <span>New registration</span>
+                <button
+                  type="button"
+                  className="m-btn m-btn-secondary m-btn-landing"
+                  onClick={openRegistration}
+                >
+                  <UserPlus size={19} />
+                  <span>New Member Registration</span>
                 </button>
               </div>
-            </>
+
+              <div className="mobile-landing-footer-note">
+                <ShieldCheck size={14} color="#34d399" />
+                <span>Government KYC verified · 21+ Members only</span>
+              </div>
+            </div>
           ) : entryView === 'lookup' ? (
             <section className="mobile-lookup-flow" aria-labelledby="member-lookup-title">
               <div className="mobile-flow-heading">
@@ -213,16 +233,22 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                   onClick={() => { setEntryView('choice'); setLookupError(null); }}
                   aria-label="Back"
                 >
-                  <ArrowLeft size={21} />
+                  <ArrowLeft size={20} />
                 </button>
-                <h2 id="member-lookup-title">Verify your access</h2>
+                <div>
+                  <span className="mobile-flow-eyebrow">Member Access</span>
+                  <h2 id="member-lookup-title">Verify Membership</h2>
+                </div>
               </div>
 
               <form className="m-card mobile-lookup-card" onSubmit={handleLookupMember} noValidate>
+                <p className="mobile-lookup-hint">
+                  Enter your registered mobile number to open your digital pass & live QR clearance.
+                </p>
                 <div className="m-form-group">
-                  <label className="m-form-label" htmlFor="member-lookup-phone">Mobile number</label>
+                  <label className="m-form-label" htmlFor="member-lookup-phone">Mobile Number</label>
                   <div className="mobile-phone-field">
-                    <span aria-hidden="true">+91</span>
+                    <span aria-hidden="true" className="mobile-phone-prefix">🇮🇳 +91</span>
                     <input
                       id="member-lookup-phone"
                       type="tel"
@@ -248,8 +274,8 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
                   className="m-btn m-btn-primary"
                   disabled={isLookingUp || !lookupPhone.trim()}
                 >
-                  <Smartphone size={17} />
-                  <span>{isLookingUp ? 'Searching...' : 'Send SMS OTP & Verify'}</span>
+                  <Smartphone size={18} />
+                  <span>{isLookingUp ? 'Searching Member Records...' : 'Send SMS OTP & Verify'}</span>
                 </button>
               </form>
 

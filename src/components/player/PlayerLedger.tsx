@@ -155,85 +155,153 @@ export const PlayerLedger: React.FC<PlayerLedgerProps> = ({ player, onOpenInvoic
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
       {/* Top Financial Stat Summary */}
-      <div className="stats-grid" style={{ marginBottom: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-        <div className="stat-card" style={{ background: 'rgba(225, 29, 72, 0.12)', border: '1px solid rgba(225, 29, 72, 0.4)', borderRadius: '12px', padding: '14px 16px' }}>
-          <span style={{ fontSize: '0.72rem', color: '#fda4af', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
+      <div className="ledger-stats-grid">
+        <div className="ledger-stat-card debit">
+          <span className="ledger-stat-label">
             Total Inflows (Debited)
           </span>
-          <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#ffffff', marginTop: '4px' }}>
+          <div className="ledger-stat-val debit">
             {formatCurrency(totalSpent)}
           </div>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+          <span className="ledger-stat-desc">
             Entry fees, tournament buy-ins & chips
           </span>
         </div>
 
-        <div className="stat-card" style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '12px', padding: '14px 16px' }}>
-          <span style={{ fontSize: '0.72rem', color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
+        <div className="ledger-stat-card credit">
+          <span className="ledger-stat-label credit">
             Total Cash-outs (Credited)
           </span>
-          <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#34d399', marginTop: '4px' }}>
+          <div className="ledger-stat-val credit">
             {formatCurrency(totalReceived)}
           </div>
-          <span style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+          <span className="ledger-stat-desc">
             Tournament winnings & cash-outs
           </span>
         </div>
 
-        <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '14px 16px' }}>
-          <span style={{ fontSize: '0.72rem', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
-            Door Entry Fees (₹500/Visit · 5% Service Charge)
+        <div className="ledger-stat-card neutral">
+          <span className="ledger-stat-label">
+            Door Entry Fees (5% Srv Charge)
           </span>
-          <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#ffffff', marginTop: '4px' }}>
+          <div className="ledger-stat-val">
             {formatCurrency(totalEntryFees)}
           </div>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-            {ledgerItems.filter(i => i.type === 'Entry Fee').length} verified visits (incl. 5% Service Charge)
+          <span className="ledger-stat-desc">
+            {ledgerItems.filter(i => i.type === 'Entry Fee').length} verified visits (₹500/visit)
           </span>
         </div>
 
-        <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '14px 16px' }}>
-          <span style={{ fontSize: '0.72rem', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 700 }}>
-            Tournament Entries
+        <div className="ledger-stat-card neutral">
+          <span className="ledger-stat-label">
+            Tournaments
           </span>
-          <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#fb7185', marginTop: '4px' }}>
+          <div className="ledger-stat-val tournament">
             {formatCurrency(totalTournamentSpent)}
           </div>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-            Including 18% Service Charge
+          <span className="ledger-stat-desc">
+            Including prize pool & service charge
           </span>
         </div>
       </div>
 
       {/* Filter Toolbar & Actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+      <div className="ledger-filter-toolbar">
+        <div className="ledger-filter-pills">
           {[
             { id: 'all', label: 'All Transactions' },
-            { id: 'entry', label: '₹500 Entry (5% Service Charge)' },
+            { id: 'entry', label: '₹500 Entry Fee' },
             { id: 'tournament', label: 'Tournaments' },
             { id: 'cash', label: 'Cash & Chips' },
           ].map(f => (
             <button
               key={f.id}
               type="button"
-              className={`btn btn-sm ${selectedCategory === f.id ? 'btn-primary' : 'btn-secondary'}`}
+              className={`ledger-filter-btn ${selectedCategory === f.id ? 'active' : ''}`}
               onClick={() => setSelectedCategory(f.id)}
-              style={{ fontSize: '0.76rem', padding: '5px 12px' }}
             >
               {f.label}
             </button>
           ))}
         </div>
 
-        <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+        <div className="ledger-count-info">
           Showing <strong>{filteredItems.length}</strong> ledger entries
         </div>
       </div>
 
-      {/* Ledger Table */}
-      <div className="table-responsive" style={{ border: '1px solid rgba(225, 29, 72, 0.3)', borderRadius: '12px', overflow: 'hidden' }}>
-        <table className="table" style={{ margin: 0 }}>
+      {/* Mobile-Optimized Transaction Card List */}
+      <div className="ledger-mobile-cards">
+        {filteredItems.length === 0 ? (
+          <div className="ledger-empty-state">
+            <Receipt size={32} color="#e11d48" style={{ margin: '0 auto 8px', opacity: 0.8 }} />
+            <p>No transaction history found for this category.</p>
+          </div>
+        ) : (
+          filteredItems.map(item => (
+            <article key={item.id} className="ledger-card-item">
+              <div className="ledger-card-topline">
+                <div className="ledger-card-datetime">
+                  <span className="ledger-card-date">{formatDateOnly(item.date)}</span>
+                  <span className="ledger-card-time"><Clock size={11} /> {formatTimeOnly(item.date)}</span>
+                </div>
+                <span
+                  className={`ledger-type-badge ${
+                    item.type === 'Entry Fee'
+                      ? 'badge-entry'
+                      : item.type === 'Tournament Entry'
+                      ? 'badge-tournament'
+                      : item.credit
+                      ? 'badge-credit'
+                      : 'badge-default'
+                  }`}
+                >
+                  {item.type}
+                </span>
+              </div>
+
+              <div className="ledger-card-main">
+                <p className="ledger-card-desc">{item.description}</p>
+                <div className="ledger-card-meta">
+                  <span className="ledger-card-ref">Ref: <code>{item.referenceId}</code></span>
+                  <span className="ledger-card-paymethod">via {item.paymentMethod}</span>
+                </div>
+              </div>
+
+              <div className="ledger-card-bottomline">
+                <div className="ledger-card-amount">
+                  {item.debit && (
+                    <span className="ledger-debit-val">
+                      - {formatCurrency(item.debit)}
+                    </span>
+                  )}
+                  {item.credit && (
+                    <span className="ledger-credit-val">
+                      + {formatCurrency(item.credit)}
+                    </span>
+                  )}
+                </div>
+
+                {item.invoiceData && (
+                  <button
+                    type="button"
+                    className="ledger-invoice-btn"
+                    onClick={() => handleOpenInvoiceModal(item.invoiceData!)}
+                    title="View Official Tax Invoice"
+                  >
+                    <FileText size={13} color="#f43f5e" />
+                    <span>View Bill</span>
+                  </button>
+                )}
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Ledger Table */}
+      <div className="ledger-desktop-table table-responsive">
+        <table className="table custom-table" style={{ margin: 0 }}>
           <thead>
             <tr style={{ background: '#17060a' }}>
               <th>Date & Time</th>

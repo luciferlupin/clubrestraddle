@@ -17,15 +17,15 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
   const getPortalLabel = () => {
     switch (activeRole) {
       case 'player':
-        return { name: 'Member', color: '#ffffff' };
+        return { name: 'VIP Member Portal', color: '#fda4af' };
       case 'cashier':
-        return { name: 'Cashier', color: '#ffffff' };
+        return { name: 'Cashier Station', color: '#67e8f9' };
       case 'cash':
-        return { name: 'Cash Desk', color: '#fbbf24' };
+        return { name: 'Vault & Treasury', color: '#fbbf24' };
       case 'security':
-        return { name: 'Security', color: '#ffffff' };
+        return { name: 'Security Checkpoint', color: '#34d399' };
       case 'admin':
-        return { name: 'Admin', color: '#ffffff' };
+        return { name: 'Admin Operations', color: '#c084fc' };
     }
   };
 
@@ -39,14 +39,17 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ onOpenRoleSwitcher, 
         onClick={isPlayerMode ? () => setActiveRole('player') : onOpenRoleSwitcher}
         aria-label={isPlayerMode ? 'Club Re Straddle member portal' : 'Open staff desk switcher'}
       >
-        <img
-          src="/logo-transparent.png"
-          alt="Club Re Straddle Logo"
-          className="mobile-brand-logo-img"
-        />
+        <div className="mobile-logo-badge-container">
+          <img
+            src="/logo-transparent.png"
+            alt="Club Re Straddle Logo"
+            className="mobile-brand-logo-img"
+          />
+        </div>
         <div className="mobile-logo-text">
           <span className="mobile-logo-title">CLUB RE STRADDLE</span>
-          <span className="mobile-portal-pill" style={{ color: portalInfo.color, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span className="mobile-portal-pill" style={{ color: portalInfo.color }}>
+            <span className="mobile-portal-dot" style={{ background: portalInfo.color }} />
             <CardSuit suit={activeRole === 'player' ? 'spade' : activeRole === 'cashier' ? 'diamond' : activeRole === 'cash' ? 'diamond' : activeRole === 'security' ? 'club' : 'heart'} size={9} />
             {portalInfo.name}
           </span>
