@@ -58,7 +58,6 @@ export const printThermalSlip = (elementId: string, docTitle: string = 'Club Rec
             box-sizing: border-box !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            color-adjust: exact !important;
           }
           html, body {
             margin: 0 !important;
