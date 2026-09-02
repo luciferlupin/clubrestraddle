@@ -101,38 +101,38 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
         </div>
 
         {/* Metadata Grid */}
-        <div style={{ marginBottom: '7px', fontSize: '10.5px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-            <span style={{ fontWeight: 600, color: '#374151' }}>Receipt Ref:</span>
-            <span style={{ fontWeight: 900, fontFamily: 'monospace' }}>{entry.receiptNumber}</span>
+        <div style={{ marginBottom: '7px', fontSize: '10px', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+            <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Receipt Ref:</span>
+            <span style={{ fontWeight: 900, fontFamily: 'monospace', textAlign: 'right', wordBreak: 'break-all' }}>{entry.receiptNumber}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-            <span style={{ fontWeight: 600, color: '#374151' }}>Date & Time:</span>
-            <span style={{ fontWeight: 700 }}>{formatDateTime(entry.registeredAt)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+            <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Date & Time:</span>
+            <span style={{ fontWeight: 700, textAlign: 'right' }}>{formatDateTime(entry.registeredAt)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontWeight: 600, color: '#374151' }}>Cashier:</span>
-            <span style={{ fontWeight: 700 }}>{entry.cashierName}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px' }}>
+            <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Cashier:</span>
+            <span style={{ fontWeight: 700, textAlign: 'right', wordBreak: 'break-word' }}>{entry.cashierName}</span>
           </div>
         </div>
 
         {/* Member Details */}
-        <div style={{ borderTop: '1px dashed #000000', paddingTop: '5px', marginBottom: '7px', fontSize: '10.5px' }}>
-          <div style={{ fontSize: '9.5px', fontWeight: 900, letterSpacing: '0.06em', marginBottom: '3px', textTransform: 'uppercase' }}>
+        <div style={{ borderTop: '1px dashed #000000', paddingTop: '5px', marginBottom: '7px', fontSize: '10px', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.06em', marginBottom: '3px', textTransform: 'uppercase' }}>
             PLAYER DETAILS
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-            <span style={{ fontWeight: 600, color: '#374151' }}>Member ID:</span>
-            <span style={{ fontWeight: 800, fontFamily: 'monospace' }}>{player ? formatPlayerNumber(player) : entry.playerId}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+            <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Member ID:</span>
+            <span style={{ fontWeight: 800, fontFamily: 'monospace', textAlign: 'right' }}>{player ? formatPlayerNumber(player) : entry.playerId}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-            <span style={{ fontWeight: 600, color: '#374151' }}>Player Name:</span>
-            <span style={{ fontWeight: 800, textTransform: 'uppercase' }}>{entry.playerName}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+            <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Player Name:</span>
+            <span style={{ fontWeight: 800, textTransform: 'uppercase', textAlign: 'right', wordBreak: 'break-word' }}>{entry.playerName}</span>
           </div>
           {entry.playerPhone && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, color: '#374151' }}>Contact:</span>
-              <span style={{ fontWeight: 700 }}>{entry.playerPhone}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px' }}>
+              <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Contact:</span>
+              <span style={{ fontWeight: 700, textAlign: 'right' }}>{entry.playerPhone}</span>
             </div>
           )}
         </div>
@@ -142,51 +142,53 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
           style={{
             border: '1px solid #000000',
             borderRadius: '2px',
-            padding: '5px 7px',
+            padding: '4px 6px',
             marginBottom: '7px',
-            fontSize: '10px',
+            fontSize: '9.5px',
             textAlign: 'center',
             backgroundColor: '#fafafa',
+            width: '100%',
+            boxSizing: 'border-box',
           }}
         >
           <div style={{ fontSize: '8.5px', fontWeight: 900, textAlign: 'left', marginBottom: '2px', letterSpacing: '0.04em' }}>
             TOURNAMENT SEATING
           </div>
-          <div style={{ fontWeight: 800, fontSize: '11px', color: '#000000' }}>
+          <div style={{ fontWeight: 800, fontSize: '10.5px', color: '#000000', wordBreak: 'break-word' }}>
             {entry.tournamentName}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginTop: '4px', fontWeight: 700, color: '#111827' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', marginTop: '3px', fontWeight: 700, color: '#111827' }}>
             <span>Table: <strong>{entry.tableNumber || 'Assigned on Call'}</strong></span>
             <span>Seat: <strong>{entry.seatNumber || 'Random Draw'}</strong></span>
           </div>
         </div>
 
         {/* Financials Breakdown */}
-        <div style={{ borderTop: '1px dashed #000000', paddingTop: '5px', marginBottom: '7px', fontSize: '10.5px' }}>
-          <div style={{ fontSize: '9.5px', fontWeight: 900, letterSpacing: '0.06em', marginBottom: '3px' }}>
+        <div style={{ borderTop: '1px dashed #000000', paddingTop: '5px', marginBottom: '7px', fontSize: '10px', width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.06em', marginBottom: '3px' }}>
             CHARGES BREAKDOWN
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-            <span>Tournament Entry Fee:</span>
-            <span style={{ fontWeight: 700, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(entry.buyInAmount)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+            <span style={{ flexShrink: 0 }}>Tournament Entry Fee:</span>
+            <span style={{ fontWeight: 700, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>{formatCurrency(entry.buyInAmount)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-            <span>Club Service Charge:</span>
-            <span style={{ fontWeight: 700, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(entry.rakeAmount)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+            <span style={{ flexShrink: 0 }}>Club Service Charge:</span>
+            <span style={{ fontWeight: 700, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>{formatCurrency(entry.rakeAmount)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-            <span>Payment Method:</span>
-            <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>{entry.paymentMethod}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+            <span style={{ flexShrink: 0 }}>Payment Method:</span>
+            <span style={{ fontWeight: 700, textTransform: 'uppercase', textAlign: 'right' }}>{entry.paymentMethod}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span>Txn Reference:</span>
-            <span style={{ fontFamily: 'monospace', fontSize: '10px', fontWeight: 700 }}>{entry.paymentReference}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px' }}>
+            <span style={{ flexShrink: 0 }}>Txn Reference:</span>
+            <span style={{ fontFamily: 'monospace', fontSize: '9.5px', fontWeight: 700, textAlign: 'right', wordBreak: 'break-all' }}>{entry.paymentReference}</span>
           </div>
 
           {/* Bold Total */}
-          <div style={{ borderTop: '1.5px solid #000000', borderBottom: '1.5px solid #000000', marginTop: '5px', padding: '4px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '12.5px', fontWeight: 900 }}>
-            <span>TOTAL PAID:</span>
-            <span style={{ fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em' }}>{formatCurrency(totalPaid)}</span>
+          <div style={{ borderTop: '1.5px solid #000000', borderBottom: '1.5px solid #000000', marginTop: '5px', padding: '3px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', fontSize: '12px', fontWeight: 900 }}>
+            <span style={{ flexShrink: 0 }}>TOTAL PAID:</span>
+            <span style={{ fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em', textAlign: 'right' }}>{formatCurrency(totalPaid)}</span>
           </div>
         </div>
 

@@ -337,41 +337,41 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
           </div>
 
           {/* Invoice Metadata Grid */}
-          <div style={{ marginBottom: '7px', fontSize: '10.5px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-              <span style={{ fontWeight: 600, color: '#374151' }}>Invoice No:</span>
-              <span style={{ fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.02em' }}>{invoice.invoiceNumber || 'CRS/GATE/26-27/0001'}</span>
+          <div style={{ marginBottom: '7px', fontSize: '10px', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+              <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Invoice No:</span>
+              <span style={{ fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.01em', textAlign: 'right', wordBreak: 'break-all' }}>{invoice.invoiceNumber || 'CRS/GATE/26-27/0001'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-              <span style={{ fontWeight: 600, color: '#374151' }}>Date & Time:</span>
-              <span style={{ fontWeight: 700 }}>{dateFormatted} • {timeFormatted}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+              <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Date & Time:</span>
+              <span style={{ fontWeight: 700, textAlign: 'right' }}>{dateFormatted} • {timeFormatted}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-              <span style={{ fontWeight: 600, color: '#374151' }}>Cashier / Desk:</span>
-              <span style={{ fontWeight: 700 }}>{invoice.cashierName || 'Cashier Counter'}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+              <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Cashier / Desk:</span>
+              <span style={{ fontWeight: 700, textAlign: 'right', wordBreak: 'break-word' }}>{invoice.cashierName || 'Cashier Counter'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, color: '#374151' }}>Place of Supply:</span>
-              <span style={{ fontWeight: 700 }}>{invoice.placeOfSupply || '09 - Uttar Pradesh (Noida)'}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px' }}>
+              <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Place of Supply:</span>
+              <span style={{ fontWeight: 700, textAlign: 'right', wordBreak: 'break-word' }}>{invoice.placeOfSupply || '09 - Uttar Pradesh (Noida)'}</span>
             </div>
           </div>
 
           {/* MEMBER Details Section */}
-          <div style={{ borderTop: '1px dashed #000000', paddingTop: '5px', marginBottom: '7px', fontSize: '10.5px' }}>
-            <div style={{ fontSize: '9.5px', fontWeight: 900, letterSpacing: '0.06em', marginBottom: '3px', textTransform: 'uppercase' }}>
+          <div style={{ borderTop: '1px dashed #000000', paddingTop: '5px', marginBottom: '7px', fontSize: '10px', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.06em', marginBottom: '3px', textTransform: 'uppercase' }}>
               MEMBER DETAILS
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-              <span style={{ fontWeight: 600, color: '#374151' }}>Member ID:</span>
-              <span style={{ fontWeight: 800, fontFamily: 'monospace' }}>{invoice.playerId || 'Not assigned'}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+              <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Member ID:</span>
+              <span style={{ fontWeight: 800, fontFamily: 'monospace', textAlign: 'right' }}>{invoice.playerId || 'Not assigned'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-              <span style={{ fontWeight: 600, color: '#374151' }}>Player Name:</span>
-              <span style={{ fontWeight: 800, textTransform: 'uppercase' }}>{invoice.playerName}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+              <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Player Name:</span>
+              <span style={{ fontWeight: 800, textTransform: 'uppercase', textAlign: 'right', wordBreak: 'break-word' }}>{invoice.playerName}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ fontWeight: 600, color: '#374151' }}>Govt ID / PAN:</span>
-              <span style={{ fontWeight: 800, fontFamily: 'monospace' }}>{invoice.govtIdNumber ? maskGovtId(invoice.govtIdNumber) : 'PAN Verified'}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px' }}>
+              <span style={{ fontWeight: 600, color: '#374151', flexShrink: 0 }}>Govt ID / PAN:</span>
+              <span style={{ fontWeight: 800, fontFamily: 'monospace', textAlign: 'right' }}>{invoice.govtIdNumber ? maskGovtId(invoice.govtIdNumber) : 'PAN Verified'}</span>
             </div>
           </div>
 
@@ -380,24 +380,26 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
             style={{
               border: '1px solid #000000',
               borderRadius: '2px',
-              padding: '5px 7px',
+              padding: '4px 6px',
               marginBottom: '7px',
-              fontSize: '10px',
+              fontSize: '9.5px',
               textAlign: 'center',
               backgroundColor: '#fafafa',
+              width: '100%',
+              boxSizing: 'border-box',
             }}
           >
             <div style={{ fontSize: '8.5px', fontWeight: 900, textAlign: 'left', marginBottom: '2px', letterSpacing: '0.04em' }}>
               PARTICULARS / EVENT
             </div>
-            <div style={{ fontWeight: 800, fontSize: '11px', lineHeight: 1.25 }}>
+            <div style={{ fontWeight: 800, fontSize: '10.5px', lineHeight: 1.25, wordBreak: 'break-word' }}>
               {eventTitle}
             </div>
-            <div style={{ fontSize: '9px', marginTop: '2px', color: '#1f2937' }}>
+            <div style={{ fontSize: '8.5px', marginTop: '2px', color: '#1f2937', wordBreak: 'break-word' }}>
               {eventDetail1}
             </div>
             {eventDetail2 && (
-              <div style={{ fontSize: '9px', marginTop: '1px', color: '#374151' }}>
+              <div style={{ fontSize: '8.5px', marginTop: '1px', color: '#374151', wordBreak: 'break-word' }}>
                 {eventDetail2}
               </div>
             )}
@@ -408,16 +410,18 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
             style={{
               border: '1px solid #000000',
               borderRadius: '2px',
-              padding: '4px 7px',
-              marginBottom: '8px',
-              fontSize: '9px',
+              padding: '4px 6px',
+              marginBottom: '7px',
+              fontSize: '8.5px',
               lineHeight: 1.25,
+              width: '100%',
+              boxSizing: 'border-box',
             }}
           >
-            <div style={{ fontSize: '8.5px', fontWeight: 900, marginBottom: '1px', letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: '8px', fontWeight: 900, marginBottom: '1px', letterSpacing: '0.04em' }}>
               NATURE OF SUPPLY
             </div>
-            <div style={{ color: '#111827', fontWeight: 600 }}>
+            <div style={{ color: '#111827', fontWeight: 600, wordBreak: 'break-word' }}>
               {invoice.natureOfSupply || (isEntryFee ? 'Door Entry & Lounge Facility Clearance' : isTournament ? 'Tournament Entry & Club Facilitation Services' : 'Gaming Lounge & Entertainment Services')}
             </div>
             <div style={{ marginTop: '2px', fontWeight: 800, fontFamily: 'monospace' }}>
@@ -426,49 +430,49 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
           </div>
 
           {/* AMOUNT & Service Charge Breakdown */}
-          <div style={{ borderTop: '1px dashed #000000', paddingTop: '5px', marginBottom: '7px', fontSize: '10.5px' }}>
-            <div style={{ fontSize: '9.5px', fontWeight: 900, letterSpacing: '0.06em', marginBottom: '3px' }}>
+          <div style={{ borderTop: '1px dashed #000000', paddingTop: '5px', marginBottom: '7px', fontSize: '10px', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.06em', marginBottom: '3px' }}>
               CHARGES BREAKDOWN
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-              <span>Taxable Value:</span>
-              <span style={{ fontWeight: 700, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>₹{taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+              <span style={{ flexShrink: 0 }}>Taxable Value:</span>
+              <span style={{ fontWeight: 700, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>₹{taxableServiceCharge.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-              <span>CGST @ {halfGstRate}%:</span>
-              <span style={{ fontWeight: 700, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+              <span style={{ flexShrink: 0 }}>CGST @ {halfGstRate}%:</span>
+              <span style={{ fontWeight: 700, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-              <span>SGST @ {halfGstRate}%:</span>
-              <span style={{ fontWeight: 700, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+              <span style={{ flexShrink: 0 }}>SGST @ {halfGstRate}%:</span>
+              <span style={{ fontWeight: 700, fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', textAlign: 'right' }}>₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
 
             {/* BOLD TOTAL BAR */}
-            <div style={{ borderTop: '1.5px solid #000000', borderBottom: '1.5px solid #000000', marginTop: '5px', padding: '4px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '12.5px', fontWeight: 900 }}>
-              <span>TOTAL (₹):</span>
-              <span style={{ fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em' }}>₹{totalVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <div style={{ borderTop: '1.5px solid #000000', borderBottom: '1.5px solid #000000', marginTop: '5px', padding: '3px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', fontSize: '12px', fontWeight: 900 }}>
+              <span style={{ flexShrink: 0 }}>TOTAL (₹):</span>
+              <span style={{ fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em', textAlign: 'right' }}>₹{totalVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            <div style={{ fontSize: '9px', fontStyle: 'italic', marginTop: '3px', lineHeight: 1.2, color: '#1f2937' }}>
+            <div style={{ fontSize: '8.5px', fontStyle: 'italic', marginTop: '3px', lineHeight: 1.2, color: '#1f2937', wordBreak: 'break-word' }}>
               In words: {numberToINRWords(totalVal)}
             </div>
           </div>
 
           {/* PAYMENT Details Section */}
-          <div style={{ borderTop: '1px dashed #000000', paddingTop: '5px', marginBottom: '8px', fontSize: '10.5px' }}>
-            <div style={{ fontSize: '9.5px', fontWeight: 900, letterSpacing: '0.06em', marginBottom: '2px' }}>
+          <div style={{ borderTop: '1px dashed #000000', paddingTop: '5px', marginBottom: '7px', fontSize: '10px', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.06em', marginBottom: '2px' }}>
               SETTLEMENT
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '11px', fontWeight: 800, marginBottom: '2px' }}>
-              <span>Payment Mode:</span>
-              <span style={{ textTransform: 'uppercase' }}>{invoice.paymentMethod || 'Cash'}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', fontSize: '10.5px', fontWeight: 800, marginBottom: '2px' }}>
+              <span style={{ flexShrink: 0 }}>Payment Mode:</span>
+              <span style={{ textTransform: 'uppercase', textAlign: 'right' }}>{invoice.paymentMethod || 'Cash'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '10px' }}>
-              <span>Ref / UTR:</span>
-              <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{invoice.paymentReference || 'TXN-58192'}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', fontSize: '9.5px' }}>
+              <span style={{ flexShrink: 0 }}>Ref / UTR:</span>
+              <span style={{ fontFamily: 'monospace', fontWeight: 700, textAlign: 'right', wordBreak: 'break-all' }}>{invoice.paymentReference || 'TXN-58192'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '9.5px', marginTop: '2px', color: '#15803d', fontWeight: 800 }}>
-              <span>Status:</span>
-              <span>PAID & VERIFIED</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px', fontSize: '9px', marginTop: '2px', color: '#15803d', fontWeight: 800 }}>
+              <span style={{ flexShrink: 0 }}>Status:</span>
+              <span style={{ textAlign: 'right' }}>PAID & VERIFIED</span>
             </div>
           </div>
 
