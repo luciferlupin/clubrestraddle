@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { PaymentMethod } from '../../types';
 import { formatDateOnly, formatTimeOnly, numberToINRWords, maskGovtId } from '../../utils/formatters';
+import { printThermalSlip } from '../../utils/printThermal';
 
 export interface ClubInvoiceData {
   invoiceNumber: string;
@@ -131,7 +132,7 @@ export const ClubTaxInvoiceModal: React.FC<ClubTaxInvoiceModalProps> = ({
   const eventDetail2 = invoice.eventDetails || (isEntryFee ? 'Daily door clearance (₹500 inclusive of 5% Service Charge)' : `Texas • MTC • Table ${invoice.tableLocation || 'Main Floor'} • Prize ₹${totalVal.toLocaleString('en-IN')}`);
 
   const handlePrint = () => {
-    window.print();
+    printThermalSlip('printable-tax-invoice', `Tax-Invoice-${invoice.invoiceNumber || 'Bill'}`);
   };
 
   const handleCopySummary = () => {
@@ -155,6 +156,7 @@ Place of Supply: 09 - Uttar Pradesh (Noida)`;
 
   return (
     <div
+      className="club-invoice-overlay"
       style={{
         position: 'fixed',
         inset: 0,

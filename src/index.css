@@ -6854,12 +6854,15 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
     visibility: hidden !important;
   }
 
+  .club-invoice-overlay,
   .club-invoice-dialog,
   .modal-container,
   .modal-content,
   .modal-body,
   .modal-backdrop {
     position: static !important;
+    display: block !important;
+    inset: auto !important;
     box-shadow: none !important;
     border: none !important;
     background: transparent !important;
@@ -6869,6 +6872,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
     margin: 0 !important;
     overflow: visible !important;
     transform: none !important;
+    backdrop-filter: none !important;
   }
 
   #printable-tax-invoice,

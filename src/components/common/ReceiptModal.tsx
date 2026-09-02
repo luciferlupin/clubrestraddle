@@ -3,6 +3,7 @@ import { Printer, CheckCircle, Spade } from 'lucide-react';
 import { Modal } from './Modal';
 import { TournamentEntry } from '../../types';
 import { formatCurrency, formatDateTime, formatPlayerNumber } from '../../utils/formatters';
+import { printThermalSlip } from '../../utils/printThermal';
 import { useClub } from '../../context/ClubContext';
 
 interface ReceiptModalProps {
@@ -19,7 +20,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ entry, isOpen, onClo
   const player = players.find(candidate => candidate.id === entry.playerId);
 
   const handlePrint = () => {
-    window.print();
+    printThermalSlip('printable-receipt', `Tournament-Receipt-${entry.receiptNumber || 'Slip'}`);
   };
 
   return (
