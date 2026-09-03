@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Users,
   CheckCircle2,
@@ -9,10 +9,12 @@ import {
   ShieldCheck,
   Coins,
   History,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
 import { SuitWatermark } from '../common/PokerGraphics';
+import { AdminPlayerExportModal } from './AdminPlayerExportModal';
 
 interface AdminDashboardProps {
   onNavigateTab: (tab: string) => void;
@@ -57,6 +59,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
     currentCashBalance,
     totalExpensesAmount,
   } = useClub();
+
+  const [isExportPlayersOpen, setIsExportPlayersOpen] = useState(false);
 
   const activeTournaments = tournaments.filter(t => t.status === 'Registering' || t.status === 'Running');
   const approvedToday = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
@@ -153,7 +157,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => setIsExportPlayersOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(225, 29, 72, 0.15)',
+              borderColor: 'rgba(225, 29, 72, 0.4)',
+              color: '#fda4af',
+              fontWeight: 700,
+            }}
+            title="Export all registered player data into a complete table or CSV"
+          >
+            <FileSpreadsheet size={14} color="#f43f5e" /> Export Players
+          </button>
           <button className="btn btn-secondary btn-sm" onClick={() => onNavigateTab('players')}>
             <Users size={14} /> Member Directory
           </button>
@@ -273,6 +293,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
           )}
         </div>
       </div>
+
+      {/* Admin Players Full Table Export Modal */}
+      <AdminPlayerExportModal
+        isOpen={isExportPlayersOpen}
+        onClose={() => setIsExportPlayersOpen(false)}
+        players={players}
+      />
     </div>
   );
 };

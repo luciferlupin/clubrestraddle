@@ -8,7 +8,7 @@ interface ModalProps {
   subtitle?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -40,7 +40,17 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className={`modal-content ${size === 'lg' ? 'modal-lg' : size === 'sm' ? 'modal-sm' : ''}`}
+        className={`modal-content ${
+          size === 'full'
+            ? 'modal-full'
+            : size === 'xl'
+            ? 'modal-xl'
+            : size === 'lg'
+            ? 'modal-lg'
+            : size === 'sm'
+            ? 'modal-sm'
+            : ''
+        }`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

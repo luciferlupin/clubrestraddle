@@ -22,6 +22,8 @@ import {
   ArrowLeft,
   Trophy,
   Shield,
+  FileSpreadsheet,
+  Download,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR, formatFullAadhaar, formatPanNumber, formatPlayerNumber } from '../../utils/formatters';
@@ -32,6 +34,7 @@ import { StaffManager } from './StaffManager';
 import { PlayerLedger } from '../player/PlayerLedger';
 import { isSupabaseConfigured } from '../../services/supabaseClient';
 import { AdminKycDocumentPhotos } from './AdminKycDocumentPhotos';
+import { AdminPlayerExportModal } from './AdminPlayerExportModal';
 
 export const MobileAdminPortal: React.FC = () => {
   const {
@@ -73,6 +76,7 @@ export const MobileAdminPortal: React.FC = () => {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isChipsDrawerOpen, setIsChipsDrawerOpen] = useState(false);
   const [isTournamentsDrawerOpen, setIsTournamentsDrawerOpen] = useState(false);
+  const [isExportPlayersModalOpen, setIsExportPlayersModalOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [kycAction, setKycAction] = useState<'verified' | 'rejected' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -662,12 +666,33 @@ export const MobileAdminPortal: React.FC = () => {
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px', gap: '8px' }}>
               <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#94a3b8' }}>
                 {playerView === 'pending'
                   ? `Showing ${filteredPlayers.length} pending KYC review${filteredPlayers.length === 1 ? '' : 's'}`
                   : `Showing ${filteredPlayers.length} of ${players.length} members`}
               </span>
+              <button
+                type="button"
+                onClick={() => setIsExportPlayersModalOpen(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  background: 'rgba(225, 29, 72, 0.15)',
+                  border: '1px solid rgba(225, 29, 72, 0.35)',
+                  color: '#fda4af',
+                  borderRadius: '10px',
+                  padding: '5px 10px',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+                title="Export complete table of players"
+              >
+                <FileSpreadsheet size={14} color="#f43f5e" />
+                <span>Export Table</span>
+              </button>
             </div>
 
             {/* Players Inset Group */}
@@ -1762,6 +1787,12 @@ export const MobileAdminPortal: React.FC = () => {
         </div>
       </MobileBottomDrawer>
 
+      {/* Admin Players Full Table Export Modal */}
+      <AdminPlayerExportModal
+        isOpen={isExportPlayersModalOpen}
+        onClose={() => setIsExportPlayersModalOpen(false)}
+        players={players}
+      />
     </div>
   );
 };

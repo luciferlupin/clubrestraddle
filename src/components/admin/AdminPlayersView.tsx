@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, ShieldCheck, CheckCircle, XCircle, Eye, Edit3, Trash2, UserCheck, Calendar, AlertTriangle, Wallet, Trophy, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { Users, Search, ShieldCheck, CheckCircle, XCircle, Eye, Edit3, Trash2, UserCheck, Calendar, AlertTriangle, Wallet, Trophy, ArrowUpRight, ArrowDownLeft, Download, FileSpreadsheet } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { Player, KYCStatus, MembershipTier } from '../../types';
 import { formatDateOnly, formatDateTime, maskGovtId, formatFullAadhaar, formatAadhaarNumber, formatPanNumber, formatPlayerNumber, formatCurrency } from '../../utils/formatters';
+import { downloadPlayersCSV } from '../../utils/exportPlayers';
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { Modal } from '../common/Modal';
 import { Pagination } from '../common/Pagination';
 import { PlayerLedger } from '../player/PlayerLedger';
 import { AdminKycDocumentPhotos } from './AdminKycDocumentPhotos';
 import { DocumentPhotoUpload } from '../common/DocumentPhotoUpload';
+import { AdminPlayerExportModal } from './AdminPlayerExportModal';
 
 export const AdminPlayersView: React.FC = () => {
   const { players, reviewKYC, updatePlayer, deletePlayer, checkIns, depositToPlayerWallet, withdrawFromPlayerWallet, fetchPlayerKycDocs } = useClub();
   const [search, setSearch] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   useEffect(() => {
     if (selectedPlayer?.id) {
@@ -151,19 +154,42 @@ export const AdminPlayersView: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ position: 'relative' }}>
-          <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
-          <input
-            type="text"
-            className="form-input"
-            style={{ paddingLeft: '32px', width: '240px', fontSize: '0.8rem' }}
-            placeholder="Search member, phone, ID..."
-            value={search}
-            onChange={e => {
-              setSearch(e.target.value);
-              setPage(1);
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
+            <input
+              type="text"
+              className="form-input"
+              style={{ paddingLeft: '32px', width: '220px', fontSize: '0.8rem' }}
+              placeholder="Search member, phone, ID..."
+              value={search}
+              onChange={e => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setIsExportModalOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              padding: '6px 12px',
+              background: 'linear-gradient(135deg, rgba(225, 29, 72, 0.15) 0%, rgba(15, 8, 12, 0.8) 100%)',
+              borderColor: 'rgba(225, 29, 72, 0.4)',
+              color: '#ffffff',
             }}
-          />
+            title="Export full member registry in an interactive table, CSV, or printable PDF"
+          >
+            <FileSpreadsheet size={15} color="#fda4af" />
+            <span>Export Table</span>
+          </button>
         </div>
       </div>
 
@@ -776,6 +802,13 @@ export const AdminPlayersView: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* EXPORT ALL PLAYERS TABLE MODAL */}
+      <AdminPlayerExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        players={players}
+      />
     </div>
   );
 };

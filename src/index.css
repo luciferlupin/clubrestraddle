@@ -1370,6 +1370,16 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
   max-width: 800px;
 }
 
+.modal-content.modal-xl {
+  max-width: 1200px;
+  width: 95vw;
+}
+
+.modal-content.modal-full {
+  max-width: 98vw;
+  width: 98vw;
+}
+
 .modal-header {
   padding: 18px 22px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
