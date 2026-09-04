@@ -18,6 +18,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { buildPlayerVerificationUrl } from '../../utils/qrPass';
 import { DailyCheckIn, Player, Tournament, TournamentEntry } from '../../types';
 import { formatClubLabel, formatCurrency, formatDateTime, formatShortDateTime, formatTimeOnly, formatPlayerNumber } from '../../utils/formatters';
 import { EntryBadge, KYCBadge, TierBadge } from '../common/Badge';
@@ -65,9 +66,7 @@ export const MobilePlayerHome: React.FC<MobilePlayerHomeProps> = ({
   const playerEntries = entries.filter((entry) => entry.playerId === player.id);
   const walletBalance = player.walletBalance ?? 0;
 
-  const verificationUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`
-    : `https://clubrestraddle.vercel.app/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`;
+  const verificationUrl = buildPlayerVerificationUrl(player, todayCheckIn);
 
   const statusTitle = !isCheckedIn
     ? 'Ready for today’s visit?'

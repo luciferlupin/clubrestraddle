@@ -19,6 +19,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { buildPlayerVerificationUrl } from '../../utils/qrPass';
 import { useClub } from '../../context/ClubContext';
 import { Player, DailyCheckIn } from '../../types';
 import { formatTimeOnly, formatDateOnly, maskGovtId, formatPlayerNumber, formatCurrency } from '../../utils/formatters';
@@ -299,9 +300,7 @@ export const KYCRegistrationForm: React.FC<KYCRegistrationFormProps> = ({ onSucc
 
   // If Registration succeeded, show the Door Clearance QR Pass
   if (registeredData) {
-    const verificationUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/?portal=security&scan=${registeredData.checkIn.id}&player=${registeredData.player.id}`
-      : `https://clubrestraddle.vercel.app/?portal=security&scan=${registeredData.checkIn.id}&player=${registeredData.player.id}`;
+    const verificationUrl = buildPlayerVerificationUrl(registeredData.player, registeredData.checkIn);
 
     const isApproved = registeredData.checkIn.verificationStatus === 'approved';
     const entryInvoice: ClubInvoiceData | null = isApproved

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Clock, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { buildPlayerVerificationUrl } from '../../utils/qrPass';
 import { useClub } from '../../context/ClubContext';
 import { Player } from '../../types';
 import { formatTimeOnly } from '../../utils/formatters';
@@ -115,7 +116,7 @@ export const DailyCheckInCard: React.FC<DailyCheckInCardProps> = ({ player }) =>
                     }}
                   >
                     <QRCodeSVG
-                      value={typeof window !== 'undefined' ? `${window.location.origin}/?portal=security&scan=${todayCheckIn.id}&player=${player.id}` : `https://clubrestraddle.vercel.app/?portal=security&scan=${todayCheckIn.id}&player=${player.id}`}
+                      value={buildPlayerVerificationUrl(player, todayCheckIn)}
                       size={140}
                       bgColor="#ffffff"
                       fgColor="#0f172a"

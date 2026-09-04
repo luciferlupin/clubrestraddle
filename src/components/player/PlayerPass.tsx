@@ -8,6 +8,7 @@ import { Modal } from '../common/Modal';
 import { SuitWatermark, PassCornerPip, CardSuit } from '../common/PokerGraphics';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
+import { buildPlayerVerificationUrl } from '../../utils/qrPass';
 
 interface PlayerPassProps {
   player: Player;
@@ -19,9 +20,7 @@ export const PlayerPass: React.FC<PlayerPassProps> = ({ player, todayCheckIn }) 
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const [entryInvoice, setEntryInvoice] = useState<ClubInvoiceData | null>(null);
 
-  const verificationUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`
-    : `https://clubrestraddle.vercel.app/?portal=security&scan=${todayCheckIn?.id || player.id}&player=${player.id}`;
+  const verificationUrl = buildPlayerVerificationUrl(player, todayCheckIn);
 
   return (
     <>

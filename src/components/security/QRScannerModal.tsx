@@ -22,6 +22,7 @@ import { formatTimeOnly, formatAadhaarNumber, formatPanNumber, formatPlayerNumbe
 import { KYCBadge, TierBadge } from '../common/Badge';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
+import { parsePlayerVerificationCode } from '../../utils/qrPass';
 import confetti from 'canvas-confetti';
 import jsQR from 'jsqr';
 
@@ -76,6 +77,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     approvePlayerEntry,
     rejectPlayerEntry,
     lookupMemberByPhone,
+    ensureScannedPlayer,
     staffName,
   } = useClub();
 
@@ -142,57 +144,45 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     setIsSearching(true);
 
     try {
-      let extractedPlayerId: string | null = null;
-      let extractedScanId: string | null = null;
-      let extractedPhone: string | null = null;
+      const parsed = parsePlayerVerificationCode(trimmed);
 
-      // 1. Try URL / Query string parsing
-      if (trimmed.includes('?') || trimmed.includes('/') || trimmed.startsWith('http')) {
-        try {
-          const urlStr = trimmed.startsWith('http')
-            ? trimmed
-            : `https://clubrestraddle.vercel.app/${trimmed.startsWith('?') ? trimmed : `?${trimmed}`}`;
-          const urlObj = new URL(urlStr);
-          extractedPlayerId =
-            urlObj.searchParams.get('player') ||
-            urlObj.searchParams.get('playerId') ||
-            urlObj.searchParams.get('p') ||
-            urlObj.searchParams.get('id') ||
-            urlObj.searchParams.get('member');
+      // 1. High-fidelity match & sync via ensureScannedPlayer
+      if (
+        parsed.fullName ||
+        parsed.phone ||
+        parsed.panNumber ||
+        parsed.aadhaarNumber ||
+        (parsed.playerId && parsed.playerId.length > 3)
+      ) {
+        const res = ensureScannedPlayer({
+          id: parsed.playerId,
+          checkInId: parsed.scanId,
+          fullName: parsed.fullName,
+          phone: parsed.phone,
+          email: parsed.email,
+          aadhaarNumber: parsed.aadhaarNumber,
+          panNumber: parsed.panNumber,
+          membershipTier: parsed.membershipTier,
+        });
 
-          extractedScanId =
-            urlObj.searchParams.get('scan') ||
-            urlObj.searchParams.get('scanId') ||
-            urlObj.searchParams.get('checkInId') ||
-            urlObj.searchParams.get('c');
+        if (res && res.player) {
+          playScanChime();
+          triggerHaptic();
+          setScanSuccessFlash(true);
+          setTimeout(() => setScanSuccessFlash(false), 500);
 
-          extractedPhone =
-            urlObj.searchParams.get('phone') ||
-            urlObj.searchParams.get('mobile') ||
-            urlObj.searchParams.get('m');
-        } catch {
-          // Fallback if URL parsing failed
+          setScannedResult({ player: res.player, checkIn: res.checkIn });
+          setManualCode('');
+          return true;
         }
       }
 
-      // 2. Try JSON parsing
-      if (!extractedPlayerId && !extractedScanId && trimmed.startsWith('{') && trimmed.endsWith('}')) {
-        try {
-          const parsed = JSON.parse(trimmed);
-          extractedPlayerId = parsed.playerId || parsed.player || parsed.id || parsed.memberId;
-          extractedScanId = parsed.scan || parsed.checkInId || parsed.scanId;
-          extractedPhone = parsed.phone || parsed.mobile;
-        } catch {
-          // Fallback
-        }
-      }
-
-      // 3. Resolve Player & Check-In in local memory
+      // 2. Resolve Player & Check-In in local memory
       let foundPlayer: Player | undefined;
       let foundCheckIn: DailyCheckIn | undefined;
 
       // Try finding by Check-In ID
-      const searchScanId = extractedScanId || trimmed;
+      const searchScanId = parsed.scanId || trimmed;
       if (searchScanId) {
         foundCheckIn = todayCheckIns.find(
           c =>
@@ -213,9 +203,9 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         }
       }
 
-      // Try finding by Player ID / phone / member number in memory
+      // Try finding by Player ID / phone / PAN / Aadhaar in memory
       if (!foundPlayer) {
-        const searchPlayerId = extractedPlayerId || extractedPhone || trimmed;
+        const searchPlayerId = parsed.playerId || parsed.phone || trimmed;
         const cleanDigits = searchPlayerId.replace(/\D/g, '');
 
         foundPlayer = players.find(p => {
@@ -226,11 +216,10 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
           return (
             p.id.toLowerCase() === searchPlayerId.toLowerCase() ||
-            (searchPlayerId.length > 3 && trimmed.toLowerCase().includes(p.id.toLowerCase())) ||
-            String(p.memberNumber || '') === searchPlayerId ||
+            (searchPlayerId.length > 5 && trimmed.toLowerCase().includes(p.id.toLowerCase())) ||
             (cleanDigits.length >= 10 && pDigits.includes(cleanDigits.slice(-10))) ||
             (cleanDigits.length === 12 && pAadhaar === cleanDigits) ||
-            (searchPlayerId.length >= 8 && pPan === searchPlayerId.toUpperCase()) ||
+            (searchPlayerId.length === 10 && pPan === searchPlayerId.toUpperCase()) ||
             (searchPlayerId.length >= 6 && pGovtId === searchPlayerId.toLowerCase())
           );
         });
@@ -242,9 +231,9 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         }
       }
 
-      // 4. If not found in local memory, perform live async Supabase lookup
+      // 3. If not found in local memory, perform live async Supabase lookup
       if (!foundPlayer) {
-        const lookupTarget = extractedPlayerId || extractedScanId || extractedPhone || trimmed;
+        const lookupTarget = parsed.playerId || parsed.scanId || parsed.phone || trimmed;
         const livePlayer = await lookupMemberByPhone(lookupTarget);
         if (livePlayer) {
           foundPlayer = livePlayer;
@@ -274,7 +263,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
     } finally {
       setIsSearching(false);
     }
-  }, [players, todayCheckIns, checkIns, lookupMemberByPhone]);
+  }, [players, todayCheckIns, checkIns, lookupMemberByPhone, ensureScannedPlayer]);
 
   // Video Frame Scanning Loop with Native BarcodeDetector + Aspect-Preserving jsQR
   useEffect(() => {

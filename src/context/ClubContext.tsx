@@ -12,6 +12,7 @@ import {
   CashCategory,
   PaymentMethod,
   KYCStatus,
+  MembershipTier,
   StaffUser,
   ChipRequest,
   GateCashTransfer,
@@ -266,6 +267,17 @@ interface ClubContextType {
 
   // Player CRUD Actions
   registerNewPlayer: (kycData: Omit<PlayerKYC, 'submittedAt'>) => { player: Player; checkIn: DailyCheckIn };
+  ensureScannedPlayer: (payload: {
+    id?: string;
+    checkInId?: string;
+    fullName?: string;
+    phone?: string;
+    email?: string;
+    aadhaarNumber?: string;
+    panNumber?: string;
+    membershipTier?: MembershipTier;
+    photoUrl?: string;
+  }) => { player: Player; checkIn?: DailyCheckIn };
   performDailyCheckIn: (playerId: string) => DailyCheckIn;
   updatePlayer: (playerId: string, updates: Partial<Player>) => void;
   deletePlayer: (playerId: string) => void;
@@ -1931,7 +1943,10 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // PLAYER ACTIONS
   const registerNewPlayer = (kycData: Omit<PlayerKYC, 'submittedAt'>) => {
-    const newId = generateSequentialPlayerId(players);
+    // Generate globally distinctive unique ID while maintaining sequential member numbers
+    const uniqueSuffix = Date.now().toString(36).toUpperCase() + '-' + Math.floor(1000 + Math.random() * 9000);
+    const newId = `PLR-${uniqueSuffix}`;
+    const nextMemberNumber = players.reduce((max, player) => Math.max(max, player.memberNumber || 0), 0) + 1;
     const nowIso = new Date().toISOString();
     const nowTime = new Date().toTimeString().split(' ')[0];
 
@@ -1979,7 +1994,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const newPlayer: Player = {
       id: newId,
-      memberNumber: players.reduce((max, player) => Math.max(max, player.memberNumber || 0), 0) + 1,
+      memberNumber: nextMemberNumber,
       fullName: completeKYC.fullName,
       phone: completeKYC.phone,
       email: completeKYC.email,
@@ -1993,7 +2008,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const newCheckIn: DailyCheckIn = {
-      id: generateSequentialCheckInId(checkIns),
+      id: `CHK-${uniqueSuffix}`,
       playerId: newId,
       playerName: completeKYC.fullName,
       playerPhone: completeKYC.phone,
@@ -2056,6 +2071,107 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
 
     return { player: newPlayer, checkIn: newCheckIn };
+  };
+
+  const ensureScannedPlayer = (payload: {
+    id?: string;
+    checkInId?: string;
+    fullName?: string;
+    phone?: string;
+    email?: string;
+    aadhaarNumber?: string;
+    panNumber?: string;
+    membershipTier?: MembershipTier;
+    photoUrl?: string;
+  }): { player: Player; checkIn?: DailyCheckIn } => {
+    const cleanPhone = (payload.phone || '').trim();
+    const cleanDigits = cleanPhone.replace(/\D/g, '');
+    const tenDigits = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
+    const cleanPan = (payload.panNumber || '').trim().toUpperCase();
+    const cleanAadhaar = (payload.aadhaarNumber || '').replace(/\D/g, '');
+    const cleanId = (payload.id || '').trim();
+    const cleanName = (payload.fullName || '').trim();
+    const cleanScanId = (payload.checkInId || '').trim();
+
+    // 1. Search existing in-memory players
+    let matchedPlayer = players.find(p => {
+      const pDigits = p.phone.replace(/\D/g, '');
+      const pPan = (p.kyc?.panNumber || '').toUpperCase();
+      const pAadhaar = (p.kyc?.aadhaarNumber || '').replace(/\D/g, '');
+
+      if (cleanId && cleanId.length > 5 && p.id.toLowerCase() === cleanId.toLowerCase()) return true;
+      if (tenDigits.length >= 10 && pDigits.includes(tenDigits)) return true;
+      if (cleanPan.length === 10 && pPan === cleanPan) return true;
+      if (cleanAadhaar.length === 12 && pAadhaar === cleanAadhaar) return true;
+      if (cleanName && cleanName.length > 2 && p.fullName.toLowerCase() === cleanName.toLowerCase()) return true;
+      return false;
+    });
+
+    if (matchedPlayer) {
+      let shouldUpdate = false;
+      let updatedPlayer = { ...matchedPlayer };
+
+      // Ensure customer's real name is retained if provided
+      if (cleanName && cleanName.length > 1 && cleanName !== matchedPlayer.fullName) {
+        updatedPlayer.fullName = cleanName;
+        updatedPlayer.kyc = { ...updatedPlayer.kyc, fullName: cleanName };
+        shouldUpdate = true;
+      }
+      if (cleanPan && !updatedPlayer.kyc?.panNumber) {
+        updatedPlayer.kyc = { ...updatedPlayer.kyc, panNumber: cleanPan };
+        shouldUpdate = true;
+      }
+      if (cleanAadhaar && !updatedPlayer.kyc?.aadhaarNumber) {
+        updatedPlayer.kyc = { ...updatedPlayer.kyc, aadhaarNumber: cleanAadhaar };
+        shouldUpdate = true;
+      }
+
+      if (shouldUpdate) {
+        const nextPlayers = players.map(p => p.id === updatedPlayer.id ? updatedPlayer : p);
+        setPlayers(nextPlayers);
+        saveToStorage(STORAGE_KEYS.PLAYERS, nextPlayers);
+        broadcastUpdate('PLAYERS_UPDATED', nextPlayers);
+      }
+
+      let foundCheckIn = todayCheckIns.find(
+        c => c.playerId === updatedPlayer.id || (cleanScanId && c.id.toLowerCase() === cleanScanId.toLowerCase())
+      );
+      if (!foundCheckIn) {
+        foundCheckIn = checkIns.find(
+          c => c.playerId === updatedPlayer.id || (cleanScanId && c.id.toLowerCase() === cleanScanId.toLowerCase())
+        );
+      }
+      if (!foundCheckIn) {
+        foundCheckIn = performDailyCheckIn(updatedPlayer.id);
+      }
+
+      setSelectedPlayerIdState(updatedPlayer.id);
+      return { player: updatedPlayer, checkIn: foundCheckIn };
+    }
+
+    // 2. Not found in local memory — register new player with customer's exact scanned identity
+    if (cleanName || cleanPhone || cleanPan || cleanAadhaar) {
+      const regResult = registerNewPlayer({
+        fullName: cleanName || 'Member Player',
+        phone: cleanPhone || '+91 99999 99999',
+        email: payload.email || `${(cleanName || 'member').toLowerCase().replace(/\s+/g, '.')}@club-restraddle.com`,
+        aadhaarNumber: cleanAadhaar || undefined,
+        panNumber: cleanPan || undefined,
+        govtIdType: (cleanPan || cleanAadhaar) ? 'Aadhaar & PAN Card' : 'Walk-in Member',
+        govtIdNumber: (cleanPan && cleanAadhaar) ? `PAN: ${cleanPan} | Aadhaar: ${cleanAadhaar}` : (cleanPan || cleanAadhaar || 'KYC-VERIFIED'),
+        address: 'Delhi NCR, India',
+        emergencyContactName: '',
+        emergencyContactPhone: '',
+        agreedToRules: true,
+        photoUrl: payload.photoUrl || cartoonAvatarForPlayer(cleanName || cleanId || 'member'),
+        phoneVerified: Boolean(cleanPhone),
+      });
+
+      setSelectedPlayerIdState(regResult.player.id);
+      return regResult;
+    }
+
+    return { player: players[0], checkIn: todayCheckIns[0] };
   };
 
   const lookupMemberByPhone = async (phoneOrIdOrScan: string): Promise<Player | null> => {
@@ -4245,6 +4361,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         allTimeGateCashInHand,
         transferGateCashToCashier,
         registerNewPlayer,
+        ensureScannedPlayer,
         performDailyCheckIn,
         updatePlayer,
         deletePlayer,

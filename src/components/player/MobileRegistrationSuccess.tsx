@@ -5,6 +5,7 @@ import { Player, DailyCheckIn } from '../../types';
 import { formatPlayerNumber, formatCurrency, formatTimeOnly, formatAadhaarNumber, formatPanNumber } from '../../utils/formatters';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
+import { buildPlayerVerificationUrl } from '../../utils/qrPass';
 import { useClub } from '../../context/ClubContext';
 
 interface MobileRegistrationSuccessProps {
@@ -21,9 +22,7 @@ export const MobileRegistrationSuccess: React.FC<MobileRegistrationSuccessProps>
   const { staffName } = useClub();
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
-  const verificationUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/?portal=security&scan=${checkIn.id}&player=${player.id}`
-    : `https://clubrestraddle.vercel.app/?portal=security&scan=${checkIn.id}&player=${player.id}`;
+  const verificationUrl = buildPlayerVerificationUrl(player, checkIn);
 
   const isApproved = checkIn.verificationStatus === 'approved';
   const isRejected = checkIn.verificationStatus === 'rejected';

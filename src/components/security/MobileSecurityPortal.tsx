@@ -41,6 +41,7 @@ import { GateCashHandoverModal } from './GateCashHandoverModal';
 import { ClubQRModal } from '../common/ClubQRModal';
 import { ClubTaxInvoiceModal, ClubInvoiceData } from '../common/ClubTaxInvoiceModal';
 import { generateEntryFeeInvoice } from '../../utils/invoiceGenerator';
+import { parsePlayerVerificationCode } from '../../utils/qrPass';
 import confetti from 'canvas-confetti';
 
 export const MobileSecurityPortal: React.FC = () => {
@@ -62,6 +63,7 @@ export const MobileSecurityPortal: React.FC = () => {
     todayGateTransfers,
     fetchPlayerKycDocs,
     fetchMultiplePlayerKycDocs,
+    ensureScannedPlayer,
   } = useClub();
 
   const [activeNav, setActiveNav] = useState<'scan' | 'queue' | 'gate-cash'>('scan');
@@ -70,34 +72,44 @@ export const MobileSecurityPortal: React.FC = () => {
   const [search, setSearch] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => {
-    if (typeof window === 'undefined') return null;
-    const params = new URLSearchParams(window.location.search);
-    const scanId = params.get('scan') || params.get('scanId');
-    const playerId = params.get('player') || params.get('playerId');
-    if (scanId) {
-      const foundCheckIn = todayCheckIns.find(c => c.id === scanId) || checkIns.find(c => c.id === scanId);
-      return players.find(p => p.id === foundCheckIn?.playerId) || null;
+    if (typeof window === 'undefined' || !window.location.search) return null;
+    const parsed = parsePlayerVerificationCode(window.location.search);
+    if (parsed.fullName || parsed.phone || parsed.playerId || parsed.scanId) {
+      const res = ensureScannedPlayer({
+        id: parsed.playerId,
+        checkInId: parsed.scanId,
+        fullName: parsed.fullName,
+        phone: parsed.phone,
+        email: parsed.email,
+        aadhaarNumber: parsed.aadhaarNumber,
+        panNumber: parsed.panNumber,
+        membershipTier: parsed.membershipTier,
+      });
+      if (res && res.player) return res.player;
     }
-    return players.find(p => p.id === playerId) || null;
+    return null;
   });
 
   // Reactive URL query parameter listener
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const scanId = params.get('scan') || params.get('scanId');
-    const playerId = params.get('player') || params.get('playerId');
-    if (scanId || playerId) {
-      const linkedCheckIn = scanId ? (todayCheckIns.find(c => c.id === scanId) || checkIns.find(c => c.id === scanId)) : undefined;
-      const targetPlayerId = linkedCheckIn?.playerId || playerId;
-      if (targetPlayerId) {
-        const found = players.find(p => p.id === targetPlayerId);
-        if (found) {
-          setSelectedPlayer(found);
-        }
+    if (typeof window === 'undefined' || !window.location.search) return;
+    const parsed = parsePlayerVerificationCode(window.location.search);
+    if (parsed.fullName || parsed.phone || parsed.playerId || parsed.scanId) {
+      const res = ensureScannedPlayer({
+        id: parsed.playerId,
+        checkInId: parsed.scanId,
+        fullName: parsed.fullName,
+        phone: parsed.phone,
+        email: parsed.email,
+        aadhaarNumber: parsed.aadhaarNumber,
+        panNumber: parsed.panNumber,
+        membershipTier: parsed.membershipTier,
+      });
+      if (res && res.player) {
+        setSelectedPlayer(res.player);
       }
     }
-  }, [players, todayCheckIns, checkIns]);
+  }, [players, todayCheckIns, checkIns, ensureScannedPlayer]);
 
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [isRejectKycOpen, setIsRejectKycOpen] = useState(false);

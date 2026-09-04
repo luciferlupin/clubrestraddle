@@ -24,6 +24,7 @@ import { ClubQRModal } from '../common/ClubQRModal';
 import { StatCard } from '../common/StatCard';
 import { DesktopPortalHeader } from '../common/DesktopPortalHeader';
 import { AppBreadcrumbs } from '../common/AppBreadcrumbs';
+import { parsePlayerVerificationCode } from '../../utils/qrPass';
 
 export const SecurityPortal: React.FC = () => {
   const {
@@ -38,6 +39,7 @@ export const SecurityPortal: React.FC = () => {
     todayGateTransferredAmount,
     todayGateCashInHand,
     fetchMultiplePlayerKycDocs,
+    ensureScannedPlayer,
   } = useClub();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
@@ -61,14 +63,21 @@ export const SecurityPortal: React.FC = () => {
 
   // Prefer a scanned/deep-linked player, then the first pending arrival.
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const scanId = params.get('scan') || params.get('scanId');
-      const playerId = params.get('player') || params.get('playerId');
-      const linkedCheckIn = scanId ? (todayCheckIns.find(c => c.id === scanId) || checkIns.find(c => c.id === scanId)) : undefined;
-      const linkedPlayerId = linkedCheckIn?.playerId || playerId;
-      const linkedPlayer = linkedPlayerId ? players.find(p => p.id === linkedPlayerId) : undefined;
-      if (linkedPlayer) return linkedPlayer;
+    if (typeof window !== 'undefined' && window.location.search) {
+      const parsed = parsePlayerVerificationCode(window.location.search);
+      if (parsed.fullName || parsed.phone || parsed.playerId || parsed.scanId) {
+        const res = ensureScannedPlayer({
+          id: parsed.playerId,
+          checkInId: parsed.scanId,
+          fullName: parsed.fullName,
+          phone: parsed.phone,
+          email: parsed.email,
+          aadhaarNumber: parsed.aadhaarNumber,
+          panNumber: parsed.panNumber,
+          membershipTier: parsed.membershipTier,
+        });
+        if (res && res.player) return res.player;
+      }
     }
 
     const pendingCheckIn = todayCheckIns.find(c => c.verificationStatus === 'pending');
@@ -81,21 +90,24 @@ export const SecurityPortal: React.FC = () => {
 
   // Reactive URL parameter listener for scanned / deep linked passes
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const scanId = params.get('scan') || params.get('scanId');
-    const playerId = params.get('player') || params.get('playerId');
-    if (scanId || playerId) {
-      const linkedCheckIn = scanId ? (todayCheckIns.find(c => c.id === scanId) || checkIns.find(c => c.id === scanId)) : undefined;
-      const targetPlayerId = linkedCheckIn?.playerId || playerId;
-      if (targetPlayerId) {
-        const found = players.find(p => p.id === targetPlayerId);
-        if (found) {
-          setSelectedPlayer(found);
-        }
+    if (typeof window === 'undefined' || !window.location.search) return;
+    const parsed = parsePlayerVerificationCode(window.location.search);
+    if (parsed.fullName || parsed.phone || parsed.playerId || parsed.scanId) {
+      const res = ensureScannedPlayer({
+        id: parsed.playerId,
+        checkInId: parsed.scanId,
+        fullName: parsed.fullName,
+        phone: parsed.phone,
+        email: parsed.email,
+        aadhaarNumber: parsed.aadhaarNumber,
+        panNumber: parsed.panNumber,
+        membershipTier: parsed.membershipTier,
+      });
+      if (res && res.player) {
+        setSelectedPlayer(res.player);
       }
     }
-  }, [players, todayCheckIns, checkIns]);
+  }, [players, todayCheckIns, checkIns, ensureScannedPlayer]);
 
   // Automatically deselect if the player is deleted
   useEffect(() => {
