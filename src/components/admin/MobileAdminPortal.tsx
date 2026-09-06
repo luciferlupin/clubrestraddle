@@ -35,6 +35,7 @@ import { PlayerLedger } from '../player/PlayerLedger';
 import { isSupabaseConfigured } from '../../services/supabaseClient';
 import { AdminKycDocumentPhotos } from './AdminKycDocumentPhotos';
 import { AdminPlayerExportModal } from './AdminPlayerExportModal';
+import { AdminLedgerExportModal } from './AdminLedgerExportModal';
 
 export const MobileAdminPortal: React.FC = () => {
   const {
@@ -58,6 +59,7 @@ export const MobileAdminPortal: React.FC = () => {
     cancelChipRequest,
     resetToDemoData,
     fetchPlayerKycDocs,
+    cashTransactions,
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'players' | 'attendance' | 'finance' | 'staff' | 'audit'>('dashboard');
@@ -77,6 +79,8 @@ export const MobileAdminPortal: React.FC = () => {
   const [isChipsDrawerOpen, setIsChipsDrawerOpen] = useState(false);
   const [isTournamentsDrawerOpen, setIsTournamentsDrawerOpen] = useState(false);
   const [isExportPlayersModalOpen, setIsExportPlayersModalOpen] = useState(false);
+  const [isExportLedgerModalOpen, setIsExportLedgerModalOpen] = useState(false);
+  const [exportLedgerPreset, setExportLedgerPreset] = useState<'all' | 'gate' | 'buyin' | 'chip' | 'payout'>('all');
   const [resetConfirm, setResetConfirm] = useState(false);
   const [kycAction, setKycAction] = useState<'verified' | 'rejected' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -874,6 +878,112 @@ export const MobileAdminPortal: React.FC = () => {
               >
                 <Plus size={15} /> Add Expense
               </button>
+            </div>
+
+            {/* Cash Ledger PDF Reports Bar */}
+            <div style={{
+              background: 'rgba(15, 23, 42, 0.7)',
+              border: '1px solid rgba(225, 29, 72, 0.25)',
+              borderRadius: '16px',
+              padding: '12px 14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fda4af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  📑 Cash Ledger PDF Reports
+                </span>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                  {cashTransactions?.length || 0} Records
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setExportLedgerPreset('all'); setIsExportLedgerModalOpen(true); }}
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    background: 'rgba(225, 29, 72, 0.15)',
+                    border: '1px solid rgba(225, 29, 72, 0.35)',
+                    color: '#fda4af',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <FileSpreadsheet size={14} color="#f43f5e" /> Total Ledger
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setExportLedgerPreset('gate'); setIsExportLedgerModalOpen(true); }}
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    background: 'rgba(245, 158, 11, 0.15)',
+                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    color: '#fbbf24',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🚪 Gate Cash PDF
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setExportLedgerPreset('buyin'); setIsExportLedgerModalOpen(true); }}
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    color: '#38bdf8',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🎟️ Buy-Ins PDF
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setExportLedgerPreset('all'); setIsExportLedgerModalOpen(true); }}
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ⚙️ Filter Streams...
+                </button>
+              </div>
             </div>
 
             {/* Expenses List */}
@@ -1736,6 +1846,60 @@ export const MobileAdminPortal: React.FC = () => {
             <ChevronRight size={18} color="#94a3b8" />
           </button>
 
+          {/* 5. Treasury & Cash Ledger Reports */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMoreOpen(false);
+              setExportLedgerPreset('all');
+              setIsExportLedgerModalOpen(true);
+            }}
+            style={{
+              background: 'linear-gradient(135deg, rgba(225, 29, 72, 0.12) 0%, rgba(20, 6, 10, 0.9) 100%)',
+              border: '1px solid rgba(225, 29, 72, 0.35)',
+              borderRadius: '14px',
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              color: '#ffffff',
+              cursor: 'pointer',
+              textAlign: 'left',
+              width: '100%',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(225, 29, 72, 0.2)',
+                  border: '1px solid rgba(225, 29, 72, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <FileSpreadsheet size={20} color="#fda4af" />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  Cash Ledger & Stream PDF
+                  <span style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: '999px', background: 'rgba(225, 29, 72, 0.15)', color: '#fda4af', border: '1px solid rgba(225, 29, 72, 0.3)' }}>
+                    Total / Gate / Buy-In
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '2px' }}>
+                  Print or export complete master ledger or specific stream reports
+                </div>
+              </div>
+            </div>
+            <ChevronRight size={18} color="#94a3b8" />
+          </button>
+
           {!isSupabaseConfigured && (
             <div style={{
               background: 'rgba(239, 68, 68, 0.08)',
@@ -1792,6 +1956,14 @@ export const MobileAdminPortal: React.FC = () => {
         isOpen={isExportPlayersModalOpen}
         onClose={() => setIsExportPlayersModalOpen(false)}
         players={players}
+      />
+
+      {/* Admin Cash Ledger & Stream PDF Export Modal */}
+      <AdminLedgerExportModal
+        isOpen={isExportLedgerModalOpen}
+        onClose={() => setIsExportLedgerModalOpen(false)}
+        transactions={cashTransactions}
+        initialPreset={exportLedgerPreset}
       />
     </div>
   );

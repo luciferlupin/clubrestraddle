@@ -15,6 +15,7 @@ import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatDateTime, formatINR } from '../../utils/formatters';
 import { SuitWatermark } from '../common/PokerGraphics';
 import { AdminPlayerExportModal } from './AdminPlayerExportModal';
+import { AdminLedgerExportModal } from './AdminLedgerExportModal';
 
 interface AdminDashboardProps {
   onNavigateTab: (tab: string) => void;
@@ -58,9 +59,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
     auditLogs,
     currentCashBalance,
     totalExpensesAmount,
+    cashTransactions,
   } = useClub();
 
   const [isExportPlayersOpen, setIsExportPlayersOpen] = useState(false);
+  const [isExportLedgerOpen, setIsExportLedgerOpen] = useState(false);
 
   const activeTournaments = tournaments.filter(t => t.status === 'Registering' || t.status === 'Running');
   const approvedToday = todayCheckIns.filter(c => c.verificationStatus === 'approved').length;
@@ -173,6 +176,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
             title="Export all registered player data into a complete table or CSV"
           >
             <FileSpreadsheet size={14} color="#f43f5e" /> Export Players
+          </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => setIsExportLedgerOpen(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(56, 189, 248, 0.15)',
+              borderColor: 'rgba(56, 189, 248, 0.4)',
+              color: '#7dd3fc',
+              fontWeight: 700,
+            }}
+            title="Export Total Ledger or filtered streams (Gate Cash, Buy-Ins) as PDF or CSV"
+          >
+            <FileSpreadsheet size={14} color="#38bdf8" /> Export Ledger PDF
           </button>
           <button className="btn btn-secondary btn-sm" onClick={() => onNavigateTab('players')}>
             <Users size={14} /> Member Directory
@@ -299,6 +318,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigateTab })
         isOpen={isExportPlayersOpen}
         onClose={() => setIsExportPlayersOpen(false)}
         players={players}
+      />
+
+      {/* Admin Ledger & Treasury Report Export Modal */}
+      <AdminLedgerExportModal
+        isOpen={isExportLedgerOpen}
+        onClose={() => setIsExportLedgerOpen(false)}
+        transactions={cashTransactions}
+        initialPreset="all"
       />
     </div>
   );

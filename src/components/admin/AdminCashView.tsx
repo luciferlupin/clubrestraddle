@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { DollarSign, ArrowDownLeft, ArrowUpRight, Wallet, Search, Filter, Smartphone, Landmark, CreditCard, Trash2, AlertTriangle } from 'lucide-react';
+import { DollarSign, ArrowDownLeft, ArrowUpRight, Wallet, Search, Filter, Smartphone, Landmark, CreditCard, Trash2, AlertTriangle, Printer, FileSpreadsheet, Download } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatDateTime } from '../../utils/formatters';
 import { CashFlowBadge } from '../common/Badge';
 import { PaymentMethod, CashTransaction } from '../../types';
 import { Modal } from '../common/Modal';
+import { AdminLedgerExportModal } from './AdminLedgerExportModal';
+import { printLedgerReport } from '../../utils/exportLedger';
 
 export const AdminCashView: React.FC = () => {
   const {
@@ -32,6 +34,56 @@ export const AdminCashView: React.FC = () => {
   const [filterType, setFilterType] = useState<'all' | 'in' | 'out'>('all');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState<'all' | PaymentMethod>('all');
   const [txnToDelete, setTxnToDelete] = useState<CashTransaction | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportPreset, setExportPreset] = useState<'all' | 'gate' | 'buyin' | 'chip' | 'payout'>('all');
+
+  const handleOpenExport = (preset: 'all' | 'gate' | 'buyin' | 'chip' | 'payout') => {
+    setExportPreset(preset);
+    setIsExportModalOpen(true);
+  };
+
+  const handleQuickPrintTotal = () => {
+    printLedgerReport(cashTransactions, {
+      title: 'Club Re Straddle — Total Master Cash Ledger',
+      subtitle: 'Complete Master Cash Flow & Treasury Ledger',
+      filterSummary: 'All Transactions & Channels',
+      dateRangeLabel: 'All Time History',
+      preparedBy: 'Admin Treasury Management',
+    });
+  };
+
+  const handleQuickPrintGateCash = () => {
+    const gateTxns = cashTransactions.filter(
+      t =>
+        t.category === 'Gate Cash Handover' ||
+        t.category === 'Gate Entry Fee Transfer' ||
+        (t.description && t.description.toLowerCase().includes('gate'))
+    );
+    printLedgerReport(gateTxns, {
+      title: 'Club Re Straddle — Gate Cash Stream Ledger',
+      subtitle: 'Gate Cash Handover & Entry Fee Transfers Audit',
+      filterSummary: 'Gate Cash Stream Only',
+      dateRangeLabel: 'All Time History',
+      preparedBy: 'Admin Treasury Management',
+    });
+  };
+
+  const handleQuickPrintBuyIns = () => {
+    const buyInTxns = cashTransactions.filter(
+      t =>
+        t.category === 'Tournament Buy-in' ||
+        t.category === 'Cash Game Buy-in' ||
+        t.category === 'Tournament Entry' ||
+        (t.description && t.description.toLowerCase().includes('buy-in'))
+    );
+    printLedgerReport(buyInTxns, {
+      title: 'Club Re Straddle — Tournament & Cash Game Buy-Ins Ledger',
+      subtitle: 'Member Buy-Ins & Table Entries Cash Flow Audit',
+      filterSummary: 'Buy-In Streams Only',
+      dateRangeLabel: 'All Time History',
+      preparedBy: 'Admin Treasury Management',
+    });
+  };
 
   const filteredTransactions = cashTransactions.filter(t => {
     const matchesSearch =
@@ -137,7 +189,7 @@ export const AdminCashView: React.FC = () => {
               <input
                 type="text"
                 className="form-input"
-                style={{ paddingLeft: '32px', width: '200px', fontSize: '0.8rem' }}
+                style={{ paddingLeft: '32px', width: '180px', fontSize: '0.8rem' }}
                 placeholder="Search ledger..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -146,7 +198,7 @@ export const AdminCashView: React.FC = () => {
 
             <select
               className="form-input"
-              style={{ width: '120px', fontSize: '0.8rem' }}
+              style={{ width: '110px', fontSize: '0.8rem' }}
               value={filterType}
               onChange={e => setFilterType(e.target.value as any)}
             >
@@ -154,7 +206,110 @@ export const AdminCashView: React.FC = () => {
               <option value="in">Cash In</option>
               <option value="out">Cash Out</option>
             </select>
+
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => handleOpenExport('all')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                padding: '6px 12px',
+              }}
+              title="Open Granular PDF Export Options with custom filters, dates, and CSV download"
+            >
+              <FileSpreadsheet size={14} /> Export / PDF Options
+            </button>
           </div>
+        </div>
+
+        {/* Quick Ledger PDF Presets Strip */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            padding: '8px 16px',
+            background: 'rgba(225, 29, 72, 0.05)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}
+        >
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fda4af', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            ⚡ 1-Click PDF Exports:
+          </span>
+
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={handleQuickPrintTotal}
+            style={{
+              fontSize: '0.74rem',
+              padding: '3px 10px',
+              background: 'rgba(225, 29, 72, 0.12)',
+              borderColor: 'rgba(225, 29, 72, 0.35)',
+              color: '#fda4af',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+            title="Instantly generate and print Total Master Ledger PDF"
+          >
+            <Printer size={12} color="#f43f5e" /> Total Ledger PDF
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={handleQuickPrintGateCash}
+            style={{
+              fontSize: '0.74rem',
+              padding: '3px 10px',
+              background: 'rgba(245, 158, 11, 0.12)',
+              borderColor: 'rgba(245, 158, 11, 0.35)',
+              color: '#fbbf24',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+            title="Instantly generate Gate Cash Handover & Entry Fee Ledger PDF"
+          >
+            <Printer size={12} color="#fbbf24" /> Gate Cash PDF
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={handleQuickPrintBuyIns}
+            style={{
+              fontSize: '0.74rem',
+              padding: '3px 10px',
+              background: 'rgba(56, 189, 248, 0.12)',
+              borderColor: 'rgba(56, 189, 248, 0.35)',
+              color: '#38bdf8',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+            title="Instantly generate Tournament & Cash Game Buy-Ins Ledger PDF"
+          >
+            <Printer size={12} color="#38bdf8" /> Buy-Ins PDF
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-ghost btn-xs"
+            onClick={() => handleOpenExport('gate')}
+            style={{ fontSize: '0.72rem', color: '#94a3b8', textDecoration: 'underline' }}
+          >
+            Custom Stream Filters...
+          </button>
         </div>
 
         {/* Channel Filter Pills */}
@@ -336,6 +491,14 @@ export const AdminCashView: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Admin Ledger & Treasury Report Export Modal */}
+      <AdminLedgerExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        transactions={cashTransactions}
+        initialPreset={exportPreset}
+      />
     </div>
   );
 };
