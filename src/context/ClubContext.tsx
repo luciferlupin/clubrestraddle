@@ -376,6 +376,9 @@ const STORAGE_KEYS = {
   SELECTED_PLAYER: 'clubshowdown_selected_player_v5',
 };
 
+const SUPABASE_HYDRATION_CACHE_KEY = 'clubshowdown_supabase_hydrated_at_v1';
+const SUPABASE_HYDRATION_CACHE_MS = 5 * 60 * 1000;
+
 const ClubContext = createContext<ClubContextType | undefined>(undefined);
 
 const loadFromStorage = <T,>(key: string, fallback: T): T => {
@@ -654,6 +657,19 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const fetchSupabaseData = useCallback(async (force = false) => {
     if (!isSupabaseConfigured || !supabase) return;
     const now = Date.now();
+
+    // A browser refresh used to repeat every collection query. The app already
+    // restores its last state from localStorage and receives ongoing Realtime
+    // events, so reuse that snapshot briefly. Manual Sync Now always bypasses
+    // this guard through force=true.
+    if (!force && typeof window !== 'undefined') {
+      try {
+        const lastHydratedAt = Number(window.sessionStorage.getItem(SUPABASE_HYDRATION_CACHE_KEY) || 0);
+        if (lastHydratedAt > 0 && now - lastHydratedAt < SUPABASE_HYDRATION_CACHE_MS) return;
+      } catch {
+        // sessionStorage may be unavailable in restrictive browser modes.
+      }
+    }
     if (!force && now - lastFetchTimeRef.current < 15000) {
       return; // Throttled: prevents rapid duplicate queries
     }
@@ -1006,6 +1022,13 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       setIsRealtimeConnected(true);
+      if (typeof window !== 'undefined') {
+        try {
+          window.sessionStorage.setItem(SUPABASE_HYDRATION_CACHE_KEY, String(Date.now()));
+        } catch {
+          // Non-critical cache write.
+        }
+      }
     } catch (err) {
       console.warn('Supabase fetch error, fallback to local storage:', err);
     }
