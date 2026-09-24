@@ -5406,6 +5406,388 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* =============================================================
+   STAFF OPERATIONS — QUIET, HIGH-LEGIBILITY WORKSPACE
+   These rules intentionally apply only to Admin, Security and Cashier
+   surfaces.  Operational screens need predictable density and status
+   hierarchy, not decorative colour competing with the next action.
+   ============================================================= */
+.desktop-admin-portal,
+.desktop-security-portal,
+.desktop-cashier-portal,
+.mobile-admin-command-centre,
+.is-security-portal,
+.cashier-mobile-theme {
+  --ops-surface: #120d10;
+  --ops-surface-raised: #181114;
+  --ops-border: rgba(255, 255, 255, 0.11);
+  --ops-border-strong: rgba(255, 255, 255, 0.18);
+  --ops-text: #f5f1f2;
+  --ops-muted: #b9afb2;
+  --ops-accent: #e11d48;
+  --ops-accent-soft: rgba(225, 29, 72, 0.14);
+  --ops-success: #78b79c;
+  --ops-warning: #d7aa67;
+  --ops-danger: #f08a9b;
+}
+
+.desktop-admin-portal,
+.desktop-security-portal,
+.desktop-cashier-portal {
+  gap: 18px;
+}
+
+/* A short header gives staff context without pushing their next task down. */
+.desktop-admin-portal .desktop-portal-header,
+.desktop-security-portal .desktop-portal-header,
+.desktop-cashier-portal .desktop-portal-header {
+  padding: 16px 18px;
+  gap: 16px;
+  border-color: var(--ops-border);
+  border-radius: 14px;
+  background: var(--ops-surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.desktop-admin-portal .desktop-portal-icon,
+.desktop-security-portal .desktop-portal-icon,
+.desktop-cashier-portal .desktop-portal-icon {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+  border-color: rgba(225, 29, 72, 0.42);
+  border-radius: 11px;
+  background: var(--ops-accent-soft);
+}
+
+.desktop-admin-portal .desktop-portal-eyebrow,
+.desktop-security-portal .desktop-portal-eyebrow,
+.desktop-cashier-portal .desktop-portal-eyebrow {
+  color: var(--ops-muted);
+  font-size: 0.67rem;
+  letter-spacing: 0.09em;
+}
+
+.desktop-admin-portal .desktop-portal-heading h1,
+.desktop-security-portal .desktop-portal-heading h1,
+.desktop-cashier-portal .desktop-portal-heading h1 {
+  font-size: 1.18rem;
+  letter-spacing: -0.02em;
+}
+
+.desktop-admin-portal .desktop-portal-subtitle,
+.desktop-security-portal .desktop-portal-subtitle,
+.desktop-cashier-portal .desktop-portal-subtitle,
+.desktop-admin-portal .desktop-portal-notice,
+.desktop-security-portal .desktop-portal-notice,
+.desktop-cashier-portal .desktop-portal-notice {
+  color: var(--ops-muted);
+}
+
+.desktop-admin-portal .desktop-portal-notice,
+.desktop-security-portal .desktop-portal-notice,
+.desktop-cashier-portal .desktop-portal-notice {
+  padding: 7px 10px;
+  border-color: var(--ops-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+/* Navigation reads as a compact control strip, with one obvious selection. */
+.desktop-admin-portal .desktop-section-nav,
+.desktop-security-portal .desktop-section-nav,
+.desktop-cashier-portal .desktop-section-nav {
+  gap: 6px;
+  padding: 6px;
+  border-color: var(--ops-border);
+  border-radius: 13px;
+  background: rgba(10, 7, 8, 0.72);
+  box-shadow: none;
+}
+
+@media (min-width: 1181px) {
+  .desktop-admin-portal .desktop-section-nav-admin { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+
+.desktop-admin-portal .desktop-section-nav-item,
+.desktop-security-portal .desktop-section-nav-item,
+.desktop-cashier-portal .desktop-section-nav-item {
+  min-height: 42px;
+  gap: 8px;
+  padding: 8px 10px;
+  border-color: transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ops-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.desktop-admin-portal .desktop-section-nav-item:hover,
+.desktop-security-portal .desktop-section-nav-item:hover,
+.desktop-cashier-portal .desktop-section-nav-item:hover {
+  transform: none;
+  border-color: var(--ops-border);
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--ops-text);
+}
+
+.desktop-admin-portal .desktop-section-nav-item.active,
+.desktop-security-portal .desktop-section-nav-item.active,
+.desktop-cashier-portal .desktop-section-nav-item.active {
+  transform: none;
+  border-color: rgba(225, 29, 72, 0.36);
+  background: var(--ops-accent-soft);
+  box-shadow: none;
+  color: #fff;
+}
+
+.desktop-admin-portal .desktop-section-nav-badge,
+.desktop-security-portal .desktop-section-nav-badge,
+.desktop-cashier-portal .desktop-section-nav-badge {
+  min-width: 19px;
+  padding: 2px 5px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.64rem;
+}
+
+/* Standardised cards and KPIs: no rainbow panels; colour belongs to status only. */
+.desktop-admin-portal .card,
+.desktop-security-portal .card,
+.desktop-cashier-portal .card,
+.mobile-admin-command-centre .m-card,
+.is-security-portal .m-card,
+.cashier-mobile-theme .m-card {
+  gap: 14px;
+  padding: 18px;
+  border-color: var(--ops-border);
+  border-radius: 14px;
+  background: var(--ops-surface);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.17);
+}
+
+.desktop-admin-portal .card:hover,
+.desktop-security-portal .card:hover,
+.desktop-cashier-portal .card:hover {
+  border-color: var(--ops-border-strong);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+}
+
+.desktop-admin-portal .card-header,
+.desktop-security-portal .card-header,
+.desktop-cashier-portal .card-header {
+  padding-bottom: 12px;
+  border-color: var(--ops-border);
+}
+
+.desktop-admin-portal .card-title,
+.desktop-security-portal .card-title,
+.desktop-cashier-portal .card-title {
+  font-size: 1rem;
+}
+
+.desktop-admin-portal .card-subtitle,
+.desktop-security-portal .card-subtitle,
+.desktop-cashier-portal .card-subtitle {
+  color: var(--ops-muted);
+  line-height: 1.45;
+}
+
+.desktop-admin-portal .stats-grid,
+.desktop-security-portal .stats-grid,
+.desktop-cashier-portal .stats-grid { gap: 12px; }
+
+.desktop-admin-portal .stat-card,
+.desktop-security-portal .stat-card,
+.desktop-cashier-portal .stat-card,
+.mobile-admin-command-centre .stat-card,
+.is-security-portal .stat-card,
+.cashier-mobile-theme .stat-card {
+  min-height: 108px;
+  padding: 16px;
+  border: 1px solid var(--ops-border) !important;
+  border-radius: 13px;
+  background: var(--ops-surface-raised) !important;
+  box-shadow: none !important;
+}
+
+.desktop-admin-portal .stat-card:hover,
+.desktop-security-portal .stat-card:hover,
+.desktop-cashier-portal .stat-card:hover {
+  transform: none;
+  border-color: var(--ops-border-strong) !important;
+}
+
+.desktop-admin-portal .stat-label,
+.desktop-security-portal .stat-label,
+.desktop-cashier-portal .stat-label,
+.mobile-admin-command-centre .stat-label,
+.is-security-portal .stat-label,
+.cashier-mobile-theme .stat-label {
+  color: var(--ops-muted) !important;
+  font-size: 0.68rem;
+  letter-spacing: 0.065em;
+}
+
+.desktop-admin-portal .stat-value,
+.desktop-security-portal .stat-value,
+.desktop-cashier-portal .stat-value,
+.mobile-admin-command-centre .stat-value,
+.is-security-portal .stat-value,
+.cashier-mobile-theme .stat-value {
+  color: var(--ops-text) !important;
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+}
+
+.desktop-admin-portal .stat-helper,
+.desktop-security-portal .stat-helper,
+.desktop-cashier-portal .stat-helper,
+.mobile-admin-command-centre .stat-helper,
+.is-security-portal .stat-helper,
+.cashier-mobile-theme .stat-helper {
+  color: var(--ops-muted) !important;
+  line-height: 1.35;
+}
+
+.desktop-admin-portal .stat-icon-wrapper,
+.desktop-security-portal .stat-icon-wrapper,
+.desktop-cashier-portal .stat-icon-wrapper,
+.mobile-admin-command-centre .stat-icon-wrapper,
+.is-security-portal .stat-icon-wrapper,
+.cashier-mobile-theme .stat-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--ops-border) !important;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.055) !important;
+  box-shadow: none;
+  color: var(--ops-text) !important;
+}
+
+/* Tables remain calm and scanable even during busy shifts. */
+.desktop-admin-portal .table-container,
+.desktop-security-portal .table-container,
+.desktop-cashier-portal .table-container {
+  border-color: var(--ops-border);
+  border-radius: 12px;
+  background: var(--ops-surface);
+  box-shadow: none;
+}
+
+.desktop-admin-portal .custom-table th,
+.desktop-security-portal .custom-table th,
+.desktop-cashier-portal .custom-table th {
+  padding: 12px 14px;
+  border-bottom-color: var(--ops-border-strong);
+  background: #171013;
+  color: var(--ops-muted);
+  font-size: 0.68rem;
+}
+
+.desktop-admin-portal .custom-table td,
+.desktop-security-portal .custom-table td,
+.desktop-cashier-portal .custom-table td {
+  padding: 13px 14px;
+  border-bottom-color: var(--ops-border);
+  color: var(--ops-text);
+  line-height: 1.35;
+}
+
+.desktop-admin-portal .custom-table tr:hover td,
+.desktop-security-portal .custom-table tr:hover td,
+.desktop-cashier-portal .custom-table tr:hover td { background: rgba(255, 255, 255, 0.04); }
+
+/* Buttons use one primary action and a quiet supporting action. */
+.desktop-admin-portal .btn,
+.desktop-security-portal .btn,
+.desktop-cashier-portal .btn {
+  min-height: 38px;
+  padding: 8px 13px;
+  border-radius: 9px;
+  box-shadow: none;
+  font-size: 0.8rem;
+}
+
+.desktop-admin-portal .btn-primary,
+.desktop-security-portal .btn-primary,
+.desktop-cashier-portal .btn-primary {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: #d91c45;
+}
+
+.desktop-admin-portal .btn-secondary,
+.desktop-security-portal .btn-secondary,
+.desktop-cashier-portal .btn-secondary {
+  border-color: var(--ops-border) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: var(--ops-text) !important;
+}
+
+.desktop-admin-portal .btn-secondary:hover:not(:disabled),
+.desktop-security-portal .btn-secondary:hover:not(:disabled),
+.desktop-cashier-portal .btn-secondary:hover:not(:disabled) {
+  border-color: var(--ops-border-strong) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: none;
+}
+
+/* Mobile keeps the same hierarchy, with roomy tap targets and no colour noise. */
+.mobile-admin-command-centre main,
+.is-security-portal main,
+.cashier-mobile-theme main { gap: 14px !important; }
+
+.mobile-admin-command-centre .m-list-card,
+.is-security-portal .m-list-card,
+.cashier-mobile-theme .m-list-card {
+  border-color: var(--ops-border);
+  border-radius: 12px;
+  background: var(--ops-surface);
+}
+
+.mobile-admin-command-centre .m-btn,
+.is-security-portal .m-btn,
+.cashier-mobile-theme .m-btn {
+  min-height: 46px;
+  border-radius: 11px;
+}
+
+.mobile-admin-command-centre .m-btn-secondary,
+.is-security-portal .m-btn-secondary,
+.cashier-mobile-theme .m-btn-secondary {
+  border-color: var(--ops-border);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.mobile-admin-command-centre .mobile-bottom-nav,
+.is-security-portal .mobile-bottom-nav,
+.cashier-mobile-theme .mobile-bottom-nav {
+  border-top-color: var(--ops-border) !important;
+  background: rgba(16, 11, 13, 0.96) !important;
+  box-shadow: 0 -8px 22px rgba(0, 0, 0, 0.28) !important;
+}
+
+.mobile-admin-command-centre .nav-tab-item,
+.is-security-portal .nav-tab-item,
+.cashier-mobile-theme .nav-tab-item { color: #a99ea2 !important; }
+
+.mobile-admin-command-centre .nav-tab-item.active,
+.is-security-portal .nav-tab-item.active,
+.cashier-mobile-theme .nav-tab-item.active { color: #fff !important; }
+
+@media (max-width: 640px) {
+  .mobile-admin-command-centre .stat-card,
+  .is-security-portal .stat-card,
+  .cashier-mobile-theme .stat-card {
+    min-height: 96px;
+    padding: 13px;
+  }
+
+  .mobile-admin-command-centre .stats-grid,
+  .is-security-portal .stats-grid,
+  .cashier-mobile-theme .stats-grid { gap: 10px; }
+}
+
+/* =============================================================
    FLOATING 3D CHIPS — BACKGROUND DECORATION
    12 unique keyframes, each chip follows its own lazy orbit.
    pointer-events:none enforced both in JS and here.
@@ -7257,4 +7639,3 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
     opacity: 0.85;
   }
 }
-
