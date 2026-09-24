@@ -62,7 +62,6 @@ export const MobileSecurityPortal: React.FC = () => {
     todayGateCashInHand,
     todayGateTransfers,
     fetchPlayerKycDocs,
-    fetchMultiplePlayerKycDocs,
     ensureScannedPlayer,
   } = useClub();
 
@@ -124,20 +123,6 @@ export const MobileSecurityPortal: React.FC = () => {
   const [pendingApproval, setPendingApproval] = useState<{ player: Player; checkIn?: DailyCheckIn } | null>(null);
   const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
 
-  // Automatically prefetch KYC docs for all pending check-in players
-  useEffect(() => {
-    const pendingIds = todayCheckIns
-      .filter(c => c.verificationStatus === 'pending')
-      .map(c => c.playerId);
-    const kycPendingIds = players
-      .filter(p => p.kycStatus === 'pending')
-      .map(p => p.id);
-    const targetIds = Array.from(new Set([...pendingIds, ...kycPendingIds])).slice(0, 15);
-    if (targetIds.length > 0) {
-      fetchMultiplePlayerKycDocs(targetIds);
-    }
-  }, [todayCheckIns, players, fetchMultiplePlayerKycDocs]);
-
   // Automatically deselect if player is deleted and fetch KYC docs on-demand
   useEffect(() => {
     if (selectedPlayer && !players.some(p => p.id === selectedPlayer.id)) {
@@ -146,7 +131,7 @@ export const MobileSecurityPortal: React.FC = () => {
     if (pendingApproval && !players.some(p => p.id === pendingApproval.player.id)) {
       setPendingApproval(null);
     }
-    const targetId = selectedPlayer?.id || pendingApproval?.player?.id || (pendingQueuePlayers.length > 0 ? pendingQueuePlayers[0]?.id : players[0]?.id);
+    const targetId = selectedPlayer?.id || pendingApproval?.player?.id;
     if (targetId) {
       fetchPlayerKycDocs(targetId);
     }

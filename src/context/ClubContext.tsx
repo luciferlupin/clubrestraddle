@@ -2268,7 +2268,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const { data, error } = await supabase
           .from('players')
-          .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
+          .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
           .or(orConditions.join(','))
           .limit(1);
 
@@ -2296,15 +2296,15 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               dateOfBirth: p.date_of_birth || '1995-01-01',
               aadhaarNumber: p.aadhaar_number || aadhaarParsed,
               panNumber: p.pan_number || panParsed,
-              aadhaarPhotoUrl: p.aadhaar_photo_url || undefined,
-              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url || undefined,
-              panPhotoUrl: p.pan_photo_url || undefined,
+              aadhaarPhotoUrl: undefined,
+              aadhaarBackPhotoUrl: undefined,
+              panPhotoUrl: undefined,
               govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
               govtIdNumber: p.govt_id_number || (panParsed && aadhaarParsed ? `PAN: ${panParsed} | Aadhaar: ${aadhaarParsed}` : 'KYC-PENDING'),
               address: p.address || 'Delhi NCR, India',
               emergencyContactName: p.emergency_contact_name || '',
               emergencyContactPhone: p.emergency_contact_phone || '',
-              photoUrl: p.photo_url || cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
+              photoUrl: cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
               agreedToRules: p.agreed_to_rules ?? true,
               submittedAt: p.created_at || new Date().toISOString(),
               verifiedAt: p.verified_at,
@@ -2354,7 +2354,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           // Fetch the player for this check-in
           const { data: pData } = await supabase
             .from('players')
-            .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
+            .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
             .eq('id', chk.player_id)
             .limit(1);
           if (pData && pData.length > 0) {
@@ -2381,15 +2381,15 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 dateOfBirth: p.date_of_birth || '1995-01-01',
                 aadhaarNumber: p.aadhaar_number || aadhaarParsed,
                 panNumber: p.pan_number || panParsed,
-                aadhaarPhotoUrl: p.aadhaar_photo_url || undefined,
-                aadhaarBackPhotoUrl: p.aadhaar_back_photo_url || undefined,
-                panPhotoUrl: p.pan_photo_url || undefined,
+                aadhaarPhotoUrl: undefined,
+                aadhaarBackPhotoUrl: undefined,
+                panPhotoUrl: undefined,
                 govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
                 govtIdNumber: p.govt_id_number || (panParsed && aadhaarParsed ? `PAN: ${panParsed} | Aadhaar: ${aadhaarParsed}` : 'KYC-PENDING'),
                 address: p.address || 'Delhi NCR, India',
                 emergencyContactName: p.emergency_contact_name || '',
                 emergencyContactPhone: p.emergency_contact_phone || '',
-                photoUrl: p.photo_url || cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
+                photoUrl: cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
                 agreedToRules: p.agreed_to_rules ?? true,
                 submittedAt: p.created_at || new Date().toISOString(),
                 verifiedAt: p.verified_at,
@@ -2473,7 +2473,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const { data, error } = await supabase
           .from('players')
-          .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
+          .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
           .or(orConditions.join(','))
           .limit(1);
 
@@ -2501,15 +2501,15 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               dateOfBirth: p.date_of_birth || '1995-01-01',
               aadhaarNumber: p.aadhaar_number || aadhaarParsed,
               panNumber: p.pan_number || panParsed,
-              aadhaarPhotoUrl: p.aadhaar_photo_url || undefined,
-              aadhaarBackPhotoUrl: p.aadhaar_back_photo_url || undefined,
-              panPhotoUrl: p.pan_photo_url || undefined,
+              aadhaarPhotoUrl: undefined,
+              aadhaarBackPhotoUrl: undefined,
+              panPhotoUrl: undefined,
               govtIdType: p.govt_id_type || 'Aadhaar & PAN Card',
               govtIdNumber: p.govt_id_number || (panParsed && aadhaarParsed ? `PAN: ${panParsed} | Aadhaar: ${aadhaarParsed}` : 'KYC-PENDING'),
               address: p.address || 'Delhi NCR, India',
               emergencyContactName: p.emergency_contact_name || '',
               emergencyContactPhone: p.emergency_contact_phone || '',
-              photoUrl: p.photo_url || cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
+              photoUrl: cartoonAvatarForPlayer(p.id || p.full_name || 'member'),
               agreedToRules: p.agreed_to_rules ?? true,
               submittedAt: p.created_at || new Date().toISOString(),
               verifiedAt: p.verified_at,
