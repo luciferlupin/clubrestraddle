@@ -53,7 +53,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
     setSelectedPlayerId,
     updatePlayer,
   } = useClub();
-  const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially || !currentPlayer);
+  const [showKYCForm, setShowKYCForm] = useState(showNewPlayerFormInitially);
   const [entryView, setEntryView] = useState<'welcome' | 'lookup' | 'register'>(
     showNewPlayerFormInitially ? 'register' : 'welcome'
   );
@@ -63,7 +63,14 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<PlayerTab>('pass');
+  const [activeTab, setActiveTab] = useState<PlayerTab>('profile');
+
+  React.useEffect(() => {
+    if (showNewPlayerFormInitially) {
+      setShowKYCForm(true);
+      setEntryView('register');
+    }
+  }, [showNewPlayerFormInitially]);
 
   const playerCheckIns = currentPlayer
     ? checkIns.filter(c => c.playerId === currentPlayer.id)
@@ -112,6 +119,7 @@ export const PlayerPortal: React.FC<PlayerPortalProps> = ({
       setSelectedPlayerId(pendingPlayer.id);
       setShowKYCForm(false);
       setEntryView('welcome');
+      setActiveTab('profile');
       setLookupPhone('');
       setPendingPlayer(null);
     }

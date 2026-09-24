@@ -24,6 +24,7 @@ import {
   Shield,
   FileSpreadsheet,
   Download,
+  RefreshCw,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { formatCurrency, formatShortDateTime, formatDateOnly, formatTimeOnly, maskGovtId, formatINR, formatFullAadhaar, formatPanNumber, formatPlayerNumber } from '../../utils/formatters';
@@ -60,10 +61,21 @@ export const MobileAdminPortal: React.FC = () => {
     resetToDemoData,
     fetchPlayerKycDocs,
     cashTransactions,
+    syncNow,
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'players' | 'attendance' | 'finance' | 'staff' | 'audit'>('dashboard');
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await syncNow();
+    } finally {
+      setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
 
   useEffect(() => {
     if (selectedPlayer?.id) {
@@ -185,12 +197,36 @@ export const MobileAdminPortal: React.FC = () => {
             <h1 id="admin-mobile-page-title">{pageMeta.title}</h1>
             <p>{pageMeta.description}</p>
           </div>
-          {pendingChipOrdersCount > 0 && (
-            <button type="button" onClick={() => setIsChipsDrawerOpen(true)} aria-label={`Open ${pendingChipOrdersCount} pending chip orders`}>
-              <Coins size={17} />
-              <span>{pendingChipOrdersCount}<small>chip order</small></span>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={isSyncing}
+              aria-label="Refresh and sync all club records"
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: 'rgba(255, 255, 255, 0.07)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: isSyncing ? '#38bdf8' : '#cbd5e1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              title="Sync & Refresh Data"
+            >
+              <RefreshCw size={16} style={{ animation: isSyncing ? 'spin 1s linear infinite' : 'none' }} />
             </button>
-          )}
+            {pendingChipOrdersCount > 0 && (
+              <button type="button" onClick={() => setIsChipsDrawerOpen(true)} aria-label={`Open ${pendingChipOrdersCount} pending chip orders`}>
+                <Coins size={17} />
+                <span>{pendingChipOrdersCount}<small>chip order</small></span>
+              </button>
+            )}
+          </div>
         </section>
 
         {/* ── TAB 1: EXECUTIVE OVERVIEW ────────────────────────────── */}

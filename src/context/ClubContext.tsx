@@ -656,7 +656,33 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const client = supabase;
 
     try {
-      const { data: staffData, error: staffErr } = await client.from('staff_users').select('*');
+      const [
+        staffRes,
+        playersRes,
+        checkInsRes,
+        tournamentsRes,
+        entriesRes,
+        cashRes,
+        expensesRes,
+        auditRes,
+        chipRes,
+      ] = await Promise.all([
+        client.from('staff_users').select('*'),
+        // KYC images are intentionally excluded here. Some historical rows contain
+        // very large inline data URLs, so loading them for the whole player list can
+        // generate enormous egress. Documents are fetched for one player on demand.
+        client.from('players').select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,address,emergency_contact_name,emergency_contact_phone,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason').order('created_at', { ascending: false }).limit(500),
+        client.from('daily_check_ins').select('*').order('created_at', { ascending: false }).limit(500),
+        client.from('tournaments').select('*').order('created_at', { ascending: false }).limit(100),
+        client.from('tournament_entries').select('*').order('registered_at', { ascending: false }).limit(500),
+        client.from('cash_transactions').select('*').order('timestamp', { ascending: false }).limit(500),
+        client.from('expenses').select('*').order('date', { ascending: false }).limit(300),
+        client.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(200),
+        client.from('chip_requests').select('*').order('requested_at', { ascending: false }).limit(300),
+      ]);
+
+      const staffData = staffRes.data;
+      const staffErr = staffRes.error;
       if (!staffErr && staffData && staffData.length > 0) {
         const mappedStaff: StaffUser[] = staffData.map((s: any) => ({
           id: s.id,
@@ -672,11 +698,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setStaffUsers(mappedStaff);
       }
 
-      const { data: playersData, error: pErr } = await client
-        .from('players')
-        .select('id,member_number,full_name,phone,email,membership_tier,kyc_status,phone_verified,phone_verified_at,date_of_birth,govt_id_type,govt_id_number,aadhaar_number,pan_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,address,emergency_contact_name,emergency_contact_phone,photo_url,agreed_to_rules,total_visits,notes,created_at,verified_at,verified_by,rejection_reason')
-        .order('created_at', { ascending: false })
-        .limit(250);
+      const playersData = playersRes.data;
+      const pErr = playersRes.error;
       if (!pErr && playersData) {
         if (playersData.length > 0) {
           let maxExistingNumber = 0;
@@ -756,6 +779,7 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                   aadhaarPhotoUrl: mp.kyc.aadhaarPhotoUrl || existing.kyc.aadhaarPhotoUrl,
                   aadhaarBackPhotoUrl: mp.kyc.aadhaarBackPhotoUrl || existing.kyc.aadhaarBackPhotoUrl,
                   panPhotoUrl: mp.kyc.panPhotoUrl || existing.kyc.panPhotoUrl,
+                  photoUrl: existing.kyc.photoUrl || mp.kyc.photoUrl,
                 },
               };
             });
@@ -796,7 +820,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      const { data: checkInsData, error: chkErr } = await client.from('daily_check_ins').select('*').order('created_at', { ascending: false }).limit(200);
+      const checkInsData = checkInsRes.data;
+      const chkErr = checkInsRes.error;
       if (!chkErr && checkInsData) {
         if (checkInsData.length > 0) {
           const mappedCheckIns: DailyCheckIn[] = checkInsData.map((c: any) => ({
@@ -820,14 +845,14 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return merged;
           });
           if (reconciled.repaired.length > 0) {
-            await Promise.all(reconciled.repaired.map(checkIn =>
+            Promise.all(reconciled.repaired.map(checkIn =>
               client.from('daily_check_ins').update({
                 verification_status: checkIn.verificationStatus,
                 verified_by: checkIn.verifiedBy,
                 verified_at: checkIn.verifiedAt,
                 rejection_reason: checkIn.rejectionReason || null,
               }).eq('id', checkIn.id)
-            ));
+            )).catch(() => {});
           }
         } else if (initialCheckIns.length > 0) {
           const seedChkRows = initialCheckIns.map(ic => ({
@@ -845,7 +870,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      const { data: tournamentsData, error: trnErr } = await client.from('tournaments').select('*').order('created_at', { ascending: false }).limit(50);
+      const tournamentsData = tournamentsRes.data;
+      const trnErr = tournamentsRes.error;
       if (!trnErr && tournamentsData) {
         if (tournamentsData.length > 0) {
           const mappedTournaments: Tournament[] = tournamentsData.map((t: any) => ({
@@ -872,7 +898,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      const { data: entriesData, error: entriesError } = await client.from('tournament_entries').select('*').order('registered_at', { ascending: false }).limit(250);
+      const entriesData = entriesRes.data;
+      const entriesError = entriesRes.error;
       if (entriesError) console.error('Supabase tournament entries fetch error:', entriesError.message);
       if (entriesData) {
         const mappedEntries: TournamentEntry[] = entriesData.map((e: any) => ({
@@ -896,7 +923,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setEntries(mappedEntries);
       }
 
-      const { data: cashData, error: cashError } = await client.from('cash_transactions').select('*').order('timestamp', { ascending: false }).limit(250);
+      const cashData = cashRes.data;
+      const cashError = cashRes.error;
       if (cashError) console.error('Supabase cash transactions fetch error:', cashError.message);
       if (cashData) {
         const mappedCash: CashTransaction[] = cashData.map((t: any) => ({
@@ -915,7 +943,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setCashTransactions(mappedCash);
       }
 
-      const { data: expensesData, error: expensesError } = await client.from('expenses').select('*').order('date', { ascending: false }).limit(150);
+      const expensesData = expensesRes.data;
+      const expensesError = expensesRes.error;
       if (expensesError) console.error('Supabase expenses fetch error:', expensesError.message);
       if (expensesData) {
         const mappedExpenses: Expense[] = expensesData.map((exp: any) => ({
@@ -932,7 +961,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setExpenses(mappedExpenses);
       }
 
-      const { data: auditData, error: auditError } = await client.from('audit_logs').select('*').order('timestamp', { ascending: false }).limit(100);
+      const auditData = auditRes.data;
+      const auditError = auditRes.error;
       if (auditError) console.error('Supabase audit logs fetch error:', auditError.message);
       if (auditData) {
         const mappedLogs: AuditLog[] = auditData.map((l: any) => ({
@@ -946,7 +976,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAuditLogs(mappedLogs);
       }
 
-      const { data: chipData, error: chipError } = await client.from('chip_requests').select('*').order('requested_at', { ascending: false }).limit(150);
+      const chipData = chipRes.data;
+      const chipError = chipRes.error;
       if (chipError) console.error('Supabase chip requests fetch error:', chipError.message);
       if (chipData) {
         const mappedChips: ChipRequest[] = chipData.map((c: any) => ({
@@ -991,7 +1022,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       .channel('club-restraddle-live-sync')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'players' },
+        // Supabase Realtime transmits the complete changed row. Player rows can
+        // contain inline KYC images, so INSERT/UPDATE events can resend megabytes
+        // to every open device. Keep only the small DELETE payload; profile changes
+        // are refreshed at startup or via the existing Sync Now action.
+        { event: 'DELETE', schema: 'public', table: 'players' },
         (payload: any) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const p = payload.new;

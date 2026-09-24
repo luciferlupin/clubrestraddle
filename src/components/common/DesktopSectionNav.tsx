@@ -4,7 +4,7 @@ export interface DesktopSectionNavItem<T extends string> {
   id: T;
   label: string;
   icon: React.ReactNode;
-  badge?: number;
+  badge?: number | string;
 }
 
 interface DesktopSectionNavProps<T extends string> {

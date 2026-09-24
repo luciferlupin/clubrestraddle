@@ -48,7 +48,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   } = useClub();
 
   const [activeTab, setActiveTab] = useState<PlayerTab>(
-    showNewPlayerFormInitially ? 'new_kyc' : 'home',
+    showNewPlayerFormInitially ? 'new_kyc' : 'profile',
   );
   const [entryView, setEntryView] = useState<EntryView>(showNewPlayerFormInitially ? 'register' : 'choice');
   const [lookupPhone, setLookupPhone] = useState('');
@@ -60,6 +60,13 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
   const [checkingIn, setCheckingIn] = useState(false);
   const [registrationSuccessData, setRegistrationSuccessData] = useState<{ player: Player; checkIn: DailyCheckIn } | null>(null);
   const [isCheckInSuccessOpen, setIsCheckInSuccessOpen] = useState(false);
+
+  React.useEffect(() => {
+    if (showNewPlayerFormInitially) {
+      setActiveTab('new_kyc');
+      setEntryView('register');
+    }
+  }, [showNewPlayerFormInitially]);
 
   const todayCheckIn = currentPlayer ? hasPlayerCheckedInToday(currentPlayer.id) : undefined;
   const playerCheckIns = currentPlayer
@@ -99,7 +106,7 @@ export const MobilePlayerPortal: React.FC<MobilePlayerPortalProps> = ({
         });
       }
       setSelectedPlayerId(pendingPlayer.id);
-      setActiveTab('home');
+      setActiveTab('profile');
       setEntryView('choice');
       setLookupPhone('');
       setPendingPlayer(null);

@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Shield,
   Coins,
+  RefreshCw,
 } from 'lucide-react';
 import { useClub } from '../../context/ClubContext';
 import { AdminDashboard } from './AdminDashboard';
@@ -30,25 +31,50 @@ import { isSupabaseConfigured } from '../../services/supabaseClient';
 type AdminTab = 'dashboard' | 'cash' | 'chip-orders' | 'staff' | 'players' | 'attendance' | 'tournaments' | 'expenses' | 'audit';
 
 export const AdminPortal: React.FC = () => {
-  const { currentStaffUser, resetToDemoData, pendingChipOrdersCount } = useClub();
+  const {
+    currentStaffUser,
+    resetToDemoData,
+    pendingChipOrdersCount,
+    players,
+    todayCheckIns,
+    tournaments,
+    staffUsers,
+    expenses,
+    auditLogs,
+    currentCashBalance,
+    syncNow,
+  } = useClub();
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [resetConfirm, setResetConfirm] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const handleReset = () => {
     resetToDemoData();
     setResetConfirm(false);
   };
 
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await syncNow();
+    } finally {
+      setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
+
+  const pendingKYCCount = players.filter(p => p.kycStatus === 'pending').length;
+  const activeTournamentsCount = tournaments.filter(t => t.status === 'Registering' || t.status === 'Running').length;
+
   const sections: DesktopSectionNavItem<AdminTab>[] = [
     { id: 'dashboard', label: 'Overview', icon: <LayoutDashboard size={16} /> },
     { id: 'cash', label: 'Cash ledger', icon: <DollarSign size={16} /> },
-    { id: 'chip-orders', label: 'Chip orders', icon: <Coins size={16} />, badge: pendingChipOrdersCount },
-    { id: 'staff', label: 'Staff', icon: <Shield size={16} /> },
-    { id: 'players', label: 'Players & KYC', icon: <Users size={16} /> },
-    { id: 'attendance', label: 'Attendance', icon: <CheckCircle2 size={16} /> },
-    { id: 'tournaments', label: 'Events', icon: <Trophy size={16} /> },
-    { id: 'expenses', label: 'Expenses', icon: <Receipt size={16} /> },
-    { id: 'audit', label: 'Audit log', icon: <History size={16} /> },
+    { id: 'chip-orders', label: 'Chip orders', icon: <Coins size={16} />, badge: pendingChipOrdersCount || undefined },
+    { id: 'staff', label: 'Staff', icon: <Shield size={16} />, badge: staffUsers.length },
+    { id: 'players', label: 'Players & KYC', icon: <Users size={16} />, badge: pendingKYCCount > 0 ? `${pendingKYCCount} KYC` : players.length },
+    { id: 'attendance', label: 'Attendance', icon: <CheckCircle2 size={16} />, badge: todayCheckIns.length },
+    { id: 'tournaments', label: 'Events', icon: <Trophy size={16} />, badge: activeTournamentsCount > 0 ? `${activeTournamentsCount} live` : tournaments.length },
+    { id: 'expenses', label: 'Expenses', icon: <Receipt size={16} />, badge: expenses.length },
+    { id: 'audit', label: 'Audit log', icon: <History size={16} />, badge: auditLogs.length },
   ];
 
   const getActiveTabLabel = () => {
@@ -97,28 +123,44 @@ export const AdminPortal: React.FC = () => {
         title="Club operations control room"
         subtitle={<>Signed in as <strong>{currentStaffUser ? currentStaffUser.fullName : 'Super Admin'}</strong> · Full operational access</>}
         actions={
-          isSupabaseConfigured ? undefined : !resetConfirm ? (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
+              type="button"
               className="btn btn-secondary btn-sm"
-              onClick={() => setResetConfirm(true)}
-              style={{ fontSize: '0.78rem', padding: '6px 12px', color: '#fca5a5' }}
+              onClick={handleSync}
+              disabled={isSyncing}
+              title="Refresh all club data from database"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              <RotateCcw size={14} /> Reset Demo Data
+              <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} style={{ animation: isSyncing ? 'spin 1s linear infinite' : 'none' }} />
+              <span>{isSyncing ? 'Syncing…' : 'Sync Data'}</span>
             </button>
-          ) : (
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <button
-                className="btn btn-danger btn-sm"
-                onClick={handleReset}
-                style={{ fontSize: '0.78rem', padding: '6px 12px' }}
-              >
-                Confirm Reset
-              </button>
-              <button className="btn btn-secondary btn-sm" onClick={() => setResetConfirm(false)}>
-                Cancel
-              </button>
-            </div>
-          )
+
+            {!isSupabaseConfigured && (
+              !resetConfirm ? (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setResetConfirm(true)}
+                  style={{ fontSize: '0.78rem', padding: '6px 12px', color: '#fca5a5' }}
+                >
+                  <RotateCcw size={14} /> Reset Demo Data
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={handleReset}
+                    style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+                  >
+                    Confirm Reset
+                  </button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setResetConfirm(false)}>
+                    Cancel
+                  </button>
+                </div>
+              )
+            )}
+          </div>
         }
       />
 
