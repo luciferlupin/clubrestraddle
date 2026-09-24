@@ -644,6 +644,11 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const lastFetchTimeRef = useRef<number>(0);
+  // KYC documents are the heaviest records in the database. Cache successful
+  // reads for the lifetime of the tab and coalesce concurrent requests so React
+  // effects cannot download the same images repeatedly.
+  const kycDocsLoadedRef = useRef<Set<string>>(new Set());
+  const kycDocsLoadingRef = useRef<Set<string>>(new Set());
 
   // Hydrate from Supabase & Subscribe to Realtime Changes
   const fetchSupabaseData = useCallback(async (force = false) => {
@@ -1368,6 +1373,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // On-demand KYC document photo fetcher (reduces egress by >99% by not loading heavy photos in bulk)
   const fetchPlayerKycDocs = useCallback(async (playerId: string) => {
     if (!isSupabaseConfigured || !supabase || !playerId) return;
+    if (kycDocsLoadedRef.current.has(playerId) || kycDocsLoadingRef.current.has(playerId)) return;
+    kycDocsLoadingRef.current.add(playerId);
     try {
       const { data, error } = await supabase
         .from('players')
@@ -1393,17 +1400,23 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             },
           };
         }));
+        kycDocsLoadedRef.current.add(playerId);
       }
     } catch (e) {
       console.warn('Could not fetch player KYC docs:', e);
+    } finally {
+      kycDocsLoadingRef.current.delete(playerId);
     }
-  }, [isSupabaseConfigured]);
+  }, []);
 
   const fetchMultiplePlayerKycDocs = useCallback(async (playerIds: string[]) => {
     if (!isSupabaseConfigured || !supabase || !playerIds || playerIds.length === 0) return;
     try {
-      const ids = Array.from(new Set(playerIds.filter(Boolean)));
+      const ids = Array.from(new Set(playerIds.filter(Boolean))).filter(
+        id => !kycDocsLoadedRef.current.has(id) && !kycDocsLoadingRef.current.has(id)
+      );
       if (ids.length === 0) return;
+      ids.forEach(id => kycDocsLoadingRef.current.add(id));
       const { data, error } = await supabase
         .from('players')
         .select('id,aadhaar_number,pan_number,govt_id_number,aadhaar_photo_url,aadhaar_back_photo_url,pan_photo_url,photo_url')
@@ -1428,11 +1441,14 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             },
           };
         }));
+        data.forEach((row: any) => kycDocsLoadedRef.current.add(row.id));
       }
     } catch (e) {
       console.warn('Could not batch fetch player KYC docs:', e);
+    } finally {
+      playerIds.forEach(id => kycDocsLoadingRef.current.delete(id));
     }
-  }, [isSupabaseConfigured]);
+  }, []);
 
   const setActiveRole = useCallback((role: UserRole) => {
     setActiveRoleState(role);
@@ -2693,6 +2709,8 @@ export const ClubProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const updatePlayerKYC = (playerId: string, updatedKYC: Partial<PlayerKYC>) => {
+    // The next authorised view should read the newly saved documents once.
+    kycDocsLoadedRef.current.delete(playerId);
     const nowIso = new Date().toISOString();
     setPlayers(prev => {
       const next = prev.map(p => {

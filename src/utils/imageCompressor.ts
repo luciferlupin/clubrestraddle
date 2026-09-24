@@ -80,13 +80,32 @@ export const compressImageFile = async (
         // Render resized image
         ctx.drawImage(img, 0, 0, width, height);
 
-        // First compression pass
-        let compressedDataUrl = canvas.toDataURL(mimeType, quality);
+        const targetBytes = options.targetMaxKb ? options.targetMaxKb * 1024 : undefined;
+        let currentQuality = quality;
+        let compressedDataUrl = canvas.toDataURL(mimeType, currentQuality);
         let approximateBytes = Math.round((compressedDataUrl.length * 3) / 4);
 
-        // If targetMaxKb was specified and result is still too large, reduce quality adaptively
-        if (options.targetMaxKb && approximateBytes > options.targetMaxKb * 1024) {
-          compressedDataUrl = canvas.toDataURL(mimeType, Math.max(0.5, quality - 0.2));
+        // A single quality retry did not enforce targetMaxKb and allowed unusually
+        // detailed camera images to remain several times larger than advertised.
+        // Reduce JPEG quality first, then dimensions, until the requested ceiling
+        // is met (or the safe readability floor is reached).
+        while (targetBytes && approximateBytes > targetBytes && currentQuality > 0.36) {
+          currentQuality = Math.max(0.36, currentQuality - 0.08);
+          compressedDataUrl = canvas.toDataURL(mimeType, currentQuality);
+          approximateBytes = Math.round((compressedDataUrl.length * 3) / 4);
+        }
+
+        while (targetBytes && approximateBytes > targetBytes && width > 520 && height > 520) {
+          width = Math.max(520, Math.round(width * 0.85));
+          height = Math.max(520, Math.round(height * 0.85));
+          canvas.width = width;
+          canvas.height = height;
+          const resizedCtx = canvas.getContext('2d', { alpha: false });
+          if (!resizedCtx) break;
+          resizedCtx.fillStyle = '#FFFFFF';
+          resizedCtx.fillRect(0, 0, width, height);
+          resizedCtx.drawImage(img, 0, 0, width, height);
+          compressedDataUrl = canvas.toDataURL(mimeType, currentQuality);
           approximateBytes = Math.round((compressedDataUrl.length * 3) / 4);
         }
 
